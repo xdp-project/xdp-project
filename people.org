@@ -1,0 +1,79 @@
+#+TITLE: People involved in XDP development
+
+* Intro
+
+Lets record people involved on XDP development.
+Need this to Cc the right people on the mailing list.
+
+* History
+
+The early "moonshot" ideas behind having a step before allocating the
+SKB, was presented by Jesper at NetDev 1.1 (Feb 2016), who also did
+PoC experiments (with mlx5) extrapolating a performance could reach
+19Mpps per core. Today we are seeing between 16Mpps to 24Mpps per core
+depending on which NIC HW used (mlx5 driver).
+
+ http://people.netfilter.org/hawk/presentations/NetDev1.1_2016/net_performance_BoF.pdf
+
+The initial XDP patchset was developed by:
+ Brenden Blanco <bblanco@gmail.com> / <bblanco@vmware.com>
+After this Brenden have not been active developing XDP.
+
+The XDP name was coined by Tom Herbert.  Tom Herbert and Alexei
+Starovoitov did the first presentation about XDP, while both working
+for Facebook.
+
+ https://github.com/iovisor/bpf-docs/blob/master/Express_Data_Path.pdf
+
+* XDP developers
+
+** Developers unsorted
+
+Alexei Starovoitov
+Daniel Borkmann
+
+Brenden Blanco <bblanco@gmail.com>
+Tom Herbert <tom@herbertland.com>
+
+John Fastabend <john.fastabend@gmail.com>
+
+Martin KaFai Lau <kafai@fb.com>
+
+Jakub Kicinski <jakub.kicinski@netronome.com> (netronome + core work)
+
+Andy Gospodarek (mostly presentations)
+
+Michael Chan (bnxt_en)
+
+Saeed Mahameed (mlx5)
+
+Tariq Toukan (mlx4)
+
+Björn Töpel (i40e + AF_XDP)
+
+Magnus Karlsson (AF_XDP)
+
+Yuval Mintz (qede)
+
+Sunil Goutham (thunderx)
+
+Jason Wang (VM)
+
+Michael S. Tsirkin (ptr_ring)
+
+Edward Cree (sfc)
+
+David Ahern (fib lookup helper)
+
+PJ (still waiting for data_meta work)
+
+** eBPF maintainers
+
+Daniel and Alexei
+
+** Core developers
+
+** Driver developers
+
+
+
