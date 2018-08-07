@@ -2,6 +2,22 @@
 
 * Issue: Missing update of ifconfig counters
 
+Some drivers are not updating the "ifconfig" stats counters,
+when in XDP mode.  This makes receive or send via XDP invisible to
+sysadm/management tools.  This for-sure is going to cause confusion.
+
+Closer look at other drivers.
+
+ - ixgbe driver is doing the right thing.
+
+ - i40e have a bug, where RX/TX stats are swapped (strange!).
+
+ - mlx5 driver is not updating the regular RX/TX counters, but A LOT
+   of other ethtool stats counters (which are the ones I usually
+   monitor when testing).
+
+Need to have an upstream discussion, on what is the semantic.  IHMO
+the regular RX/TX counters must be updated even for XDP frames.
 
 
 * Issue: XDP_REDIRECT is few drivers
