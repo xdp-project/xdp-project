@@ -1,0 +1,83 @@
+#+TITLE: Brainstorm notes
+
+This doc is for brainstorming.  Watch out for likely duplicates, clean
+them up progressively. 
+
+Turn these notes into real issue or bug descriptions and move them
+into other docs like file:/~/git/xdp-notes/xdp_issues.org
+
+* DMA mapping xdp_frame
+
+Keeping DMA mapping in XDP return API.
+
+
+* BUG: CPUMAP not working for generic-xdp
+
+* Generic-xdp how-to assure NAPI protect?
+
+* Make bulk work for generic xdp with devmap
+
+* Rx+tx ifconfig count update for xdp
+
+* Meta data implement missing for many drivers
+
+* Should we standardize ethtool stats for xdp?
+
+* Adding and removing ethtool channels runtime semantics?
+(Jakub question this)
+
+* TODO Implement CPUMAP redirect with connection hashing over CPUs
+
+* Frame to skb, missing csum hw info
+
+(Plus other info)
+
+* Frame to skb, use full headroom
+
+* BUG: Generic-XDP does not work for TCP (in certain cases)
+
+
+* Potential-bug: Mlx5 fix dma unmap call (after xdp return frame)
+
+* Retpoline performance issue for xdp
+
+
+* Old list: watch out for dublicates
+
+Old list of stuff I need to work-on/fix for XDP/bpf project:
+ * XDP return frame API (needed by AF_XDP ZC)
+ * Bulking API for return frame API
+ * Bulking API for ndo_xdp_xmit
+ * Address massive XDP regression due to CONFIG_RETPOLINE
+ * Introduce bulking for generic-XDP (PoC test show +30% perf!!!)
+ * Fix CPUMAP to work with generic-XDP
+ * Implement ndo_xdp_xmit for macvlan (fast guest delivery)
+ * Improve BPF doc
+ * Improve XDP doc
+ * Work on XDP article with Toke+Alexei+Daniel
+ * Better integration of XDP in Suricata (multiple small thing)
+ * Find XDP feature/capability API (use in Suricata)
+ * Help integrate AF_XDP in Suricata
+ * Ship bpftool in distros (start with static linked libbpf)
+ * Make libbpf a shared lib in distros (fix lib versioning)
+ * Help (Ahern) get XDP route/FIB lookup helper integrated
+ * Work on bridge FIB table lookup helper
+ * XDP get more info transferred to CPUMAP skb creation time
+ * cpumap: GRO support
+ * cpumap: RX hash support
+ * cpumap: HW csum offload/info
+ * Generalize CPUMAP skb creation, move SKB alloc out of driver code
+ * Improve XDP cpumap redirect example: flow hashing (fix NIC HW hash)
+ * Help get AF_XDP API and performance aligned
+ * Help get AF_XDP zero-copy integrated via XDP return API
+ * xdp_monitor: improve to show error codes (to easier troubleshoot)
+ * convert tracepoint to use ifindex instead of names (strcpy overhead)
+ * XDP_REDIRECT: Detect buggy-drivers forgetting to clear per-CPU map
+ * Streamline eBPF map-create return codes on errors
+ * Upstream xdp_bench01 sample to be standard way to measure XDP perf
+ * Fix that TCP traffic with XDP generic on virtual net_devices are broken
+ * xdp: avoid leaking info stored in xdp_frame data on page reuse
+ * XDP_REDIRECT implemement in every driver
+ * XDP data-meta implemement in every driver
+ * Improve samples/bpf: XDP progs should take ifconfig/net_device names
+ * Improve samples/bpf: Avoid including ./arch/x86/include/asm/cpufeature.h
