@@ -11,7 +11,13 @@ into other docs like file:/~/git/xdp-notes/xdp_issues.org
 Keeping DMA mapping in XDP return API.
 
 
-* BUG: CPUMAP not working for generic-xdp
+* CPU-map redirect
+
+** BUG: CPUMAP not working for generic-xdp
+
+** TODO Implement CPUMAP redirect with connection hashing over CPUs
+
+** Feature: CPU map could use netif_receive_skb_list()
 
 * Generic-xdp how-to assure NAPI protect?
 
@@ -25,8 +31,6 @@ Keeping DMA mapping in XDP return API.
 
 * Adding and removing ethtool channels runtime semantics?
 (Jakub question this)
-
-* TODO Implement CPUMAP redirect with connection hashing over CPUs
 
 * Frame to skb, missing csum hw info
 
