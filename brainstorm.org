@@ -1,15 +1,31 @@
 #+TITLE: Brainstorm notes
 
 This doc is for brainstorming.  Watch out for likely duplicates, clean
-them up progressively. 
+them up progressively.
 
 Turn these notes into real issue or bug descriptions and move them
 into other docs like file:/~/git/xdp-notes/xdp_issues.org
+
+
+* xdp_buff need data_hard_end
+
+Two reasons:
+#1 - extend frame tail, for DNS/other reply use-cases
+#2 - simplify XDP convert to SKB (else truesize is a lie)
 
 * DMA mapping xdp_frame
 
 Keeping DMA mapping in XDP return API.
 
+* Add samples/bpf/ using raw-tracepoints
+
+* Convert xdp_monitor to use raw-tracepoints
+
+* Convert samples/bpf/ to use libbpf as elf-loader
+
+* sample/bpf output XDP-mode (as QA forget to report)
+
+* sample/bpf output Driver (as QA forget to report)
 
 * CPU-map redirect
 
@@ -18,6 +34,24 @@ Keeping DMA mapping in XDP return API.
 ** TODO Implement CPUMAP redirect with connection hashing over CPUs
 
 ** Feature: CPU map could use netif_receive_skb_list()
+
+** cpumap: Implement GRO handling
+
+** xdp_redirect_cpu sample output interface-name and ifindex
+
+QA is giving my output from xdp_redirect_cpu, but forget to say what
+interface this is loaded on.  Solve by simply outputting the interface
+in the output.
+
+
+* samples/bpf redirect example include net_device TX stats
+
+* samples/bpf upstream napi_monitor
+
+Missing an ifindex to match on in tracepoint
+
+
+
 
 * Generic-xdp how-to assure NAPI protect?
 
