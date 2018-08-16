@@ -67,6 +67,8 @@ David Ahern (fib lookup helper)
 
 PJ (still waiting for data_meta work)
 
+Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp> (veth)
+
 ** eBPF maintainers
 
 Daniel and Alexei
