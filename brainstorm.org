@@ -119,3 +119,44 @@ Old list of stuff I need to work-on/fix for XDP/bpf project:
  * XDP data-meta implemement in every driver
  * Improve samples/bpf: XDP progs should take ifconfig/net_device names
  * Improve samples/bpf: Avoid including ./arch/x86/include/asm/cpufeature.h
+
+* XDP metadata: dynamic descriptor offloads via BTF
+
+* Napatech have descriptors in-front of packet payload
+
+Proprietary commercial companies like NapaTech, which also maps packets
+into userspace, deliver dynamic descriptor info in-front of the packet,
+like our data_meta area.
+
+As far as I can see, via their public docs[4], they have 4 different
+dynamic descriptor formats.  With BTF and metadata we should have more
+flexibility than them :-)
+
+It is a bit interesting to look at what they expose. I recommend
+looking/clicking at the header-file[5][6][7][8] as it shows they use a
+lot of C-bit-fields to compress the size.  Do BTF support C-bit fields?
+
+[4] https://docs.napatech.com/search/all?query=Dynamic+Packet+Descriptor
+[5] pktdescr_dyn1.h https://docs.napatech.com/reader/Gtwjm73bddn7nrHz1NxHZw/leAUnFb_t2il~h4y1tNPpw
+[6] pktdescr_dyn2.h https://docs.napatech.com/reader/GHSQQPQbWLPdJUmxIkO91Q/7cYsE5yb3DLpomSTEeL_bQ
+[7] pktdescr_dyn3.h https://docs.napatech.com/reader/GHSQQPQbWLPdJUmxIkO91Q/hcQobdatqtY2j2nmrZ577A
+[8] pktdescr_dyn4.h https://docs.napatech.com/reader/GHSQQPQbWLPdJUmxIkO91Q/2LaoD2p2mvxpkNOVvBPBqg
+
+I find it interesting to see that in (dyn1+2), default decode offsets
+into the packet of L3 and L4 (and L4 payload), but allows them to be
+programmable.
+ Also notice the "color" members, which are programmable, and sometimes
+are use as a 64-bit unique correlation key[8] (e.g. identifying flows).
+
+
+Maybe I should have looked at their standard format before the dynamic(?)
+Their pktdescr_std0.h [9] is placed in front of all packets being
+received by the adapter when the adapter is operating in STANDARD or
+EXTENDED mode.
+The Extended descriptors are placed after pktdescr_std0.h [9], which
+contains a lot of info on the types in different layers, see[10][11][12].
+
+[9] pktdescr_std0.h https://docs.napatech.com/reader/GHSQQPQbWLPdJUmxIkO91Q/mRPP74KNQXIJtSyWBBHMKA
+[10] pktdescr_ext7.h https://docs.napatech.com/reader/GHSQQPQbWLPdJUmxIkO91Q/GXhjyPfAPJ6Rr7k8KR4KsQ
+[11] pktdescr_ext8.h https://docs.napatech.com/reader/GHSQQPQbWLPdJUmxIkO91Q/NWaAIAROOdyXvy~OV4pl6A
+[12] pktdescr_ext9.h https://docs.napatech.com/reader/GHSQQPQbWLPdJUmxIkO91Q/LVIq8m_b0_44QIIAqcdLew
