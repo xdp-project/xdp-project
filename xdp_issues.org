@@ -24,6 +24,14 @@ the regular RX/TX counters must be updated even for XDP frames.
 
 Very few drivers support XDP_REDIRECT.
 
+HW drivers: ixgbe, i40e, mlx5
+
+SW drivers: veth, tun (tuntap), virtio_net
+
+
+** Status: Supported XDP drivers
+
+Slide with overview of drivers
 
 * Issue: ndo_xdp_xmit bound to XDP_REDIRECT
 
@@ -40,7 +48,8 @@ for each CPU core.
 
 The samples/bpf programs xdp_redirect + xdp_redirect_map are very user
 unfriendly.  #1 they use raw ifindex'es as input + output. #2 the
-pkt/s number count RX packets, not TX'ed packets.
+pkt/s number count RX packets, not TX'ed packets which can be dropped
+silently.
 
 Red Hat QA, got very confused by #2.
 
