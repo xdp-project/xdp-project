@@ -6,6 +6,15 @@ them up progressively.
 Turn these notes into real issue or bug descriptions and move them
 into other docs like file:/~/git/xdp-notes/xdp_issues.org
 
+* ip-util choose between generic/native-XDP
+
+The ip utility (from iproute2) does not support specifying, that an
+XDP prog need to sue generic-XDP.
+
+I need this when testing veth, which now got native-XDP.
+
+* General: Make Generic-XDP complient with Native-XDP features
+
 
 * XDP on ARM-boards
 
