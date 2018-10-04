@@ -7,10 +7,72 @@ Turn these notes into real issue or bug descriptions and move them
 into other docs like file:/~/git/xdp-notes/xdp_issues.org
 
 
+* XDP on ARM-boards
+
+XDP does in principle work on ARM
+ - Drivers: cavium/thunderx
+ - But upstream XDP developers don't have HW to test/improve
+
+Looking at different ARM boards and NIC drivers:
+
+** Driver: mvpp2
+
+(mvpp2) Board: 2x10G MACCHIATObin (Quad 1.6GHz ARMADA A8040)
+   https://www.solid-run.com/marvell-armada-family/macchiatobin/
+
+** Driver: mvneta
+
+(mvneta) Board#1: ClearFog (ARMADA 38x SoC) from Marvell
+ - single or dual core ARMv7 (Cortex A9) @ up to 1.6 GHz with 1MB L2 cache
+ https://www.solid-run.com/marvell-armada-family/clearfog/
+ https://blog.hypriot.com/post/introducing-the-clearfog-pro-router-board/
+ https://blog.hypriot.com/post/clearfog-pro-part-2-lets-run-docker/
+
+(mvneta) Board#2: Marvell Armada 3700LP (88F3720)
+ - dual core ARM Cortex A53 processor up to 1.2GHz
+ http://espressobin.net/tech-spec/
+
+(mvneta) Board#3: OpenBlocks AX3
+ http://wtarreau.blogspot.com/2013/12/line-rate-http-server-on-openblocks-ax3.html
+
+** ARM work cooperating with
+
+ - Ilias Apalodimas <ilias.apalodimas@linaro.org>
+ - Willy Tarreau <w@1wt.eu>
+
+
+* Tracking and troubleshooting eBPF
+
+Want to track when BPF progs gets loaded/unloaded
+ - Both for system audit and troubleshooting purposes
+
+BPF code do have LSM/SElinux hooks
+ - LSM maintainers request, use Audit subsystem instead
+ - Jiri Olsa currently working on this
+
+* Usability: XDP redirect not impl by driver gives WARN_ON
+
+E.g. AF_XDP via xdpsock uses redirect, and there is not feedback when
+running prog on driver without redirect-support.  Need to look in
+dmesg to see big splast.
+
+* Usability: HW offload on non-supported driver/firmware return EINVAL
+
+E.g. Loading XDP/ebpf prog with HW offload on Netronome NIC, but wrong
+firmware, just sats EINVAL.  No help or hints that firmware needs to
+be upgraded.
+
+Same EINVAL when loading on a NIC driver other than Netronome.
+
+
 * xdp_buff need data_hard_end
+
+ixgbe and i40e choose to violate one-page-per-packet
 
 Two reasons:
 #1 - extend frame tail, for DNS/other reply use-cases
+ - NDIV needs this feature to convert to XDP
+
 #2 - simplify XDP convert to SKB (else truesize is a lie)
 
 * DMA mapping xdp_frame
@@ -78,6 +140,9 @@ Missing an ifindex to match on in tracepoint
 * Potential-bug: Mlx5 fix dma unmap call (after xdp return frame)
 
 * Retpoline performance issue for xdp
+
+* Retpoline: mlx5 too many indirect calls
+
 
 
 * Old list: watch out for dublicates
