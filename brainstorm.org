@@ -49,6 +49,17 @@ Looking at different ARM boards and NIC drivers:
  - Ilias Apalodimas <ilias.apalodimas@linaro.org>
  - Willy Tarreau <w@1wt.eu>
 
+* Crazy-idea: XDP-redirect re-handle about-to-be-dropped packets
+
+Ref slides: http://people.netfilter.org/hawk/presentations/NetConf2017_Seoul/XDP_devel_update_NetConf2017_Seoul.pdf
+
+Idea slide 31: On XDP-redirect packets can be dropped, after the XDP
+prog have run, and today we have a 'drop-tracepoint' to handle/debug
+this.  It would be more interesting to call a new XDP-type program
+that get the about-to-be-dropped packet, and allow it to take a new
+decision.  Wondering what this can be used for, click the youtube link
+in the slide, and blow-your-mind! (https://youtu.be/BO0QhaxBRr0)
+
 
 * Tracking and troubleshooting eBPF
 
@@ -98,11 +109,23 @@ Keeping DMA mapping in XDP return API.
 
 * sample/bpf output Driver (as QA forget to report)
 
-* CPU-map redirect
+
+* GROUP: CPU-map redirect things
+
+** CPUMAP: Impl. OoO mechanism
+
+Ref slides: http://people.netfilter.org/hawk/presentations/NetConf2017_Seoul/XDP_devel_update_NetConf2017_Seoul.pdf
+
+Idea on slide 29 + 30:  Implement in BPF-code an Out-of-Order safe way
+to use cpumap-redirect to dynamically load-balance IP-flows.
 
 ** BUG: CPUMAP not working for generic-xdp
 
-** TODO Implement CPUMAP redirect with connection hashing over CPUs
+** DONE Implement CPUMAP redirect with connection hashing over CPUs
+
+ c4c202175424 ("Merge branch 'bpf-sample-cpumap-lb'")
+ 1bca4e6b1863 ("samples/bpf: xdp_redirect_cpu load balance like Suricata")
+ 11395686586b ("samples/bpf: add Paul Hsieh's (LGPL 2.1) hash function SuperFastHash")
 
 ** Feature: CPU map could use netif_receive_skb_list()
 
