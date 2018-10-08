@@ -1,0 +1,137 @@
+#+TITLE: Notes for netdev-track at LinuxPlumbers 2018
+
+Trying to organize and structure the presentation for Linux Plumbers
+Conference 2018 Networking Track.
+
+ http://vger.kernel.org/lpc-networking.html
+
+* Homepage abstract for presentation
+
+http://vger.kernel.org/lpc-networking.html#session-19
+
+** Title: XDP challenges and future work
+
+Speakers: Jesper Dangaard Brouer, Toke Høiland-Jørgensen
+
+Duration (incl. QA): 35 min
+
+Content: Slides, Paper
+
+** Abstract:
+
+XDP already offers rich facilities for high performance packet
+processing, and has seen deployment in several production
+systems. However, this does not mean that XDP is a finished system; on
+the contrary, improvements are being added in every release of Linux,
+and rough edges are constantly being filed down. The purpose of this
+talk is to discuss some of these possibilities for future
+improvements, including how to address some of the known limitations
+of the system. We are especially interested in soliciting feedback and
+ideas from the community on the best way forward.
+
+The issues we are planning to discuss include, but are not limited to:
+
+ - User experience and debugging tools: How do we make it easier for
+   people who are not familiar with the kernel or XDP to get to grips
+   with the system and be productive when writing XDP programs?
+
+ - Driver support: How do we get to full support for XDP in all
+   drivers? Is this even a goal we should be striving for?
+
+ - Performance: At high packet rates, every micro-optimisation
+   counts. Things like inlining function calls in drivers are
+   important, but also batching to amortise fixed costs such as DMA
+   mapping. What are the known bottlenecks, and how do we address
+   them?
+
+ - QoS and rate transitions: How should we do QoS in XDP? In
+   particular, rate transitions (where a faster link feeds into a
+   slower) are currently hard to deal with from XDP, and would benefit
+   from, e.g., Active Queue Management (AQM). Can we adapt some of the
+   AQM and QoS facilities in the regular networking stack to work with
+   XDP? Or should we do something different?
+
+ - Accelerating other parts of the stack: Tom Herbert started the
+   discussion on accelerating transport protocols with XDP back
+   in 2016. How do we make progress on this? Or should we be doing
+   something different? Are there other areas where we can extend XDPs
+   processing model to provide useful accelerations?
+
+
+* Other XDP talks co-scheduled
+
+I promised we will introduce other XDP talks.
+
+Thus, part of the structure will be given by other XDP talks.
+
+** Other XDP and eBPF related talks:
+
+*** (Our-talk) XDP - challenges and future work
+*** Leveraging Kernel Tables with XDP
+*** XDP acceleration using NIC metadata, continued
+*** (AF_XDP) Bringing the Power of eBPF to Open vSwitch
+*** (AF_XDP) The Path to DPDK Speeds for AF_XDP
+*** Combining kTLS and BPF for Introspection and Policy Enforcement
+*** (facebook) XDP 1.5 years in production. Evolution and lessons learned.
+*** (facebook) eBPF / XDP based firewall and packet filtering
+*** Using eBPF as an abstraction for switching
+*** P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4
+*** Building socket-aware BPF programs
+*** BPF Host Network Resource Management
+
+
+*** XDP/eBPF unrelated talks:
+
+Experiences Evaluating DC-TCP
+
+Scaling Linux bridge forwarding database
+
+ERSPAN Support for Linux
+
+This talk is not about XDP: From Resource Limits to SKB Lists.
+
+Optimizing UDP for content delivery with GSO, pacing and zerocopy.
+
+Linux SCTP is catching up and going above!
+
+What's happened to the world of networking hardware offloads?
+
+TC SW datapath: a performance analysis
+
+PHYlink and SFP: Going beyond 1G Copper PHYs
+
+
+* Slides
+
+Story:
+ - XDP is a system under active (evolutionary) development.
+ - Talk will look at Key missing features, and current challenges
+ - Purpose soliciting feedback and ideas from the community
+
+
+Overview:
+ - Frame what is XDP
+   Keep it very short, if possible 1-slide.
+   Inspirational: New programmable layer in network stack
+
+ - History, young frame work, under active development
+
+ - Have seen real prod use-cases
+   Mention: 2x facebook talks
+
+ - (Key missing features, and current challenges)
+
+ - Mix in other talks...
+
+ - Usability concerns.
+
+ - Areas that need more work
+
+ - New crazy moonshot ideas
+
+
+** Slide: New XDP features and performance requirement
+
+Slide with guideing principle: Adding features must not negativly
+affect baseline XDP performance.  Use optimization technique of moving
+runtime checks to setup time checks.
