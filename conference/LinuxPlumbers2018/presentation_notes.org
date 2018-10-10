@@ -151,16 +151,20 @@ own that to get feedback.
  - Topic: (Usability related) Driver Support
 
    Issue that not all drivers support all features, but userspace
-   cannot query what a driven driver support.
+   cannot query what a given driver supports.  If a driver
+   e.g. doesn't support XDP_REDIRECT, then it can only be detected
+   "runtime" by observing a WARN_ONCE kernel log message and
+   afterwards packets are silently dropped (can be debugged via
+   tracepoints).
 
  - Topic: Move SKB allocation out of driver
 
    The long term goal is moving SKB allocations out of driver code.
-   This is already done for CPU-map and redirect into tun-driver.
+   This is already done for CPU-map and redirects into tun-driver.
    Working towards generalizing this.
 
    Missing part are howto transfer the different driver offloads
-   (e.g. csum-info, rxhash, HW-mark), in a vendor neutral and generic
+   (e.g. csum-info, rxhash, HW-mark) in a vendor neutral and generic
    way.  This depends/waits on metadata talk, for this to be generic
    enough.
 
