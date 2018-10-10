@@ -103,7 +103,8 @@ PHYlink and SFP: Going beyond 1G Copper PHYs
 
 * Slides
 
-Story:
+** Story baseline
+
  - Introduce XDP-paper.
 
    We wrote XDP-paper, that doc XDP architecture, and do head-to-head
@@ -122,27 +123,86 @@ Story:
    selected some XDP topics that we wish to soliciting feedback om
    from this community.
 
+*IDEA* for organizing presentation:
+
+The presentation will be organized around a number of XDP-topics.  We
+cannot bring-up all topics, but have selected some.  To introduce
+other talks, their topics have to be included. Also have some of our
+own that to get feedback.
 
 
-Overview:
- - Frame what is XDP
-   Keep it very short, if possible 1-slide.
-   Inspirational: New programmable layer in network stack
+** Topics (also need to covering other talks):
 
- - History, young frame work, under active development
+ - Topic: Zero-copy to userspace AF_XDP
 
- - Have seen real prod use-cases
-   Mention: 2x facebook talks
+   Ref two AF_XDP Talks.
 
- - (Key missing features, and current challenges)
+   Pitch: XDP have been focused on keeping packet handling and
+   processing in kernel space, via leveraging eBPF.
 
- - Mix in other talks...
+   AF_XDP is about moving packet handling into userspace.  The key
+   point for integrating this with XDP redirect is flexibility.  We
+   want to avoid NIC hardware being taken over by the zero-copy
+   facility.  Want to avoid the all-or-nothing proposition like we
+   have seen with DPDK.
 
- - Usability concerns.
+ - Topic: Usability: User Experience and Debugging
 
- - Areas that need more work
+ - Topic: (Usability related) Driver Support
 
- - New crazy moonshot ideas
+   Issue that not all drivers support all features, but userspace
+   cannot query what a driven driver support.
+
+ - Topic: Move SKB allocation out of driver
+
+   The long term goal is moving SKB allocations out of driver code.
+   This is already done for CPU-map and redirect into tun-driver.
+   Working towards generalizing this.
+
+   Missing part are howto transfer the different driver offloads
+   (e.g. csum-info, rxhash, HW-mark), in a vendor neutral and generic
+   way.  This depends/waits on metadata talk, for this to be generic
+   enough.
+
+ - Topic: QoS and Rate Transitions
+
+ - Topic: Accelerating Transport Protocols
+
+   E.g. it should be possible to do delivery into TCP sockets, and
+   hand-over the packet-page (without first allocating an SKB).
+
+   Talk: "Building socket-aware BPF programs" is part of this work.
+
+ - Topic: Decouple XDP_REDIRECT from ndo_xdp_xmit
+
+
+ - Topic (maybe skip): eBPF verifier
+
+   All the discussions about extending the eBPF verifier, should be
+   move to the eBPF-mini-conf.
+
+ - Topic (maybe skip): XDP as a building block
+
+   If it is not clear to people, explain that XDP is core kernel
+   facility, that other Open Source projects need to pickup, use and
+   innovate on-top of.
+
+
+
+** Slide: What is XDP
+
+Frame what is XDP.
+
+Keep it very short, if possible 1-slide.  This is mostly for people
+finding this slide deck, or LPC people that don't know that XDP is.
+
+Be inspirational: New programmable layer in network stack
+
+** Slide: Production use-cases
+
+Have seen real prod use-cases
+
+Mention: 2x facebook talks
 
 
 ** Slide: New XDP features and performance requirement
