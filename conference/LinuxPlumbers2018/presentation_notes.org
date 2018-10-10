@@ -104,9 +104,24 @@ PHYlink and SFP: Going beyond 1G Copper PHYs
 * Slides
 
 Story:
- - XDP is a system under active (evolutionary) development.
- - Talk will look at Key missing features, and current challenges
+ - Introduce XDP-paper.
+
+   We wrote XDP-paper, that doc XDP architecture, and do head-to-head
+   comparison against DPDK.
+
+ - This talk is focused on "Limitation and Future Work".
+
+   We are fortunate that other people have already started to work on
+   "future work" items, and are even being covered and presented at
+   this conf.  We will mention these areas and defer the details and
+   discussion to these talks.
+
  - Purpose soliciting feedback and ideas from the community
+
+   Besides referencing the topics covered in other talks, we have also
+   selected some XDP topics that we wish to soliciting feedback om
+   from this community.
+
 
 
 Overview:
