@@ -67,14 +67,16 @@ Thus, part of the structure will be given by other XDP talks.
 
 ** Other XDP and eBPF related talks:
 
+When below are marked DONE, this means a slide mention it.
+
 *** (Our-talk) XDP - challenges and future work
 *** Leveraging Kernel Tables with XDP
 *** XDP acceleration using NIC metadata, continued
 *** (AF_XDP) Bringing the Power of eBPF to Open vSwitch
 *** (AF_XDP) The Path to DPDK Speeds for AF_XDP
 *** Combining kTLS and BPF for Introspection and Policy Enforcement
-*** (facebook) XDP 1.5 years in production. Evolution and lessons learned.
-*** (facebook) eBPF / XDP based firewall and packet filtering
+*** DONE (facebook) XDP 1.5 years in production. Evolution and lessons learned.
+*** DONE (facebook) eBPF / XDP based firewall and packet filtering
 *** Using eBPF as an abstraction for switching
 *** P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4
 *** Building socket-aware BPF programs
@@ -217,6 +219,8 @@ topics have to be included. Also have some of our own that to get feedback.
    We wrote XDP-paper, that doc XDP architecture, and do head-to-head comparison
    against DPDK.
 
+   Conf: ACM CoNEXT 2018 Greece
+
  - This talk is focused on "Limitation and Future Work".
 
    We are fortunate that other people have already started to work on "future
@@ -237,18 +241,29 @@ Be inspirational: New programmable layer in network stack
 Keep it very short, if possible 1-slide.  This is mostly for people finding this
 slide deck, or LPC people that don't know that XDP is.
 
+** Slide: XDP is a huge success
+
+XDP is maturing in upstream kernels
+ - Still under active development
+
+Very popular topic at this LPC network-track miniconf
+ - 11 talks XDP (or BPF) related!
+
 ** Slide: Production use-cases
 
-
-
-Have seen real prod use-cases
-
-Mention: 2x facebook talks
-
-Mention: CloudFlare publically say they use XDP
-
+XDP have seen production use
+ - CloudFlare publically say they use XDP
+ - Suricata have XDP plugins
+ - Other talks will cover this:
+ - (facebook) XDP 1.5 years in production. Evolution and lessons learned
+ - (facebook) eBPF / XDP based firewall and packet filtering
 
 ** Slide: New XDP features and performance requirement
+
+XDP is all about performance
+ - Watchout that feature creep doesn't kill performance!
+
+
 
 Slide with guideing principle: Adding features must not negativly affect
 baseline XDP performance.  Use optimization technique of moving runtime checks
