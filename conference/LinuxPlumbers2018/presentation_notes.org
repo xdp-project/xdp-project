@@ -146,6 +146,10 @@ own that to get feedback.
    afterwards packets are silently dropped (can be debugged via
    tracepoints).
 
+   The issue was seen with Suricata, and they want some kind of way to
+   know what XDP features are avail.  This is needed to reject or
+   change behavior when parsing the suricata setup file.
+
 ** Topic: (Usability related) XDP_REDIRECT entangled with ndo_xdp_xmit.
 
    This mostly technical, but also related to usability.
