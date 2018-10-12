@@ -157,11 +157,28 @@ own that to get feedback.
    afterwards packets are silently dropped (can be debugged via
    tracepoints).
 
+*** Topic: (Usability related) XDP_REDIRECT entangled with ndo_xdp_xmit.
+
+   This mostly technical, but also related to usability.
+
+   Upstream sees XDP_REDIRECT driver support related to also
+   supporting ndo_xdp_xmit.  IHMO these two functions are actually
+   separate.  The XDP_REDIRECT action can be used completely without
+   ndo_xdp_xmit, e.g for CPU-map redirect.
+
+   The problem of enabling ndo_xdp_xmit on a driver is the HW
+   resources it consumes, and the user might not even need the
+   feature.  XDP-core assumes NIC driver allocates one dedicated
+   TX-queue per CPU core in the system.  This is wasting HW resources,
+   and might not even be possible on systems with many CPU cores.
+
 *** Topic: Move SKB allocation out of driver
 
    The long term goal is moving SKB allocations out of driver code.
-   This is already done for CPU-map and redirects into tun-driver.
-   Working towards generalizing this.
+
+   This is already supported by all drivers implementing XDP_REDIRECT,
+   as CPU-map and redirects into tun-driver, create the SKB later
+   based on the xdp_frame.  Working towards generalizing this.
 
    Missing part are howto transfer the different driver offloads
    (e.g. csum-info, rxhash, HW-mark) in a vendor neutral and generic
@@ -192,7 +209,6 @@ own that to get feedback.
    innovate on-top of.
 
 *** Topic: NIC memory models and DMA mapping
-
 
 *** Topic: ARM and XDP support
 
