@@ -72,15 +72,15 @@ When below are marked DONE, this means a slide mention it.
 *** (Our-talk) XDP - challenges and future work
 *** Leveraging Kernel Tables with XDP
 *** XDP acceleration using NIC metadata, continued
-*** (AF_XDP) Bringing the Power of eBPF to Open vSwitch
-*** (AF_XDP) The Path to DPDK Speeds for AF_XDP
-*** Combining kTLS and BPF for Introspection and Policy Enforcement
+*** DONE (AF_XDP) Bringing the Power of eBPF to Open vSwitch
+*** DONE (AF_XDP) The Path to DPDK Speeds for AF_XDP
 *** DONE (facebook) XDP 1.5 years in production. Evolution and lessons learned.
 *** DONE (facebook) eBPF / XDP based firewall and packet filtering
 *** Using eBPF as an abstraction for switching
 *** P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4
 *** Building socket-aware BPF programs
 *** BPF Host Network Resource Management
+*** Combining kTLS and BPF for Introspection and Policy Enforcement
 
 
 *** XDP/eBPF unrelated talks:
@@ -112,19 +112,16 @@ The presentation will be organized around a number of XDP-topics.  We cannot
 bring-up all topics, but have selected some.  To introduce other talks, their
 topics have to be included. Also have some of our own that to get feedback.
 
-The "Topic:" notation will be transition slide, and the "Slide:" notation will
-be actual slides.  The "Topic:" notes describe more about the topic, this text
-could be used on the paper.
+The "Topic:" notation will be transition slide (or none), and the "Slide:"
+notation will be actual slides.  The "Topic:" notes describe more about the
+topic, this text could be used in the paper.
 
-
-** (Story baseline) Slide: XDP-paper
+** Topic: Story baseline
 
  - Introduce XDP-paper.
 
    We wrote XDP-paper, that doc XDP architecture, and do head-to-head comparison
    against DPDK.
-
-   Conf: ACM CoNEXT 2018 Greece
 
  - This talk is focused on "Limitation and Future Work".
 
@@ -136,6 +133,15 @@ could be used on the paper.
 
    Besides referencing the topics covered in other talks, we have also selected
    some XDP topics that we wish to soliciting feedback om from this community.
+
+** Slide: XDP-paper
+
+Scientific XDP paper accepted
+ - Title: "The eXpress Data Path: Fast Programmable Packet Processing in the Operating System Kernel"
+ - Conference: ACM CoNEXT 2018 Greece
+
+This talk focused: "Limitation and Future Work"
+ - Purpose soliciting feedback and ideas from the community
 
 ** Topic: Zero-copy to userspace AF_XDP
 
@@ -161,8 +167,21 @@ could be used on the paper.
    On the TX-side AF_XDP does have a syscall, but userspace can fill
    several TX buffers into TX ring before calling the sendmsg syscall.
 
-** Topic: Usability: User Experience and Debugging
+** Slide: Zero-copy to userspace AF_XDP
 
+XDP usual performance benefit comes from (early) in-kernel processing via BPF
+
+AF_XDP is for faster raw packet delivery into userspace
+ - Hooking into XDP, provides packet filter flexibility
+ - Performance trick: Preallocated userspace memory, getting fill by kernel
+ - Unlike tcpdump, as it owns/steals the packet
+   * Might want to invent/allow a copy and XDP_PASS mode.
+
+Two talks about AF_XDP on schedule:
+ - (AF_XDP) The Path to DPDK Speeds for AF_XDP
+ - (AF_XDP) Bringing the Power of eBPF to Open vSwitch
+
+** Topic: Usability: User Experience and Debugging
 ** Topic: (Usability related) Driver Support
 
    Issue that not all drivers support all features, but userspace cannot query
