@@ -115,13 +115,25 @@ own that to get feedback.
    Ref two AF_XDP Talks.
 
    Pitch: XDP have been focused on keeping packet handling and
-   processing in kernel space, via leveraging eBPF.
+   processing in kernel space, via leveraging eBPF.  To avoid the
+   overhead of syscalls, context switch and packet copies.
 
    AF_XDP is about moving packet handling into userspace.  The key
    point for integrating this with XDP redirect is flexibility.  We
    want to avoid NIC hardware being taken over by the zero-copy
    facility.  Want to avoid the all-or-nothing proposition like we
    have seen with DPDK.
+
+   AF_XDP avoids the overhead by establishing SPSC queues as
+   communication channels to userspace.  The copy is avoided by
+   userspace alloacting and gifting/providing kernel with this memory,
+   which is used directly for RX DMA delivery.
+
+   The AF_XDP socket is woken-up like a regular socket, but for
+   high-performance userspace can poll the socket.
+
+   On the TX-side AF_XDP does have a syscall, but userspace can fill
+   several TX buffers into TX ring before calling the sendmsg syscall.
 
 ** Topic: Usability: User Experience and Debugging
 
