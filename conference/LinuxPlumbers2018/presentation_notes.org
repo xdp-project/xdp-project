@@ -71,7 +71,7 @@ When below are marked DONE, this means a slide mention it.
 
 *** (Our-talk) XDP - challenges and future work
 *** Leveraging Kernel Tables with XDP
-*** XDP acceleration using NIC metadata, continued
+*** DONE XDP acceleration using NIC metadata, continued
 *** DONE (AF_XDP) Bringing the Power of eBPF to Open vSwitch
 *** DONE (AF_XDP) The Path to DPDK Speeds for AF_XDP
 *** DONE (facebook) XDP 1.5 years in production. Evolution and lessons learned.
@@ -221,6 +221,21 @@ Two talks about AF_XDP on schedule:
    Missing part are howto transfer the different driver offloads
    (e.g. csum-info, rxhash, HW-mark) in a vendor neutral and generic way.  This
    depends/waits on metadata talk, for this to be generic enough.
+
+** Slide: Move SKB allocation out of driver
+
+Long term goal:
+ - Write NIC driver(s) without SKB allocations
+
+Not alloc SKB in driver at RX: Is supported today via XDP_REDIRECT
+ - Via redirect into CPU-map and into tun-driver
+
+Missing part: driver offloads (e.g. csum-info, rxhash, HW-mark)
+ - Depends/waits on metadata, in a vendor neutral way
+ - Notice how core-netstack need to understand metadata BTF struct
+
+Hope this will be resolved covered in talk:
+ - Talk: "XDP acceleration using NIC metadata, continued"
 
 ** Topic: Usability: User Experience and Debugging
 ** Topic: (Usability related) Driver Support
