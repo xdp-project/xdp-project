@@ -143,6 +143,35 @@ Scientific XDP paper accepted
 This talk focused: "Limitation and Future Work"
  - Purpose soliciting feedback and ideas from the community
 
+** Slide: What is XDP
+
+Frame what is XDP.
+
+Be inspirational: New programmable layer in network stack
+
+Keep it very short, if possible 1-slide.  This is mostly for people finding this
+slide deck, or LPC people that don't know that XDP is.
+
+** Slide: XDP is a huge success
+
+XDP is maturing in upstream kernels
+ - Still under active development
+
+Very popular topic at this LPC network-track miniconf
+ - 11 talks XDP (or BPF) related!
+
+** Slide: Production use-cases
+
+(Can people actually use this in production?)
+
+XDP have seen production use
+ - CloudFlare publically say they use XDP
+ - Suricata have XDP plugins
+
+Other talks will cover this:
+ - (facebook) XDP 1.5 years in production. Evolution and lessons learned
+ - (facebook) eBPF / XDP based firewall and packet filtering
+
 ** Topic: Zero-copy to userspace AF_XDP
 
    Ref two AF_XDP Talks.
@@ -181,6 +210,18 @@ Two talks about AF_XDP on schedule:
  - (AF_XDP) The Path to DPDK Speeds for AF_XDP
  - (AF_XDP) Bringing the Power of eBPF to Open vSwitch
 
+** Topic: Move SKB allocation out of driver
+
+   The long term goal is moving SKB allocations out of driver code.
+
+   This is already supported by all drivers implementing XDP_REDIRECT, as
+   CPU-map and redirects into tun-driver, create the SKB later based on the
+   xdp_frame.  Working towards generalizing this.
+
+   Missing part are howto transfer the different driver offloads
+   (e.g. csum-info, rxhash, HW-mark) in a vendor neutral and generic way.  This
+   depends/waits on metadata talk, for this to be generic enough.
+
 ** Topic: Usability: User Experience and Debugging
 ** Topic: (Usability related) Driver Support
 
@@ -213,18 +254,6 @@ Two talks about AF_XDP on schedule:
    E.g. it was discovered the ixgbe cannot be used on systems with more than 96
    CPU cores.
 
-** Topic: Move SKB allocation out of driver
-
-   The long term goal is moving SKB allocations out of driver code.
-
-   This is already supported by all drivers implementing XDP_REDIRECT, as
-   CPU-map and redirects into tun-driver, create the SKB later based on the
-   xdp_frame.  Working towards generalizing this.
-
-   Missing part are howto transfer the different driver offloads
-   (e.g. csum-info, rxhash, HW-mark) in a vendor neutral and generic way.  This
-   depends/waits on metadata talk, for this to be generic enough.
-
 ** Topic: QoS and Rate Transitions
 
 ** Topic: Accelerating Transport Protocols
@@ -251,32 +280,6 @@ Two talks about AF_XDP on schedule:
    Does Bulk xdp_frame_return fit here?
 
 ** Topic: ARM and XDP support
-
-** Slide: What is XDP
-
-Frame what is XDP.
-
-Be inspirational: New programmable layer in network stack
-
-Keep it very short, if possible 1-slide.  This is mostly for people finding this
-slide deck, or LPC people that don't know that XDP is.
-
-** Slide: XDP is a huge success
-
-XDP is maturing in upstream kernels
- - Still under active development
-
-Very popular topic at this LPC network-track miniconf
- - 11 talks XDP (or BPF) related!
-
-** Slide: Production use-cases
-
-XDP have seen production use
- - CloudFlare publically say they use XDP
- - Suricata have XDP plugins
- - Other talks will cover this:
- - (facebook) XDP 1.5 years in production. Evolution and lessons learned
- - (facebook) eBPF / XDP based firewall and packet filtering
 
 ** Slide: New XDP features and performance requirement
 
