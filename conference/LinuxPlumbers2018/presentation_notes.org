@@ -101,7 +101,7 @@ TC SW datapath: a performance analysis
 PHYlink and SFP: Going beyond 1G Copper PHYs
 
 
-** Topics (also need to covering other talks):
+* Topics (also need to covering other talks)
 
 *IDEA* for organizing presentation:
 
@@ -110,7 +110,7 @@ cannot bring-up all topics, but have selected some.  To introduce
 other talks, their topics have to be included. Also have some of our
 own that to get feedback.
 
-*** Topic: Zero-copy to userspace AF_XDP
+** Topic: Zero-copy to userspace AF_XDP
 
    Ref two AF_XDP Talks.
 
@@ -123,9 +123,9 @@ own that to get feedback.
    facility.  Want to avoid the all-or-nothing proposition like we
    have seen with DPDK.
 
-*** Topic: Usability: User Experience and Debugging
+** Topic: Usability: User Experience and Debugging
 
-*** Topic: (Usability related) Driver Support
+** Topic: (Usability related) Driver Support
 
    Issue that not all drivers support all features, but userspace
    cannot query what a given driver supports.  If a driver
@@ -134,7 +134,7 @@ own that to get feedback.
    afterwards packets are silently dropped (can be debugged via
    tracepoints).
 
-*** Topic: (Usability related) XDP_REDIRECT entangled with ndo_xdp_xmit.
+** Topic: (Usability related) XDP_REDIRECT entangled with ndo_xdp_xmit.
 
    This mostly technical, but also related to usability.
 
@@ -152,7 +152,7 @@ own that to get feedback.
    E.g. it was discovered the ixgbe cannot be used on systems with
    more than 96 CPU cores.
 
-*** Topic: Move SKB allocation out of driver
+** Topic: Move SKB allocation out of driver
 
    The long term goal is moving SKB allocations out of driver code.
 
@@ -165,9 +165,9 @@ own that to get feedback.
    way.  This depends/waits on metadata talk, for this to be generic
    enough.
 
-*** Topic: QoS and Rate Transitions
+** Topic: QoS and Rate Transitions
 
-*** Topic: Accelerating Transport Protocols
+** Topic: Accelerating Transport Protocols
 
    E.g. it should be possible to do delivery into TCP sockets, and
    hand-over the packet-page (without first allocating an SKB).
@@ -177,20 +177,20 @@ own that to get feedback.
  - Topic: Decouple XDP_REDIRECT from ndo_xdp_xmit
 
 
-*** Topic (maybe skip): eBPF verifier
+** Topic (maybe skip): eBPF verifier
 
    All the discussions about extending the eBPF verifier, should be
    move to the eBPF-mini-conf.
 
-*** Topic (maybe skip): XDP as a building block
+** Topic (maybe skip): XDP as a building block
 
    If it is not clear to people, explain that XDP is core kernel
    facility, that other Open Source projects need to pickup, use and
    innovate on-top of.
 
-*** Topic: NIC memory models and DMA mapping
+** Topic: NIC memory models and DMA mapping
 
-*** Topic: ARM and XDP support
+** Topic: ARM and XDP support
 
 
 
