@@ -172,6 +172,9 @@ own that to get feedback.
    TX-queue per CPU core in the system.  This is wasting HW resources,
    and might not even be possible on systems with many CPU cores.
 
+   E.g. it was discovered the ixgbe cannot be used on systems with
+   more than 96 CPU cores.
+
 *** Topic: Move SKB allocation out of driver
 
    The long term goal is moving SKB allocations out of driver code.
