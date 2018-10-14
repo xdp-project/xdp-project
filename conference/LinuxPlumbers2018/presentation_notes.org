@@ -303,11 +303,6 @@ releases, where only 3 HW-drivers have implemented XDP_REDIRECT.
    Ref-Talk: "Building socket-aware BPF programs" is part of this
    work.
 
-** Topic (maybe skip): eBPF verifier
-
-   All the discussions about extending the eBPF verifier, should be
-   move to the eBPF-mini-conf.
-
 ** Topic (maybe skip): XDP as a building block
 
    If it is not clear to people, explain that XDP is core kernel
@@ -331,3 +326,8 @@ XDP is all about performance
 Slide with guideing principle: Adding features must not negativly affect
 baseline XDP performance.  Use optimization technique of moving runtime checks
 to setup time checks.
+
+** Topic (maybe skip): eBPF verifier
+
+   All the discussions about extending the eBPF verifier, should be
+   move to the eBPF-mini-conf.
