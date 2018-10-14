@@ -160,7 +160,6 @@ XDP is maturing in upstream kernels
 Very popular topic at this LPC network-track miniconf
  - 11 talks XDP (or BPF) related!
 
-
 ** Slide: Production use-cases
 
 (Can people actually use this in production?)
@@ -189,16 +188,22 @@ XDP is all about performance
 Guiding principle: New features must not negatively affect baseline XDP perf
  - Optimization hint: move runtime checks to setup time
 
-** Slide (maybe skip): Jumbo-frames
+** Slide/topic (maybe skip): Jumbo-frames
 
-People in XDP-newbies list request jumbo-frames.
+(Topic text) People in XDP-newbies list request jumbo-frames. They don't seem
+to understand to support high-speed packet processing, we cannot support this
+feature.  Besides killing performance, jumbo-frames will also make it more
+difficult to move-SKB-alloc out of drivers.
 
-They don't seem to understand to support high-speed packet processing, we
-cannot support this feature.
+Understand: RX-ring cannot know packet length, must have room for MTU
+ - XDP requires packet mapped in physical continuous memory
+   (Due to eBPF mem direct-access, safety via verifier)
+ - Alloc above 4K, more expensive (higher-order pages)
 
-Besides killing performance, jumbo-frames will also make it more difficult to
-move-SKB-alloc out of drivers.
-
+Hybrid solution: Only grant XDP access to top 4K
+ - Above 4K can be in other pages
+ - This will kill, moving SKB allocations out of driver plan
+   (makes it complicated and thus affect performance)
 
 ** Topic: Zero-copy to userspace AF_XDP
 
@@ -207,6 +212,11 @@ move-SKB-alloc out of drivers.
    Pitch: XDP have been focused on keeping packet handling and processing in
    kernel space, via leveraging eBPF.  To avoid the overhead of syscalls,
    context switch and packet copies.
+
+Personal note: I always had plans for a fast-path from XDP into a userspace
+socket. (Discussed this public in G+ post with DaveM) I had imagined that the
+kernel would do the memory allocation, for RX-ring, and VMA map this into
+userspace.  AF_XDP goes the other way, and let userspace (pre) alloc.
 
    AF_XDP is about moving packet handling into userspace.  The key point for
    integrating this with XDP redirect is flexibility.  We want to avoid NIC
