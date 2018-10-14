@@ -238,6 +238,22 @@ Hope this will be resolved covered in talk:
  - Talk: "XDP acceleration using NIC metadata, continued"
 
 ** Topic: Usability: User Experience and Debugging
+
+Lots of small unexpected behavior, seen from normal users of XDP.
+
+E.g. The sample xdp_redirect_map show RX packets per sec, but people think this
+is TX packet per sec.  In case the redirect TX device does not support XDP,
+there is not immediate feedback, the packets are silently dropped (can be
+caught via tracepoint).  Thus, users observe increased PPS counter, when
+misconfig happens.
+
+This RX counting, seems natural as a XDP-core developer, as we know the eBPF
+program cannot know or measure was happens _after_ it have run (as it simply
+returns a verdict/action return code). For a user, it will be more natural to
+"see" TX-pps. So, we could monitor interface TX-stats, but that is also not
+possible, as some XDP-drivers don't account XDP-TX packets in the regular
+ifstat counters, which in itself is problematic.
+
 ** Topic: (Usability related) Driver Support
 
    Issue that not all drivers support all features, but userspace cannot query
@@ -250,6 +266,10 @@ Hope this will be resolved covered in talk:
    know what XDP features are avail.  This is needed to reject or
    change behavior when parsing the suricata setup file.
 
+Original goal of not exposing feature-bits to userspace, was to force full
+support for XDP in all drivers.  Is this goal still realistic, after X kernel
+releases, where only 3 HW-drivers have implemented XDP_REDIRECT.
+
 ** Topic: (Usability related) XDP_REDIRECT entangled with ndo_xdp_xmit.
 
    Decouple XDP_REDIRECT from ndo_xdp_xmit.
@@ -259,6 +279,10 @@ Hope this will be resolved covered in talk:
    ndo_xdp_xmit.  IHMO these two functions are actually separate.  The
    XDP_REDIRECT action can be used completely without ndo_xdp_xmit, e.g for
    CPU-map redirect.
+
+   Sample redirect code (currently) loads a dummy XDP program on the TX device,
+   in-order to enable ndo_xdp_xmit, as enabling ndo_xdp_xmit requires the
+   driver to allocate extra HW TX-resources.
 
    The problem of enabling ndo_xdp_xmit on a driver is the HW resources it
    consumes, and the user might not even need the feature.  XDP-core assumes
@@ -290,6 +314,9 @@ Hope this will be resolved covered in talk:
    facility, that other Open Source projects need to pickup, use and
    innovate on-top of.
 
+   Can ref P4-XDP talk here, mention that using P4 is seen as a userspace
+   layer.
+
 ** Topic: NIC memory models and DMA mapping
 
    Does Bulk xdp_frame_return fit here?
@@ -300,8 +327,6 @@ Hope this will be resolved covered in talk:
 
 XDP is all about performance
  - Watchout that feature creep doesn't kill performance!
-
-
 
 Slide with guideing principle: Adding features must not negativly affect
 baseline XDP performance.  Use optimization technique of moving runtime checks
