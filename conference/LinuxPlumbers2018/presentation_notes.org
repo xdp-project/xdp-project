@@ -312,6 +312,15 @@ releases, where only 3 HW-drivers have implemented XDP_REDIRECT.
    Can ref P4-XDP talk here, mention that using P4 is seen as a userspace
    layer.
 
+XDP will hopefully be used for faster delivery into Guest-OS.  The best and
+fastest abstraction into KVM is still not determined.  The tuntap driver
+already implemented ndo_xdp_xmit, which allows XDP_REDIRECT into XXX (TODO is
+it virtio_net or vhost_net???), bypassing the Host-OS skb-alloc, while still
+performing one copy.  Other options might be to leverage AF_XDP to register
+Guest-OS memory with the XDP based NIC driver, which would allow zero-copy RX
+into the Guest-OS.
+
+
 ** Topic: NIC memory models and DMA mapping
 
    Does Bulk xdp_frame_return fit here?
@@ -331,3 +340,16 @@ to setup time checks.
 
    All the discussions about extending the eBPF verifier, should be
    move to the eBPF-mini-conf.
+
+** Topic (maybe skip): Jumbo-frames
+
+People in XDP-newbies list request jumbo-frames.
+
+They don't seem to understand to support high-speed packet processing, we
+cannot support this feature.
+
+Besides killing performance, jumbo-frames will also make it more difficult to
+move-SKB-alloc out of drivers.
+
+
+* Notes
