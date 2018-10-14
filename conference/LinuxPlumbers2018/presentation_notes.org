@@ -160,6 +160,7 @@ XDP is maturing in upstream kernels
 Very popular topic at this LPC network-track miniconf
  - 11 talks XDP (or BPF) related!
 
+
 ** Slide: Production use-cases
 
 (Can people actually use this in production?)
@@ -171,6 +172,33 @@ XDP have seen production use
 Other talks will cover this:
  - (facebook) XDP 1.5 years in production. Evolution and lessons learned
  - (facebook) eBPF / XDP based firewall and packet filtering
+
+** Topic: Performance
+
+XDP is all about performance, don't screw it up!
+
+Guiding principle: Adding features must not negatively affect baseline XDP
+performance.  Use optimization technique of moving runtime checks to setup time
+checks.
+
+** Slide: New XDP features and performance requirement
+
+XDP is all about performance
+ - Watch-out that feature creep doesn't kill performance!
+
+Guiding principle: New features must not negatively affect baseline XDP perf
+ - Optimization hint: move runtime checks to setup time
+
+** Slide (maybe skip): Jumbo-frames
+
+People in XDP-newbies list request jumbo-frames.
+
+They don't seem to understand to support high-speed packet processing, we
+cannot support this feature.
+
+Besides killing performance, jumbo-frames will also make it more difficult to
+move-SKB-alloc out of drivers.
+
 
 ** Topic: Zero-copy to userspace AF_XDP
 
@@ -325,29 +353,10 @@ into the Guest-OS.
 
    Does Bulk xdp_frame_return fit here?
 
-** Slide: New XDP features and performance requirement
-
-XDP is all about performance
- - Watchout that feature creep doesn't kill performance!
-
-Slide with guideing principle: Adding features must not negativly affect
-baseline XDP performance.  Use optimization technique of moving runtime checks
-to setup time checks.
-
 ** Topic (maybe skip): eBPF verifier
 
    All the discussions about extending the eBPF verifier, should be
    move to the eBPF-mini-conf.
-
-** Topic (maybe skip): Jumbo-frames
-
-People in XDP-newbies list request jumbo-frames.
-
-They don't seem to understand to support high-speed packet processing, we
-cannot support this feature.
-
-Besides killing performance, jumbo-frames will also make it more difficult to
-move-SKB-alloc out of drivers.
 
 ** Topic (maybe skip): ARM and XDP support
 
