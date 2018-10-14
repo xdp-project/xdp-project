@@ -325,8 +325,6 @@ into the Guest-OS.
 
    Does Bulk xdp_frame_return fit here?
 
-** Topic: ARM and XDP support
-
 ** Slide: New XDP features and performance requirement
 
 XDP is all about performance
@@ -350,6 +348,14 @@ cannot support this feature.
 
 Besides killing performance, jumbo-frames will also make it more difficult to
 move-SKB-alloc out of drivers.
+
+** Topic (maybe skip): ARM and XDP support
+
+We need to make sure, our XDP optimizations does not become too Intel specific.
+
+I have bought a MacchiatoBin ARM64-board, that I plan to developed XDP for.
+(Got cross-compiler and upstream kernel working, found DMA-bounce buffer
+issues, that I need to upstream fix for)
 
 
 * Notes
