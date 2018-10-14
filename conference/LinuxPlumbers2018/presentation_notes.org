@@ -270,7 +270,8 @@ Not alloc SKB in driver at RX: Is supported today via XDP_REDIRECT
 
 Missing part: driver offloads (e.g. csum-info, rxhash, HW-mark)
  - Depends/waits on metadata, in a vendor neutral way
- - Notice how core-netstack need to understand metadata BTF struct
+ - We (also) need core-netstack need to understand metadata BTF struct
+   - Not just BPF progs
 
 Hope this will be resolved covered in talk:
  - Talk: "XDP acceleration using NIC metadata, continued"
@@ -302,7 +303,7 @@ ifstat counters, which in itself is problematic.
 
    The issue was seen with Suricata, and they want some kind of way to
    know what XDP features are avail.  This is needed to reject or
-   change behavior when parsing the suricata setup file.
+   change behavior when parsing the Suricata setup file.
 
 Original goal of not exposing feature-bits to userspace, was to force full
 support for XDP in all drivers.  Is this goal still realistic, after X kernel
@@ -358,10 +359,22 @@ performing one copy.  Other options might be to leverage AF_XDP to register
 Guest-OS memory with the XDP based NIC driver, which would allow zero-copy RX
 into the Guest-OS.
 
-
 ** Topic: NIC memory models and DMA mapping
 
    Does Bulk xdp_frame_return fit here?
+
+** Slide: Spectra-V2: mitigation killed XDP performance
+
+   This is primary due to DMA-API, what uses indirect call to abstract.
+
+   For mlx5 driver, there is also issues with indirect functions pointer calls,
+   inside the driver itself.
+
+   For XDP there are a number of workarounds and performance optimizations for
+   the DMA slowdown.  The easiest solution is to amortized via bulking DMA API
+   calls.  The DMA APIs already have the scatter-gather API, which in-effect is
+   bulking.
+
 
 ** Topic (maybe skip): eBPF verifier
 
