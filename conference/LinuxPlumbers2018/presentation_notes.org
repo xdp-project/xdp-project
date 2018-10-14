@@ -375,6 +375,15 @@ into the Guest-OS.
    calls.  The DMA APIs already have the scatter-gather API, which in-effect is
    bulking.
 
+   During ndo_xdp_xmit(): Recently this changed to bulk API (curr bulk 16).
+   Today: does individual dma_map() for TX dev.  Would easily do bulk DMA
+   mapping.
+
+   Would it make sense to move redirect DMA mapping into redirect-core code?
+   Do drivers need control over the exact DMA-map call?  If not, the DMA-TX
+   addr could be stored in xdp_frame, then xdp_return_frame API could also
+   handle the DMA-unmap call.
+
 
 ** Topic (maybe skip): eBPF verifier
 
