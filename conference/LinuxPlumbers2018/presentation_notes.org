@@ -365,7 +365,8 @@ into the Guest-OS.
 
 ** Slide: Spectra-V2: mitigation killed XDP performance
 
-   This is primary due to DMA-API, what uses indirect call to abstract.
+   This is primary due to DMA-API, what uses indirect call to abstract
+   different DMA-engines.
 
    For mlx5 driver, there is also issues with indirect functions pointer calls,
    inside the driver itself.
@@ -375,14 +376,23 @@ into the Guest-OS.
    calls.  The DMA APIs already have the scatter-gather API, which in-effect is
    bulking.
 
-   During ndo_xdp_xmit(): Recently this changed to bulk API (curr bulk 16).
-   Today: does individual dma_map() for TX dev.  Would easily do bulk DMA
-   mapping.
+   Today most drivers already avoid repeated DMA map/unmap calls, by keeping
+   the DMA mapping intact, while processing the frame (e.g by normal netstack)
+   and if recycling works they don't need to unmap the frame. They instead does
+   the DMA-sync in appropriate places.
+
+   The page_pool API, want to generalize keeping the page DMA-mapped, such that
+   the driver doesn't have to do this.  No driver currently takes advantage of
+   this DMA pa-ge_pool feature.
+
+   During ndo_xdp_xmit(), today, individual frames need to be DMA-mapped for
+   the TX device.  Recently this changed to bulk API (curr bulk 16), which
+   would easily do bulk DMA mapping.
 
    Would it make sense to move redirect DMA mapping into redirect-core code?
-   Do drivers need control over the exact DMA-map call?  If not, the DMA-TX
-   addr could be stored in xdp_frame, then xdp_return_frame API could also
-   handle the DMA-unmap call.
+   Do drivers need fine control over the exact DMA-map call?  If not, the
+   DMA-TX addr could be stored in xdp_frame, then xdp_return_frame API could
+   also handle the DMA-unmap call.
 
 
 ** Topic (maybe skip): eBPF verifier
