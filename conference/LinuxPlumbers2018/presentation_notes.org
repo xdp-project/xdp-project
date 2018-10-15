@@ -331,7 +331,7 @@ Long term goal:
  - Write NIC driver(s) without SKB allocations
 
 Not alloc SKB in driver at RX: Is supported today via XDP_REDIRECT
- - Via redirect into CPU-map and into tun-driver
+ - Via redirect into CPU-map or tun-driver
 
 Missing part: driver offloads (e.g. csum-info, rxhash, HW-mark)
  - Depends/waits on metadata, in a vendor neutral way
