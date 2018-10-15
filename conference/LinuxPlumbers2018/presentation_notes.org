@@ -205,6 +205,33 @@ Hybrid solution: Only grant XDP access to top 4K
  - This will kill, moving SKB allocations out of driver plan
    (makes it complicated and thus affect performance)
 
+
+** Topic: Evolving XDP
+
+How we imagine XDP getting extended.
+
+We see XDP as a software offloading layer in the kernel network stack.
+
+IP-forwarding is a good example, as the Linux kernel and ecosystem have
+everything to become a L3 IP-router, with control-plane software like router
+daemons etc.  The forwarding performance is constrained due to software
+overhead, which is where XDP can help.  We want XDP work in-concert with this
+ecosystem.  This can best be achieved by eBPF helper functions that allow XDP
+to perform lookup in kernel tables, e.g. like the FIB lookup that was recently
+added (also covered in the XDP-paper).
+
+The topic and the FIB lookup is covered in David Ahern's talk:
+"Leveraging Kernel Tables with XDP"
+
+We want to encourage people to add these kind of helpers to XDP, when use-case
+arise.  It is possible to e.g. track the IP-route table and ARP table via
+monitoring RT-netlink messages, and maintain an on-the-side BPF maps that can
+influence XDP route decisions.  This is actually showed as an XDP samples/bpf
+program called xdp_router_ipv4, which was done before the FIB-lookup helper was
+added.  The performance advantage is very small, and only occurs when
+xdp_router_ipv4 sample hit an "exact_match" cache.
+
+
 ** Topic: Zero-copy to userspace AF_XDP
 
    Ref two AF_XDP Talks.
@@ -383,7 +410,7 @@ into the Guest-OS.
 
    The page_pool API, want to generalize keeping the page DMA-mapped, such that
    the driver doesn't have to do this.  No driver currently takes advantage of
-   this DMA pa-ge_pool feature.
+   this DMA page_pool feature.
 
    During ndo_xdp_xmit(), today, individual frames need to be DMA-mapped for
    the TX device.  Recently this changed to bulk API (curr bulk 16), which
@@ -393,7 +420,6 @@ into the Guest-OS.
    Do drivers need fine control over the exact DMA-map call?  If not, the
    DMA-TX addr could be stored in xdp_frame, then xdp_return_frame API could
    also handle the DMA-unmap call.
-
 
 ** Topic (maybe skip): eBPF verifier
 
