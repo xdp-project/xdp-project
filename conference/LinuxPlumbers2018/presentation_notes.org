@@ -449,6 +449,11 @@ Planned changes
  - Extend xdp_return_frame API with bulking, performance reasons
  - Keep pages DMA mapped in page_pool (almost supported)
 
+** Slide: DMA mapping
+
+More optimizations for DMA mapping needed
+ - Low priority, almost zero cost on Intel CPU
+ - Spectre-V2 mitigation makes DMA calls more expensive
 
 ** Topic: Spectre-V2: mitigation killed XDP performance
 
