@@ -258,9 +258,6 @@ performing one copy.  Other options might be to leverage AF_XDP to register
 Guest-OS memory with the XDP based NIC driver, which would allow zero-copy RX
 into the Guest-OS.
 
-   Can ref P4-XDP talk here, mention that using P4 is seen as a userspace
-   layer.
-
 The discussion of eBPF/XDP vs P4 often comes up. Our view is that of-cause you
 should be able to write a data-plane in domain-specific language like P4. And
 to use load this in a XDP hook, you need to write a new backend to your P4
