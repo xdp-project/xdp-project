@@ -180,8 +180,6 @@ Guiding principle: Adding features must not negatively affect baseline XDP
 performance.  Use optimization technique of moving runtime checks to setup time
 checks.
 
-
-
 ** Slide: New XDP features and performance requirement
 
 XDP is all about performance
@@ -231,6 +229,20 @@ influence XDP route decisions.  This is actually showed as an XDP samples/bpf
 program called xdp_router_ipv4, which was done before the FIB-lookup helper was
 added.  The performance advantage is very small, and only occurs when
 xdp_router_ipv4 sample hit an "exact_match" cache.
+
+** Slide: Evolving XDP via BPF-helpers
+
+XDP software offloading layer for kernel network stack
+ - Setup and use Linux kernel network stack
+ - But accelerate parts of it with XDP
+
+IP-routing good example of XDP acceleration
+ - Let Linux handle routing (deamons) and ARP-tables
+ - Access routing FIB table lookups from XDP via BPF helpers
+ - Encourage add helpers, instead of on-the-side BPF maps
+
+The topic and the FIB lookup is covered in David Ahern's talk:
+ "Leveraging Kernel Tables with XDP"
 
 ** Topic: XDP as a building block
 
