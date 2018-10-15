@@ -395,13 +395,12 @@ releases, where only 3 HW-drivers have implemented XDP_REDIRECT.
    E.g. it was discovered the ixgbe cannot be used on systems with more than 96
    CPU cores.
 
-** Topic: QoS and Rate Transitions
+** Topic: XDP egress hook (just before TX)
 
-Hope Toke have some ideas in this area.
+Can be used for:
 
-Read abstract from: "BPF Host Network Resource Management"
- http://vger.kernel.org/lpc-networking.html#session-21
-Sounds like they will somehow implement network shaping with BPF.
+- Reacting to TX ring status
+- Implementing QoS / AQM
 
 ** Topic: Accelerating Transport Protocols
 
