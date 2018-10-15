@@ -313,7 +313,8 @@ userspace.  AF_XDP goes the other way, and let userspace (pre) alloc.
 
 ** Slide: Zero-copy to userspace AF_XDP
 
-XDP usual performance benefit comes from (early) in-kernel processing via BPF
+XDP usual performance benefit comes from in-kernel processing via BPF
+ - (avoiding context switch to userspace)
 
 AF_XDP is for faster raw packet delivery into userspace
  - Hooking into XDP, provides packet filter flexibility
@@ -439,7 +440,9 @@ have been very Intel focused, the DMA overhead have seen much attention. The
 Spectre-V2 mitigation changed the picture. and will force us to address the DMA
 overhead issues due to the indirect call API.
 
-** Slide: Spectre-V2: mitigation killed XDP performance
+** Topic: Spectre-V2: mitigation killed XDP performance
+
+   (This is related to DMA mapping)
 
    This is primary due to DMA-API, what uses indirect call to abstract
    different DMA-engines.
