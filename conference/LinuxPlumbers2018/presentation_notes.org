@@ -391,11 +391,10 @@ resources to XDP-TX queues is flawed.  As the XDP user, might not want to use
 any redirect feature.  And even if using XDP_REDIRECT this could be CPU-map
 redirect, which does not need XDP-TX queues.
 
-The reason for only enable XDP-TX queues when really needed is that this
+The reason for only enabling XDP-TX queues when really needed is that this
 consumes HW resources.  Given the TX queue per CPU core assumption, this makes
 it problematic on systems with many CPU cores. E.g. it was discovered the ixgbe
 driver cannot load XDP on systems with more than 96 CPU cores.
-
 
 ** Topic: QoS and Rate Transitions
 
@@ -404,14 +403,6 @@ Hope Toke have some ideas in this area.
 Read abstract from: "BPF Host Network Resource Management"
  http://vger.kernel.org/lpc-networking.html#session-21
 Sounds like they will somehow implement network shaping with BPF.
-
-** Topic: Accelerating Transport Protocols
-
-   E.g. it should be possible to do delivery into TCP sockets, and
-   hand-over the packet-page (without first allocating an SKB).
-
-   Ref-Talk: "Building socket-aware BPF programs" is part of this
-   work.
 
 ** Topic: NIC memory models and DMA mapping
 
@@ -480,6 +471,13 @@ We need to make sure, our XDP optimizations does not become too Intel specific.
 I have bought a MacchiatoBin ARM64-board, that I plan to developed XDP for.
 (Got cross-compiler and upstream kernel working, found DMA-bounce buffer
 issues, that I need to upstream fix for)
+
+** Topic (maybe skip) : Accelerating Transport Protocols
+
+   E.g. it should be possible to do delivery into TCP sockets, and
+   hand-over the packet-page (without first allocating an SKB).
+
+   Ref-Talk: "Building socket-aware BPF programs" is part of this work.
 
 
 * Notes
