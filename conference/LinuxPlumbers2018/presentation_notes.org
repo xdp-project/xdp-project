@@ -408,23 +408,6 @@ Original goal of not exposing feature-bits to userspace, was to force full
 support for XDP in all drivers.  Is this goal still realistic, after X kernel
 releases, where only 3 HW-drivers have implemented XDP_REDIRECT.
 
-** Topic: Usability: User Experience and Debugging
-
-Lots of small unexpected behavior, seen from normal users of XDP.
-
-E.g. The sample xdp_redirect_map show RX packets per sec, but people think this
-is TX packet per sec.  In case the redirect TX device does not support XDP,
-there is not immediate feedback, the packets are silently dropped (can be
-caught via tracepoint).  Thus, users observe increased PPS counter, when
-misconfig happens.
-
-This RX counting, seems natural as a XDP-core developer, as we know the eBPF
-program cannot know or measure was happens _after_ it have run (as it simply
-returns a verdict/action return code). For a user, it will be more natural to
-"see" TX-pps. So, we could monitor interface TX-stats, but that is also not
-possible, as some XDP-drivers don't account XDP-TX packets in the regular
-ifstat counters, which in itself is problematic.
-
 ** Topic: XDP egress hook (just before TX)
 
 Can be used for:
@@ -488,6 +471,23 @@ overhead issues due to the indirect call API.
    Do drivers need fine control over the exact DMA-map call?  If not, the
    DMA-TX addr could be stored in xdp_frame, then xdp_return_frame API could
    also handle the DMA-unmap call.
+
+** Topic (maybe skip): Usability: User Experience and Debugging
+
+Lots of small unexpected behavior, seen from normal users of XDP.
+
+E.g. The sample xdp_redirect_map show RX packets per sec, but people think this
+is TX packet per sec.  In case the redirect TX device does not support XDP,
+there is not immediate feedback, the packets are silently dropped (can be
+caught via tracepoint).  Thus, users observe increased PPS counter, when
+misconfig happens.
+
+This RX counting, seems natural as a XDP-core developer, as we know the eBPF
+program cannot know or measure was happens _after_ it have run (as it simply
+returns a verdict/action return code). For a user, it will be more natural to
+"see" TX-pps. So, we could monitor interface TX-stats, but that is also not
+possible, as some XDP-drivers don't account XDP-TX packets in the regular
+ifstat counters, which in itself is problematic.
 
 ** Topic (maybe skip): eBPF verifier
 
