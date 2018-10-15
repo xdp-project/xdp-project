@@ -315,7 +315,9 @@ XDP usual performance benefit comes from in-kernel processing via BPF
 
 AF_XDP is for faster raw packet delivery into userspace
  - Hooking into XDP, provides packet filter flexibility
- - Performance trick: Preallocated userspace memory, getting fill by kernel
+ - Performance tricks:
+   - Preallocated userspace memory, getting fill by kernel
+   - NetChannel like SPSC queues between kernel and userspace
  - Unlike tcpdump, as it owns/steals the packet
    * Might want to invent/allow a copy and XDP_PASS mode.
 
