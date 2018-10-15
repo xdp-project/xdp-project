@@ -397,6 +397,12 @@ releases, where only 3 HW-drivers have implemented XDP_REDIRECT.
 
 ** Topic: QoS and Rate Transitions
 
+Hope Toke have some ideas in this area.
+
+Read abstract from: "BPF Host Network Resource Management"
+ http://vger.kernel.org/lpc-networking.html#session-21
+Sounds like they will somehow implement network shaping with BPF.
+
 ** Topic: Accelerating Transport Protocols
 
    E.g. it should be possible to do delivery into TCP sockets, and
