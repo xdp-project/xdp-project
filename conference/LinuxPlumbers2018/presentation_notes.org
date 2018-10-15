@@ -70,7 +70,7 @@ Thus, part of the structure will be given by other XDP talks.
 When below are marked DONE, this means a slide mention it.
 
 *** (Our-talk) XDP - challenges and future work
-*** Leveraging Kernel Tables with XDP
+*** DONE Leveraging Kernel Tables with XDP
 *** DONE XDP acceleration using NIC metadata, continued
 *** DONE (AF_XDP) Bringing the Power of eBPF to Open vSwitch
 *** DONE (AF_XDP) The Path to DPDK Speeds for AF_XDP
@@ -205,7 +205,6 @@ Hybrid solution: Only grant XDP access to top 4K
  - This will kill, moving SKB allocations out of driver plan
    (makes it complicated and thus affect performance)
 
-
 ** Topic: Evolving XDP
 
 How we imagine XDP getting extended.
@@ -230,7 +229,6 @@ influence XDP route decisions.  This is actually showed as an XDP samples/bpf
 program called xdp_router_ipv4, which was done before the FIB-lookup helper was
 added.  The performance advantage is very small, and only occurs when
 xdp_router_ipv4 sample hit an "exact_match" cache.
-
 
 ** Topic: Zero-copy to userspace AF_XDP
 
@@ -260,6 +258,23 @@ userspace.  AF_XDP goes the other way, and let userspace (pre) alloc.
 
    On the TX-side AF_XDP does have a syscall, but userspace can fill
    several TX buffers into TX ring before calling the sendmsg syscall.
+
+** Topic: XDP as a building block
+
+   If it is not clear to people, explain that XDP is core kernel
+   facility, that other Open Source projects need to pickup, use and
+   innovate on-top of.
+
+   Can ref P4-XDP talk here, mention that using P4 is seen as a userspace
+   layer.
+
+XDP will hopefully be used for faster delivery into Guest-OS.  The best and
+fastest abstraction into KVM is still not determined.  The tuntap driver
+already implemented ndo_xdp_xmit, which allows XDP_REDIRECT into XXX (TODO is
+it virtio_net or vhost_net???), bypassing the Host-OS skb-alloc, while still
+performing one copy.  Other options might be to leverage AF_XDP to register
+Guest-OS memory with the XDP based NIC driver, which would allow zero-copy RX
+into the Guest-OS.
 
 ** Slide: Zero-copy to userspace AF_XDP
 
@@ -368,23 +383,6 @@ releases, where only 3 HW-drivers have implemented XDP_REDIRECT.
 
    Ref-Talk: "Building socket-aware BPF programs" is part of this
    work.
-
-** Topic (maybe skip): XDP as a building block
-
-   If it is not clear to people, explain that XDP is core kernel
-   facility, that other Open Source projects need to pickup, use and
-   innovate on-top of.
-
-   Can ref P4-XDP talk here, mention that using P4 is seen as a userspace
-   layer.
-
-XDP will hopefully be used for faster delivery into Guest-OS.  The best and
-fastest abstraction into KVM is still not determined.  The tuntap driver
-already implemented ndo_xdp_xmit, which allows XDP_REDIRECT into XXX (TODO is
-it virtio_net or vhost_net???), bypassing the Host-OS skb-alloc, while still
-performing one copy.  Other options might be to leverage AF_XDP to register
-Guest-OS memory with the XDP based NIC driver, which would allow zero-copy RX
-into the Guest-OS.
 
 ** Topic: NIC memory models and DMA mapping
 
