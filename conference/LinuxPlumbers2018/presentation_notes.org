@@ -230,6 +230,23 @@ program called xdp_router_ipv4, which was done before the FIB-lookup helper was
 added.  The performance advantage is very small, and only occurs when
 xdp_router_ipv4 sample hit an "exact_match" cache.
 
+** Topic: XDP as a building block
+
+   If it is not clear to people, explain that XDP is core kernel
+   facility, that other Open Source projects need to pickup, use and
+   innovate on-top of.
+
+   Can ref P4-XDP talk here, mention that using P4 is seen as a userspace
+   layer.
+
+XDP will hopefully be used for faster delivery into Guest-OS.  The best and
+fastest abstraction into KVM is still not determined.  The tuntap driver
+already implemented ndo_xdp_xmit, which allows XDP_REDIRECT into XXX (TODO is
+it virtio_net or vhost_net???), bypassing the Host-OS skb-alloc, while still
+performing one copy.  Other options might be to leverage AF_XDP to register
+Guest-OS memory with the XDP based NIC driver, which would allow zero-copy RX
+into the Guest-OS.
+
 ** Topic: Zero-copy to userspace AF_XDP
 
    Ref two AF_XDP Talks.
@@ -258,23 +275,6 @@ userspace.  AF_XDP goes the other way, and let userspace (pre) alloc.
 
    On the TX-side AF_XDP does have a syscall, but userspace can fill
    several TX buffers into TX ring before calling the sendmsg syscall.
-
-** Topic: XDP as a building block
-
-   If it is not clear to people, explain that XDP is core kernel
-   facility, that other Open Source projects need to pickup, use and
-   innovate on-top of.
-
-   Can ref P4-XDP talk here, mention that using P4 is seen as a userspace
-   layer.
-
-XDP will hopefully be used for faster delivery into Guest-OS.  The best and
-fastest abstraction into KVM is still not determined.  The tuntap driver
-already implemented ndo_xdp_xmit, which allows XDP_REDIRECT into XXX (TODO is
-it virtio_net or vhost_net???), bypassing the Host-OS skb-alloc, while still
-performing one copy.  Other options might be to leverage AF_XDP to register
-Guest-OS memory with the XDP based NIC driver, which would allow zero-copy RX
-into the Guest-OS.
 
 ** Slide: Zero-copy to userspace AF_XDP
 
