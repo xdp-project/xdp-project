@@ -432,12 +432,23 @@ can naturally do bulking at DMA-TX completion, and the page_pool need this to
 handle a known weakness (of concurrent CPUs returning frames to the same
 RX-queue).
 
-
 On Intel machines the DMA map/unmap/sync operation are very lightweight, as due
 the coherency model, this might not be true for other architectures.  As XDP
 have been very Intel focused, the DMA overhead have seen much attention. The
 Spectre-V2 mitigation changed the picture. and will force us to address the DMA
 overhead issues due to the indirect call API.
+
+** Slide: Memory models
+
+Recent (4.18): XDP memory models per driver RX-queue
+ - New flexibiliy to innovate
+ - Also opportunity to generalize and share common code between drivers
+   - page_pool is generalization example, need more drivers using it
+
+Planned changes
+ - Extend xdp_return_frame API with bulking, performance reasons
+ - Keep pages DMA mapped in page_pool (almost supported)
+
 
 ** Topic: Spectre-V2: mitigation killed XDP performance
 
