@@ -353,7 +353,9 @@ Missing part: driver offloads (e.g. csum-info, rxhash, HW-mark)
 Hope this will be resolved covered in talk:
  - Talk: "XDP acceleration using NIC metadata, continued"
 
-** Topic: (Usability related) XDP_REDIRECT entangled with ndo_xdp_xmit.
+** Topic: Controlling resources for ndo_xdp_xmit
+
+(Usability related) XDP_REDIRECT entangled with ndo_xdp_xmit.
 
 Decouple XDP_REDIRECT from ndo_xdp_xmit.
 This mostly technical, but also related to usability.
