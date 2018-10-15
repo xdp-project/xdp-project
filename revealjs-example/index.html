@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>reveal.js</title>
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/white.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="css/solarized-light.css">
+
+                <style type="text/css">
+                  div.author {
+                      font-size: 15px;
+                      position: absolute;
+                      bottom: 5px;
+                      right: 32px;
+                      line-height: 20px;
+                      vertical-align: bottom;
+                      z-index: 11;
+                  }
+
+                  div.author img {
+                      height: 15px;
+                      position: relative;
+                      top: 3px;
+                  }
+
+                  tr.noline td {
+                      border-bottom: 0px;
+                  }
+
+                  span.small {
+                      font-size: 80%;
+                  }
+
+                  .de-emph {
+                      color: #aaa !important;
+                  }
+
+                </style>
+
+		<!-- Printing and PDF exports -->
+		<script>
+		  var link = document.createElement( 'link' );
+		  link.rel = 'stylesheet';
+		  link.type = 'text/css';
+		  link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+		  document.getElementsByTagName( 'head' )[0].appendChild( link );
+
+                  var authorName = 'Toke Høiland-Jørgensen';
+                  var authorEmail = 'toke.hoiland-jorgensen@kau.se';
+
+                  var authorHTML = [authorName, ' &lt;', authorEmail, '&gt; &nbsp;',
+                                    '<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">',
+                                    '<img style="border-width: 0px;" alt="License: CC BY-SA" src="images/cc-by-sa-80x15.png" /></a>'].join('');
+
+                  function addAuthor(selector) {
+                      return function() {
+                          var elems = document.querySelectorAll(selector);
+                          elems.forEach(function (e) {
+                              var author = document.createElement('div');
+                              author.className = 'author';
+                              author.innerHTML = authorHTML;
+                              e.appendChild(author);
+                          });
+                      }
+                  }
+
+                  if (window.location.search.match( /print-pdf/gi )) {
+                      window.addEventListener('pdf-ready', addAuthor('.pdf-page'));
+                  } else {
+                      window.addEventListener('load', addAuthor('.reveal'));
+                  }
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section data-markdown="slides.md"
+                                         data-background-image="images/cs-logo.svg"
+                                         data-background-position="bottom left"
+                                         data-background-size="8em">
+                                </section>
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+                            width: 1600,
+                            height: 1000,
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/math/math.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+                  Reveal.configure({slideNumber: true,
+                                    controls: false,
+                                    center: false,
+                                    history: true,
+                                    math: {'mathjax': 'plugin/math/MathJax/MathJax.js'}});
+		</script>
+	</body>
+</html>
