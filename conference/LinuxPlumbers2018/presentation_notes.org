@@ -76,8 +76,8 @@ When below are marked DONE, this means a slide mention it.
 *** DONE (AF_XDP) The Path to DPDK Speeds for AF_XDP
 *** DONE (facebook) XDP 1.5 years in production. Evolution and lessons learned.
 *** DONE (facebook) eBPF / XDP based firewall and packet filtering
+*** DONE P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4
 *** Using eBPF as an abstraction for switching
-*** P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4
 *** Building socket-aware BPF programs
 *** BPF Host Network Resource Management
 *** Combining kTLS and BPF for Introspection and Policy Enforcement
@@ -236,9 +236,6 @@ xdp_router_ipv4 sample hit an "exact_match" cache.
    facility, that other Open Source projects need to pickup, use and
    innovate on-top of.
 
-   Can ref P4-XDP talk here, mention that using P4 is seen as a userspace
-   layer.
-
 XDP will hopefully be used for faster delivery into Guest-OS.  The best and
 fastest abstraction into KVM is still not determined.  The tuntap driver
 already implemented ndo_xdp_xmit, which allows XDP_REDIRECT into XXX (TODO is
@@ -246,6 +243,30 @@ it virtio_net or vhost_net???), bypassing the Host-OS skb-alloc, while still
 performing one copy.  Other options might be to leverage AF_XDP to register
 Guest-OS memory with the XDP based NIC driver, which would allow zero-copy RX
 into the Guest-OS.
+
+   Can ref P4-XDP talk here, mention that using P4 is seen as a userspace
+   layer.
+
+The discussion of eBPF/XDP vs P4 often comes up. Our view is that of-cause you
+should be able to write a data-plane in domain-specific language like P4. And
+to use load this in a XDP hook, you need to write a new backend to your P4
+compiler that generate the XDP/eBPF code.
+
+** Slide: XDP as a building block
+
+XDP is a core kernel layer building block
+ - Open Source projects should build and innovate on top
+ - Only time will tell what people use it for
+
+Directions we hope to see XDP used
+ - Faster delivery into Guest-OS
+   - Basically possible via 1-copy via tuntap driver into virtio_net
+   - The AF_XDP approach might offer zero-copy
+
+P4 vs eBPF/XDP is a wrong attitude
+ - Instead translate/compile your P4 code into eBPF/XDP compatible code
+ - Talk on this approach:
+   "P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4"
 
 ** Topic: Zero-copy to userspace AF_XDP
 
