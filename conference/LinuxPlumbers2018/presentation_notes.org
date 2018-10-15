@@ -392,6 +392,22 @@ We need proper API for enabling XDP-TX resources on egress net_device
 This implicit XDP-TX resources allocation when loading XDP
  - is wasting HW resources when XDP doesn't need ndo_xdp_xmit
 
+** Topic: (Usability related) Driver Support
+
+   Issue that not all drivers support all features, but userspace cannot query
+   what a given driver supports.  If a driver e.g. doesn't support XDP_REDIRECT,
+   then it can only be detected "runtime" by observing a WARN_ONCE kernel log
+   message and afterwards packets are silently dropped (can be debugged via
+   tracepoints).
+
+   The issue was seen with Suricata, and they want some kind of way to
+   know what XDP features are avail.  This is needed to reject or
+   change behavior when parsing the Suricata setup file.
+
+Original goal of not exposing feature-bits to userspace, was to force full
+support for XDP in all drivers.  Is this goal still realistic, after X kernel
+releases, where only 3 HW-drivers have implemented XDP_REDIRECT.
+
 ** Topic: Usability: User Experience and Debugging
 
 Lots of small unexpected behavior, seen from normal users of XDP.
@@ -408,22 +424,6 @@ returns a verdict/action return code). For a user, it will be more natural to
 "see" TX-pps. So, we could monitor interface TX-stats, but that is also not
 possible, as some XDP-drivers don't account XDP-TX packets in the regular
 ifstat counters, which in itself is problematic.
-
-** Topic: (Usability related) Driver Support
-
-   Issue that not all drivers support all features, but userspace cannot query
-   what a given driver supports.  If a driver e.g. doesn't support XDP_REDIRECT,
-   then it can only be detected "runtime" by observing a WARN_ONCE kernel log
-   message and afterwards packets are silently dropped (can be debugged via
-   tracepoints).
-
-   The issue was seen with Suricata, and they want some kind of way to
-   know what XDP features are avail.  This is needed to reject or
-   change behavior when parsing the Suricata setup file.
-
-Original goal of not exposing feature-bits to userspace, was to force full
-support for XDP in all drivers.  Is this goal still realistic, after X kernel
-releases, where only 3 HW-drivers have implemented XDP_REDIRECT.
 
 ** Topic: XDP egress hook (just before TX)
 
