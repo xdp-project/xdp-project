@@ -353,6 +353,28 @@ Missing part: driver offloads (e.g. csum-info, rxhash, HW-mark)
 Hope this will be resolved covered in talk:
  - Talk: "XDP acceleration using NIC metadata, continued"
 
+** Topic: (Usability related) XDP_REDIRECT entangled with ndo_xdp_xmit.
+
+Decouple XDP_REDIRECT from ndo_xdp_xmit.
+This mostly technical, but also related to usability.
+
+When XDP redirecting a frame out another net_device, then the drivers
+ndo_xdp_xmit function is called.  But device drivers don't enable ndo_xdp_xmit
+by default, because it costs many resource (TX queue per CPU core).  There is
+no interface to enable ndo_xdp_xmit.  The current solution, to enable
+ndo_xdp_xmit, is to load an dummy XDP program on the device, you want to
+redirect to.
+
+The implicit notion of loading an XDP program, also implies allocating
+resources to XDP-TX queues is flawed.  As the XDP user, might not want to use
+any redirect feature.  And even if using XDP_REDIRECT this could be CPU-map
+redirect, which does not need XDP-TX queues.
+
+The reason for only enabling XDP-TX queues when really needed is that this
+consumes HW resources.  Given the TX queue per CPU core assumption, this makes
+it problematic on systems with many CPU cores. E.g. it was discovered the ixgbe
+driver cannot load XDP on systems with more than 96 CPU cores.
+
 ** Topic: Usability: User Experience and Debugging
 
 Lots of small unexpected behavior, seen from normal users of XDP.
@@ -385,28 +407,6 @@ ifstat counters, which in itself is problematic.
 Original goal of not exposing feature-bits to userspace, was to force full
 support for XDP in all drivers.  Is this goal still realistic, after X kernel
 releases, where only 3 HW-drivers have implemented XDP_REDIRECT.
-
-** Topic: (Usability related) XDP_REDIRECT entangled with ndo_xdp_xmit.
-
-Decouple XDP_REDIRECT from ndo_xdp_xmit.
-This mostly technical, but also related to usability.
-
-When XDP redirecting a frame out another net_device, then the drivers
-ndo_xdp_xmit function is called.  But device drivers don't enable ndo_xdp_xmit
-by default, because it costs many resource (TX queue per CPU core).  There is
-no interface to enable ndo_xdp_xmit.  The current solution, to enable
-ndo_xdp_xmit, is to load an dummy XDP program on the device, you want to
-redirect to.
-
-The implicit notion of loading an XDP program, also implies allocating
-resources to XDP-TX queues is flawed.  As the XDP user, might not want to use
-any redirect feature.  And even if using XDP_REDIRECT this could be CPU-map
-redirect, which does not need XDP-TX queues.
-
-The reason for only enabling XDP-TX queues when really needed is that this
-consumes HW resources.  Given the TX queue per CPU core assumption, this makes
-it problematic on systems with many CPU cores. E.g. it was discovered the ixgbe
-driver cannot load XDP on systems with more than 96 CPU cores.
 
 ** Topic: XDP egress hook (just before TX)
 
