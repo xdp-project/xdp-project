@@ -423,7 +423,7 @@ Today: Userspace cannot query what XDP features NIC driver support
    was to force full support for XDP in all drivers.
  - Is this still realistic goal?
    E.g. only 3 HW-drivers have implemented XDP_REDIRECT.
-   Some users are happy with XDP_DROP and XDP_TX.
+   Some users are happy with (only) XDP_DROP and XDP_TX.
 
 Userspace need to know if XDP_REDIRECT is supported:
  - Suricata use-case:
@@ -463,7 +463,7 @@ overhead issues due to the indirect call API.
 ** Slide: Memory models
 
 Recent (4.18): XDP memory models per driver RX-queue
- - New flexibiliy to innovate
+ - New flexibility to innovate
  - Also opportunity to generalize and share common code between drivers
    - page_pool is generalization example, need more drivers using it
 
@@ -558,7 +558,7 @@ I have bought a MacchiatoBin ARM64-board, that I plan to developed XDP for.
 (Got cross-compiler and upstream kernel working, found DMA-bounce buffer
 issues, that I need to upstream fix for)
 
-** Topic (maybe skip) : Accelerating Transport Protocols
+** Topic (maybe skip): Accelerating Transport Protocols
 
    E.g. it should be possible to do delivery into TCP sockets, and
    hand-over the packet-page (without first allocating an SKB).
