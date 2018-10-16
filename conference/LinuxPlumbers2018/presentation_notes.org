@@ -192,26 +192,6 @@ XDP is all about performance
 Guiding principle: New features must not negatively affect baseline XDP perf
  - Optimization hint: move runtime checks to setup time
 
-** Slide/topic (maybe skip): Jumbo-frames
-
-(Topic text) People in XDP-newbies list request jumbo-frames. They don't seem
-to understand to support high-speed packet processing, we cannot support this
-feature.  Besides killing performance, jumbo-frames will also make it more
-difficult to move-SKB-alloc out of drivers.  That said, if it is possible to
-support Jumbo-Frames without hurting performance, then it could be accepted,
-but that will be very difficult.
-
-Understand: RX-ring cannot know packet length, must have room for MTU
- - XDP requires packet mapped in physical continuous memory
-   (Due to eBPF mem direct-access, safety via verifier)
- - Alloc above 4K, more expensive (higher-order pages)
-
-Hybrid solution: Only grant XDP access to top 4K
- - Above 4K can be in other pages
- - This will kill, moving SKB allocations out of driver plan
-   (makes it complicated and thus affect performance)
-
-
 ** Topic: Evolving XDP
 
 How we imagine XDP getting extended.
@@ -359,6 +339,25 @@ Missing part: driver offloads (e.g. csum-info, rxhash, HW-mark)
 
 Hope this will be resolved covered in talk:
  - Talk: "XDP acceleration using NIC metadata, continued"
+
+** Slide/topic (maybe skip): Jumbo-frames
+
+(Topic text) People in XDP-newbies list request jumbo-frames. They don't seem
+to understand to support high-speed packet processing, we cannot support this
+feature.  Besides killing performance, jumbo-frames will also make it more
+difficult to move-SKB-alloc out of drivers.  That said, if it is possible to
+support Jumbo-Frames without hurting performance, then it could be accepted,
+but that will be very difficult.
+
+Understand: RX-ring cannot know packet length, must have room for MTU
+ - XDP requires packet mapped in physical continuous memory
+   (Due to eBPF mem direct-access, safety via verifier)
+ - Alloc above 4K, more expensive (higher-order pages)
+
+Hybrid solution: Only grant XDP access to top 4K
+ - Above 4K can be in other pages
+ - This will kill, moving SKB allocations out of driver plan
+   (makes it complicated and thus affect performance)
 
 ** Topic: Controlling resources for ndo_xdp_xmit
 
