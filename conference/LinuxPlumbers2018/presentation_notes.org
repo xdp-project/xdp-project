@@ -219,7 +219,7 @@ xdp_router_ipv4 sample hit an "exact_match" cache.
 
 ** Slide: Evolving XDP via BPF-helpers
 
-XDP software offloading layer for kernel network stack
+See: XDP as software offloading layer for kernel network stack
  - Setup and use Linux kernel network stack
  - But accelerate parts of it with XDP
 
