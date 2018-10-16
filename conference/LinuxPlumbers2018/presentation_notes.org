@@ -143,7 +143,7 @@ Scientific XDP paper accepted
 This talk focused: "Limitation and Future Work"
  - Purpose soliciting feedback and ideas from the community
 
-** Slide: What is XDP
+** Topic: What is XDP
 
 Frame what is XDP.
 
@@ -151,6 +151,21 @@ Be inspirational: New programmable layer in network stack
 
 Keep it very short, if possible 1-slide.  This is mostly for people finding this
 slide deck, or LPC people that don't know that XDP is.
+
+** Slide: What is XDP
+
+XDP basically: New layer in the kernel network stack
+ - Before allocating the SKB
+ - Driver level hook at DMA level
+
+Means: Competing at the same “layer” as DPDK / netmap
+ - Super fast, due to
+   - Take action/decision earlier (e.g. skip some network layers)
+   - No-memory allocations
+
+Not kernel bypass, data-plane is kept inside kernel
+ - via BPF: makes early network stack run-time programmable
+ - Cooperates with kernel
 
 ** Slide: XDP is a huge success
 
