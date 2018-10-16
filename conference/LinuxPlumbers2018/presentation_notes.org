@@ -488,6 +488,24 @@ More optimizations for DMA mapping needed
    DMA-TX addr could be stored in xdp_frame, then xdp_return_frame API could
    also handle the DMA-unmap call.
 
+** Slide: Performance issue: Spectre (variant 2)
+
+CONFIG_RETPOLINE and newer GCC compiler
+ - for stopping Spectre (variant 2) CPU side-channel attacks
+
+Hey, you killed my XDP performance! (Retpoline tricks for indirect calls)
+- Still processing 6 Mpps per CPU core
+- But could do approx 13 Mpps before!
+
+Initial through it was net_device->ndo_xdp_xmit call
+ - Implemented redirect bulking, but only helped a little
+
+Real pitfall: DMA API use indirect function call pointers
+ - Christoph Hellwig PoC patch show perf return to approx 10 Mpps
+
+One XDP indirect call we cannot remove: Invoking BPF program
+
+
 ** Topic (maybe skip): Usability: User Experience and Debugging
 
 Lots of small unexpected behavior, seen from normal users of XDP.
