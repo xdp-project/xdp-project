@@ -334,7 +334,7 @@ Not alloc SKB in driver at RX: Is supported today via XDP_REDIRECT
 
 Missing part: driver offloads (e.g. csum-info, rxhash, HW-mark)
  - Depends/waits on metadata, in a vendor neutral way
- - We (also) need core-netstack need to understand metadata BTF struct
+ - We (also) need core-netstack to understand metadata BTF struct
    - Not just BPF progs
 
 Hope this will be resolved covered in talk:
@@ -398,7 +398,9 @@ We need proper API for enabling XDP-TX resources on egress net_device
 This implicit XDP-TX resources allocation when loading XDP
  - is wasting HW resources when XDP doesn't need ndo_xdp_xmit
 
-** Topic: (Usability related) Driver Support
+** Topic: What does XDP driver support?
+
+(Usability related)
 
    Issue that not all drivers support all features, but userspace cannot query
    what a given driver supports.  If a driver e.g. doesn't support XDP_REDIRECT,
@@ -413,6 +415,20 @@ This implicit XDP-TX resources allocation when loading XDP
 Original goal of not exposing feature-bits to userspace, was to force full
 support for XDP in all drivers.  Is this goal still realistic, after X kernel
 releases, where only 3 HW-drivers have implemented XDP_REDIRECT.
+
+** Slide: What does XDP driver support?
+
+Today: Userspace cannot query what XDP features NIC driver support
+ - Original goal of not exposing feature-bits to userspace:
+   was to force full support for XDP in all drivers.
+ - Is this still realistic goal?
+   E.g. only 3 HW-drivers have implemented XDP_REDIRECT.
+   Some users are happy with XDP_DROP and XDP_TX.
+
+Userspace need to know if XDP_REDIRECT is supported:
+ - Suricata use-case:
+   - If XDP_REDIRECT is not supported, reject config at startup
+   - Or alternative TC solution can be used
 
 ** Topic: XDP egress hook (just before TX)
 
