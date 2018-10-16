@@ -452,7 +452,7 @@ Planned changes
 ** Slide: DMA mapping
 
 More optimizations for DMA mapping needed
- - Low priority, almost zero cost on Intel CPU
+ - Was low priority, due to almost zero cost on Intel CPUs
  - Spectre-V2 mitigation makes DMA calls more expensive
 
 ** Topic: Spectre-V2: mitigation killed XDP performance
