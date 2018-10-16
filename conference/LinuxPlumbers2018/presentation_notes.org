@@ -120,6 +120,9 @@ PHYlink and SFP: Going beyond 1G Copper PHYs
 
 
 * Topics and slides
+:PROPERTIES:
+:EXPORT_TITLE: XDP - challenges and future work
+:END:
 *IDEA* for organizing presentation:
 
 The presentation will be organized around a number of XDP-topics.  We cannot
@@ -608,7 +611,7 @@ code.
 
 
 # Local Variables:
-# org-reveal-title-slide: "<h1 class=\"title\">XDP - challenges and future work</h1><h2
+# org-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
 # class=\"author\">Jesper Dangaard Brouer (Red Hat)<br/>Toke Høiland-Jørgensen
 # (Karlstad University)</h2><h3>LPC Networking Track<br/>Vancouver, Nov
 # 2018</h3>"
