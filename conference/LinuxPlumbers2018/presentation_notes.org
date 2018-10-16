@@ -158,7 +158,10 @@ XDP is maturing in upstream kernels
  - Still under active development
 
 Very popular topic at this LPC network-track miniconf
- - 11 talks XDP (or BPF) related!
+ - 12 talks XDP and BPF related! (incl. this)
+ - 8 directly XDP related (incl. this)
+   - We will mention and frame these talk in the bigger XDP picture
+ - 4 related to eBPF
 
 ** Slide: Production use-cases
 
