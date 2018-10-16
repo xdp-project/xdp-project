@@ -165,7 +165,8 @@ Very popular topic at this LPC network-track miniconf
 
 ** Slide: Production use-cases
 
-(Can people actually use this in production?)
+(Pitch: Can people actually use this in production, even-though XDP is still
+under much developement)
 
 XDP have seen production use
  - CloudFlare publically say they use XDP
