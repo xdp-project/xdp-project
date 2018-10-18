@@ -13,7 +13,7 @@
 #+REVEAL_TITLE_SLIDE_BACKGROUND: ./images/logo.svg
 #+REVEAL_TITLE_SLIDE_BACKGROUND_POSITION: bottom left
 #+REVEAL_TITLE_SLIDE_BACKGROUND_SIZE: 4em
-#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:t reveal_width:1600 reveal_height:1000 ^:nil tags:nil toc:nil
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil reveal_width:1600 reveal_height:1000 ^:nil tags:nil toc:nil
 
 Trying to organize and structure the presentation for Linux Plumbers Conference
 2018 Networking Track.
