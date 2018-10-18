@@ -96,24 +96,59 @@ are not covered elsewhere, which we will discuss in more detail.
 \section{XDP in production use}
 \label{sec:xdp-production-use}
 
-XDP have seen production use
- - CloudFlare publically say they use XDP
- - Suricata have XDP plugins
+Even though XDP is still being very actively developed (as the large number of
+talks at LPC shows), we have already seen examples of it being successfully
+deployed in production environments. High-profile examples include Cloudflare's
+use for DDOS protection~\cite{cloudflare-ddos}, and Facebook's Katran load
+balancer~\cite{katran}. There are also XDP plugins for Suricata~\cite{suricata},
+Open vSwitch~\cite{ovs-xdp}, and even DPDK~\cite{dpdk-xdp}.
 
-Other talks will cover this:
- - (facebook) XDP 1.5 years in production. Evolution and lessons learned
- - (facebook) eBPF / XDP based firewall and packet filtering
+There are two other talks at LPC that cover Facebook's production use of XDP in
+more detail~\cite{facebook-lessons,facebook-firewall}.
 
  \section{The state of XDP performance}
 \label{sec:state-xdp-perf}
 
-XDP is all about performance, don't screw it up!
+XDP has been deliberately designed to achieve maximum packet processing
+performance. This is achieved by combining several techniques, such as avoiding
+memory allocations in the processing path, and running the processing at the
+earliest possible time after packets are received from the hardware. The results
+of these efforts is the impressive performance shown in
+Figures~\ref{fig:drop-test} and \ref{fig:redirect-test} (both from the XDP
+paper~\cite{xdp-paper}).
 
-Guiding principle: Adding features must not negatively affect baseline XDP
-performance.  Use optimization technique of moving runtime checks to setup time
-checks.
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{images/drop-test.pdf}
+\caption{\label{fig:drop-test} Packet drop performance. DPDK uses one core for
+  control tasks, so only 5 are available for packet processing.}
+\end{figure}
 
-% Add one or two graphs
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{images/redirect-test.pdf}
+\caption{\label{fig:redirect-test} Packet forwarding throughput. Sending and
+  receiving on the same interface takes up more bandwidth on the same PCI port,
+  which means we hit the PCI bus limit at 70 Mpps.}
+\end{figure}
+
+However, attaining this level of performance is not trivial, and the smallest
+optimisations (or conversely, small additions of overhead) can have a large
+impact. As an example, the Mellanox driver we used for our tests
+(\texttt{mlx5}), performs 10 non-inlined function calls for every packet. Our
+tests show that the overhead \emph{of just the function calls} corresponds to an
+additional 9\,Mpps of performance on a single core.
+
+Because of this sensitivity to overhead, it is imperative that thorough
+performance evaluations of new features are performed to avoid regressions, and
+a guiding principle should be that new features must not negatively affect
+baseline XDP performance. One optimisation technique that can be used to achieve
+this is to move as many checks as possible to setup time rather than execution
+time.
+
+
+
+
 
 \section{Evolving XDP}
 \label{sec:evolving-xdp}
