@@ -153,8 +153,29 @@ time.
 \section{Evolving XDP}
 \label{sec:evolving-xdp}
 
+One way to view XDP is as a ``software offload'', which can accelerate critical
+parts of the packet processing path, while allowing the regular network stack to
+handle the rest. This is possible because of the ability to mix custom
+high-speed packet processing with the features already implemented in the
+kernel. The networking stack already contains high-quality implementations of
+features such as routing and bridging, which an XDP program can cherry-pick
+among to perform its tasks without incurring the overhead of the full networking
+stack. An example of this approach is the routing lookup helper added by David
+Ahern, which he covers in a separate talk~\cite{ahern-routing}.
+
+We foresee that the addition of additional kernel helpers as an important avenue
+for extending the functionality of XDP. In many cases, functionality can be
+implemented by a custom eBPF program using maps; however, exposing existing
+kernel functionality has the advantage of retaining the existing configuration
+and management interface of the kernel. In addition, this makes it possible to
+let the regular networking stack handle tricky edge cases, allowing the XDP
+program to focus on accelerating the fast path. We believe this is a killer
+feature of XDP, and we wish to encourage people to think about adding (or
+requesting!) such helpers where it makes sense for their use case.
+
 \section{XDP as a building block}
 \label{sec:xdp-as-building}
+
 
 \section{Zero-copy to userspace with AF\_XDP}
 \label{sec:zero-copy-userspace}
@@ -171,6 +192,22 @@ time.
 
 \section{XDP egress hook}
 \label{sec:xdp-egress-hook}
+
+A limitation of the current design of XDP is that programs get no feedback if a
+redirect to another device fails. Instead, the packet is just silently dropped,
+and the only way to see why is by attaching to the right tracepoint. This is
+especially problematic when forwarding packets from a fast device to a slower
+one. And the way \texttt{XDP\_REDIRECT} is implemented, there is no way for the
+XDP program to gain insight into the state of the device being forwarded
+\emph{to}.
+
+We believe that a possible fix for this is to add another eBPF hook at packet
+egress from a device, i.e., at the latest possible time before a packet is put
+into the device TX ring. At this point, it is possible for the driver to supply
+information about the current state of the TX ring buffer (such as free space),
+which the eBPF program can react appropriately to, for example by signalling
+ingress XDP programs to send traffic another way if the TX ring is full, or by
+implementing AQM-like reactions when TX ring pressure increases.
 
 \section{NIC memory models and DMA mapping}
 \label{sec:nic-memory-models}
