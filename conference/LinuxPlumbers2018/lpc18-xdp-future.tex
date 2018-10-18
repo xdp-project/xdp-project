@@ -12,6 +12,7 @@
 2018}{Vancouver, British Columbia}
 \acmISBN{}
 \acmDOI{}
+\settopmatter{printccs=false, printacmref=false}
 %\widowpenalty=100
 %\clubpenalty=100
 %\brokenpenalty=100
@@ -78,6 +79,68 @@ The issues we are planning to discuss include, but are not limited to:
 
 \section{Introduction}%
 \label{sec:introduction}
+
+We have recently finished writing an academic paper on XDP~\cite{xdp-paper},
+which includes a description of the architecture, and performance comparison
+with DPDK. In the course of that work, we have identified and discussed several
+areas of potential improvements. The purpose of this paper, and the associated
+talk, is to broaden that discussion to the Linux community to solicit feedback,
+and to give a broad overview of ideas and directions of work that is in
+progress, as well as some things that are still at the idea stage.
+
+To do this, we include an overview of the other XDP-related talk and topics that
+will be covered at the networking track at LPC '18; those topics will not be
+covered in detail in this work. In addition, we include a couple of ideas that
+are not covered elsewhere, which we will discuss in more detail.
+
+\section{XDP in production use}
+\label{sec:xdp-production-use}
+
+XDP have seen production use
+ - CloudFlare publically say they use XDP
+ - Suricata have XDP plugins
+
+Other talks will cover this:
+ - (facebook) XDP 1.5 years in production. Evolution and lessons learned
+ - (facebook) eBPF / XDP based firewall and packet filtering
+
+ \section{The state of XDP performance}
+\label{sec:state-xdp-perf}
+
+XDP is all about performance, don't screw it up!
+
+Guiding principle: Adding features must not negatively affect baseline XDP
+performance.  Use optimization technique of moving runtime checks to setup time
+checks.
+
+% Add one or two graphs
+
+\section{Evolving XDP}
+\label{sec:evolving-xdp}
+
+\section{XDP as a building block}
+\label{sec:xdp-as-building}
+
+\section{Zero-copy to userspace with AF\_XDP}
+\label{sec:zero-copy-userspace}
+
+\section{Moving SKB allocation out of device drivers}
+\label{sec:moving-skb-alloc}
+
+\section{Usability: Decoupling XDP\_REDIRECT with ndo\_xdp\_xmit resource
+  control}
+\label{sec:usab-deco-xdp_r}
+
+\section{Partial XDP support in drivers}
+\label{sec:partial-xdp-support}
+
+\section{XDP egress hook}
+\label{sec:xdp-egress-hook}
+
+\section{NIC memory models and DMA mapping}
+\label{sec:nic-memory-models}
+
+
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{xdp-future}
