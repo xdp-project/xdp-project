@@ -1,5 +1,5 @@
 # -*- fill-column: 79; -*-
-#+TITLE: Notes for netdev-track at LinuxPlumbers 2018
+#+TITLE: XDP - challenges and future work
 #+AUTHOR: Jesper Dangaard Brouer and Toke Høiland-Jørgensen
 #+EMAIL: toke@toke.dk
 #+REVEAL_THEME: white
@@ -119,9 +119,6 @@ PHYlink and SFP: Going beyond 1G Copper PHYs
 
 
 * Topics and slides
-:PROPERTIES:
-:EXPORT_TITLE: XDP - challenges and future work
-:END:
 *IDEA* for organizing presentation:
 
 The presentation will be organized around a number of XDP-topics.  We cannot
