@@ -177,18 +177,87 @@ requesting!) such helpers where it makes sense for their use case.
 \label{sec:xdp-as-building}
 
 
+
+
 \section{Zero-copy to userspace with AF\_XDP}
 \label{sec:zero-copy-userspace}
 
 \section{Moving SKB allocation out of device drivers}
 \label{sec:moving-skb-alloc}
 
-\section{Usability: Decoupling XDP\_REDIRECT with ndo\_xdp\_xmit resource
-  control}
-\label{sec:usab-deco-xdp_r}
+One important performance optimisation available with XDP\_REDIRECT, is the
+ability to offload packet processing to another CPU, by redirecting with a CPU
+map. This also moves the SKB creation to the target CPU, where it is created
+based on the xdp\_frame data. This frees up the CPU running the XDP program to
+process more packets without the deep calls into the networking stack. An
+example application that benefits from this is DDOS protection in XDP, which we
+tested in the XDP paper, and which showed impressive results (see
+Figure~\ref{fig:ddos-results}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{images/ddos-test.pdf}
+\caption{\label{fig:ddos-results} DDoS protection performance. Number of TCP
+  transactions per second as the level of attack traffic directed at the server
+  increases.}
+\end{figure}
+
+We believe it is possible to generalise the mechanism that defers SKB creation,
+to the point where this can be moved out of drivers entirely. The main thing
+missing before we can achieve this, is a way to transfer the information from
+different driver offloads (e.g., checksums, RX hashing, HW-marking) in a vendor
+neutral and generic way. We have high hopes that the metadata work also
+presented at LPC~\cite{xdp-metadata} will be a way to achieve this.
+
+
+\section{Decoupling ndo\_xdp\_xmit resource allocation from XDP loading}
+\label{sec:decoupling-ndo-xdp-xmit}
+
+When XDP redirects a frame out another \texttt{net\_device}, then the
+\texttt{ndo\_xdp\_xmit()} function of that device's driver is called. However,
+enabling \texttt{ndo\_xdp\_xmit()} means a hardware TX queue needs to be
+allocated per CPU core, which ties up resources, and so drivers don't enable
+this by default. The problem is that there is currently no interface to enable
+\texttt{ndo\_xdp\_xmit()} by itself; rather, it is enabled when an XDP program
+is loaded. This leads to the current situation where a dummy XDP program needs
+to be loaded on the device that is the target of an XDP redirect. This needs to
+be done even if that device doesn't need to do any XDP ingress processing
+itself, and if no XDP program is loaded on the target device, packets will just
+be dropped silently.
+
+Apart from being a bad user interface, this coupling of TX queue allocation to
+XDP program loading is a waste of resources in the case where a device is
+\emph{not} going to be a target of redirects. In the worst case this can make it
+impossible to use XDP on systems with many cores (for instance, it was
+discovered that the ixgbe driver cannot load XDP on systems with more than 96
+CPU cores). But even on smaller systems, reserving hardware queues that are not
+really needed is wasteful. For this reason, we propose that the enabling
+\texttt{ndo\_xdp\_xmit()} is decoupled from the loading of XDP programs, and
+that a better trigger mechanism be implemented. An obvious choice is to enable
+the functionality when a device is first inserted into a \texttt{DEVMAP} to be
+used in XDP\_REDIRECT, although this leaves the question of what to do with the
+non-map variant of REDIRECT.
 
 \section{Partial XDP support in drivers}
 \label{sec:partial-xdp-support}
+
+Not all drivers that support loading XDP programs actually support the full
+feature set, and there is currently no way for userspace to discover what a
+device actually supports. For instance, if a driver doesn't support
+XDP\_REDIRECT, then it can only be detected at runtime by observing a WARN\_ONCE
+kernel log message; and afterwards packets are silently dropped. This is
+problematic for applications that want to use XDP where it is available, but
+fall back to another mechanism when it is not. Suricata is an example of an
+application that has experienced this problem.
+
+Originally, the decision not to expose XDP feature bits was taken based on the
+assumption that all drivers would implement the full feature set. However, the
+question is if this is still a realistic goal, given that there are still only
+three hardware drivers that implement XDP\_REDIRECT, and that some users are
+happy with just XDP\_DROP and XDP\_TX support. For this reason, we would like to
+bring up this discussion again.
+
+% FIXME: Should we write something about how we propose to solve this?
 
 \section{XDP egress hook}
 \label{sec:xdp-egress-hook}
@@ -212,7 +281,27 @@ implementing AQM-like reactions when TX ring pressure increases.
 \section{NIC memory models and DMA mapping}
 \label{sec:nic-memory-models}
 
+XDP recently (v4.18) acquired support for different memory models per driver
+RX-queue, via the \texttt{xdp\_return\_frame()} and
+\texttt{xdp\_rxq\_info\_reg\_mem\_model()} APIs.
 
+This allows drivers to innovate with new memory models, but also makes it
+possible to generalise and share common code to handle memory recycle schemes
+for drivers. The page\_pool is one example of such common code. We want to see
+more drivers need to use page\_pool, and work on page\_pool is needed, especially
+in the area of keeping frames DMA mapped.
+
+We plan to extend the \texttt{xdp\_return\_frame} API with a bulking option,
+because it can naturally do bulking at DMA-TX completion, and the page\_pool
+needs this to handle a known weakness (of concurrent CPUs returning frames to
+the same RX-queue).
+
+On Intel machines the DMA map/unmap/sync operations are very lightweight, due
+the coherency model; however, this might not be true for other architectures. As
+XDP has been very Intel focused, the DMA overhead has not received much
+attention thus far. However, the Spectre-V2 mitigation efforts has changed this
+picture, and will force us to address the DMA overhead issues even on Intel
+machines, due to the indirect call API employed by this subsystem.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{xdp-future}
