@@ -602,6 +602,9 @@ issues, that I need to upstream fix for)
 ** Setup for org export to reveal.js
 First, install the ox-reveal emacs package.
 
+Package: ox-reveal git-repo and install instructions:
+https://github.com/yjwen/org-reveal
+
 After this, move to the 'Topics and slides' subtree and hit =C-c C-e C-s R R=
 to export just the subtree; then open .html file to view slideshow. The
 variables below will set up the title slide and filter the "Slide:" prefix from
