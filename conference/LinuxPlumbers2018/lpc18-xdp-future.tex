@@ -176,11 +176,40 @@ requesting!) such helpers where it makes sense for their use case.
 \section{XDP as a building block}
 \label{sec:xdp-as-building}
 
+XDP offers low-level functionality on which higher level systems can be built.
+As such, it is clear that there is substantial room for other open source
+projects to build upon the XDP architecture, and only time will tell what it
+will be used for. In our view, this also means that viewing XDP (and eBPF) as a
+competitor to something like P4 is the wrong attitude. Rather, XDP can be one
+backend among many for P4, as is already possible with the XDP P4 compiler
+backend that will also be discussed at LPC~\cite{xdp-p4}.
 
-
+Another direction we hope to see XDP take, is as an accelerator for forwarding
+packets into virtual machines. There's already support for redirecting packets
+directly to the tuntap driver from XDP, with a single packet copy but bypassing
+the host OS stack. With the AF\_XDP zero-copy approach, it may be possible to
+accelerate this even further.
 
 \section{Zero-copy to userspace with AF\_XDP}
 \label{sec:zero-copy-userspace}
+
+A major source of speedup in both XDP and other high-performance packet
+processing frameworks, is avoiding the overhead of traversing the userspace to
+kernel boundary. In XDP this is done by moving the processing into the kernel
+which is possible thanks to the eBPF virtual machine an associated
+infrastructure. This works really well for raw packet processing that can be
+implemented directly as an eBPF program. However, sometimes packets do need to
+go out to userspace applications, and avoiding overhead in this case is
+important as well. The XDP solution to this problem is AF\_XDP, which is covered
+in two separate LPC talks~\cite{af-xdp,xdp-ovs}.
+
+The main benefit of AF\_XDP is that it uses the existing XDP facilities to avoid
+having to take over the network device entirely for zero-copy. Userspace
+provides a chunk of memory that is used directly for DMA, thus avoiding copying,
+and a Single Producer Single Consumer queue is used for communication between
+kernel and userspace. This does mean that each \emph{packet} is completely
+transferred to userspace, though, and so adding an option to XDP\_PASS copies of
+packets to the regular stack would be useful increasing flexibility.
 
 \section{Moving SKB allocation out of device drivers}
 \label{sec:moving-skb-alloc}
