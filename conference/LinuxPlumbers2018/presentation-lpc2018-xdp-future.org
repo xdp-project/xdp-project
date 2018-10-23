@@ -445,7 +445,7 @@ Hope this will be resolved covered in talk:
  - Talk: "XDP acceleration using NIC metadata, continued"
 
 
-* Slide/topic (maybe skip): Jumbo-frames                           :export:
+* Slide/topic (maybe skip): Jumbo-frames
 
 (Topic text) People in XDP-newbies list request jumbo-frames. They don't seem
 to understand to support high-speed packet processing, we cannot support this
