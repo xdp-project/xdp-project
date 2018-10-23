@@ -198,10 +198,7 @@ Evolving XDP -- without killing performance
 ** Slide: XDP-paper                                                 :export:
 
 Scientific XDP paper accepted
- - Title: @@html: <font color="#7ab800">@@
-   "The eXpress Data Path: @@html:<br>@@
-    Fast Programmable Packet Processing in the Operating System Kernel"
-    @@html:</font>@@
+ - Title: /"The eXpress Data Path: Fast Programmable Packet Processing in the Operating System Kernel"/
  - Conference: ACM CoNEXT 2018 Greece
 
 Purpose
@@ -283,20 +280,13 @@ checks.
 ** Slide: New XDP features and performance requirement              :export:
 
 XDP is all about performance
-#+HTML: <font color="#fecb00">
- - Watch-out that feature creep doesn't kill performance!
-#+HTML: </font>
+ - *Watch-out that feature creep doesn't kill performance!*
 
-Guiding principle:
-@@html: <font color="#7ab800">
-New features must not negatively affect baseline XDP perf
-</font>@@
+Guiding principle: /New features must not negatively affect baseline XDP perf/
  - Optimization hint: move runtime checks to setup time
 
 Issue:
-@@html: <font color="#a30000">
-Who is monitoring XDP performance?
-</font>@@
+/*Who is monitoring XDP performance?*/
  - We need CI tests for this... but who will do this work?
 
 ** Topic: Evolving XDP

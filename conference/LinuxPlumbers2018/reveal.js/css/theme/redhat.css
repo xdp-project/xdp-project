@@ -122,6 +122,10 @@ body {
   display: none;
 }
 
+.reveal .authorbox i {
+  color: inherit;
+}
+
 
 /*********************************************
  * HEADERS
@@ -173,10 +177,18 @@ body {
 
 .reveal strong,
 .reveal b {
-  font-weight: bold; }
+  font-weight: normal;
+  color: #fecb00;}
 
-.reveal em {
-  font-style: italic; }
+.reveal em,
+.reveal i {
+  font-style: normal;
+  color: #7ab800;}
+
+.reveal i > b,
+.reveal b > i {
+  color: #dc322f;
+}
 
 .reveal ol,
 .reveal dl,
