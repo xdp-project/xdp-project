@@ -121,7 +121,7 @@ PHYlink and SFP: Going beyond 1G Copper PHYs
 * Topics and slides
 :PROPERTIES:
 :reveal_background: ./images/rh_bg1.jpg
-:reveal_background_size: contain
+:reveal_background_size: 100%
 :reveal_background_color: white
 :END:
 
