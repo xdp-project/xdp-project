@@ -348,6 +348,18 @@ body {
   border-color: #268bd2;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.55); }
 
+.reveal .figure {
+  text-align: center;
+}
+
+.reveal .figure .org-svg {
+  width: 100%;
+  max-height: 600px;
+}
+
+.reveal .figure-number {
+  display: none; }
+
 /*********************************************
  * NAVIGATION CONTROLS
  *********************************************/
