@@ -34,44 +34,30 @@
 
 
 \begin{abstract}
-XDP already offers rich facilities for high performance packet
-processing, and has seen deployment in several production
-systems. However, this does not mean that XDP is a finished system; on
-the contrary, improvements are being added in every release of Linux,
-and rough edges are constantly being filed down. The purpose of this
-talk is to discuss some of these possibilities for future
-improvements, including how to address some of the known limitations
-of the system. We are especially interested in soliciting feedback and
-ideas from the community on the best way forward.
+  XDP continues to see significant development, and is far from a finished
+  system. However, XDP already offers rich facilities for high performance
+  packet processing, and has seen deployment in several production systems.
 
-The issues we are planning to discuss include, but are not limited to:
+  In this work, we provide an overview over some of the ongoing work around XDP,
+  and seek to start a discussion on some of the future challenges that need to
+  be addressed to make sure the XDP ecosystem can continue to flourish.
 
-\begin{itemize}
-\item User experience and debugging tools: How do we make it easier for people
-  who are not familiar with the kernel or XDP to get to grips with the system
-  and be productive when writing XDP programs?
+  The overview of ongoing work focuses on the XDP-related topics being discussed
+  at the LPC networking track in Vancouver, where we provide a short overview of
+  each topic, and refer to the talk for more details. These topics include
+  production deployment reports, using XDP as a backend for the P4 language,
+  zero-copy to userspace with AF\_XDP, and the use of kernel helpers to evolve
+  the XDP feature set. We also include some performance numbers from the
+  academic paper on XDP that we have co-authored with many of the other XDP
+  developers.
 
-\item Driver support: How do we get to full support for XDP in all drivers? Is
-  this even a goal we should be striving for?
-
-\item Performance: At high packet rates, every micro-optimisation counts. Things
-  like inlining function calls in drivers are important, but also batching to
-  amortise fixed costs such as DMA mapping. What are the known bottlenecks, and
-  how do we address them?
-
-\item QoS and rate transitions: How should we do QoS in XDP? In particular, rate
-  transitions (where a faster link feeds into a slower) are currently hard to
-  deal with from XDP, and would benefit from, e.g., Active Queue Management
-  (AQM). Can we adapt some of the AQM and QoS facilities in the regular
-  networking stack to work with XDP? Or should we do something different?
-
-\item Accelerating other parts of the stack: Tom Herbert started the discussion
-  on accelerating transport protocols with XDP back in 2016. How do we make
-  progress on this? Or should we be doing something different? Are there other
-  areas where we can extend XDPs processing model to provide useful
-  accelerations?
-\end{itemize}
-
+  In the forward-looking section, we discuss some future developments that we
+  believe would be beneficial to work on going forward. These topics include NIC
+  memory models and DMA mapping; moving SKB allocation out of drivers; the
+  resource allocation around ndo\_xdp\_xmit; whether it is still realistic to
+  aim for full support of all XDP features in all drivers; and the possibility
+  for adding an XDP egress hook. We are hoping to solicit feedback on these from
+  the wider community during and after LPC.
 \end{abstract}
 
 
@@ -82,18 +68,26 @@ The issues we are planning to discuss include, but are not limited to:
 
 We have recently finished writing an academic paper on XDP~\cite{xdp-paper},
 which includes a description of the architecture, and performance comparison
-with DPDK. In the course of that work, we have identified and discussed several
-areas of potential improvements. The purpose of this paper, and the associated
-talk, is to broaden that discussion to the Linux community to solicit feedback,
-and to give a broad overview of ideas and directions of work that is in
-progress, as well as some things that are still at the idea stage.
+with DPDK. As part of that work, we have discussed several areas of potential
+improvements to XDP as a whole. The purpose of this paper, and the associated
+talk, is to broaden that discussion to the wider community, and to solicit
+feedback on some of the future directions we see as beneficial for XDP.
 
-To do this, we include an overview of the other XDP-related talk and topics that
-will be covered at the networking track at LPC '18; those topics will not be
-covered in detail in this work. In addition, we include a couple of ideas that
-are not covered elsewhere, which we will discuss in more detail.
+To provide some context to the discussion of future directions, we first look at
+some of the work that is currently ongoing. We do this in the form of an
+overview of the other XDP-related talk and topics that will be covered at the
+networking track at LPC '18. Those topics will not be covered in detail in this
+work, but we provide a short summary of each, with references to the other
+talks. This is the topic of Section~\ref{sec:current}.
+
+Following this, we discuss some possible future developments that we believe
+will be beneficial to XDP's development going forward. This is the topic of
+Section~\ref{sec:future}, and takes the form of a short summary of each
+development, which should be seen more as an invitation to provide feedback than
+a finished roadmap.
 
 \section{Current developments around XDP}
+\label{sec:current}
 
 Even though XDP is still being very actively developed (as the large number of
 talks at LPC shows), we have already seen examples of it being successfully
@@ -211,7 +205,7 @@ feature of XDP, and we wish to encourage people to think about adding (or
 requesting!) such helpers where it makes sense for their use case.
 
 \section{Future directions for XDP}
-
+\label{sec:future}
 While the previous section covered ongoing work related to XDP, in this section
 we venture a bit further into the future and look at some of the developments we
 believe are necessary for the XDP ecosystem to flourish in the future. As such,
@@ -338,6 +332,22 @@ information about the current state of the TX ring buffer (such as free space),
 which the eBPF program can react appropriately to, for example by signalling
 ingress XDP programs to send traffic another way if the TX ring is full, or by
 implementing AQM-like reactions when TX ring pressure increases.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We have provided an overview of the current XDP-related work being discussed at
+LPC '18, which includes production deployment reports, using XDP as a backend
+for the P4 language, zero-copy to userspace with AF\_XDP, and the use of kernel
+helpers to evolve the XDP feature set. We have also discussed some future
+directions for XDP development which we believe will be beneficial to pursue.
+These include NIC memory models and DMA mapping; moving SKB allocation out of
+drivers; the resource allocation around ndo\_xdp\_xmit; whether it is still
+realistic to aim for full support of all XDP features in all drivers; and the
+possibility for adding an XDP egress hook.
+
+It is our hope that this can serve as a useful overview, and as a catalyst for
+discussion of the longer-term future for the XDP system as a whole.
 
 
 \bibliographystyle{ACM-Reference-Format}
