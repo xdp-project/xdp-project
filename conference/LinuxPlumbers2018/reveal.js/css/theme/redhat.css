@@ -84,6 +84,7 @@ body {
 #sec-title-slide {
   background-image: url('../../images/title-bg.png');
   padding: 5em;
+  color: #eee8d5;
 }
 
 .reveal .slides > section > section.mid-slide {
@@ -102,7 +103,6 @@ body {
 }
 
 #sec-title-slide h2, #sec-title-slide h3 {
-  color: #eee8d5;
   font-size: 1em;
   text-align: right;
   float: right;
@@ -116,6 +116,10 @@ body {
 }
 #sec-title-slide h3 {
   font-size: .8em;
+}
+
+#sec-title-slide .authorbox .authors {
+  display: none;
 }
 
 

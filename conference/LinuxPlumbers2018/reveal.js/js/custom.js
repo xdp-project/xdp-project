@@ -9,9 +9,9 @@ var authorHTML = [
     '<i class="icon-cc-1"></i>',
     '<i class="icon-cc-by"></i>',
     '<i class="icon-cc-sa"></i>',
-    '</a> - ',
+    '</a><span class="authors"> - ',
     authorName, ' &lt;', authorEmail, '&gt; &amp;&nbsp;',
-    authorName2, ' &lt;', authorEmail2, '&gt; &nbsp;'].join('');
+    authorName2, ' &lt;', authorEmail2, '&gt; &nbsp;</span>'].join('');
 
 function addAuthor(selector) {
     return function() {
@@ -42,5 +42,6 @@ if (window.location.search.match( /print-pdf/gi )) {
     window.addEventListener('pdf-ready', hideFake('.pdf-page'));
 } else {
     window.addEventListener('load', addAuthor('.reveal .slides > section > section'));
+    window.addEventListener('load', addAuthor('#sec-title-slide'));
 }
 window.addEventListener('DOMContentLoaded', hideFake('section'));
