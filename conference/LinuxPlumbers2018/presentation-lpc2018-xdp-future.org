@@ -285,8 +285,7 @@ XDP is all about performance
 Guiding principle: /New features must not negatively affect baseline XDP perf/
  - Optimization hint: move runtime checks to setup time
 
-Issue:
-/*Who is monitoring XDP performance?*/
+Issue: /*Who is monitoring XDP performance?*/
  - We need CI tests for this... but who will do this work?
 
 ** Topic: Evolving XDP
