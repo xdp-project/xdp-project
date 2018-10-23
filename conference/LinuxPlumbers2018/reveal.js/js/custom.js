@@ -3,13 +3,15 @@ var authorName2 = 'Toke Høiland-Jørgensen';
 var authorEmail = 'brouer@redhat.com';
 var authorEmail2 = 'toke@toke.dk';
 
-var authorHTML = [authorName, ' &lt;', authorEmail, '&gt; &amp;&nbsp;',
-                  authorName2, ' &lt;', authorEmail2, '&gt; &nbsp;',
-                  '<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">',
-                  '<i class="icon-cc-1"></i>',
-                  '<i class="icon-cc-by"></i>',
-                  '<i class="icon-cc-sa"></i>',
-                  '</a>'].join('');
+var authorHTML = [
+    '<img src="./reveal.js/images/logo.svg" />',
+    '<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">',
+    '<i class="icon-cc-1"></i>',
+    '<i class="icon-cc-by"></i>',
+    '<i class="icon-cc-sa"></i>',
+    '</a> - ',
+    authorName, ' &lt;', authorEmail, '&gt; &amp;&nbsp;',
+    authorName2, ' &lt;', authorEmail2, '&gt; &nbsp;'].join('');
 
 function addAuthor(selector) {
     return function() {

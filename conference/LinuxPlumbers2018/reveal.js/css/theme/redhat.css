@@ -44,16 +44,17 @@ body {
 }
 
 .reveal .slides .authorbox {
-  font-size: 20px;
+  font-size: .5em;
+  font-weight: 300;
   position: absolute;
-  bottom: 5px;
-  right: 10px;
+  bottom: 25px;
+  left: 28px;
   line-height: 20px;
   vertical-align: bottom;
 }
 
 .reveal .slides .authorbox a {
-  color: #93a1a1;
+  color: inherit;
 }
 
 .reveal .slides .authorbox a:hover {
@@ -61,10 +62,13 @@ body {
 }
 
 .reveal .slides .authorbox img {
-    height: 20px;
+    height: 75px;
     position: relative;
-    top: 3px;
+    top: 30px;
     margin: 0px;
+    border: 0px;
+    background: none;
+    box-shadow: none;
 }
 
 
