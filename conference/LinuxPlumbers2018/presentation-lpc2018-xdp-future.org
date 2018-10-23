@@ -571,7 +571,7 @@ Idea: Add a new /egress hook/ to XDP
 - Can access TX ring status
   - When full, selectively drop or signal ingress programs to back off
 - Also useful for implementing QoS, policing, AQM
-
+- Crazy idea: Allow new XDP action, including redirect out other device
 
 
 * Memory and DMA
