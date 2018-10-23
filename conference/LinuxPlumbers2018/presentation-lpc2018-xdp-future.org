@@ -324,7 +324,7 @@ ecosystem.  This can best be achieved by eBPF helper functions that allow XDP
 to perform lookup in kernel tables, e.g. like the FIB lookup that was recently
 added (also covered in the XDP-paper).
 
-The topic and the FIB lookup is covered in David Ahern's talk:
+The topic and the FIB lookup are covered in David Ahern's talk:
 "Leveraging Kernel Tables with XDP"
 
 We want to encourage people to add these kind of helpers to XDP, when use-case
@@ -349,7 +349,7 @@ IP-routing good example of XDP acceleration
  - Access routing FIB table lookups from XDP via BPF helpers
  - Encourage add helpers, instead of on-the-side BPF maps
 
-The topic and FIB-lookup helper is covered in David Ahern's talk:
+The topic and FIB-lookup helper covered in David Ahern's talk:
  - [[http://vger.kernel.org/lpc-networking.html#session-1][Leveraging Kernel Tables with XDP]]
 
 ** Topic: XDP as a building block
@@ -383,9 +383,9 @@ Directions we hope to see XDP used for
    - The AF_XDP approach might offer zero-copy
 
 P4 vs eBPF/XDP is a wrong attitude
- - Instead translate/compile your P4 code into eBPF/XDP compatible code
- - Talk on this approach:
-   "P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4"
+ - Instead translate/[[https://github.com/vmware/p4c-xdp/][compile your P4 code into eBPF/XDP]] compatible code
+ - Talk on this approach by William Tu (VMware):
+   - [[http://vger.kernel.org/lpc-networking.html#session-16][P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4]]
 
 
 * Topic: Zero-copy to userspace AF_XDP
