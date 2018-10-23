@@ -399,23 +399,23 @@ userspace.  AF_XDP goes the other way, and let userspace (pre) alloc.
    On the TX-side AF_XDP does have a syscall, but userspace can fill
    several TX buffers into TX ring before calling the sendmsg syscall.
 
-* Slide: Zero-copy to userspace AF_XDP                              :export:
+* Slide: AF_XDP: Zero-copy to userspace                       :export:
 
-XDP usual performance benefit comes from in-kernel processing via BPF
+/Regular XDP/ performance benefit comes from /in-kernel/ processing
 
-AF_XDP is for faster raw packet delivery into userspace
+*AF_XDP* is for faster raw packet delivery *to userspace*
  - Unlike tcpdump, as it owns/steals the packet
-   * (Might want to invent/allow a copy and XDP_PASS mode)
+   - Might want to add a copy mode for XDP_PASS
  - Hooking into XDP provides:
-   - Packet filter flexibility (avoid netstack reinject tricks)
-   - Copy-variant work on any driver with XDP_REDIRECT
+   - Packet filter flexibility (avoid reinjecting into network stack)
+   - Fallback mode (with copying) on any driver supporting XDP_REDIRECT
  - Performance tricks:
-   - Preallocated userspace memory, give it to kernel for NIC RX-rings
-   - NetChannel like SPSC queues between kernel and userspace
+   - Userspace preallocates memory, passes to kernel for NIC RX-rings
+   - NetChannel-like SPSC queues between kernel and userspace
 
 ** Slide: AF_XDP talks
 
-Two talks about AF_XDP on schedule:
+Two talks about AF_XDP at LPC:
  - [[http://vger.kernel.org/lpc-networking.html#session-11][The Path to DPDK Speeds for AF_XDP]]
    - By Björn Töpel and Magnus Karlsson (Intel)
  - [[http://vger.kernel.org/lpc-networking.html#session-7][Bringing the Power of eBPF to Open vSwitch]]
