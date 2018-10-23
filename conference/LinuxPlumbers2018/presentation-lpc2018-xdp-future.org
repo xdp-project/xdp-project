@@ -546,6 +546,18 @@ Can be used for:
 - Implementing QoS / AQM
 
 
+* Slide: XDP egress hook                                             :export:
+Issue: Programs can't predict if XDP_REDIRECT will succeed
+- If destination TX ring is full, packets are /*silently dropped*/
+  - Only way to detect this is with tracepoints
+- Especially problematic for fast ➔ slow device redirect
+
+Idea: Add a new /egress hook/ to XDP
+- Execute just before packets are put into TX ring
+- Can access TX ring status
+  - When full, selectively drop or signal ingress programs to back off
+- Also useful for implementing QoS, policing, AQM
+
 * Topic: NIC memory models and DMA mapping
 
 XDP recently (v4.18) got support for different memory models per driver
