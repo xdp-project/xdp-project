@@ -422,7 +422,15 @@ Two talks about AF_XDP at LPC:
  - [[http://vger.kernel.org/lpc-networking.html#session-7][Bringing the Power of eBPF to Open vSwitch]]
    - By William Tu (VMware)
 
-* Topic: Move SKB allocation out of driver
+
+* Future directions for XDP
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Warning: Crazy ideas ahead!
+
+** Topic: Move SKB allocation out of driver
 
    The long term goal is moving SKB allocations out of driver code.
 
@@ -434,7 +442,7 @@ Two talks about AF_XDP at LPC:
    (e.g. csum-info, rxhash, HW-mark) in a vendor neutral and generic way.  This
    depends/waits on metadata talk, for this to be generic enough.
 
-* Slide: Move SKB allocation out of drivers                          :export:
+** Slide: Move SKB allocation out of drivers                        :export:
 
 Long term goal: /Remove need for SKB allocations in NIC drivers/
 
@@ -448,7 +456,7 @@ Missing part: driver offloads (e.g., csum-info, rxhash, HW-mark)
 Hope this will be covered in the talk by P.J. Waskiewicz and Neerav Parikh (Intel):
  - [[http://vger.kernel.org/lpc-networking.html#session-3][XDP acceleration using NIC metadata, continued]]
 
-* Slide/topic (maybe skip): Jumbo-frames
+** Slide/topic (maybe skip): Jumbo-frames
 
 (Topic text) People in XDP-newbies list request jumbo-frames. They don't seem
 to understand to support high-speed packet processing, we cannot support this
@@ -468,7 +476,7 @@ Hybrid solution: Only grant XDP access to top 4K
    (makes it complicated and thus affect performance)
 
 
-* Topic: Controlling resources for ndo_xdp_xmit
+** Topic: Controlling resources for ndo_xdp_xmit
 
 (Usability related) XDP_REDIRECT entangled with ndo_xdp_xmit.
 
@@ -492,7 +500,7 @@ consumes HW resources.  Given the TX queue per CPU core assumption, this makes
 it problematic on systems with many CPU cores. E.g. it was discovered the ixgbe
 driver cannot load XDP on systems with more than 96 CPU cores.
 
-* Slide: Resource allocation for ndo_xdp_xmit()                      :export:
+** Slide: Resource allocation for ndo_xdp_xmit()                    :export:
 
 When redirecting to another device, XDP calls target driver's =ndo_xdp_xmit()=
 
@@ -508,7 +516,7 @@ We need an /explicit API for enabling XDP TX/ on a device
  - Would be natural to trigger when device is added to DEVMAP
    - But how to handle non-map redirect variant?
 
-* Topic: What does XDP driver support?
+** Topic: What does XDP driver support?
 
 (Usability related)
 
@@ -526,7 +534,7 @@ Original goal of not exposing feature-bits to userspace, was to force full
 support for XDP in all drivers.  Is this goal still realistic, after X kernel
 releases, where only 3 HW-drivers have implemented XDP_REDIRECT.
 
-* Slide: What does an XDP driver support?                            :export:
+** Slide: What does an XDP driver support?                          :export:
 
 Userspace cannot query which XDP features a driver supports
 
@@ -541,7 +549,7 @@ Userspace needs this information. *For example, in Suricata:*
 
 
 
-* Topic: XDP egress hook (just before TX)
+** Topic: XDP egress hook (just before TX)
 
 Can be used for:
 
@@ -549,7 +557,7 @@ Can be used for:
 - Implementing QoS / AQM
 
 
-* Slide: XDP egress hook                                             :export:
+** Slide: XDP egress hook                                           :export:
 Issue: Programs can't predict if XDP_REDIRECT will succeed
 - If destination TX ring is full, packets are /*silently dropped*/
   - Only way to detect this is with tracepoints
@@ -561,7 +569,14 @@ Idea: Add a new /egress hook/ to XDP
   - When full, selectively drop or signal ingress programs to back off
 - Also useful for implementing QoS, policing, AQM
 
-* Topic: NIC memory models and DMA mapping
+
+
+* Memory and DMA
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Topic: NIC memory models and DMA mapping                       :noexport:
 
 XDP recently (v4.18) got support for different memory models per driver
 RX-queue, via the xdp_return_frame() and xdp_rxq_info_reg_mem_model() APIs.
@@ -584,11 +599,6 @@ have been very Intel focused, the DMA overhead have seen much attention. The
 Spectre-V2 mitigation changed the picture. and will force us to address the DMA
 overhead issues due to the indirect call API.
 
-
-* Memory and DMA
-:PROPERTIES:
-:reveal_extra_attr: class="mid-slide"
-:END:
 
 ** Slide: Memory models                                              :export:
 
