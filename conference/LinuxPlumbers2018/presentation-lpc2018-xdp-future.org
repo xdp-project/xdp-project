@@ -199,7 +199,8 @@ Evolving XDP -- without killing performance
 ** Slide: XDP-paper                                                 :export:
 
 Scientific XDP paper accepted:
- - /"The eXpress Data Path: Fast Programmable Packet Processing in the Operating System Kernel"/
+ - /"The eXpress Data Path: Fast Programmable Packet Processing in the
+   Operating System Kernel"/ -  [[https://github.com/tohojo/xdp-paper][Available on GitHub]] 
  - Conference: ACM CoNEXT 2018, Dec 4-7, Heraklion, Greece
 
 Purpose
