@@ -119,6 +119,12 @@ PHYlink and SFP: Going beyond 1G Copper PHYs
 
 
 * Topics and slides
+:PROPERTIES:
+:reveal_background: ./images/rh_bg1.jpg
+:reveal_background_size: contain
+:reveal_background_color: white
+:END:
+
 *IDEA* for organizing presentation:
 
 The presentation will be organized around a number of XDP-topics.  We cannot
@@ -215,9 +221,14 @@ checks.
 ** Slide: New XDP features and performance requirement              :export:
 
 XDP is all about performance
+#+HTML: <font color="#fecb00">
  - Watch-out that feature creep doesn't kill performance!
+#+HTML: </font>
 
-Guiding principle: New features must not negatively affect baseline XDP perf
+Guiding principle:
+@@html: <font color="#7ab800">
+New features must not negatively affect baseline XDP perf
+</font>@@
  - Optimization hint: move runtime checks to setup time
 
 ** Topic: Evolving XDP
