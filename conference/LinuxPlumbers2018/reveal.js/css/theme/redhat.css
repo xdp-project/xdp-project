@@ -2,8 +2,7 @@
  * Solarized Dark theme for reveal.js.
  * Author: Achim Staebler
  */
-@import url(../../lib/font/league-gothic/league-gothic.css);
-@import url(https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic);
+@import url(../../lib/font/overpass/overpass.css);
 /**
  * Solarized colors by Ethan Schoonover
  */
@@ -19,7 +18,7 @@ body {
   background-color: #003a4b; }
 
 .reveal {
-  font-family: "Lato", sans-serif;
+  font-family: "overpass", sans-serif;
   font-size: 40px;
   font-weight: normal;
   color: #93a1a1; }
@@ -76,9 +75,12 @@ body {
   float: right;
   clear: both;
   padding-top: 1em;
-  font-family: "Lato", sans-serif;
+  font-weight: normal;
 }
 
+#sec-title-slide h1 {
+  font-size: 2em;
+}
 #sec-title-slide h3 {
   font-size: .8em;
 }
@@ -95,8 +97,8 @@ body {
 .reveal h6 {
   margin: 0 0 20px 0;
   color: #eee8d5;
-  font-family: "League Gothic", Impact, sans-serif;
-  font-weight: normal;
+  font-family: "overpass", sans-serif;
+  font-weight: bold;
   line-height: 1.2;
   letter-spacing: normal;
   text-transform: none;
