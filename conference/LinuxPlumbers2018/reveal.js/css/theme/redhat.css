@@ -89,6 +89,11 @@ body {
   background-image: url('../../images/mid-slide-bg.png');
   padding-top: 8em;
   padding-left: 3em;
+  color: #eee8d5;
+}
+
+.reveal .slides > section > section.mid-slide .authorbox {
+  opacity: .5;
 }
 
 .reveal .title {
