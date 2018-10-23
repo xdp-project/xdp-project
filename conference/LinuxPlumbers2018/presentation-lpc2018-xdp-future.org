@@ -639,7 +639,7 @@ More optimizations for DMA mapping needed
    DMA-TX addr could be stored in xdp_frame, then xdp_return_frame API could
    also handle the DMA-unmap call.
 
-** Slide: Performance issue: Spectre (variant 2)                     :export:
+** Slide: Performance issue: Spectre (variant 2)
 
 CONFIG_RETPOLINE and newer GCC compiler
  - for stopping Spectre (variant 2) CPU side-channel attacks
@@ -657,6 +657,36 @@ Real pitfall: DMA API use indirect function call pointers
 One XDP indirect call we cannot remove: Invoking BPF program
 
 
+* Slide: To summarise...                                             :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** XDP paper
+ - /"The eXpress Data Path: Fast Programmable Packet Processing in the Operating System Kernel"/
+ - Will be presented at ACM CoNEXT 2018, Dec 4-7, Heraklion, Greece
+ - [[https://github.com/tohojo/xdp-paper][Available on GitHub]] - feel free to share!
+
+** XDP at LPC
+- XDP in production:
+ - [[http://vger.kernel.org/lpc-networking.html#session-10][XDP 1.5 years in production. Evolution and lessons learned]]
+ - [[http://vger.kernel.org/lpc-networking.html#session-15][eBPF / XDP based firewall and packet filtering]]
+- Kernel helpers:
+ - [[http://vger.kernel.org/lpc-networking.html#session-1][Leveraging Kernel Tables with XDP]]
+- Metadata:
+ - [[http://vger.kernel.org/lpc-networking.html#session-3][XDP acceleration using NIC metadata, continued]]
+- XDP as a building block:
+ - [[http://vger.kernel.org/lpc-networking.html#session-16][P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4]]
+- AF_XDP:
+ - [[http://vger.kernel.org/lpc-networking.html#session-11][The Path to DPDK Speeds for AF_XDP]]
+ - [[http://vger.kernel.org/lpc-networking.html#session-7][Bringing the Power of eBPF to Open vSwitch]]
+
+** Future directions for XDP
+- Moving SKB allocation out of drivers
+- Resource allocation for ndo_xdp_xmit()
+- Discovering supported XDP features for a device
+- Adding an egress hook to XDP
+- NIC memory models and DMA mapping
 * Skipped topics                                                   :noexport:
 ** Topic (maybe skip): Usability: User Experience and Debugging
 
