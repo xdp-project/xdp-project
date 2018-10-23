@@ -135,6 +135,11 @@ impact. As an example, the Mellanox driver we used for our tests
 tests show that the overhead \emph{of just the function calls} corresponds to an
 additional 9\,Mpps of performance on a single core.
 
+% Should we mention that some of the non-inlined mlx5 driver function
+% calls are indirect function pointer calls?  Which will be even worse
+% when enabling CONFIG_RETPOLINE. But that is likely also covered
+% later...
+
 Because of this sensitivity to overhead, it is imperative that thorough
 performance evaluations of new features are performed to avoid regressions, and
 a guiding principle should be that new features must not negatively affect
