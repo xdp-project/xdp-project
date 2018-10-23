@@ -7,7 +7,7 @@
 \usepackage{booktabs}
 \usepackage{xcolor}
 
-\setcopyright{none}
+\setcopyright{ccbysa}
 \acmConference[LPC '18 Networking Track]{Linux Plumbers Conference 2018 Networking Track}{Nov 13--14,
 2018}{Vancouver, British Columbia}
 \acmISBN{}
@@ -93,8 +93,7 @@ will be covered at the networking track at LPC '18; those topics will not be
 covered in detail in this work. In addition, we include a couple of ideas that
 are not covered elsewhere, which we will discuss in more detail.
 
-\section{XDP in production use}
-\label{sec:xdp-production-use}
+\section{Current developments around XDP}
 
 Even though XDP is still being very actively developed (as the large number of
 talks at LPC shows), we have already seen examples of it being successfully
@@ -106,7 +105,10 @@ Open vSwitch~\cite{ovs-xdp}, and even DPDK~\cite{dpdk-xdp}.
 There are two other talks at LPC that cover Facebook's production use of XDP in
 more detail~\cite{facebook-lessons,facebook-firewall}.
 
- \section{The state of XDP performance}
+In this section we seek to give an overview of the current state of XDP and some
+of the ongoing development that is being presented at LPC.
+
+\subsection{The state of XDP performance}
 \label{sec:state-xdp-perf}
 
 XDP has been deliberately designed to achieve maximum packet processing
@@ -146,11 +148,46 @@ baseline XDP performance. One optimisation technique that can be used to achieve
 this is to move as many checks as possible to setup time rather than execution
 time.
 
+\subsection{XDP as a building block}
+\label{sec:xdp-as-building}
+
+XDP offers low-level functionality on which higher level systems can be built.
+As such, it is clear that there is substantial room for other open source
+projects to build upon the XDP architecture, and only time will tell what it
+will be used for. In our view, this also means that viewing XDP (and eBPF) as a
+competitor to something like P4 is the wrong attitude. Rather, XDP can be one
+backend among many for P4, as is already possible with the XDP P4 compiler
+backend that will also be discussed at LPC~\cite{xdp-p4}.
+
+Another direction we hope to see XDP take, is as an accelerator for forwarding
+packets into virtual machines. There's already support for redirecting packets
+directly to the tuntap driver from XDP, with a single packet copy but bypassing
+the host OS stack. With the AF\_XDP zero-copy approach, it may be possible to
+accelerate this even further.
+
+\subsection{Zero-copy to userspace with AF\_XDP}
+\label{sec:zero-copy-userspace}
+
+A major source of speedup in both XDP and other high-performance packet
+processing frameworks, is avoiding the overhead of traversing the userspace to
+kernel boundary. In XDP this is done by moving the processing into the kernel
+which is possible thanks to the eBPF virtual machine an associated
+infrastructure. This works really well for raw packet processing that can be
+implemented directly as an eBPF program. However, sometimes packets do need to
+go out to userspace applications, and avoiding overhead in this case is
+important as well. The XDP solution to this problem is AF\_XDP, which is covered
+in two separate LPC talks~\cite{af-xdp,xdp-ovs}.
+
+The main benefit of AF\_XDP is that it uses the existing XDP facilities to avoid
+having to take over the network device entirely for zero-copy. Userspace
+provides a chunk of memory that is used directly for DMA, thus avoiding copying,
+and a Single Producer Single Consumer queue is used for communication between
+kernel and userspace. This does mean that each \emph{packet} is completely
+transferred to userspace, though, and so adding an option to XDP\_PASS copies of
+packets to the regular stack would be useful increasing flexibility.
 
 
-
-
-\section{Evolving XDP}
+\subsection{Evolving XDP using helpers}
 \label{sec:evolving-xdp}
 
 One way to view XDP is as a ``software offload'', which can accelerate critical
@@ -173,19 +210,43 @@ program to focus on accelerating the fast path. We believe this is a killer
 feature of XDP, and we wish to encourage people to think about adding (or
 requesting!) such helpers where it makes sense for their use case.
 
-\section{XDP as a building block}
-\label{sec:xdp-as-building}
+\section{Future directions for XDP}
 
+While the previous section covered ongoing work related to XDP, in this section
+we venture a bit further into the future and look at some of the developments we
+believe are necessary for the XDP ecosystem to flourish in the future. As such,
+this section should be viewed more as a discussion paper than as a roadmap, and
+we hope to collect feedback on these ideas from the rest of the community.
 
+\subsection{NIC memory models and DMA mapping}
+\label{sec:nic-memory-models}
 
+XDP recently (v4.18) acquired support for different memory models per driver
+RX-queue, via the \texttt{xdp\_return\_frame()} and
+\texttt{xdp\_rxq\_ info\_reg\_mem\_model()} APIs.
 
-\section{Zero-copy to userspace with AF\_XDP}
-\label{sec:zero-copy-userspace}
+This allows drivers to innovate with new memory models, but also makes it
+possible to generalise and share common code to handle memory recycle schemes
+for drivers. The page\_pool is one example of such common code. We want to see
+more drivers need to use page\_pool, and work on page\_pool is needed, especially
+in the area of keeping frames DMA mapped.
 
-\section{Moving SKB allocation out of device drivers}
+We plan to extend the \texttt{xdp\_return\_frame} API with a bulking option,
+because it can naturally do bulking at DMA-TX completion, and the page\_pool
+needs this to handle a known weakness (of concurrent CPUs returning frames to
+the same RX-queue).
+
+On Intel machines the DMA map/unmap/sync operations are very lightweight, due
+the coherency model; however, this might not be true for other architectures. As
+XDP has been very Intel focused, the DMA overhead has not received much
+attention thus far. However, the Spectre-V2 mitigation efforts has changed this
+picture, and will force us to address the DMA overhead issues even on Intel
+machines, due to the indirect call API employed by this subsystem.
+
+\subsection{Moving SKB allocation out of device drivers}
 \label{sec:moving-skb-alloc}
 
-One important performance optimisation available with XDP\_REDIRECT, is the
+One important performance optimisation made possible by XDP\_ REDIRECT, is the
 ability to offload packet processing to another CPU, by redirecting with a CPU
 map. This also moves the SKB creation to the target CPU, where it is created
 based on the xdp\_frame data. This frees up the CPU running the XDP program to
@@ -210,7 +271,7 @@ neutral and generic way. We have high hopes that the metadata work also
 presented at LPC~\cite{xdp-metadata} will be a way to achieve this.
 
 
-\section{Decoupling ndo\_xdp\_xmit resource allocation from XDP loading}
+\subsection{Decoupling ndo\_xdp\_xmit resource allocation from XDP loading}
 \label{sec:decoupling-ndo-xdp-xmit}
 
 When XDP redirects a frame out another \texttt{net\_device}, then the
@@ -238,7 +299,7 @@ the functionality when a device is first inserted into a \texttt{DEVMAP} to be
 used in XDP\_REDIRECT, although this leaves the question of what to do with the
 non-map variant of REDIRECT.
 
-\section{Partial XDP support in drivers}
+\subsection{Partial XDP support in drivers}
 \label{sec:partial-xdp-support}
 
 Not all drivers that support loading XDP programs actually support the full
@@ -259,7 +320,7 @@ bring up this discussion again.
 
 % FIXME: Should we write something about how we propose to solve this?
 
-\section{XDP egress hook}
+\subsection{XDP egress hook}
 \label{sec:xdp-egress-hook}
 
 A limitation of the current design of XDP is that programs get no feedback if a
@@ -278,30 +339,6 @@ which the eBPF program can react appropriately to, for example by signalling
 ingress XDP programs to send traffic another way if the TX ring is full, or by
 implementing AQM-like reactions when TX ring pressure increases.
 
-\section{NIC memory models and DMA mapping}
-\label{sec:nic-memory-models}
-
-XDP recently (v4.18) acquired support for different memory models per driver
-RX-queue, via the \texttt{xdp\_return\_frame()} and
-\texttt{xdp\_rxq\_info\_reg\_mem\_model()} APIs.
-
-This allows drivers to innovate with new memory models, but also makes it
-possible to generalise and share common code to handle memory recycle schemes
-for drivers. The page\_pool is one example of such common code. We want to see
-more drivers need to use page\_pool, and work on page\_pool is needed, especially
-in the area of keeping frames DMA mapped.
-
-We plan to extend the \texttt{xdp\_return\_frame} API with a bulking option,
-because it can naturally do bulking at DMA-TX completion, and the page\_pool
-needs this to handle a known weakness (of concurrent CPUs returning frames to
-the same RX-queue).
-
-On Intel machines the DMA map/unmap/sync operations are very lightweight, due
-the coherency model; however, this might not be true for other architectures. As
-XDP has been very Intel focused, the DMA overhead has not received much
-attention thus far. However, the Spectre-V2 mitigation efforts has changed this
-picture, and will force us to address the DMA overhead issues even on Intel
-machines, due to the indirect call API employed by this subsystem.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{xdp-future}
