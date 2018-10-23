@@ -187,9 +187,7 @@ topic, this text could be used in the paper.
 
 * Slide: Presentation overview                                      :export:
 :PROPERTIES:
-:reveal_background: ./images/rh_bg1.jpg
-:reveal_background_size: 100%
-:reveal_background_color: white
+:reveal_extra_attr: class="mid-slide"
 :END:
 
 Introduce scientific XDP paper
@@ -266,9 +264,7 @@ Other talks will cover this:
 
 * Evolving XDP
 :PROPERTIES:
-:reveal_background: ./images/rh_bg1.jpg
-:reveal_background_size: 100%
-:reveal_background_color: white
+:reveal_extra_attr: class="mid-slide"
 :END:
 
 While XDP is disruptive and innovative technology
