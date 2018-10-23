@@ -294,7 +294,7 @@ New features must not negatively affect baseline XDP perf
  - Optimization hint: move runtime checks to setup time
 
 Issue:
-@@html: <font color="#a30000">
+@@html: <font color="#ff4d4d">
 Who is monitoring XDP performance?
 </font>@@
  - We need CI tests for this... but who will do this work?
@@ -701,6 +701,10 @@ Red Hat Colors:
  - Red Hat Red #cc0000
  - Medium Red #a30000
  - Dark Red #820000
+
+None of these red colors fit with baggrond color:
+ - Using red 65% #ff4d4d
+ - Found via: https://www.w3schools.com/colors/colors_picker.asp
 
 Secondary Palette:
 
