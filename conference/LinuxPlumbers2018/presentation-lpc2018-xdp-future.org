@@ -569,7 +569,13 @@ have been very Intel focused, the DMA overhead have seen much attention. The
 Spectre-V2 mitigation changed the picture. and will force us to address the DMA
 overhead issues due to the indirect call API.
 
-* Slide: Memory models                                             :export:
+
+* Memory and DMA
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: Memory models                                              :export:
 
 Recent (4.18): XDP memory models per driver RX-queue
  - New flexibility to innovate
@@ -580,13 +586,13 @@ Planned changes
  - Extend xdp_return_frame API with bulking, performance reasons
  - Keep pages DMA mapped in page_pool (almost supported)
 
-* Slide: DMA mapping                                               :export:
+** Slide: DMA mapping                                                :export:
 
 More optimizations for DMA mapping needed
  - Was low priority, due to almost zero cost on Intel CPUs
  - Spectre-V2 mitigation makes DMA calls more expensive
 
-* Topic: Spectre-V2: mitigation killed XDP performance
+** Topic: Spectre-V2: mitigation killed XDP performance
 
    (This is related to DMA mapping)
 
@@ -619,7 +625,7 @@ More optimizations for DMA mapping needed
    DMA-TX addr could be stored in xdp_frame, then xdp_return_frame API could
    also handle the DMA-unmap call.
 
-* Slide: Performance issue: Spectre (variant 2)                    :export:
+** Slide: Performance issue: Spectre (variant 2)                     :export:
 
 CONFIG_RETPOLINE and newer GCC compiler
  - for stopping Spectre (variant 2) CPU side-channel attacks
