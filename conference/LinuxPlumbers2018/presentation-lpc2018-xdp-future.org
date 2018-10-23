@@ -528,10 +528,10 @@ releases, where only 3 HW-drivers have implemented XDP_REDIRECT.
 
 Today: Userspace cannot query what XDP features NIC driver support
  - Original goal of not exposing feature-bits to userspace:
-   was to force full support for XDP in all drivers.
+   - was to force full support for XDP in all drivers.
  - Is this still realistic goal?
-   E.g. only 3 HW-drivers have implemented XDP_REDIRECT.
-   Some users are happy with (only) XDP_DROP and XDP_TX.
+   - E.g. only 3 HW-drivers have implemented XDP_REDIRECT.
+   - Some users are happy with (only) XDP_DROP and XDP_TX.
 
 Userspace need to know if XDP_REDIRECT is supported:
  - Suricata use-case:
