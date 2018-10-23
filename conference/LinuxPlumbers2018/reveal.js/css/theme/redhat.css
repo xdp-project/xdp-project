@@ -41,6 +41,7 @@ body {
   height: 100%;
   font-weight: inherit;
   box-sizing: border-box;
+  text-align: left;
 }
 
 .reveal .slides .authorbox {
