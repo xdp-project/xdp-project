@@ -191,14 +191,20 @@ topic, this text could be used in the paper.
    Besides referencing the topics covered in other talks, we have also selected
    some XDP topics that we wish to soliciting feedback om from this community.
 
-* Slide: Overview
+* Slide: Presentation overview
 :PROPERTIES:
 :reveal_background: ./images/rh_bg1.jpg
 :reveal_background_size: 100%
 :reveal_background_color: white
 :END:
 
-** Slide: XDP-paper                                                 :export:
+Introduce scientific XDP paper
+
+Lots of XDP activity -- Especially at this conference
+
+Evolving XDP -- without killing performance
+
+** Slide: XDP-paper                                                  :export:
 
 Scientific XDP paper accepted
  - Title: @@html: <font color="#7ab800">@@
@@ -249,18 +255,30 @@ Very popular topic at this LPC network-track miniconf
    - We will mention and frame these talk in the bigger XDP picture
  - 4 related to eBPF
 
-** Slide: Production use-cases                                      :export:
+** Slide: Production use-cases                                       :export:
 
-(Pitch: Can people actually use this in production, even-though XDP is still
-under much developement)
+#+BEGIN_NOTES
+Pitch: Can people actually use this in production, even-though XDP is still
+under much developement
+#+END_NOTES
 
 XDP have seen production use
  - CloudFlare publically say they use XDP
  - Suricata have XDP plugins
 
 Other talks will cover this:
- - (facebook) XDP 1.5 years in production. Evolution and lessons learned
- - (facebook) eBPF / XDP based firewall and packet filtering
+ - (facebook)
+   [[http://vger.kernel.org/lpc-networking.html#session-10][XDP 1.5 years in production. Evolution and lessons learned]]
+ - (facebook)
+   [[http://vger.kernel.org/lpc-networking.html#session-15][eBPF / XDP based firewall and packet filtering]]
+
+
+* Evolving XDP
+:PROPERTIES:
+:reveal_background: ./images/rh_bg1.jpg
+:reveal_background_size: 100%
+:reveal_background_color: white
+:END:
 
 ** Topic: Performance
 
@@ -311,7 +329,7 @@ program called xdp_router_ipv4, which was done before the FIB-lookup helper was
 added.  The performance advantage is very small, and only occurs when
 xdp_router_ipv4 sample hit an "exact_match" cache.
 
-** Slide: Evolving XDP via BPF-helpers                              :export:
+** Slide: Evolving XDP via BPF-helpers                               :export:
 
 See: XDP as software offloading layer for kernel network stack
  - Setup and use Linux kernel network stack
@@ -666,6 +684,29 @@ issues, that I need to upstream fix for)
 ** Org-mode hints
 
 https://orgmode.org/manual/Quoting-HTML-tags.html#Quoting-HTML-tags
+
+** Colors from Red Hat guide lines
+
+Red Hat Colors:
+
+ - Red Hat Red #cc0000
+ - Medium Red #a30000
+ - Dark Red #820000
+
+Secondary Palette:
+
+ - Dark Blue #004153
+ - Medium Blue #4e9fdd
+ - Light Blue #5bc6e8
+ - Lighter Blue #a3dbe8
+
+Accent Palette:
+
+ - Purple #3b0083
+ - Orange #ec7a08
+ - Green #7ab800
+ - Turquoise #007a87
+ - Yellow #fecb00
 
 # Local Variables:
 # org-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
