@@ -191,7 +191,7 @@ topic, this text could be used in the paper.
    Besides referencing the topics covered in other talks, we have also selected
    some XDP topics that we wish to soliciting feedback om from this community.
 
-* Slide: Overview                                                    :export:
+* Slide: Overview
 :PROPERTIES:
 :reveal_background: ./images/rh_bg1.jpg
 :reveal_background_size: 100%
@@ -615,6 +615,7 @@ Real pitfall: DMA API use indirect function call pointers
 One XDP indirect call we cannot remove: Invoking BPF program
 
 
+* Skipped topics
 ** Topic (maybe skip): Usability: User Experience and Debugging
 
 Lots of small unexpected behavior, seen from normal users of XDP.
