@@ -430,7 +430,7 @@ Two talks about AF_XDP at LPC:
 
 Warning: Crazy ideas ahead!
 
-** Topic: Move SKB allocation out of driver
+** Topic: Moving SKB allocation out of driver
 
    The long term goal is moving SKB allocations out of driver code.
 
@@ -442,7 +442,7 @@ Warning: Crazy ideas ahead!
    (e.g. csum-info, rxhash, HW-mark) in a vendor neutral and generic way.  This
    depends/waits on metadata talk, for this to be generic enough.
 
-** Slide: Move SKB allocation out of drivers                        :export:
+** Slide: Moving SKB allocation out of drivers                      :export:
 
 Long term goal: /Remove need for SKB allocations in NIC drivers/
 
