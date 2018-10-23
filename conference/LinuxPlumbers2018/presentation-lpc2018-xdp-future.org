@@ -13,6 +13,7 @@
 #+REVEAL_TITLE_SLIDE_BACKGROUND: ./images/logo.svg
 #+REVEAL_TITLE_SLIDE_BACKGROUND_POSITION: bottom left
 #+REVEAL_TITLE_SLIDE_BACKGROUND_SIZE: 4em
+#+REVEAL_HLEVEL: 1
 #+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil reveal_width:1600 reveal_height:1000 ^:nil tags:nil toc:nil num:nil
 
 This presentation will be given at Linux Plumbers Conference 2018 Networking
@@ -172,8 +173,7 @@ The "Topic:" notation will be transition slide (or none), and the "Slide:"
 notation will be actual slides.  The "Topic:" notes describe more about the
 topic, this text could be used in the paper.
 
-
-* Topic: Story baseline
+* Story baseline                                                   :noexport:
 
  - Introduce XDP-paper.
 
@@ -191,7 +191,7 @@ topic, this text could be used in the paper.
    Besides referencing the topics covered in other talks, we have also selected
    some XDP topics that we wish to soliciting feedback om from this community.
 
-* Slide: Presentation overview
+* Slide: Presentation overview                                      :export:
 :PROPERTIES:
 :reveal_background: ./images/rh_bg1.jpg
 :reveal_background_size: 100%
@@ -204,7 +204,7 @@ Lots of XDP activity -- Especially at this conference
 
 Evolving XDP -- without killing performance
 
-** Slide: XDP-paper                                                  :export:
+** Slide: XDP-paper                                                 :export:
 
 Scientific XDP paper accepted
  - Title: @@html: <font color="#7ab800">@@
@@ -220,16 +220,13 @@ Purpose
 This talk focused on "Limitation and Future Work" section
  - Purpose soliciting feedback and ideas from the community
 
-** Topic: What is XDP
-
-Frame what is XDP.
-
-Be inspirational: New programmable layer in network stack
-
-Keep it very short, if possible 1-slide.  This is mostly for people finding this
-slide deck, or LPC people that don't know that XDP is.
 
 ** Slide: What is XDP                                               :export:
+
+#+BEGIN_NOTES
+Be inspirational: New programmable layer in network stack.
+(Mostly for general-track LPC partisipants)
+#+END_NOTES
 
 XDP basically: New layer in the kernel network stack
  - Before allocating the SKB
@@ -390,7 +387,8 @@ P4 vs eBPF/XDP is a wrong attitude
  - Talk on this approach:
    "P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4"
 
-** Topic: Zero-copy to userspace AF_XDP
+
+* Topic: Zero-copy to userspace AF_XDP
 
    Ref two AF_XDP Talks.
 
@@ -419,7 +417,7 @@ userspace.  AF_XDP goes the other way, and let userspace (pre) alloc.
    On the TX-side AF_XDP does have a syscall, but userspace can fill
    several TX buffers into TX ring before calling the sendmsg syscall.
 
-** Slide: Zero-copy to userspace AF_XDP                             :export:
+* Slide: Zero-copy to userspace AF_XDP                              :export:
 
 XDP usual performance benefit comes from in-kernel processing via BPF
  - (avoiding context switch to userspace)
@@ -436,7 +434,8 @@ Two talks about AF_XDP on schedule:
  - (AF_XDP) The Path to DPDK Speeds for AF_XDP
  - (AF_XDP) Bringing the Power of eBPF to Open vSwitch
 
-** Topic: Move SKB allocation out of driver
+
+* Topic: Move SKB allocation out of driver
 
    The long term goal is moving SKB allocations out of driver code.
 
@@ -448,7 +447,7 @@ Two talks about AF_XDP on schedule:
    (e.g. csum-info, rxhash, HW-mark) in a vendor neutral and generic way.  This
    depends/waits on metadata talk, for this to be generic enough.
 
-** Slide: Move SKB allocation out of driver                         :export:
+* Slide: Move SKB allocation out of driver                         :export:
 
 Long term goal:
  - Write NIC driver(s) without SKB allocations
@@ -464,7 +463,8 @@ Missing part: driver offloads (e.g. csum-info, rxhash, HW-mark)
 Hope this will be resolved covered in talk:
  - Talk: "XDP acceleration using NIC metadata, continued"
 
-** Slide/topic (maybe skip): Jumbo-frames                           :export:
+
+* Slide/topic (maybe skip): Jumbo-frames                           :export:
 
 (Topic text) People in XDP-newbies list request jumbo-frames. They don't seem
 to understand to support high-speed packet processing, we cannot support this
@@ -483,7 +483,8 @@ Hybrid solution: Only grant XDP access to top 4K
  - This will kill, moving SKB allocations out of driver plan
    (makes it complicated and thus affect performance)
 
-** Topic: Controlling resources for ndo_xdp_xmit
+
+* Topic: Controlling resources for ndo_xdp_xmit
 
 (Usability related) XDP_REDIRECT entangled with ndo_xdp_xmit.
 
@@ -507,7 +508,7 @@ consumes HW resources.  Given the TX queue per CPU core assumption, this makes
 it problematic on systems with many CPU cores. E.g. it was discovered the ixgbe
 driver cannot load XDP on systems with more than 96 CPU cores.
 
-** Slide: Controlling resources for ndo_xdp_xmit                    :export:
+* Slide: Controlling resources for ndo_xdp_xmit                    :export:
 
 Redirecting XDP frame out another net_device, call ndo_xdp_xmit
  - But egress net_device don't default alloc XDP-TX resouces
@@ -522,7 +523,7 @@ We need proper API for enabling XDP-TX resources on egress net_device
 This implicit XDP-TX resources allocation when loading XDP
  - is wasting HW resources when XDP doesn't need ndo_xdp_xmit
 
-** Topic: What does XDP driver support?
+* Topic: What does XDP driver support?
 
 (Usability related)
 
@@ -540,7 +541,7 @@ Original goal of not exposing feature-bits to userspace, was to force full
 support for XDP in all drivers.  Is this goal still realistic, after X kernel
 releases, where only 3 HW-drivers have implemented XDP_REDIRECT.
 
-** Slide: What does XDP driver support?                             :export:
+* Slide: What does XDP driver support?                             :export:
 
 Today: Userspace cannot query what XDP features NIC driver support
  - Original goal of not exposing feature-bits to userspace:
@@ -554,14 +555,15 @@ Userspace need to know if XDP_REDIRECT is supported:
    - If XDP_REDIRECT is not supported, reject config at startup
    - Or alternative TC solution can be used
 
-** Topic: XDP egress hook (just before TX)
+* Topic: XDP egress hook (just before TX)
 
 Can be used for:
 
 - Reacting to TX ring status
 - Implementing QoS / AQM
 
-** Topic: NIC memory models and DMA mapping
+
+* Topic: NIC memory models and DMA mapping
 
 XDP recently (v4.18) got support for different memory models per driver
 RX-queue, via the xdp_return_frame() and xdp_rxq_info_reg_mem_model() APIs.
@@ -584,7 +586,7 @@ have been very Intel focused, the DMA overhead have seen much attention. The
 Spectre-V2 mitigation changed the picture. and will force us to address the DMA
 overhead issues due to the indirect call API.
 
-** Slide: Memory models                                             :export:
+* Slide: Memory models                                             :export:
 
 Recent (4.18): XDP memory models per driver RX-queue
  - New flexibility to innovate
@@ -595,13 +597,13 @@ Planned changes
  - Extend xdp_return_frame API with bulking, performance reasons
  - Keep pages DMA mapped in page_pool (almost supported)
 
-** Slide: DMA mapping                                               :export:
+* Slide: DMA mapping                                               :export:
 
 More optimizations for DMA mapping needed
  - Was low priority, due to almost zero cost on Intel CPUs
  - Spectre-V2 mitigation makes DMA calls more expensive
 
-** Topic: Spectre-V2: mitigation killed XDP performance
+* Topic: Spectre-V2: mitigation killed XDP performance
 
    (This is related to DMA mapping)
 
@@ -634,7 +636,7 @@ More optimizations for DMA mapping needed
    DMA-TX addr could be stored in xdp_frame, then xdp_return_frame API could
    also handle the DMA-unmap call.
 
-** Slide: Performance issue: Spectre (variant 2)                    :export:
+* Slide: Performance issue: Spectre (variant 2)                    :export:
 
 CONFIG_RETPOLINE and newer GCC compiler
  - for stopping Spectre (variant 2) CPU side-channel attacks
@@ -652,7 +654,7 @@ Real pitfall: DMA API use indirect function call pointers
 One XDP indirect call we cannot remove: Invoking BPF program
 
 
-* Skipped topics
+* Skipped topics                                                   :noexport:
 ** Topic (maybe skip): Usability: User Experience and Debugging
 
 Lots of small unexpected behavior, seen from normal users of XDP.
