@@ -262,6 +262,9 @@ Other talks will cover this:
    [[http://vger.kernel.org/lpc-networking.html#session-15][eBPF / XDP based firewall and packet filtering]]
 
 
+** Slide: Packet drop performance (from paper)                      :export:
+[[file:images/drop-test.svg]]
+
 * Evolving XDP
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
