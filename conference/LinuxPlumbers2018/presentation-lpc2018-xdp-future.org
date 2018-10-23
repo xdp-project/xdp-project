@@ -198,23 +198,24 @@ Evolving XDP -- without killing performance
 
 ** Slide: XDP-paper                                                 :export:
 
-Scientific XDP paper accepted
- - Title: /"The eXpress Data Path: Fast Programmable Packet Processing in the Operating System Kernel"/
- - Conference: ACM CoNEXT 2018 Greece
+Scientific XDP paper accepted:
+ - /"The eXpress Data Path: Fast Programmable Packet Processing in the Operating System Kernel"/
+ - Conference: ACM CoNEXT 2018, Dec 4-7, Heraklion, Greece
 
 Purpose
+ - Describe the full XDP system design in one place
  - Make scientific research community notice XDP
  - First head-to-head comparison with DPDK
 
-This talk focused on "Limitation and Future Work" section
- - Purpose soliciting feedback and ideas from the community
+This talk came out of the "Limitations and Future Work" section
+ - Purpose: *soliciting feedback and ideas* from the community
 
 
-** Slide: What is XDP                                               :export:
+** Slide: What is XDP?                                              :export:
 
 #+BEGIN_NOTES
 Be inspirational: New programmable layer in network stack.
-(Mostly for general-track LPC partisipants)
+(Mostly for general-track LPC participants)
 #+END_NOTES
 
 XDP basically: New layer in the kernel network stack
@@ -224,22 +225,22 @@ XDP basically: New layer in the kernel network stack
 Means: Competing at the same “layer” as DPDK / netmap
  - Super fast, due to
    - Take action/decision earlier (e.g. skip some network layers)
-   - No-memory allocations
+   - No memory allocations
 
-Not kernel bypass, data-plane is kept inside kernel
- - via BPF: makes early network stack run-time programmable
- - Cooperates with kernel
+Not kernel bypass; data-plane is kept inside the kernel
+ - Via eBPF: makes early network stack run-time programmable
+ - Cooperates with the kernel stack
 
 ** Slide: XDP is a huge success                                     :export:
 
 XDP is maturing in upstream kernels
  - Still under active development
 
-Very popular topic at this LPC network-track miniconf
- - 12 talks XDP and BPF related! (incl. this)
- - 8 directly XDP related (incl. this)
-   - We will mention and frame these talk in the bigger XDP picture
- - 4 related to eBPF
+Popular topic at this LPC network track miniconf
+ - 12 talks XDP and eBPF-related! (incl. this)
+ - 4 related to non-XDP eBPF issues
+ - 8 directly XDP-related (incl. this)
+   - We will list these talks and /frame them in the bigger XDP picture/
 
 ** Slide: Production use-cases                                       :export:
 
@@ -248,14 +249,15 @@ Pitch: Can people actually use this in production, even-though XDP is still
 under much developement
 #+END_NOTES
 
-XDP have seen production use
+XDP has seen production use
  - [[https://netdevconf.org/2.1/session.html?bertin][CloudFlare]] publically say they use XDP
  - [[https://suricata.readthedocs.io/en/latest/capture-hardware/ebpf-xdp.html][Suricata]] have XDP [[https://github.com/OISF/suricata/blob/master/ebpf/xdp_filter.c][plugins]]
+ - Facebook released the [[https://github.com/facebookincubator/katran][Katran load balancer]]
 
 Other talks will cover this:
- - (facebook)
+ - (Facebook)
    [[http://vger.kernel.org/lpc-networking.html#session-10][XDP 1.5 years in production. Evolution and lessons learned]]
- - (facebook)
+ - (Facebook)
    [[http://vger.kernel.org/lpc-networking.html#session-15][eBPF / XDP based firewall and packet filtering]]
 
 
@@ -264,11 +266,11 @@ Other talks will cover this:
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-While XDP is disruptive and innovative technology
- - Still need to follow kernels evolutionary developement style
+While XDP is a disruptive and innovative technology
+ - Still needs to follow kernel's evolutionary development style
  - Far from finished, improvements and features in every kernel release
- - Cooperate with kernel community
-   * Yes, you actually need to bringup and argue your use-case!
+ - Beneficial to cooperate with the kernel community
+   - Yes, you actually need to describe and argue for your use-case!
 
 ** Topic: Performance
 
@@ -278,13 +280,13 @@ Guiding principle: Adding features must not negatively affect baseline XDP
 performance.  Use optimization technique of moving runtime checks to setup time
 checks.
 
-** Slide: New XDP features and performance requirement              :export:
+** Slide: New XDP features vs high performance                      :export:
 
-XDP is all about performance
- - *Watch-out that feature creep doesn't kill performance!*
+XDP is all about processing many (M)PPS
+ - *Watch out so feature creep doesn't kill performance!*
 
 Guiding principle: /New features must not negatively affect baseline XDP perf/
- - Optimization hint: move runtime checks to setup time
+ - Optimisation hint: move runtime checks to setup time
 
 Issue: /*Who is monitoring XDP performance?*/
  - We need CI tests for this... but who will do this work?
@@ -316,17 +318,17 @@ xdp_router_ipv4 sample hit an "exact_match" cache.
 
 ** Slide: Evolving XDP via BPF-helpers                               :export:
 
-See: /XDP as software offloading layer for kernel network stack/
+Think of XDP as /a software offload layer for the kernel network stack/
  - Setup and use Linux kernel network stack
  - But accelerate parts of it with XDP
 
-IP-routing good example of XDP acceleration
- - Let Linux handle routing (deamons) and ARP-tables
- - Access routing FIB table lookups from XDP via BPF helpers
- - Encourage add helpers, instead of on-the-side BPF maps
+IP routing good example:
+ - Let Linux handle routing (daemons) and neighbour lookups
+ - Access routing table from XDP via BPF helpers
+ - This is covered in David Ahern's talk: [[http://vger.kernel.org/lpc-networking.html#session-1][Leveraging Kernel Tables with XDP]]
 
-The topic and FIB-lookup helper covered in David Ahern's talk:
- - [[http://vger.kernel.org/lpc-networking.html#session-1][Leveraging Kernel Tables with XDP]]
+*We should encourage adding helpers instead of duplicating data in BPF maps*
+
 
 
 * Topic: XDP as a building block
@@ -354,17 +356,17 @@ XDP is a core kernel layer building block
  - Open Source projects should build and innovate on top
  - Only time will tell what people use it for
 
-** Slide: Building block for Guest-OS deliver?
+** Slide: Building block for Guest OS delivery?
 
-Directions we hope to see XDP used for
- - Faster delivery into Guest-OS
-   - Already possible via 1-copy via tuntap driver into virtio_net
+Directions we hope to see XDP go
+ - Faster packet delivery into Guest OS
+   - Already possible (with copy) via tuntap driver into virtio_net
    - The AF_XDP approach might offer zero-copy
 
 ** Slide: Building block for P4
 
-P4 vs eBPF/XDP is a wrong attitude
- - Instead translate/[[https://github.com/vmware/p4c-xdp/][compile your P4 code into eBPF/XDP]] compatible code
+P4 vs eBPF/XDP is the /wrong attitude/
+ - Instead [[https://github.com/vmware/p4c-xdp/][compile your P4 code into eBPF]] and run it with XDP
  - Talk on this approach by William Tu (VMware):
    - [[http://vger.kernel.org/lpc-networking.html#session-16][P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4]]
 
