@@ -403,8 +403,9 @@ XDP usual performance benefit comes from in-kernel processing via BPF
 AF_XDP is for faster raw packet delivery into userspace
  - Unlike tcpdump, as it owns/steals the packet
    * (Might want to invent/allow a copy and XDP_PASS mode)
- - Hooking into XDP provides packet filter flexibility
-   - And copy-variant work on any driver with XDP_REDIRECT
+ - Hooking into XDP provides:
+   - Packet filter flexibility (avoid netstack reinject tricks)
+   - Copy-variant work on any driver with XDP_REDIRECT
  - Performance tricks:
    - Preallocated userspace memory, give it to kernel for NIC RX-rings
    - NetChannel like SPSC queues between kernel and userspace
@@ -412,9 +413,10 @@ AF_XDP is for faster raw packet delivery into userspace
 ** Slide: AF_XDP talks
 
 Two talks about AF_XDP on schedule:
- - (AF_XDP) The Path to DPDK Speeds for AF_XDP
- - (AF_XDP) Bringing the Power of eBPF to Open vSwitch
-
+ - [[http://vger.kernel.org/lpc-networking.html#session-11][The Path to DPDK Speeds for AF_XDP]]
+   - By Björn Töpel and Magnus Karlsson (Intel)
+ - [[http://vger.kernel.org/lpc-networking.html#session-7][Bringing the Power of eBPF to Open vSwitch]]
+   - By William Tu (VMware)
 
 * Topic: Move SKB allocation out of driver
 
