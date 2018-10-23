@@ -413,12 +413,12 @@ userspace.  AF_XDP goes the other way, and let userspace (pre) alloc.
 * Slide: Zero-copy to userspace AF_XDP                              :export:
 
 XDP usual performance benefit comes from in-kernel processing via BPF
- - (avoiding context switch to userspace)
 
 AF_XDP is for faster raw packet delivery into userspace
  - Unlike tcpdump, as it owns/steals the packet
    * (Might want to invent/allow a copy and XDP_PASS mode)
  - Hooking into XDP provides packet filter flexibility
+   - And copy-variant work on any driver with XDP_REDIRECT
  - Performance tricks:
    - Preallocated userspace memory, give it to kernel for NIC RX-rings
    - NetChannel like SPSC queues between kernel and userspace
