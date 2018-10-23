@@ -264,7 +264,7 @@ ability to offload packet processing to another CPU, by redirecting with a CPU
 map. This also moves the SKB creation to the target CPU, where it is created
 based on the xdp\_frame data. This frees up the CPU running the XDP program to
 process more packets without the deep calls into the networking stack. An
-example application that benefits from this is DDOS protection in XDP, which we
+example application that benefits from this is DDoS protection in XDP, which we
 tested in the XDP paper, and which showed impressive results (see
 Figure~\ref{fig:ddos-results}).
 
