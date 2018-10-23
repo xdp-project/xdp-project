@@ -149,7 +149,8 @@ The "Topic:" notation will be transition slide (or none), and the "Slide:"
 notation will be actual slides.  The "Topic:" notes describe more about the
 topic, this text could be used in the paper.
 
-** Topic: Story baseline
+
+* Topic: Story baseline
 
  - Introduce XDP-paper.
 
