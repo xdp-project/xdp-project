@@ -88,7 +88,6 @@ The issues we are planning to discuss include, but are not limited to:
    something different? Are there other areas where we can extend XDPs
    processing model to provide useful accelerations?
 
-
 * Other XDP talks co-scheduled
 
 We promised to introduce other XDP talks, and got scheduled as the first talk
@@ -138,18 +137,13 @@ TC SW datapath: a performance analysis
 PHYlink and SFP: Going beyond 1G Copper PHYs
 
 
-* Topics and slides
-:PROPERTIES:
-:reveal_background: ./images/rh_bg1.jpg
-:reveal_background_size: 100%
-:reveal_background_color: white
-:END:
-
-*IDEA* for organizing presentation:
+* Document organizing presentation
 
 The presentation will be organized around a number of XDP-topics.  We cannot
 bring-up all topics, but have selected some.  To introduce other talks, their
 topics have to be included. Also have some of our own that to get feedback.
+
+Only sections with tag ":export:" will end-up in the presentation.
 
 The "Topic:" notation will be transition slide (or none), and the "Slide:"
 notation will be actual slides.  The "Topic:" notes describe more about the
@@ -172,6 +166,13 @@ topic, this text could be used in the paper.
 
    Besides referencing the topics covered in other talks, we have also selected
    some XDP topics that we wish to soliciting feedback om from this community.
+
+* Slide: Overview                                                    :export:
+:PROPERTIES:
+:reveal_background: ./images/rh_bg1.jpg
+:reveal_background_size: 100%
+:reveal_background_color: white
+:END:
 
 ** Slide: XDP-paper                                                 :export:
 
