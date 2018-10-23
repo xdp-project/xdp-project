@@ -368,16 +368,19 @@ XDP is a core kernel layer building block
  - Open Source projects should build and innovate on top
  - Only time will tell what people use it for
 
+** Slide: Building block for Guest-OS deliver?
+
 Directions we hope to see XDP used for
  - Faster delivery into Guest-OS
    - Already possible via 1-copy via tuntap driver into virtio_net
    - The AF_XDP approach might offer zero-copy
 
+** Slide: Building block for P4
+
 P4 vs eBPF/XDP is a wrong attitude
  - Instead translate/[[https://github.com/vmware/p4c-xdp/][compile your P4 code into eBPF/XDP]] compatible code
  - Talk on this approach by William Tu (VMware):
    - [[http://vger.kernel.org/lpc-networking.html#session-16][P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4]]
-
 
 * Topic: Zero-copy to userspace AF_XDP
 
