@@ -170,7 +170,7 @@ accelerate this even further.
 A major source of speedup in both XDP and other high-performance packet
 processing frameworks, is avoiding the overhead of traversing the userspace to
 kernel boundary. In XDP this is done by moving the processing into the kernel
-which is possible thanks to the eBPF virtual machine an associated
+which is possible thanks to the eBPF virtual machine and associated
 infrastructure. This works really well for raw packet processing that can be
 implemented directly as an eBPF program. However, sometimes packets do need to
 go out to userspace applications, and avoiding overhead in this case is
