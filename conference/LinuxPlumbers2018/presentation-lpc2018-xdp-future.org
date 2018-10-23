@@ -185,7 +185,7 @@ topic, this text could be used in the paper.
    Besides referencing the topics covered in other talks, we have also selected
    some XDP topics that we wish to soliciting feedback om from this community.
 
-* Slide: Presentation overview                                      :export:
+* Slide: Outline                                                     :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
