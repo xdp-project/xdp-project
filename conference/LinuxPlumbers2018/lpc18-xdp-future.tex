@@ -1,4 +1,4 @@
-% -*- TeX-engine: default; -*-
+% -*- TeX-engine: default; fill-column: 80; -*-
 \documentclass[sigconf]{acmart}
 \usepackage[font=footnotesize]{subcaption}
 \usepackage[utf8]{inputenc}
@@ -178,12 +178,26 @@ important as well. The XDP solution to this problem is AF\_XDP, which is covered
 in two separate LPC talks~\cite{af-xdp,xdp-ovs}.
 
 The main benefit of AF\_XDP is that it uses the existing XDP facilities to avoid
-having to take over the network device entirely for zero-copy. Userspace
-provides a chunk of memory that is used directly for DMA, thus avoiding copying,
-and a Single Producer Single Consumer queue is used for communication between
-kernel and userspace. This does mean that each \emph{packet} is completely
-transferred to userspace, though, and so adding an option to XDP\_PASS copies of
-packets to the regular stack would be useful increasing flexibility.
+having to take over the network device entirely, like other kernel bypass
+solution do. The XDP filter program can control where frames are delivered e.g
+either AF\_XDP or the regular network stack.  This avoid the need to reinjection
+frames back into network stack as described in \cite{cloudflare-ddos}.
+
+Userspace provides a chunk of memory that is used for raw frame delivery.
+AF\_XDP have copy and zero-copy modes, but the API is the same seen from
+userspace, where Single Producer Single Consumer queue(s) are used for
+communication between kernel and userspace. To support copy-mode the driver
+changes are minimal, as it only requires supporting XDP\_REDIRECT.  The
+zero-copy mode requires more driver changes, as the userspace provides memory is
+used directly for DMA delivery.
+
+The zero-copy mode is enabled on a per RX-ring basis, which again avoids taking
+over the entire NIC. It is envisonved that NIC hardware filters are used for
+RX-queue steering, to avoid AF\_XDP userspace application having memory access
+to packets that are unrelated.  In zero-copy mode the XDP\_PASS action will
+allocate a new memory area and copy-over the raw frame contents before
+delivering frame to network stack, this is done to avoid crashing the kernel via
+a userspace application that modify the frame data while kernel is parsing it.
 
 
 \subsection{Evolving XDP using helpers}
