@@ -91,13 +91,17 @@ The issues we are planning to discuss include, but are not limited to:
 
 * Other XDP talks co-scheduled
 
-I promised we will introduce other XDP talks.
+We promised to introduce other XDP talks, and got scheduled as the first talk
+for this reason.
 
 Thus, part of the structure will be given by other XDP talks.
 
 ** Other XDP and eBPF related talks:
 
 When below are marked DONE, this means a slide mention it.
+
+We should take care to mention all talks that are directly related to XDP, and
+can skip mentioning eBPF talks that does not affect XDP.
 
 *** (Our-talk) XDP - challenges and future work
 *** DONE Leveraging Kernel Tables with XDP
@@ -625,7 +629,6 @@ issues, that I need to upstream fix for)
 
 
 * Notes
-
 
 
 # Local Variables:
