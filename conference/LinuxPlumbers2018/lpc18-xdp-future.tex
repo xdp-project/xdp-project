@@ -348,9 +348,15 @@ We believe that a possible fix for this is to add another eBPF hook at packet
 egress from a device, i.e., at the latest possible time before a packet is put
 into the device TX ring. At this point, it is possible for the driver to supply
 information about the current state of the TX ring buffer (such as free space),
-which the eBPF program can react appropriately to, for example by signalling
+which the eBPF program can react appropriately to, for example by signaling
 ingress XDP programs to send traffic another way if the TX ring is full, or by
 implementing AQM-like reactions when TX ring pressure increases.
+
+A crazy idea is to allow this very late egress eBPF hook, that can see the frame
+will be dropped due to free space constraint, to perform a new XDP action, like
+redirecting the frame out another interface.  Allowing the full XDP feature set
+of modifying and truncating packet length would make is possible to implement a
+signaling protocol like described in \cite{NDP}.
 
 \section{Conclusion}
 \label{sec:conclusion}
