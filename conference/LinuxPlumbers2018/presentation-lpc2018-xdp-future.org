@@ -201,10 +201,17 @@ topic, this text could be used in the paper.
 ** Slide: XDP-paper                                                 :export:
 
 Scientific XDP paper accepted
- - Title: "The eXpress Data Path: Fast Programmable Packet Processing in the Operating System Kernel"
+ - Title: @@html: <font color="#7ab800">@@
+   "The eXpress Data Path: @@html:<br>@@
+    Fast Programmable Packet Processing in the Operating System Kernel"
+    @@html:</font>@@
  - Conference: ACM CoNEXT 2018 Greece
 
-This talk focused: "Limitation and Future Work"
+Purpose
+ - Make scientific research community notice XDP
+ - First head-to-head comparison with DPDK
+
+This talk focused on "Limitation and Future Work" section
  - Purpose soliciting feedback and ideas from the community
 
 ** Topic: What is XDP
@@ -656,6 +663,9 @@ issues, that I need to upstream fix for)
 
 * Notes
 
+** Org-mode hints
+
+https://orgmode.org/manual/Quoting-HTML-tags.html#Quoting-HTML-tags
 
 # Local Variables:
 # org-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
