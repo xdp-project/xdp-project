@@ -3,6 +3,7 @@
  * Author: Achim Staebler
  */
 @import url(../../lib/font/overpass/overpass.css);
+@import url(../../lib/font/cc-icons/css/cc-icons.css);
 /**
  * Solarized colors by Ethan Schoonover
  */
@@ -42,8 +43,30 @@ body {
   box-sizing: border-box;
 }
 
-.reveal .slides > section {
+.reveal .slides .authorbox {
+  font-size: 20px;
+  position: absolute;
+  bottom: 5px;
+  right: 10px;
+  line-height: 20px;
+  vertical-align: bottom;
 }
+
+.reveal .slides .authorbox a {
+  color: #93a1a1;
+}
+
+.reveal .slides .authorbox a:hover {
+  color: #78b9e6;
+}
+
+.reveal .slides .authorbox img {
+    height: 20px;
+    position: relative;
+    top: 3px;
+    margin: 0px;
+}
+
 
 .reveal .slides > section > section  {
   background-image: url('../../images/slide-bg.png');
