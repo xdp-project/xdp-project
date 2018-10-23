@@ -283,7 +283,8 @@ Other talks will cover this:
 While XDP is disruptive and innovative technology
  - Still need to follow kernels evolutionary developement style
  - Far from finished, improvements and features in every kernel release
-
+ - Cooperate with kernel community
+   * Yes, you actually need to bringup and argue your use-case!
 
 ** Topic: Performance
 
@@ -306,7 +307,10 @@ New features must not negatively affect baseline XDP perf
 </font>@@
  - Optimization hint: move runtime checks to setup time
 
-Issue: Who is monitoring XDP performance?
+Issue:
+@@html: <font color="#a30000">
+Who is monitoring XDP performance?
+</font>@@
  - We need CI tests for this... but who will do this work?
 
 ** Topic: Evolving XDP
@@ -336,7 +340,10 @@ xdp_router_ipv4 sample hit an "exact_match" cache.
 
 ** Slide: Evolving XDP via BPF-helpers                               :export:
 
-See: XDP as software offloading layer for kernel network stack
+See:
+@@html: <font color="#7ab800">@@
+XDP as software offloading layer for kernel network stack
+@@html: </font>@@
  - Setup and use Linux kernel network stack
  - But accelerate parts of it with XDP
 
@@ -345,8 +352,8 @@ IP-routing good example of XDP acceleration
  - Access routing FIB table lookups from XDP via BPF helpers
  - Encourage add helpers, instead of on-the-side BPF maps
 
-The topic and the FIB lookup is covered in David Ahern's talk:
- "Leveraging Kernel Tables with XDP"
+The topic and FIB-lookup helper is covered in David Ahern's talk:
+ - [[http://vger.kernel.org/lpc-networking.html#session-1][Leveraging Kernel Tables with XDP]]
 
 ** Topic: XDP as a building block
 
