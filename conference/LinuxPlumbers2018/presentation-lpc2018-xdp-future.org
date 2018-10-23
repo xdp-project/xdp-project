@@ -445,8 +445,7 @@ Missing part: driver offloads (e.g. csum-info, rxhash, HW-mark)
  - We (also) need core-netstack to understand metadata BTF struct
 
 Hope this will be resolved covered in talk:
- - Talk: "XDP acceleration using NIC metadata, continued"
-
+ - [[http://vger.kernel.org/lpc-networking.html#session-3][XDP acceleration using NIC metadata, continued]]
 
 * Slide/topic (maybe skip): Jumbo-frames
 
