@@ -2,7 +2,7 @@
 #+TITLE: XDP - challenges and future work
 #+AUTHOR: Jesper Dangaard Brouer and Toke Høiland-Jørgensen
 #+EMAIL: toke@toke.dk
-#+REVEAL_THEME: white
+#+REVEAL_THEME: moon
 #+REVEAL_TRANS: linear
 #+REVEAL_MARGIN: .1
 #+REVEAL_EXTRA_CSS: ./reveal.js/css/custom.css
