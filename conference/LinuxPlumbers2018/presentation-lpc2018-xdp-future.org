@@ -263,8 +263,8 @@ under much developement
 #+END_NOTES
 
 XDP have seen production use
- - CloudFlare publically say they use XDP
- - Suricata have XDP plugins
+ - [[https://netdevconf.org/2.1/session.html?bertin][CloudFlare]] publically say they use XDP
+ - [[https://suricata.readthedocs.io/en/latest/capture-hardware/ebpf-xdp.html][Suricata]] have XDP [[https://github.com/OISF/suricata/blob/master/ebpf/xdp_filter.c][plugins]]
 
 Other talks will cover this:
  - (facebook)
@@ -279,6 +279,11 @@ Other talks will cover this:
 :reveal_background_size: 100%
 :reveal_background_color: white
 :END:
+
+While XDP is disruptive and innovative technology
+ - Still need to follow kernels evolutionary developement style
+ - Far from finished, improvements and features in every kernel release
+
 
 ** Topic: Performance
 
