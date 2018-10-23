@@ -435,16 +435,16 @@ Two talks about AF_XDP at LPC:
 
 * Slide: Move SKB allocation out of driver                         :export:
 
-Long term goal: Write /NIC driver(s) without SKB allocations/
+Long term goal: /Remove need for SKB allocations in NIC drivers/
 
-Actually supported today! -- avoiding alloc SKB in driver
+Actually supported today! -- can avoid allocating SKB in driver
  - Via XDP_REDIRECT into CPU-map or tun-driver
 
-Missing part: driver offloads (e.g. csum-info, rxhash, HW-mark)
- - Depends/waits on metadata, in a vendor neutral way
- - We (also) need core-netstack to understand metadata BTF struct
+Missing part: driver offloads (e.g., csum-info, rxhash, HW-mark)
+ - Needs metadata in a vendor neutral format
+ - Way forward: Teach the core stack about BTF struct metadata?
 
-Hope this will be resolved covered in talk:
+Hope this will be covered in the talk by P.J. Waskiewicz and Neerav Parikh (Intel):
  - [[http://vger.kernel.org/lpc-networking.html#session-3][XDP acceleration using NIC metadata, continued]]
 
 * Slide/topic (maybe skip): Jumbo-frames
@@ -491,20 +491,21 @@ consumes HW resources.  Given the TX queue per CPU core assumption, this makes
 it problematic on systems with many CPU cores. E.g. it was discovered the ixgbe
 driver cannot load XDP on systems with more than 96 CPU cores.
 
-* Slide: Resources for ndo_xdp_xmit                                  :export:
+* Slide: Resource allocation for ndo_xdp_xmit()                      :export:
 
-Redirecting XDP frame out another net_device, call ndo_xdp_xmit
- - But egress net_device don't default alloc XDP-TX resouces
-   - Reason#1: consumes HW resources, 1 TX-queue per CPU core
-   - Reason#2: cannot know it will be used for XDP traffic
+When redirecting to another device, XDP calls target driver's =ndo_xdp_xmit()=
 
-We need proper API for enabling XDP-TX resources on egress net_device
- - Current hack, load dummy XDP prog on egress dev
- - Would be natural to, alloc TX resources when dev added to DEVMAP
+ - But XDP TX resources are /*not allocated*/ by default
+   - Because these are sparse HW resources: 1 TX-queue per CPU core
+
+Current hack: allocate resources on XDP program load
+- Even when device doesn't need to receive redirect traffic
+- Requires dummy XDP program on the egress device to use redirect
+  - Removing it can [[https://marc.info/?l=linux-netdev&m=154023109526642&w=2][crash the kernel!]]
+
+We need an /explicit API for enabling XDP TX/ on a device
+ - Would be natural to trigger when device is added to DEVMAP
    - But how to handle non-map redirect variant?
-
-This implicit XDP-TX resources allocation when loading XDP
- - is wasting HW resources when XDP doesn't need ndo_xdp_xmit
 
 * Topic: What does XDP driver support?
 
@@ -526,17 +527,18 @@ releases, where only 3 HW-drivers have implemented XDP_REDIRECT.
 
 * Slide: What does XDP driver support?                             :export:
 
-Today: Userspace cannot query what XDP features NIC driver support
- - Original goal of not exposing feature-bits to userspace:
-   - was to force full support for XDP in all drivers.
- - Is this still realistic goal?
-   - E.g. only 3 HW-drivers have implemented XDP_REDIRECT.
+Userspace cannot query which XDP features a driver supports
+
+ - Original goal: /support all features in all drivers/. Is this still realistic?
+   - Only 3 HW-drivers have implemented XDP_REDIRECT.
    - Some users are happy with (only) XDP_DROP and XDP_TX.
 
-Userspace need to know if XDP_REDIRECT is supported:
- - Suricata use-case:
-   - If XDP_REDIRECT is not supported, reject config at startup
-   - Or alternative TC solution can be used
+Userspace needs this information. *For example, in Suricata:*
+ - If XDP_REDIRECT is not supported, either:
+   - Reject config at startup
+   - Or  use alternative TC-based solution
+
+
 
 * Topic: XDP egress hook (just before TX)
 
@@ -589,20 +591,20 @@ overhead issues due to the indirect call API.
 
 ** Slide: Memory models                                              :export:
 
-Recent (4.18): XDP memory models per driver RX-queue
+Recent (4.18): XDP memory models per driver RX queue
  - New flexibility to innovate
- - Also opportunity to generalize and share common code between drivers
-   - page_pool is generalization example, need more drivers using it
+ - Also opportunity to share common code between drivers
+   - page_pool is an example, need more drivers using it
 
-Planned changes
- - Extend xdp_return_frame API with bulking, performance reasons
+Planned changes:
+ - Extend xdp_return_frame API with bulking, to amortise overhead
  - Keep pages DMA mapped in page_pool (almost supported)
 
 ** Slide: DMA mapping                                                :export:
 
 More optimizations for DMA mapping needed
  - Was low priority, due to almost zero cost on Intel CPUs
- - Spectre-V2 mitigation makes DMA calls more expensive
+ - But Spectre-V2 mitigation makes DMA calls more expensive
 
 ** Topic: Spectre-V2: mitigation killed XDP performance
 
