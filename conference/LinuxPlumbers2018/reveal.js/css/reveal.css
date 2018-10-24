@@ -293,12 +293,10 @@ body {
   right: 8px;
   bottom: 5px;
   z-index: 31;
-  font-family: Helvetica, sans-serif;
-  font-size: 12px;
-  line-height: 20px;
+  font-size: .5em;
   color: #fff;
   background-color: rgba(0, 0, 0, 0.4);
-  padding: 0px 5px; }
+  padding: .1em .3em; }
 
 .reveal .slide-number-delimiter {
   margin: 0 3px; }
