@@ -187,11 +187,12 @@ the application to reinject frames back into network stack as described in
 
 AF\_XDP has both copy and zero-copy modes, but the userspace API is the same,
 and uses Single Producer Single Consumer queues for communication between kernel
-and userspace. The only difference between the modes is that for zero-copy mode,
-userspace provides a chunk of pre-allocated memory that is used for raw frame
-delivery. To support copy-mode the driver changes are minimal, as it only
-requires supporting XDP\_REDIRECT. The zero-copy mode requires more driver
-changes, as the userspace provides memory is used directly for DMA delivery.
+and userspace. In both cases, userspace provides a chunk of pre-allocated memory
+that is used for raw frame delivery. In copy mode, the XDP subsystem copies
+frames into this memory, and drivers only need to support XDP\_REDIRECT. In
+zero-copy mode, the userspace-provided memory is used directly for DMA delivery;
+supporting this requires more driver changes, and is currently only supported by
+the i40e driver.
 
 The zero-copy mode is enabled on a per RX-ring basis, which again avoids taking
 over the entire NIC. This also means that NIC hardware filters can be used for
