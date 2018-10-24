@@ -177,28 +177,30 @@ go out to userspace applications, and avoiding overhead in this case is
 important as well. The XDP solution to this problem is AF\_XDP, which is covered
 in two separate LPC talks~\cite{af-xdp,xdp-ovs}.
 
-The main benefit of AF\_XDP is that it uses the existing XDP facilities to avoid
-having to take over the network device entirely, like other kernel bypass
-solution do. The XDP filter program can control where frames are delivered e.g
-either AF\_XDP or the regular network stack.  This avoid the need to reinjection
-frames back into network stack as described in \cite{cloudflare-ddos}.
+The main benefit of AF\_XDP is that it uses the existing XDP facilities to steer
+packets to either AF\_XDP or the regular network stack. This avoids taking over
+the network device entirely, unlike kernel bypass solutions where control of the
+entire networking device is passed to userspace. This also means that the packet
+verdict can be decided before the packet leaves the kernel, rather than forcing
+the application to reinject frames back into network stack as described in
+\cite{cloudflare-ddos}.
 
-Userspace provides a chunk of memory that is used for raw frame delivery.
-AF\_XDP have copy and zero-copy modes, but the API is the same seen from
-userspace, where Single Producer Single Consumer queue(s) are used for
-communication between kernel and userspace. To support copy-mode the driver
-changes are minimal, as it only requires supporting XDP\_REDIRECT.  The
-zero-copy mode requires more driver changes, as the userspace provides memory is
-used directly for DMA delivery.
+AF\_XDP has both copy and zero-copy modes, but the userspace API is the same,
+and uses Single Producer Single Consumer queues for communication between kernel
+and userspace. The only difference between the modes is that for zero-copy mode,
+userspace provides a chunk of pre-allocated memory that is used for raw frame
+delivery. To support copy-mode the driver changes are minimal, as it only
+requires supporting XDP\_REDIRECT. The zero-copy mode requires more driver
+changes, as the userspace provides memory is used directly for DMA delivery.
 
 The zero-copy mode is enabled on a per RX-ring basis, which again avoids taking
-over the entire NIC. It is envisonved that NIC hardware filters are used for
-RX-queue steering, to avoid AF\_XDP userspace application having memory access
-to packets that are unrelated.  In zero-copy mode the XDP\_PASS action will
-allocate a new memory area and copy-over the raw frame contents before
-delivering frame to network stack, this is done to avoid crashing the kernel via
-a userspace application that modify the frame data while kernel is parsing it.
-
+over the entire NIC. This also means that NIC hardware filters can be used for
+RX-queue steering, to avoid giving the AF\_XDP userspace application memory
+access to packets that are unrelated to its function. In zero-copy mode, the
+XDP\_PASS action will allocate a new memory area and copy the raw frame contents
+before delivering the frame to the networking stack. This is done to avoid
+crashing the kernel if a userspace application modifies the packet data while
+the kernel is parsing it.
 
 \subsection{Evolving XDP using helpers}
 \label{sec:evolving-xdp}
@@ -352,11 +354,11 @@ which the eBPF program can react appropriately to, for example by signaling
 ingress XDP programs to send traffic another way if the TX ring is full, or by
 implementing AQM-like reactions when TX ring pressure increases.
 
-A crazy idea is to allow this very late egress eBPF hook, that can see the frame
-will be dropped due to free space constraint, to perform a new XDP action, like
-redirecting the frame out another interface.  Allowing the full XDP feature set
-of modifying and truncating packet length would make is possible to implement a
-signaling protocol like described in \cite{NDP}.
+A crazy idea is to allow this egress eBPF hook to perform a new XDP action if it
+sees the TX ring is full, such as redirecting the frame out another interface.
+Allowing the full XDP feature set of modifying and truncating packet length
+would also make is possible to implement a signaling protocol like that
+described in \cite{NDP}.
 
 \section{Conclusion}
 \label{sec:conclusion}
