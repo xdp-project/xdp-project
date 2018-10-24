@@ -1,6 +1,6 @@
 # -*- fill-column: 79; -*-
 #+TITLE: A practical introduction to XDP
-#+AUTHOR: Jesper Dangaard Brouer
+#+AUTHOR: Jesper Dangaard Brouer and Andy Gospodarek
 #+EMAIL: netoptimizer@brouer.com
 #+REVEAL_THEME: redhat
 #+REVEAL_TRANS: linear
@@ -71,6 +71,25 @@ Section below with :export: tags are the slides.
 
 
 * Slide: What will you learn?                                        :export:
+
+* Slide: What is XDP?                                              :export:
+
+#+BEGIN_NOTES
+Be inspirational: New programmable layer in network stack.
+#+END_NOTES
+
+XDP basically: *New layer in the kernel network stack*
+ - Before allocating the SKB
+ - Driver level hook at DMA level
+
+Means: Competing at the same “layer” as DPDK / netmap
+ - Super fast, due to
+   - Take action/decision earlier (e.g. skip some network layers)
+   - No memory allocations
+
+/Not kernel bypass/; data-plane is kept inside the kernel
+ - Via eBPF: makes early network stack *run-time programmable*
+ - Cooperates with the kernel stack
 
 
 * Emacs local variables                                            :noexport:
