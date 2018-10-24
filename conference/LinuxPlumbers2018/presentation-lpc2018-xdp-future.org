@@ -223,7 +223,7 @@ Be inspirational: New programmable layer in network stack.
 (Mostly for general-track LPC participants)
 #+END_NOTES
 
-XDP basically: New layer in the kernel network stack
+XDP basically: *New layer in the kernel network stack*
  - Before allocating the SKB
  - Driver level hook at DMA level
 
@@ -232,8 +232,8 @@ Means: Competing at the same “layer” as DPDK / netmap
    - Take action/decision earlier (e.g. skip some network layers)
    - No memory allocations
 
-Not kernel bypass; data-plane is kept inside the kernel
- - Via eBPF: makes early network stack run-time programmable
+/Not kernel bypass/; data-plane is kept inside the kernel
+ - Via eBPF: makes early network stack *run-time programmable*
  - Cooperates with the kernel stack
 
 ** Slide: XDP is a huge success                                     :export:
