@@ -1,7 +1,7 @@
 var authorName = 'Jesper Dangaard Brouer';
-var authorName2 = 'Toke Høiland-Jørgensen';
+var authorName2 = 'Andy Gospodarek';
 var authorEmail = 'brouer@redhat.com';
-var authorEmail2 = 'toke@toke.dk';
+var authorEmail2 = 'andy@greyhouse.net';
 
 var authorHTML = [
     '<img src="./reveal.js/images/logo.svg" />',
