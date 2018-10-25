@@ -13,7 +13,7 @@
 This presentation will be given at Linux Plumbers Conference 2018 Networking
 Track.
 
- http://vger.kernel.org/lpc-networking.html
+ http://vger.kernel.org/lpc-networking2018.html
 
 This emacs org-mode document contains both slides for the presentation and
 other notes for the paper and project.  The slides are in reveal.js format and
@@ -60,7 +60,7 @@ $ decktape -s 1600x900 -p 100 --chrome-arg=--no-sandbox presentation-lpc2018-xdp
 
 * Homepage abstract for presentation
 
-http://vger.kernel.org/lpc-networking.html#session-19
+http://vger.kernel.org/lpc-networking2018.html#session-19
 
 ** Title: XDP challenges and future work
 
@@ -261,9 +261,9 @@ XDP has seen production use
 
 Other talks will cover this:
  - (Facebook)
-   [[http://vger.kernel.org/lpc-networking.html#session-10][XDP 1.5 years in production. Evolution and lessons learned]]
+   [[http://vger.kernel.org/lpc-networking2018.html#session-10][XDP 1.5 years in production. Evolution and lessons learned]]
  - (Facebook)
-   [[http://vger.kernel.org/lpc-networking.html#session-15][eBPF / XDP based firewall and packet filtering]]
+   [[http://vger.kernel.org/lpc-networking2018.html#session-15][eBPF / XDP based firewall and packet filtering]]
 
 
 ** Slide: Packet drop performance (from paper)                      :export:
@@ -333,7 +333,7 @@ Think of XDP as /a software offload layer for the kernel network stack/
 IP routing good example:
  - Let Linux handle routing (daemons) and neighbour lookups
  - Access routing table from XDP via BPF helpers
- - This is covered in David Ahern's talk: [[http://vger.kernel.org/lpc-networking.html#session-1][Leveraging Kernel Tables with XDP]]
+ - This is covered in David Ahern's talk: [[http://vger.kernel.org/lpc-networking2018.html#session-1][Leveraging Kernel Tables with XDP]]
 
 *We should encourage adding helpers instead of duplicating data in BPF maps*
 
@@ -376,7 +376,7 @@ Directions we hope to see XDP go
 P4 vs eBPF/XDP is the /wrong attitude/
  - Instead [[https://github.com/vmware/p4c-xdp/][compile your P4 code into eBPF]] and run it with XDP
  - Talk on this approach by William Tu (VMware):
-   - [[http://vger.kernel.org/lpc-networking.html#session-16][P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4]]
+   - [[http://vger.kernel.org/lpc-networking2018.html#session-16][P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4]]
 
 * Topic: Zero-copy to userspace AF_XDP
 
@@ -424,9 +424,9 @@ userspace.  AF_XDP goes the other way, and let userspace (pre) alloc.
 ** Slide: AF_XDP talks
 
 Two talks about AF_XDP at LPC:
- - [[http://vger.kernel.org/lpc-networking.html#session-11][The Path to DPDK Speeds for AF_XDP]]
+ - [[http://vger.kernel.org/lpc-networking2018.html#session-11][The Path to DPDK Speeds for AF_XDP]]
    - By Björn Töpel and Magnus Karlsson (Intel)
- - [[http://vger.kernel.org/lpc-networking.html#session-7][Bringing the Power of eBPF to Open vSwitch]]
+ - [[http://vger.kernel.org/lpc-networking2018.html#session-7][Bringing the Power of eBPF to Open vSwitch]]
    - By William Tu (VMware)
 
 
@@ -461,7 +461,7 @@ Missing part: driver offloads (e.g., csum-info, rxhash, HW-mark)
  - Way forward: Teach the core stack about BTF struct metadata?
 
 Hope this will be covered in the talk by P.J. Waskiewicz and Neerav Parikh (Intel):
- - [[http://vger.kernel.org/lpc-networking.html#session-3][XDP acceleration using NIC metadata, continued]]
+ - [[http://vger.kernel.org/lpc-networking2018.html#session-3][XDP acceleration using NIC metadata, continued]]
 
 ** Slide/topic (maybe skip): Jumbo-frames
 
@@ -687,17 +687,17 @@ One XDP indirect call we cannot remove: Invoking BPF program
 
 ** XDP at LPC
 - XDP in production:
- - [[http://vger.kernel.org/lpc-networking.html#session-10][XDP 1.5 years in production. Evolution and lessons learned]]
- - [[http://vger.kernel.org/lpc-networking.html#session-15][eBPF / XDP based firewall and packet filtering]]
+ - [[http://vger.kernel.org/lpc-networking2018.html#session-10][XDP 1.5 years in production. Evolution and lessons learned]]
+ - [[http://vger.kernel.org/lpc-networking2018.html#session-15][eBPF / XDP based firewall and packet filtering]]
 - Kernel helpers:
- - [[http://vger.kernel.org/lpc-networking.html#session-1][Leveraging Kernel Tables with XDP]]
+ - [[http://vger.kernel.org/lpc-networking2018.html#session-1][Leveraging Kernel Tables with XDP]]
 - Metadata:
- - [[http://vger.kernel.org/lpc-networking.html#session-3][XDP acceleration using NIC metadata, continued]]
+ - [[http://vger.kernel.org/lpc-networking2018.html#session-3][XDP acceleration using NIC metadata, continued]]
 - XDP as a building block:
- - [[http://vger.kernel.org/lpc-networking.html#session-16][P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4]]
+ - [[http://vger.kernel.org/lpc-networking2018.html#session-16][P4C-XDP: Programming the Linux Kernel Forwarding Plane using P4]]
 - AF_XDP:
- - [[http://vger.kernel.org/lpc-networking.html#session-11][The Path to DPDK Speeds for AF_XDP]]
- - [[http://vger.kernel.org/lpc-networking.html#session-7][Bringing the Power of eBPF to Open vSwitch]]
+ - [[http://vger.kernel.org/lpc-networking2018.html#session-11][The Path to DPDK Speeds for AF_XDP]]
+ - [[http://vger.kernel.org/lpc-networking2018.html#session-7][Bringing the Power of eBPF to Open vSwitch]]
 
 ** Future directions for XDP
 - Moving SKB allocation out of drivers
