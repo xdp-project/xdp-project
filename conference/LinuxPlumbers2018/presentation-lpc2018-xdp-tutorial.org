@@ -101,7 +101,7 @@ Section below with :export: tags are the slides.
 
 * Slide: What will you learn?                                        :export:
 
-* Slide: Introdution to XDP                                          :export:
+* Introdution to XDP                                                 :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -137,6 +137,39 @@ XDP goals
  - Provide in-kernel alternative, that is *more flexible*
    * */Don’t steal the entire NIC/*
  - Work in concert with existing network stack
+
+
+* Basic building blocks                                              :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+What are the basic XDP building block you can use?
+
+** Slide: XDP actions and cooperation                                :export:
+
+BPF program return an action or verdict
+ - XDP_ *DROP*, XDP_ *PASS*, XDP_ *TX*, XDP_ *ABORTED*, XDP_ *REDIRECT*
+
+How to cooperate with network stack
+ - /Pop/push/ or *modify* headers: Change RX-handler kernel use
+   * e.g. handle protocol unknown to running kernel
+ - Can propagate 32Bytes /meta-data/ from XDP stage to network stack
+   * TC (clsbpf) hook can use meta-data, e.g. set SKB mark
+ - Call /BPF helpers/
+
+** Slide: Evolving XDP via BPF-helpers                               :export:
+
+Think of XDP as /a software offload layer for the kernel network stack/
+ - Setup and use Linux kernel network stack
+ - But accelerate parts of it with XDP
+
+IP routing good example: /helper/ *bpf_fib_lookup*
+ - Let Linux handle routing (daemons) and neighbour lookups
+ - Access routing table from XDP via BPF helpers
+ - This was covered in David Ahern's talk: [[http://vger.kernel.org/lpc-networking2018.html#session-1][Leveraging Kernel Tables with XDP]]
+
+#+HTML: <p><br></p>
+*Encourage adding helpers instead of duplicating data in BPF maps*
 
 
 * Slide: XDP restricted-C code example : Drop UDP                    :export:
