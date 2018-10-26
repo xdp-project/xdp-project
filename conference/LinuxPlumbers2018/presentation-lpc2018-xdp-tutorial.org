@@ -91,13 +91,34 @@ Coding XDP programs
 
 
 
-
-
-
-
 * Below sections are presentation slides                           :noexport:
 
 Section below with :export: tags are the slides.
+
+
+
+* Slide: What will you learn?                                        :export:
+
+* Slide: What is XDP?                                              :export:
+
+#+BEGIN_NOTES
+Be inspirational: New programmable layer in network stack.
+#+END_NOTES
+
+XDP basically: *New layer in the kernel network stack*
+ - Before allocating the SKB
+ - Driver level hook at DMA level
+
+Means: Competing at the same “layer” as DPDK / netmap
+ - Super fast, due to
+   - Take action/decision earlier (e.g. skip some network layers)
+   - No memory allocations
+
+/Not kernel bypass/; data-plane is kept inside the kernel
+ - Via eBPF: makes early network stack *run-time programmable*
+ - Cooperates with the kernel stack
+
+
 
 
 * Slide: XDP restricted-C code example : Drop UDP                    :export:
@@ -167,28 +188,6 @@ while (desc_in_rx_ring && budget_left--) {
 xdp_do_flush_map(); /* Bulk size chosen by map, can store xdp_frame's for flushing */
 driver_local_XDP_TX_flush();
 #+END_SRC
-
-
-* Slide: What will you learn?                                        :export:
-
-* Slide: What is XDP?                                              :export:
-
-#+BEGIN_NOTES
-Be inspirational: New programmable layer in network stack.
-#+END_NOTES
-
-XDP basically: *New layer in the kernel network stack*
- - Before allocating the SKB
- - Driver level hook at DMA level
-
-Means: Competing at the same “layer” as DPDK / netmap
- - Super fast, due to
-   - Take action/decision earlier (e.g. skip some network layers)
-   - No memory allocations
-
-/Not kernel bypass/; data-plane is kept inside the kernel
- - Via eBPF: makes early network stack *run-time programmable*
- - Cooperates with the kernel stack
 
 
 * Slide: testing code example                                        :export:
