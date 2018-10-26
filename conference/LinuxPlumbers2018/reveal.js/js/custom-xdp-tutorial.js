@@ -22,31 +22,15 @@ function addAuthor(selector) {
             author.innerHTML = authorHTML;
             e.appendChild(author);
         });
-
-	// UGLY HACK!!! - please fix - extra keywords for XDP-code
-	// Disable as it killed other keywords
-//	hljs.getLanguage('C').k += ' XDP_DROP XDP_PASS XDP_ABORTED XDP_REDIRECT XDP_TX';
-//	hljs.getLanguage('C').k += ' data data_end';
     }
 }
 
-function hideFake(selector) {
-    return function() {
-        var elems = document.querySelectorAll(selector);
-        elems.forEach(function (e) {
-            console.log(e.getAttribute('fake'));
-            if (e.getAttribute('fake')) {
-                e.parentElement.removeChild(e);
-            }
-        });
-    }
+/* needs to be in an onLoad callback, otherwise hljs is not defined yet */
+function addHighlightKeywords() {
+        hljs.getLanguage('C').k.keyword += ' XDP_DROP XDP_PASS XDP_ABORTED XDP_REDIRECT XDP_TX';
+        hljs.getLanguage('C').k.keyword += ' data data_end';
 }
 
-
-if (window.location.search.match( /print-pdf/gi )) {
-    window.addEventListener('pdf-ready', hideFake('.pdf-page'));
-} else {
-    window.addEventListener('load', addAuthor('.reveal .slides > section > section'));
-    window.addEventListener('load', addAuthor('#sec-title-slide'));
-}
-window.addEventListener('DOMContentLoaded', hideFake('section'));
+window.addEventListener('load', addAuthor('.reveal .slides > section > section'));
+window.addEventListener('load', addAuthor('#sec-title-slide'));
+window.addEventListener('load', addHighlightKeywords);
