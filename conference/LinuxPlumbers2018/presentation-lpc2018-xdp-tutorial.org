@@ -180,8 +180,7 @@ IP routing good example:
 
 ** Slide: XDP driver hook is executing eBPF byte-code
 
-XDP put no restrictions on:
- - How BPF byte-code is generated or loaded
+XDP put no restrictions on: How BPF byte-code is generated or loaded
  - XDP just get and attach BPF file-descriptor handle
 
 BPF byte-code (and map-creation) all go-through bpf-syscall
@@ -204,7 +203,7 @@ This talk focus on: (approach as in kernel samples/bpf)
 :reveal_extra_attr: class="mid-slide"
 :END:
 How do you code these XDP programs?
-Show me the code!!!
+- Show me the code!!!
 
 ** Slide: XDP restricted-C code example : Drop UDP                   :export:
 
@@ -302,6 +301,7 @@ EXPORT_SYMBOL(netif_napi_del);
 Bbla bla
 - Bullet
 - Anotherg bullet
+
 
 * Org-mode hints                                                   :noexport:
 
