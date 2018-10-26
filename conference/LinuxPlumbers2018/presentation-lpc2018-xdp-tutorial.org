@@ -295,35 +295,6 @@ driver_local_XDP_TX_flush();
 #+END_SRC
 
 
-* Slide: testing code example                                        :export:
-
-#+BEGIN_SRC C
-/* Must be called in process context */
-void netif_napi_del(struct napi_struct *napi)
-{
-	might_sleep();
-	if (napi_hash_del(napi))
-		synchronize_net();
-	list_del_init(&napi->dev_list);
-	napi_free_frags(napi);
-
-	flush_gro_hash(napi);
-	napi->gro_bitmask = 0;
-}
-
-int i = 42;
-
-if (i == 42)
-	printf("universe");
-/* Why do reveal.js in HTML export limit size of code-box? */
-EXPORT_SYMBOL(netif_napi_del);
-#+END_SRC
-
-Bbla bla
-- Bullet
-- Anotherg bullet
-
-
 * Org-mode hints                                                   :noexport:
 
 https://orgmode.org/manual/Easy-templates.html#Easy-templates
