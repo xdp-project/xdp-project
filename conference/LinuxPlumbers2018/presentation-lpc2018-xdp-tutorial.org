@@ -147,7 +147,7 @@ What are the basic XDP building block you can use?
 
 ** Slide: XDP actions and cooperation                                :export:
 
-BPF program return an action or verdict
+BPF program (in driver hook) return an action or verdict
  - XDP_ *DROP*, XDP_ *PASS*, XDP_ *TX*, XDP_ *ABORTED*, XDP_ *REDIRECT*
 
 How to cooperate with network stack
