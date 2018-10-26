@@ -271,7 +271,14 @@ Simple helper *parse_ipv4* used in previous example
 - Again remember boundry checks, else verifier reject program
 
 
-* Slide: Driver XDP RX-handler (called by napi_poll)                 :export:
+* For NIC driver developer
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+Deep dive into the code behind XDP
+- and driver level requirements
+
+** Slide: Driver XDP RX-handler (called by napi_poll)                :export:
 
 Extending a driver with XDP support:
 
