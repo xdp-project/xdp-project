@@ -25,23 +25,5 @@ function addAuthor(selector) {
     }
 }
 
-function hideFake(selector) {
-    return function() {
-        var elems = document.querySelectorAll(selector);
-        elems.forEach(function (e) {
-            console.log(e.getAttribute('fake'));
-            if (e.getAttribute('fake')) {
-                e.parentElement.removeChild(e);
-            }
-        });
-    }
-}
-
-
-if (window.location.search.match( /print-pdf/gi )) {
-    window.addEventListener('pdf-ready', hideFake('.pdf-page'));
-} else {
-    window.addEventListener('load', addAuthor('.reveal .slides > section > section'));
-    window.addEventListener('load', addAuthor('#sec-title-slide'));
-}
-window.addEventListener('DOMContentLoaded', hideFake('section'));
+window.addEventListener('load', addAuthor('.reveal .slides > section > section'));
+window.addEventListener('load', addAuthor('#sec-title-slide'));
