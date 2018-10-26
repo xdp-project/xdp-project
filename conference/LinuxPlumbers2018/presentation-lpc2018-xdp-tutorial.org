@@ -78,6 +78,11 @@ Introdution to XDP
 
 Basic building blocks
  - What are the basic building blocks?
+ - Helpers
+ - data vs control plane
+
+Coding XDP programs
+ - example code
 
 Deep dive into the code behind XDP
  - What is required by XDP drivers?
@@ -86,10 +91,6 @@ Deep dive into the code behind XDP
    - New pluggable memory models per RX queue
 
 How is this connected
- - data vs control plane
-
-Coding XDP programs
- - 
 
 
 
@@ -163,9 +164,9 @@ Think of XDP as /a software offload layer for the kernel network stack/
  - Setup and use Linux kernel network stack
  - But accelerate parts of it with XDP
 
-IP routing good example: /helper/ *bpf_fib_lookup*
+IP routing good example:
  - Let Linux handle routing (daemons) and neighbour lookups
- - Access routing table from XDP via BPF helpers
+ - Access routing table from XDP via BPF /helper/: *bpf_fib_lookup*
  - This was covered in David Ahern's talk: [[http://vger.kernel.org/lpc-networking2018.html#session-1][Leveraging Kernel Tables with XDP]]
 
 #+HTML: <p><br></p>
