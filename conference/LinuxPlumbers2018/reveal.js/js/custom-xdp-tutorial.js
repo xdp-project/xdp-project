@@ -24,8 +24,9 @@ function addAuthor(selector) {
         });
 
 	// UGLY HACK!!! - please fix - extra keywords for XDP-code
-	hljs.getLanguage('C').k += ' XDP_DROP XDP_PASS XDP_ABORTED XDP_REDIRECT';
-	hljs.getLanguage('C').k += ' data data_end';
+	// Disable as it killed other keywords
+//	hljs.getLanguage('C').k += ' XDP_DROP XDP_PASS XDP_ABORTED XDP_REDIRECT XDP_TX';
+//	hljs.getLanguage('C').k += ' data data_end';
     }
 }
 
