@@ -262,7 +262,7 @@ body {
   display: block;
   padding: 5px;
   overflow: auto;
-  max-height: 590px;
+  max-height: 27em; /* Relative to font-size of element, but gives 23 lines */
   word-wrap: normal; }
 
 .reveal table {
