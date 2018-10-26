@@ -75,9 +75,9 @@ programmer, through userspace manipulating shared eBPF maps.
 Introdution to XDP
  - Single slide intro: What is XDP
  - XDP design goals
+ - What are the basic building blocks?
 
 Deep dive into the code behind XDP
- - What are the basic building blocks?
  - What is required by XDP drivers?
    - RX napi_poll changes
    - Restrictions on memory model
@@ -99,7 +99,14 @@ Section below with :export: tags are the slides.
 
 * Slide: What will you learn?                                        :export:
 
-* Slide: What is XDP?                                              :export:
+* Slide: Introdution to XDP                                          :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Covering the basics of XDP first
+
+** Slide: What is XDP?                                               :export:
 
 #+BEGIN_NOTES
 Be inspirational: New programmable layer in network stack.
