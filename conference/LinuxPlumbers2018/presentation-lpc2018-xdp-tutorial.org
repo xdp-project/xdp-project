@@ -123,8 +123,8 @@ int xdp_prog_drop_all_UDP(struct xdp_md *ctx) /* Name visible with bpftool */
 #+END_SRC
 
 Simple XDP program that drop all IPv4 UDP packets
-- Use =struct ethhdr= to access =eth->h_proto=
-- Helper for =parse_ipv4= (next slide)
+- Use /struct ethhdr/ to access /eth->h_proto/
+- Helper for *parse_ipv4* (next slide)
 
 * Slide: Simple helper to read iph->protocol                         :export:
 
@@ -141,7 +141,7 @@ int parse_ipv4(void *data, u64 nh_off, void *data_end)
 }
 #+END_SRC
 
-Simple helper =parse_ipv4= used in previous example
+Simple helper *parse_ipv4* used in previous example
 - Needs inlining as BPF bytes code doesn't have function calls
 - Again remember boundry checks, else verifier reject program
 
