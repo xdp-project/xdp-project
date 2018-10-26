@@ -173,10 +173,30 @@ IP routing good example:
 *Encourage adding helpers instead of duplicating data in BPF maps*
 
 
-* Coding XDP programs
+* Coding XDP programs                                                :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
+How do you code these XDP programs?
+
+** Slide: XDP driver hook is executing eBPF byte-code
+
+XDP put no restrictions on:
+ - How BPF byte-code is generated or loaded
+ - XDP just get and attach BPF file-descriptor handle
+
+BPF byte-code (and map-creation) all go-through bpf-syscall
+ - You can provide hand-written BPF instructions (not practical)
+ - Or use LLVM+clang to generate BPF-bytes code
+   - BCC compiles each time program runs
+   - libbpf approach loads ELF-object created by LLVM/clang
+
+** Slide: Code examples in this talk
+
+This talk focus on: (approach as in kernel samples/bpf)
+ - Writing restricted-C code in foo_kern.c
+ - Compile to ELF oject file foo_kern.o
+ - Load via libbpf (kernel tools/lib/bpf)
 
 ** Slide: XDP restricted-C code example : Drop UDP                   :export:
 
