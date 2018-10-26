@@ -173,7 +173,12 @@ IP routing good example:
 *Encourage adding helpers instead of duplicating data in BPF maps*
 
 
-* Slide: XDP restricted-C code example : Drop UDP                    :export:
+* Coding XDP programs
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: XDP restricted-C code example : Drop UDP                   :export:
 
 #+BEGIN_SRC C
 SEC("xdp1") /* Marks first eBPF program section in ELF-binary */
@@ -198,7 +203,7 @@ Simple XDP program that drop all IPv4 UDP packets
 - Use /struct ethhdr/ to access /eth->h_proto/
 - Helper for *parse_ipv4* (next slide)
 
-* Slide: Simple helper to read iph->protocol                         :export:
+** Slide: Simple helper to read iph->protocol                        :export:
 
 #+BEGIN_SRC C
 static __always_inline
