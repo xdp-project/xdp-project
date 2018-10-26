@@ -79,18 +79,23 @@ Introdution to XDP
 Basic building blocks
  - What are the basic building blocks?
  - Helpers
- - data vs control plane
+
+XDP relationship with eBPF
+ - How is this connected
+ - Design: Data vs control plane
 
 Coding XDP programs
- - example code
+ - example code XDP
+ - show maps usage?
+ - userspace code reading map?
 
-Deep dive into the code behind XDP
+For NIC driver developer: Deep dive into the code behind XDP
  - What is required by XDP drivers?
    - RX napi_poll changes
    - Restrictions on memory model
    - New pluggable memory models per RX queue
 
-How is this connected
+
 
 
 
@@ -172,6 +177,13 @@ IP routing good example:
 #+HTML: <p><br></p>
 *Encourage adding helpers instead of duplicating data in BPF maps*
 
+
+* XDP relationship with eBPF                                         :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+How is this connected?
+
 ** Design: XDP: data-plane and control-plane                         :export:
 
 *Data-plane*: inside /kernel/, split into:
@@ -185,11 +197,6 @@ IP routing good example:
  - Can control program via changing BPF maps
  - Everything goes through bpf system call
 
-
-* XDP relationship with eBPF                                         :export:
-:PROPERTIES:
-:reveal_extra_attr: class="mid-slide"
-:END:
 
 ** Slide: XDP driver hook is executing eBPF byte-code
 
