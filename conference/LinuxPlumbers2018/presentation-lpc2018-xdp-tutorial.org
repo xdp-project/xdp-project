@@ -173,11 +173,10 @@ IP routing good example:
 *Encourage adding helpers instead of duplicating data in BPF maps*
 
 
-* Coding XDP programs                                                :export:
+* XDP relationship with eBPF                                         :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
-How do you code these XDP programs?
 
 ** Slide: XDP driver hook is executing eBPF byte-code
 
@@ -199,6 +198,13 @@ This talk focus on: (approach as in kernel samples/bpf)
  - Compile to ELF object file foo_kern.o
  - Load via libbpf (kernel tools/lib/bpf) as XDP *data-plane*
  - Have *userspace control-plane* program foo_user.c via shared BPF-maps
+
+* Coding XDP programs                                                :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+How do you code these XDP programs?
+Show me the code!!!
 
 ** Slide: XDP restricted-C code example : Drop UDP                   :export:
 
