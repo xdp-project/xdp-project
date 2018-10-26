@@ -75,6 +75,8 @@ programmer, through userspace manipulating shared eBPF maps.
 Introdution to XDP
  - Single slide intro: What is XDP
  - XDP design goals
+
+Basic building blocks
  - What are the basic building blocks?
 
 Deep dive into the code behind XDP
@@ -103,7 +105,6 @@ Section below with :export: tags are the slides.
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
-
 Covering the basics of XDP first
 
 ** Slide: What is XDP?                                               :export:
@@ -125,7 +126,17 @@ Means: Competing at the same “layer” as DPDK / netmap
  - Via eBPF: makes early network stack *run-time programmable*
  - Cooperates with the kernel stack
 
+** XDP design goals                                                  :export:
 
+XDP operate at same level L2/L3 level as kernel-bypass solutions (DPDK)
+ - Network stack was build with socket-delivery use-case in focus (SKB)
+
+XDP goals
+ - /Close the performance gap/ to kernel-bypass solutions
+   * *Not a goal to be faster*
+ - Provide in-kernel alternative, that is *more flexible*
+   * */Don’t steal the entire NIC/*
+ - Work in concert with existing network stack
 
 
 * Slide: XDP restricted-C code example : Drop UDP                    :export:
