@@ -187,16 +187,18 @@ XDP put no restrictions on:
 
 BPF byte-code (and map-creation) all go-through bpf-syscall
  - You can provide hand-written BPF instructions (not practical)
- - Or use LLVM+clang to generate BPF-bytes code
+ - Or use /LLVM+clang to generate BPF byte-code/
    - BCC compiles each time program runs
    - libbpf approach loads ELF-object created by LLVM/clang
 
 ** Slide: Code examples in this talk
 
 This talk focus on: (approach as in kernel samples/bpf)
- - Writing restricted-C code in foo_kern.c
- - Compile to ELF oject file foo_kern.o
- - Load via libbpf (kernel tools/lib/bpf)
+ - Writing *restricted-C* code in foo_kern.c
+   * BPF code is restricted to protect kernel (not turing complete)
+ - Compile to ELF object file foo_kern.o
+ - Load via libbpf (kernel tools/lib/bpf) as XDP *data-plane*
+ - Have *userspace control-plane* program foo_user.c via shared BPF-maps
 
 ** Slide: XDP restricted-C code example : Drop UDP                   :export:
 
