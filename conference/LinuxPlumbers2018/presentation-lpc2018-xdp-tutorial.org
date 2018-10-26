@@ -100,7 +100,7 @@ Coding XDP programs
 Section below with :export: tags are the slides.
 
 
-* Slide: XDP restricted-C code example                               :export:
+* Slide: XDP restricted-C code example : Drop UDP                    :export:
 
 #+BEGIN_SRC C
 SEC("xdp1") /* Marks first eBPF program section in ELF-binary */
@@ -145,20 +145,21 @@ Simple helper *parse_ipv4* used in previous example
 - Again remember boundry checks, else verifier reject program
 
 
-* Slide: Driver XDP RX-handler (napi_poll)                           :export:
+* Slide: Driver XDP RX-handler (called by napi_poll)                 :export:
+
+Extending a driver with XDP support:
 
 #+BEGIN_SRC C
 while (desc_in_rx_ring && budget_left--) {
 	action = bpf_prog_run_xdp(xdp_prog, xdp_buff);
 	/* helper bpf_redirect_map have set map (and index) via this_cpu_ptr */
 	switch (action) {
-	case XDP_PASS:
-		break;
+	case XDP_PASS:		break;
 	case XDP_TX:
 		res = driver_local_xmit_xdp_ring(adapter, xdp_buff); break;
 	case XDP_REDIRECT:
 		res = xdp_do_redirect(netdev, xdp_buff, xdp_prog); break;
-	default:           bpf_warn_invalid_xdp_action(action); /* fallthrough */
+	default:           bpf_warn_invalid_xdp_action(action);		  /* fallthrough */
 	case XDP_ABORTED:  trace_xdp_exception(netdev, xdp_prog, action); /* fallthrough */
 	case XDP_DROP:     res = DRV_XDP_CONSUMED; break;
 	} /* left out acting on res */
