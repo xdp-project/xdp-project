@@ -340,9 +340,26 @@ XDP put certain restrictions on RX memory model
  - The one page per RX-frame: */No longer true/*
  - Requirement: RX-frame memory must be in /continues in physical memory/
    - Needed to support eBPF Direct-Access to memory validation
+ - (Currently) Also require tail-room for SKB shared-info section
+   - for SKB alloc outside driver, fits well with driver using build_skb() API
 
 *Not supported*: drivers that split frame into several memory areas
  - This usually result in disabling Jumbo-Frame, when loading XDP prog
+ - XDP have forced driver to support several RX-memory models
+   - This was part of the (evil?) master-plan...
+
+** Slide: New pluggable memory models per RX queue                   :export:
+
+Recent change: Memory return API
+ - API for how XDP_REDIRECT'ed frames are freed or "returned"
+   - XDP frames are /returned to originating RX driver/
+ - Furthermore: this happens per RX-queue level (extended xdp_rxq_info)
+
+This allows driver to implement *different memory models per RX-queue*
+ - E.g. needed for AF_XDP /zero-copy mode/
+
+Also /opportunity to share/ common RX-allocator code between drivers
+ - page_pool is an example, need more drivers using it
 
 * Org-mode hints                                                   :noexport:
 
