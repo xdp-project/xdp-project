@@ -304,6 +304,21 @@ driver_local_XDP_TX_flush();
 
 Bulk via: helper *bpf_redirect_map* + /xdp_do_redirect/ + /xdp_do_flush_map/
 
+** Slide: XDP_REDIRECT action                                        :export:
+
+XDP got *action* code /XDP_REDIRECT/
+ - In basic form: Redirecting RAW frames out another net_device/ifindex
+ - *Egress driver*: implement /ndo_xdp_xmit/ (ndo_xdp_flush got removed!)
+
+Performance low without using a map for redirect:
+ - (single CPU core numbers, 10Gbit/s ixgbe):
+ - Using helper: *bpf_redirect*	    =  *7.5* Mpps
+ - Using helper: /bpf_redirect_map/ = /13.0/ Mpps
+
+Bulking make huge difference
+ - /Bulking is hidden in bpf maps/
+
+
 * Org-mode hints                                                   :noexport:
 
 https://orgmode.org/manual/Easy-templates.html#Easy-templates
