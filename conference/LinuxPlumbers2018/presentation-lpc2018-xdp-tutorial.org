@@ -178,20 +178,16 @@ IP routing good example:
 #+HTML: <p><br></p>
 *Encourage adding helpers instead of duplicating data in BPF maps*
 
-** Slide: XDP_REDIRECT action                                        :export:
+** Slide: XDP_REDIRECT action is special                             :export:
 
-XDP got *action* code /XDP_REDIRECT/
+XDP *action* code /XDP_REDIRECT/ is powerful
  - In basic form: Redirecting RAW frames out another net_device/ifindex
- - *Egress driver*: implement /ndo_xdp_xmit/ (ndo_xdp_flush got removed!)
+   - *Egress driver*: need to implement /ndo_xdp_xmit/
+ - /Redirect into map/ gives flexibility to invent (maybe last XDP action code)
+   - And allow to *hide bulking* in bpf map code
 
-Performance low without using a map for redirect:
- - (single CPU core numbers, 10Gbit/s ixgbe):
- - Using helper: *bpf_redirect*	    =  *7.5* Mpps
- - Using helper: /bpf_redirect_map/ = /13.0/ Mpps
-
-Bulking make huge difference
- - /Bulking is hidden in bpf maps/
-
+Remember use helper: /bpf_redirect_map/ to activate bulking
+ - Using helper: *bpf_redirect* give you */bad performance/*
 
 
 * XDP relationship with eBPF                                         :export:
