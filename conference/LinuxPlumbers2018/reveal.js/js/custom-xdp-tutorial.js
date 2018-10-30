@@ -28,6 +28,7 @@ function addAuthor(selector) {
 function addHighlightKeywords() {
         hljs.getLanguage('C').k.keyword += ' XDP_DROP XDP_PASS XDP_ABORTED XDP_REDIRECT XDP_TX';
         hljs.getLanguage('C').k.keyword += ' data data_end';
+        hljs.getLanguage('C').k.keyword += ' xdp_do_redirect xdp_do_flush_map';
 }
 
 window.addEventListener('load', addAuthor('.reveal .slides > section > section'));
