@@ -302,6 +302,7 @@ xdp_do_flush_map(); /* Bulk size chosen by map, can store xdp_frame's for flushi
 driver_local_XDP_TX_flush();
 #+END_SRC
 
+Bulk via: helper *bpf_redirect_map* + /xdp_do_redirect/ + /xdp_do_flush_map/
 
 * Org-mode hints                                                   :noexport:
 
