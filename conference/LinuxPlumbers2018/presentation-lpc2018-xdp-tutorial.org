@@ -281,7 +281,7 @@ int xdp_prog_drop_all_UDP(struct xdp_md *ctx) /* Name visible with bpftool */
 
 Simple XDP program that drop all IPv4 UDP packets
 - Use /struct ethhdr/ to access /eth->h_proto/
-- Helper for *parse_ipv4* (next slide)
+- Function call for *parse_ipv4* (next slide)
 
 ** Slide: Simple function call to read iph->protocol                 :export:
 
