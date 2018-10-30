@@ -267,9 +267,9 @@ int parse_ipv4(void *data, u64 nh_off, void *data_end)
 }
 #+END_SRC
 
-Simple helper *parse_ipv4* used in previous example
-- Needs inlining as BPF bytes code doesn't have function calls
-- Again remember boundry checks, else verifier reject program
+Simple helper /parse_ipv4/ used in previous example
+- *Needs inlining* as BPF bytes code doesn't have function calls
+- Again *remember boundry checks*, else verifier reject program
 
 
 * For NIC driver developer
