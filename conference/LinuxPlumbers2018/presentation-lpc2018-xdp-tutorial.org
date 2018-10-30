@@ -76,8 +76,8 @@ Introduction to XDP
  - Single slide intro: What is XDP
  - XDP design goals
 
-Basic building blocks
- - What are the basic building blocks?
+XDP building blocks
+ - What are the building blocks?
  - Helpers
 
 XDP relationship with eBPF
@@ -360,6 +360,14 @@ This allows driver to implement *different memory models per RX-queue*
 
 Also /opportunity to share/ common RX-allocator code between drivers
  - page_pool is an example, need more drivers using it
+
+* End                                                                :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Thanks to all contributors
+ - XDP + BPF /combined effort/ of *many* people
 
 * Org-mode hints                                                   :noexport:
 
