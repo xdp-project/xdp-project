@@ -334,6 +334,15 @@ driver_local_XDP_TX_flush();
 
 Bulk via: helper *bpf_redirect_map* + /xdp_do_redirect/ + /xdp_do_flush_map/
 
+** Slide: Restrictions on driver memory model                        :export:
+
+XDP put certain restrictions on RX memory model
+ - The one page per RX-frame: */No longer true/*
+ - Requirement: RX-frame memory must be in /continues in physical memory/
+   - Needed to support eBPF Direct-Access to memory validation
+
+*Not supported*: drivers that split frame into several memory areas
+ - This usually result in disabling Jumbo-Frame, when loading XDP prog
 
 * Org-mode hints                                                   :noexport:
 
