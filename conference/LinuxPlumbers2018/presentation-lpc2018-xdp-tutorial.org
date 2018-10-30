@@ -178,6 +178,12 @@ IP routing good example:
 #+HTML: <p><br></p>
 *Encourage adding helpers instead of duplicating data in BPF maps*
 
+* Advanced building block                                            :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+XDP redirect is powerful
+
 ** Slide: XDP_REDIRECT action is special                             :export:
 
 XDP *action* code /XDP_REDIRECT/ is powerful
