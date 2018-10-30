@@ -1,10 +1,9 @@
 var authorName = 'Jesper Dangaard Brouer';
 var authorName2 = 'Andy Gospodarek';
 var authorEmail = 'brouer@redhat.com';
-var authorEmail2 = 'andy@greyhouse.net';
+var authorEmail2 = 'gospo@broadcom.com';
 
 var authorHTML = [
-    '<img src="./reveal.js/images/RedHat.svg"/>',
     '<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">',
     '<i class="icon-cc-1"></i>',
     '<i class="icon-cc-by"></i>',

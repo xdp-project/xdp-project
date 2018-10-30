@@ -72,7 +72,7 @@ programmer, through userspace manipulating shared eBPF maps.
 
 * Overall plan
 
-Introdution to XDP
+Introduction to XDP
  - Single slide intro: What is XDP
  - XDP design goals
 
@@ -119,18 +119,19 @@ Covering the basics of XDP first
 Be inspirational: New programmable layer in network stack.
 #+END_NOTES
 
-XDP basically: *New layer in the kernel network stack*
- - Before allocating the SKB
- - Driver level hook at DMA level
+*New, programmable layer* in the kernel network stack
+ - Native Mode XDP
+   - Driver level hook available just after DMA of buffer descriptor
+   - Process packets before SKB allocation /No waiting for memory allocation!/
+ - SKB or Generic Mode XDP
+   - Called from netif_receive_skb()
+   - Driver independent, but more instructions needed for each packet
 
-Means: Competing at the same “layer” as DPDK / netmap
- - Super fast, due to
-   - Take action/decision earlier (e.g. skip some network layers)
-   - No memory allocations
+Run-time programmable packet processing inside the kernel *not kernel bypass*
 
-/Not kernel bypass/; data-plane is kept inside the kernel
- - Via eBPF: makes early network stack *run-time programmable*
- - Cooperates with the kernel stack
+Programs are compiled to platform-independent /eBPF bytecode/
+
+Object files can be loaded on multiple kernels and architectures /without recompiling/
 
 ** XDP design goals                                                  :export:
 
