@@ -302,6 +302,19 @@ Simple function call /parse_ipv4/ used in previous example
 - *Needs inlining* as BPF bytes code doesn't have function calls
 - Again *remember boundry checks*, else verifier reject program
 
+** TODO Slide: libbpf: loading ELF-object code                       :export:
+
+#+BEGIN_NOTES
+Missing: slide what shows how userspace use libbpf to load an ELF file.
+#+END_NOTES
+
+** TODO Slide: libbpf: attaching XDP prog to ifindex                 :export:
+
+** TODO Slide: Accessing eBPF-map from _kern.c                       :export:
+
+** TODO Slide: Accessing eBPF-map from _user.c                       :export:
+
+
 * For NIC driver developer
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
