@@ -189,6 +189,20 @@ XDP *action* code /XDP_REDIRECT/ is powerful
 Remember use helper: /bpf_redirect_map/ to activate bulking
  - Using helper: *bpf_redirect* give you */bad performance/*
 
+** Slide: Inventing redirect types via maps
+
+The *devmap*: =BPF_MAP_TYPE_DEVMAP=
+ - Contains /net_devices/, userspace adds them via ifindex to map-index
+
+The *cpumap*: =BPF_MAP_TYPE_CPUMAP=
+ - Allow redirecting RAW xdp_frame's to /remote CPU/
+   - SKB is created on remote CPU, and normal network stack invoked
+ - The map-index is the CPU number (the value is queue size)
+
+*AF_XDP* - “xskmap”: =BPF_MAP_TYPE_XSKMAP=
+ - Allow redirecting /RAW xdp frames into userspace/
+   - via new Address Family socket type: AF_XDP
+
 
 * XDP relationship with eBPF                                         :export:
 :PROPERTIES:
