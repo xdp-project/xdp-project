@@ -149,42 +149,6 @@ SKB or Generic Mode XDP
  - *Larger* number of instructions executed before running XDP program
  - /Driver independent/
 
-* Basic building blocks                                              :export:
-:PROPERTIES:
-:reveal_extra_attr: class="mid-slide"
-:END:
-What are the basic XDP building block you can use?
-
-** Slide: XDP actions and cooperation                                :export:
-
-BPF program (in driver hook) return an action or verdict
- - XDP_ *DROP*, XDP_ *PASS*, XDP_ *TX*, XDP_ *ABORTED*, XDP_ *REDIRECT*
-
-How to cooperate with network stack
- - /Pop/push/ or *modify* headers: Change default rx_handler used by kernel 
-   * e.g. handle on-wire protocol unknown to running kernel
- - Can propagate 32Bytes /meta-data/ from XDP stage to network stack
-   * TC (clsbpf) hook can use meta-data, e.g. set SKB mark
-   * Pre-parse packet contents (XDP Hints) and store in this area
- - Call /BPF helpers/ which are exported kernel functions
-   * Helpers defined and documented in: */include/uapi/linux/bpf.h/*
-
-** Slide: Evolving XDP via BPF helpers                               :export:
-
-Think of XDP as /a software offload layer/ for the kernel network stack
- - Setup and use Linux kernel network stack
- - Accelerate parts of it with XDP
-
-IP routing application is great example:
- - Let kernel manage route tables and perform neighbour lookups
- - Access routing table from XDP program via BPF /helper/: *bpf_fib_lookup*
- - Rewrite packet headers if next-hop found, otherwise send packet to kernel
- - This was covered in David Ahern's talk: [[http://vger.kernel.org/lpc-networking2018.html#session-1][Leveraging Kernel Tables with XDP]]
-
-Similar concept could be extended to accelerate any kernel datapath
-
-*Add helpers* instead of duplicating kernel data in BPF maps!
-
 * XDP relationship with eBPF                                         :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
@@ -224,6 +188,42 @@ This talk focus on: (approach as in kernel samples/bpf)
  - Compile to ELF object file foo_kern.o
  - Load via libbpf (kernel tools/lib/bpf) as XDP *data-plane*
  - Have *userspace control-plane* program foo_user.c via shared BPF-maps
+
+* Basic building blocks                                              :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+What are the basic XDP building block you can use?
+
+** Slide: XDP actions and cooperation                                :export:
+
+BPF program (in driver hook) return an action or verdict
+ - XDP_ *DROP*, XDP_ *PASS*, XDP_ *TX*, XDP_ *ABORTED*, XDP_ *REDIRECT*
+
+How to cooperate with network stack
+ - /Pop/push/ or *modify* headers: Change default rx_handler used by kernel 
+   * e.g. handle on-wire protocol unknown to running kernel
+ - Can propagate 32Bytes /meta-data/ from XDP stage to network stack
+   * TC (clsbpf) hook can use meta-data, e.g. set SKB mark
+   * Pre-parse packet contents (XDP Hints) and store in this area
+ - Call /BPF helpers/ which are exported kernel functions
+   * Helpers defined and documented in: */include/uapi/linux/bpf.h/*
+
+** Slide: Evolving XDP via BPF helpers                               :export:
+
+Think of XDP as /a software offload layer/ for the kernel network stack
+ - Setup and use Linux kernel network stack
+ - Accelerate parts of it with XDP
+
+IP routing application is great example:
+ - Let kernel manage route tables and perform neighbour lookups
+ - Access routing table from XDP program via BPF /helper/: *bpf_fib_lookup*
+ - Rewrite packet headers if next-hop found, otherwise send packet to kernel
+ - This was covered in David Ahern's talk: [[http://vger.kernel.org/lpc-networking2018.html#session-1][Leveraging Kernel Tables with XDP]]
+
+Similar concept could be extended to accelerate any kernel datapath
+
+*Add helpers* instead of duplicating kernel data in BPF maps!
 
 
 * Coding XDP programs                                                :export:
