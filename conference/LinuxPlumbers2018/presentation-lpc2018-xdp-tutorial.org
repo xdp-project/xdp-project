@@ -349,7 +349,7 @@ struct bpf_map_def SEC("maps") rxcnt = {
 };
 #+END_SRC
 
-While executing the program this map can be accessed like this:
+While executing BPF program /rxcnt/ map can be accessed like this:
 
 #+BEGIN_SRC C
 long *value;
@@ -381,13 +381,18 @@ Map file descriptor (/map_fd/) needed to interactive with BPF syscall
 
 Now the map contents can be accessed like this:
 #+BEGIN_SRC C
+unsigned int nr_cpus = bpf_num_possible_cpus(); int cpu;
+__u64 values[nr_cpus];
 __u32 key = 17;
-__u64 value;
+__u64 sum = 0;
 
 if (bpf_map_lookup_elem(map_fd, &key, &value))
 	return EXIT_FAILURE;
 
-printf("key %u value %llu\n", key, value);
+for (cpu = 0; cpu < nr_cpus; cpu++)
+	sum += values[cpu];
+
+printf("key %u value %llu\n", key, sum);
 #+END_SRC
 
 
