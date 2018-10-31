@@ -143,7 +143,7 @@ XDP goals
    * *Not a goal to be faster*
  - Provide in-kernel alternative, that is *more flexible*
    * */Don’t steal the entire NIC/*
- - Work in concert with existing network stack
+ - Work in concert with existing network stack without kernel modifications
 
 
 * Basic building blocks                                              :export:
@@ -158,25 +158,29 @@ BPF program (in driver hook) return an action or verdict
  - XDP_ *DROP*, XDP_ *PASS*, XDP_ *TX*, XDP_ *ABORTED*, XDP_ *REDIRECT*
 
 How to cooperate with network stack
- - /Pop/push/ or *modify* headers: Change RX-handler kernel use
-   * e.g. handle protocol unknown to running kernel
+ - /Pop/push/ or *modify* headers: Change default rx_handler used by kernel 
+   * e.g. handle on-wire protocol unknown to running kernel
  - Can propagate 32Bytes /meta-data/ from XDP stage to network stack
    * TC (clsbpf) hook can use meta-data, e.g. set SKB mark
- - Call /BPF helpers/
+   * Pre-parse packet contents (XDP Hints) and store in this area
+ - Call /BPF helpers/ which are exported kernel functions
+   * Helpers defined and documented in: */include/uapi/linux/bpf.h/*
 
-** Slide: Evolving XDP via BPF-helpers                               :export:
+** Slide: Evolving XDP via BPF helpers                               :export:
 
-Think of XDP as /a software offload layer for the kernel network stack/
+Think of XDP as /a software offload layer/ for the kernel network stack
  - Setup and use Linux kernel network stack
- - But accelerate parts of it with XDP
+ - Accelerate parts of it with XDP
 
-IP routing good example:
- - Let Linux handle routing (daemons) and neighbour lookups
- - Access routing table from XDP via BPF /helper/: *bpf_fib_lookup*
+IP routing application is great example:
+ - Let kernel manage route tables and perform neighbour lookups
+ - Access routing table from XDP program via BPF /helper/: *bpf_fib_lookup*
+ - Rewrite packet headers if next-hop found, otherwise send packet to kernel
  - This was covered in David Ahern's talk: [[http://vger.kernel.org/lpc-networking2018.html#session-1][Leveraging Kernel Tables with XDP]]
 
-#+HTML: <p><br></p>
-*Encourage adding helpers instead of duplicating data in BPF maps*
+Similar concept could be extended to accelerate any kernel datapath
+
+*Add helpers* instead of duplicating kernel data in BPF maps!
 
 * Advanced building block                                            :export:
 :PROPERTIES:
@@ -186,14 +190,14 @@ XDP redirect is powerful
 
 ** Slide: XDP_REDIRECT action is special                             :export:
 
-XDP *action* code /XDP_REDIRECT/ is powerful
+XDP *action* code /XDP_REDIRECT/ is flexible
  - In basic form: Redirecting RAW frames out another net_device/ifindex
-   - *Egress driver*: need to implement /ndo_xdp_xmit/
- - /Redirect into map/ gives flexibility to invent (maybe last XDP action code)
+   - *Egress device driver* needs to implement /ndo_xdp_xmit/
+ - /Redirect into map/ gives flexibility to invent new destinations
    - And allow to *hide bulking* in bpf map code
 
 Remember use helper: /bpf_redirect_map/ to activate bulking
- - Using helper: *bpf_redirect* give you */bad performance/*
+ - Using helper: *bpf_redirect* gives you */worse performance/* than /bpf_redirect_map/
 
 ** Slide: Inventing redirect types via maps
 
@@ -302,18 +306,93 @@ Simple function call /parse_ipv4/ used in previous example
 - *Needs inlining* as BPF bytes code doesn't have function calls
 - Again *remember boundry checks*, else verifier reject program
 
-** TODO Slide: libbpf: loading ELF-object code                       :export:
+** Slide: libbpf: loading ELF-object code                       :export:
 
-#+BEGIN_NOTES
-Missing: slide what shows how userspace use libbpf to load an ELF file.
-#+END_NOTES
+Userspace program must call BPF syscall to insert program info kernel
 
-** TODO Slide: libbpf: attaching XDP prog to ifindex                 :export:
+Luckily libbpf library written to help make this easier for developers
+#+BEGIN_SRC C
+struct bpf_object *obj;
+int prof_fd;
 
-** TODO Slide: Accessing eBPF-map from _kern.c                       :export:
+struct bpf_prog_load_attr prog_load_attr = {
+	.prog_type      = BPF_PROG_TYPE_XDP,
+};
 
-** TODO Slide: Accessing eBPF-map from _user.c                       :export:
+prog_load_addr.file = "xdp1_kern.o"
 
+if (bpf_prog_load_xattr(&prog_load_attr, &obj, &prog_fd))
+	return 1;
+
+#+END_SRC
+BPF bytecode and map definitions from xdp1_kern.o are now ready to use and
+obj and prog_fd are set.
+
+** Slide: libbpf: attaching XDP prog to ifindex                 :export:
+
+Now that a program is loaded (remember prog_fd set in the last snippet shown), attach it to a netdev
+
+#+BEGIN_SRC C
+static int ifindex = 2;  /* in this case eth0 is ifindex 2 */
+static __u32 xdp_flags = XDP_FLAGS_DRV_MODE /* or XDP_FLAGS_SKB_MODE */
+
+if (bpf_set_link_xdp_fd(ifindex, prog_fd, xdp_flags) < 0) {
+	printf("link set xdp fd failed\n");
+	return 1;
+}
+#+END_SRC
+
+If bpf_set_link_xdp_fd() is successful, the BPF program in xdp1_kern.o is attached to eth0
+and program runs each time a packet arrives on that interface.
+
+** Slide: Accessing eBPF map from within bpf program                       :export:
+
+BPF maps are created when a program is loaded.  In this definition the map is an array, but there are a variety of types.
+
+#+BEGIN_SRC C
+struct bpf_map_def SEC("maps") rxcnt = {
+        .type = BPF_MAP_TYPE_PERCPU_ARRAY,
+        .key_size = sizeof(u32),
+        .value_size = sizeof(long),
+        .max_entries = 256,
+};
+#+END_SRC
+
+While executing the program this map can be accessed like this:
+
+#+BEGIN_SRC C
+long *value;
+u32 ipproto = 17;
+
+value = bpf_map_lookup_elem(&rxcnt, &ipproto);
+if (value)
+	*value += 1;  /* We saw a UDP frame! */
+#+END_SRC
+
+** Slide: Accessing eBPF map from user space                       :export:
+
+Since BPF maps can bee used to communicate information (statistics in this example)
+between the BPF program easily.  First locate the map:
+
+#+BEGIN_SRC C
+map = bpf_map__next(NULL, obj);
+if (!map) {
+	printf("finding a map in obj file failed\n");
+	return 1;
+}
+map_fd = bpf_map__fd(map);
+#+END_SRC
+
+Now the map contents can be accessed like this:
+#+BEGIN_SRC C
+__u32 key = 17;
+__u64 value;
+
+if (bpf_map_lookup_elem(map_fd, &key, &value))
+	return 1;
+
+printf("key %u value %llu\n", key, value);
+#+END_SRC
 
 * For NIC driver developer
 :PROPERTIES:
