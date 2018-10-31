@@ -59,11 +59,11 @@ concert with the kernel's networking stack. Applications are written
 in higher level languages such as C and compiled via LLVM into eBPF
 bytecode which the kernel statically analyses for safety, and JIT
 translates into native instructions. This is an alternative approach,
-compared to kernel bypass mechanisms (like DPDK and netmap).
+compared to kernel-bypass mechanisms (like DPDK and netmap).
 
 This talk gives a practical focused introduction to XDP. Describing
 and giving code examples for the programming environment provided to
-the XDP developer. The programmer need to change their mindeset a bit,
+the XDP developer. The programmer need to change their mindset a bit,
 when coding for this XDP/eBPF execution environment. XDP programs are
 often split between eBPF-code running kernel side and userspace
 control plane. The control plane API not predefined, and is up to the
@@ -107,7 +107,7 @@ Section below with :export: tags are the slides.
 
 * Slide: What will you learn?                                        :export:
 
-* Introdution to XDP                                                 :export:
+* Introduction to XDP                                                 :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -120,7 +120,7 @@ Be inspirational: New programmable layer in network stack.
 #+END_NOTES
 
 - *New, programmable layer* in the kernel network stack
-- Run-time programmable packet processing inside the kernel *not kernel bypass*
+- Run-time programmable packet processing inside the kernel *not kernel-bypass*
 - Programs are compiled to platform-independent /eBPF bytecode/
 - Object files can be loaded on multiple kernels and architectures /without recompiling/
 
@@ -168,17 +168,17 @@ How is this connected?
 *Control-plane*: /Userspace/
  - Userspace load BPF program
  - Can control program via changing BPF maps
- - Everything goes through bpf system call
+ - Everything goes through BPF-syscall
 
 
-** Slide: XDP driver hook is executing eBPF byte-code
+** Slide: XDP driver hook is executing eBPF bytecode
 
-XDP put no restrictions on: How BPF byte-code is generated or loaded
+XDP put no restrictions on: How BPF bytecode is generated or loaded
  - XDP just get and attach BPF file-descriptor handle
 
-BPF byte-code (and map-creation) all go-through bpf-syscall
+BPF bytecode (and map-creation) all go-through BPF-syscall
  - You can provide hand-written BPF instructions (not practical)
- - Or use /LLVM+clang to generate BPF byte-code/
+ - Or use /LLVM+clang to generate BPF bytecode/
    - BCC compiles each time program runs
    - libbpf approach loads ELF-object created by LLVM/clang
 
@@ -269,7 +269,7 @@ int parse_ipv4(void *data, u64 nh_off, void *data_end)
 	struct iphdr *iph = data + nh_off;
 
 	/* Note + 1 on pointer advance one iphdr struct size */
-	if (iph + 1 > data_end) /* <-- Again verifier check our boundry checks */
+	if (iph + 1 > data_end) /* <-- Again verifier check our boundary checks */
 		return 0;
 	return iph->protocol;
 }
@@ -277,14 +277,14 @@ int parse_ipv4(void *data, u64 nh_off, void *data_end)
 
 Simple function call /parse_ipv4/ used in previous example
 - *Needs inlining* as BPF bytes code doesn't have function calls
-- Again *remember boundry checks*, else verifier reject program
+- Again *remember boundary checks*, else verifier reject program
 
 
 * Coding with libbpf                                                 :export:
 
 ** Slide: libbpf: loading ELF-object code                       :export:
 
-Userspace program must call BPF syscall to insert program info kernel
+Userspace program must call BPF-syscall to insert program info kernel
 
 Luckily libbpf library written to help make this easier for developers
 #+BEGIN_SRC C
@@ -386,7 +386,7 @@ if (!map) {
 map_fd = bpf_map__fd(map);
 #+END_SRC
 
-Map file descriptor (/map_fd/) needed to interactive with BPF syscall
+Map file descriptor (/map_fd/) needed to interactive with BPF-syscall
 
 ** Slide: Reading eBPF map data from user space                      :export:
 
@@ -492,7 +492,7 @@ XDP put certain restrictions on RX memory model
 ** Slide: New pluggable memory models per RX queue                   :export:
 
 Recent change: Memory return API
- - API for how XDP_REDIRECT'ed frames are freed or "returned"
+ - API for how XDP_REDIRECT frames are freed or "returned"
    - XDP frames are /returned to originating RX driver/
  - Furthermore: this happens per RX-queue level (extended xdp_rxq_info)
 
