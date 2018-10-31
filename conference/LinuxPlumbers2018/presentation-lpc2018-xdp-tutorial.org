@@ -206,8 +206,8 @@ How to cooperate with network stack
  - /Pop/push/ or *modify* headers: Change default rx_handler used by kernel 
    * e.g. handle on-wire protocol unknown to running kernel
  - Can propagate 32Bytes /meta-data/ from XDP stage to network stack
-   * TC (clsbpf) hook can use meta-data, e.g. set SKB mark
-   * Pre-parse packet contents (XDP Hints) and store in this area
+   * TC (/clsbpf/) hook can use meta-data, e.g. set SKB mark
+   * Pre-parse packet contents (/XDP Hints/) and store in this area
  - Call /BPF helpers/ which are exported kernel functions
    * Helpers defined and documented in: */include/uapi/linux/bpf.h/*
 
@@ -299,8 +299,8 @@ struct bpf_prog_load_attr prog_load_attr = {
 if (bpf_prog_load_xattr(&prog_load_attr, &obj, &prog_fd))
 	return EXIT_FAILURE;
 #+END_SRC
-BPF bytecode and map definitions from xdp1_kern.o are now ready to use and
-obj and prog_fd are set.
+BPF bytecode and map definitions from *xdp1_kern.o* are now ready to use and
+/obj/ and /prog_fd/ are set.
 
 ** Slide: libbpf: ELF-object with multiple eBPF progs                :export:
 
@@ -327,7 +327,7 @@ Possible to have several eBPF program in one object file
 
 ** Slide: libbpf: attaching XDP prog to ifindex                 :export:
 
-Now that a program is loaded (remember prog_fd set in the last snippet shown), attach it to a netdev
+Now that a program is loaded (remember /prog_fd/ set in the last snippet shown), attach it to a netdev
 
 #+BEGIN_SRC C
 #include <"net/if.h"> /* if_nametoindex */
@@ -340,7 +340,7 @@ if (bpf_set_link_xdp_fd(ifindex, prog_fd, xdp_flags) < 0) {
 }
 #+END_SRC
 
-If bpf_set_link_xdp_fd() is successful, the BPF program in xdp1_kern.o is attached to eth0
+If /bpf_set_link_xdp_fd()/ is successful, the BPF program in *xdp1_kern.o* is attached to eth0
 and program runs each time a packet arrives on that interface.
 
 * Coding with eBPF maps                                              :export:
@@ -368,7 +368,8 @@ u32 ipproto = 17;
 value = bpf_map_lookup_elem(&rxcnt, &ipproto);
 if (value)
 	*value += 1;  /* We saw a UDP frame! */
-	/* PERCPU maps don't need: __sync_fetch_and_add(value, 1); */
+	/* BPF_MAP_TYPE_PERCPU_ARRAY maps does not need to sync between CPUs
+	 * if using BPF_MAP_TYPE_ARRAY use __sync_fetch_and_add(value, 1); */
 #+END_SRC
 
 ** Slide: Find eBPF map file-descriptor in user space                :export:
@@ -407,8 +408,8 @@ for (cpu = 0; cpu < nr_cpus; cpu++)
 printf("key %u value %llu\n", key, sum);
 #+END_SRC
 
-Userspace gets more work of summing counters per CPU
- - which allows BPF kernel prog to run faster (not using atomic ops)
+Userspace would sum counters per CPU
+This allows BPF kernel program to run faster since not using atomic ops
 
 * Advanced building block                                            :export:
 :PROPERTIES:
@@ -425,7 +426,7 @@ XDP *action* code /XDP_REDIRECT/ is flexible
    - And allow to *hide bulking* in bpf map code
 
 Remember use helper: /bpf_redirect_map/ to activate bulking
- - Using helper: *bpf_redirect* gives you */worse performance/* than /bpf_redirect_map/
+ - Using helper: /bpf_redirect_map/ gives you /better performance/ than *bpf_redirect*
 
 ** Slide: Inventing redirect types via maps
 
@@ -439,7 +440,7 @@ The *cpumap*: =BPF_MAP_TYPE_CPUMAP=
 
 *AF_XDP* - “xskmap”: =BPF_MAP_TYPE_XSKMAP=
  - Allow redirecting /RAW xdp frames into userspace/
-   - via new Address Family socket type: AF_XDP
+   - via new Address Family socket type: *AF_XDP*
 
 
 * For NIC driver developer
@@ -464,7 +465,7 @@ while (desc_in_rx_ring && budget_left--) {
 				/*via xdp_do_redirect_map() pickup map info from helper */
 	 default:		bpf_warn_invalid_xdp_action(action);		/* fallthrough */
 	 case XDP_ABORTED:	trace_xdp_exception(netdev, xdp_prog, action);  /* fallthrough */
-	 case XDP_DROP:     res = DRV_XDP_CONSUMED; break;
+	 case XDP_DROP:		res = DRV_XDP_CONSUMED; break;
 	} /* left out acting on res */
 }
 /* End of napi_poll call do: */
@@ -486,7 +487,7 @@ XDP put certain restrictions on RX memory model
 *Not supported*: drivers that split frame into several memory areas
  - This usually result in disabling Jumbo-Frame, when loading XDP prog
  - XDP have forced driver to support several RX-memory models
-   - This was part of the (evil?) master-plan...
+   - This was part of the (*/evil?/*) master-plan...
 
 ** Slide: New pluggable memory models per RX queue                   :export:
 
