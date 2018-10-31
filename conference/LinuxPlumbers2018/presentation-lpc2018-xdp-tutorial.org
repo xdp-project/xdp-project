@@ -163,7 +163,7 @@ How is this connected?
  - Kernel-core: Fabric in charge of moving packets quickly
  - In-kernel eBPF program:
    * Policy logic decide action
-   * Read/write access to packet
+   * Read/write access to packet buffers
 
 *Control-plane*: /Userspace/
  - Userspace load eBPF program
@@ -173,20 +173,20 @@ How is this connected?
 
 ** Slide: XDP driver hook is executing eBPF bytecode
 
-XDP put no restrictions on: How eBPF bytecode is generated or loaded
- - XDP just get and attach eBPF file-descriptor handle
+XDP puts no restrictions on how eBPF bytecode is generated or loaded
+ - XDP simply attaches eBPF file-descriptor handle to netdev
 
 eBPF bytecode (and map-creation) all go-through BPF-syscall
- - You can provide hand-written eBPF instructions (not practical)
- - Or use /LLVM+clang to generate eBPF bytecode/
-   - BCC compiles each time program runs
-   - libbpf approach loads ELF-object created by LLVM/clang
+ - Provide hand-written eBPF instructions (not practical)
+ - Use /LLVM+clang to generate eBPF bytecode/ in one of two ways
+   - bcc-tools - compile eBPF each time program runs
+   - libbpf - load ELF-object created by LLVM/clang
 
 ** Slide: Code examples in this talk                                 :export:
 
-This talk focus on: (approach as in kernel samples/bpf)
+This talk focus on approach used in $KERNEL_SRC/samples/bpf)
  - Writing *restricted-C* code in foo_kern.c
-   * eBPF code is restricted to protect kernel (not turing complete)
+   * eBPF code is restricted to protect kernel (not Turing complete)
  - Compile to ELF object file foo_kern.o
  - Load via libbpf (kernel tools/lib/bpf) as XDP *data-plane*
  - Have *userspace control-plane* program foo_user.c via shared BPF-maps
