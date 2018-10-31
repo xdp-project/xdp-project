@@ -337,7 +337,8 @@ and program runs each time a packet arrives on that interface.
 
 ** Slide: Accessing eBPF map from within bpf program                       :export:
 
-BPF maps are created when a program is loaded.  In this definition the map is an array, but there are a variety of types.
+BPF maps are created when a program is loaded.  In this definition the map is
+an *per-cpu array*, but there are a variety of types.
 
 #+BEGIN_SRC C
 struct bpf_map_def SEC("maps") rxcnt = {
@@ -357,6 +358,7 @@ u32 ipproto = 17;
 value = bpf_map_lookup_elem(&rxcnt, &ipproto);
 if (value)
 	*value += 1;  /* We saw a UDP frame! */
+	/* PERCPU maps don't need: __sync_fetch_and_add(value, 1); */
 #+END_SRC
 
 ** Slide: Accessing eBPF map from user space                       :export:
