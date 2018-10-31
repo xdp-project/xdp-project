@@ -363,7 +363,7 @@ if (value)
 	/* PERCPU maps don't need: __sync_fetch_and_add(value, 1); */
 #+END_SRC
 
-** Slide: Accessing eBPF map from user space (1/2)                   :export:
+** Slide: Find eBPF map file-descriptor in user space                :export:
 
 Since BPF maps can be used to communicate information (statistics in this example)
 between the BPF program easily.  First locate the map:
@@ -379,7 +379,7 @@ map_fd = bpf_map__fd(map);
 
 Map file descriptor (/map_fd/) needed to interactive with BPF syscall
 
-** Slide: Accessing eBPF map from user space (2/2)                   :export:
+** Slide: Accessing eBPF map from user space                         :export:
 
 Now the map contents can be accessed like this:
 #+BEGIN_SRC C
