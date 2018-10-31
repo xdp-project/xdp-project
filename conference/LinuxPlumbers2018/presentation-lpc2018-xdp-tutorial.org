@@ -161,24 +161,24 @@ How is this connected?
 
 *Data-plane*: inside /kernel/, split into:
  - Kernel-core: Fabric in charge of moving packets quickly
- - In-kernel BPF program:
+ - In-kernel eBPF program:
    * Policy logic decide action
    * Read/write access to packet
 
 *Control-plane*: /Userspace/
- - Userspace load BPF program
- - Can control program via changing BPF maps
+ - Userspace load eBPF program
+ - Can control program via changing eBPF maps
  - Everything goes through BPF-syscall
 
 
 ** Slide: XDP driver hook is executing eBPF bytecode
 
-XDP put no restrictions on: How BPF bytecode is generated or loaded
- - XDP just get and attach BPF file-descriptor handle
+XDP put no restrictions on: How eBPF bytecode is generated or loaded
+ - XDP just get and attach eBPF file-descriptor handle
 
-BPF bytecode (and map-creation) all go-through BPF-syscall
- - You can provide hand-written BPF instructions (not practical)
- - Or use /LLVM+clang to generate BPF bytecode/
+eBPF bytecode (and map-creation) all go-through BPF-syscall
+ - You can provide hand-written eBPF instructions (not practical)
+ - Or use /LLVM+clang to generate eBPF bytecode/
    - BCC compiles each time program runs
    - libbpf approach loads ELF-object created by LLVM/clang
 
@@ -186,7 +186,7 @@ BPF bytecode (and map-creation) all go-through BPF-syscall
 
 This talk focus on: (approach as in kernel samples/bpf)
  - Writing *restricted-C* code in foo_kern.c
-   * BPF code is restricted to protect kernel (not turing complete)
+   * eBPF code is restricted to protect kernel (not turing complete)
  - Compile to ELF object file foo_kern.o
  - Load via libbpf (kernel tools/lib/bpf) as XDP *data-plane*
  - Have *userspace control-plane* program foo_user.c via shared BPF-maps
@@ -199,7 +199,7 @@ What are the basic XDP building block you can use?
 
 ** Slide: XDP actions and cooperation                                :export:
 
-BPF program (in driver hook) return an action or verdict
+eBPF program (in driver hook) return an action or verdict
  - XDP_ *DROP*, XDP_ *PASS*, XDP_ *TX*, XDP_ *ABORTED*, XDP_ *REDIRECT*
 
 How to cooperate with network stack
@@ -208,10 +208,10 @@ How to cooperate with network stack
  - Can propagate 32Bytes /meta-data/ from XDP stage to network stack
    * TC (/clsbpf/) hook can use meta-data, e.g. set SKB mark
    * Pre-parse packet contents (/XDP Hints/) and store in this area
- - Call /BPF helpers/ which are exported kernel functions
+ - Call /eBPF helpers/ which are exported kernel functions
    * Helpers defined and documented in: */include/uapi/linux/bpf.h/*
 
-** Slide: Evolving XDP via BPF helpers                               :export:
+** Slide: Evolving XDP via eBPF helpers                               :export:
 
 Think of XDP as /a software offload layer/ for the kernel network stack
  - Setup and use Linux kernel network stack
@@ -219,13 +219,13 @@ Think of XDP as /a software offload layer/ for the kernel network stack
 
 IP routing application is great example:
  - Let kernel manage route tables and perform neighbour lookups
- - Access routing table from XDP program via BPF /helper/: *bpf_fib_lookup*
+ - Access routing table from XDP program via eBPF /helper/: *bpf_fib_lookup*
  - Rewrite packet headers if next-hop found, otherwise send packet to kernel
  - This was covered in David Ahern's talk: [[http://vger.kernel.org/lpc-networking2018.html#session-1][Leveraging Kernel Tables with XDP]]
 
 Similar concept could be extended to accelerate any kernel datapath
 
-*Add helpers* instead of duplicating kernel data in BPF maps!
+*Add helpers* instead of duplicating kernel data in eBPF maps!
 
 
 * Coding XDP programs                                                :export:
@@ -276,7 +276,7 @@ int parse_ipv4(void *data, u64 nh_off, void *data_end)
 #+END_SRC
 
 Simple function call /parse_ipv4/ used in previous example
-- *Needs inlining* as BPF bytes code doesn't have function calls
+- *Needs inlining* as eBPF bytes code doesn't have function calls
 - Again *remember boundary checks*, else verifier reject program
 
 
@@ -299,7 +299,7 @@ struct bpf_prog_load_attr prog_load_attr = {
 if (bpf_prog_load_xattr(&prog_load_attr, &obj, &prog_fd))
 	return EXIT_FAILURE;
 #+END_SRC
-BPF bytecode and map definitions from *xdp1_kern.o* are now ready to use and
+eBPF bytecode and map definitions from *xdp1_kern.o* are now ready to use and
 /obj/ and /prog_fd/ are set.
 
 ** Slide: libbpf: ELF-object with multiple eBPF progs                :export:
@@ -340,14 +340,14 @@ if (bpf_set_link_xdp_fd(ifindex, prog_fd, xdp_flags) < 0) {
 }
 #+END_SRC
 
-If /bpf_set_link_xdp_fd()/ is successful, the BPF program in *xdp1_kern.o* is attached to eth0
+If /bpf_set_link_xdp_fd()/ is successful, the eBPF program in *xdp1_kern.o* is attached to eth0
 and program runs each time a packet arrives on that interface.
 
 * Coding with eBPF maps                                              :export:
 
 ** Slide: Accessing eBPF map from within bpf program                       :export:
 
-BPF maps are created when a program is loaded.  In this definition the map is
+eBPF maps are created when a program is loaded.  In this definition the map is
 an *per-cpu array*, but there are a variety of types.
 
 #+BEGIN_SRC C
@@ -359,7 +359,7 @@ struct bpf_map_def SEC("maps") rxcnt = {
 };
 #+END_SRC
 
-While executing BPF program /rxcnt/ map can be accessed like this:
+While executing eBPF program /rxcnt/ map can be accessed like this:
 
 #+BEGIN_SRC C
 long *value;
@@ -374,8 +374,8 @@ if (value)
 
 ** Slide: Find eBPF map file-descriptor in user space                :export:
 
-Since BPF maps can be used to communicate information (statistics in this example)
-between the BPF program easily.  First locate the map:
+Since eBPF maps can be used to communicate information (statistics in this example)
+between the eBPF program easily.  First locate the map:
 
 #+BEGIN_SRC C
 struct bpf_map *map = bpf_object__find_map_by_name(obj, "rxcnt");
@@ -409,7 +409,7 @@ printf("key %u value %llu\n", key, sum);
 #+END_SRC
 
 Userspace would sum counters per CPU
-This allows BPF kernel program to run faster since not using atomic ops
+This allows eBPF kernel program to run faster since not using atomic ops
 
 * Advanced building block                                            :export:
 :PROPERTIES:
@@ -508,7 +508,7 @@ Also /opportunity to share/ common RX-allocator code between drivers
 :END:
 
 Thanks to all contributors
- - XDP + BPF /combined effort/ of *many* people
+ - XDP + eBPF /combined effort/ of *many* people
 
 * Org-mode hints                                                   :noexport:
 
