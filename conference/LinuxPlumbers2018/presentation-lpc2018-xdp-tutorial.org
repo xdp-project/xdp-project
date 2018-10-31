@@ -335,6 +335,8 @@ if (bpf_set_link_xdp_fd(ifindex, prog_fd, xdp_flags) < 0) {
 If bpf_set_link_xdp_fd() is successful, the BPF program in xdp1_kern.o is attached to eth0
 and program runs each time a packet arrives on that interface.
 
+* Coding with eBPF maps                                              :export:
+
 ** Slide: Accessing eBPF map from within bpf program                       :export:
 
 BPF maps are created when a program is loaded.  In this definition the map is
