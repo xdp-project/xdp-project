@@ -182,38 +182,6 @@ Similar concept could be extended to accelerate any kernel datapath
 
 *Add helpers* instead of duplicating kernel data in BPF maps!
 
-* Advanced building block                                            :export:
-:PROPERTIES:
-:reveal_extra_attr: class="mid-slide"
-:END:
-XDP redirect is powerful
-
-** Slide: XDP_REDIRECT action is special                             :export:
-
-XDP *action* code /XDP_REDIRECT/ is flexible
- - In basic form: Redirecting RAW frames out another net_device/ifindex
-   - *Egress device driver* needs to implement /ndo_xdp_xmit/
- - /Redirect into map/ gives flexibility to invent new destinations
-   - And allow to *hide bulking* in bpf map code
-
-Remember use helper: /bpf_redirect_map/ to activate bulking
- - Using helper: *bpf_redirect* gives you */worse performance/* than /bpf_redirect_map/
-
-** Slide: Inventing redirect types via maps
-
-The *devmap*: =BPF_MAP_TYPE_DEVMAP=
- - Contains /net_devices/, userspace adds them via ifindex to map-index
-
-The *cpumap*: =BPF_MAP_TYPE_CPUMAP=
- - Allow redirecting RAW xdp_frame's to /remote CPU/
-   - SKB is created on remote CPU, and normal network stack invoked
- - The map-index is the CPU number (the value is queue size)
-
-*AF_XDP* - “xskmap”: =BPF_MAP_TYPE_XSKMAP=
- - Allow redirecting /RAW xdp frames into userspace/
-   - via new Address Family socket type: AF_XDP
-
-
 * XDP relationship with eBPF                                         :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
@@ -414,6 +382,39 @@ if (bpf_map_lookup_elem(map_fd, &key, &value))
 
 printf("key %u value %llu\n", key, value);
 #+END_SRC
+
+
+* Advanced building block                                            :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+XDP redirect is powerful
+
+** Slide: XDP_REDIRECT action is special                             :export:
+
+XDP *action* code /XDP_REDIRECT/ is flexible
+ - In basic form: Redirecting RAW frames out another net_device/ifindex
+   - *Egress device driver* needs to implement /ndo_xdp_xmit/
+ - /Redirect into map/ gives flexibility to invent new destinations
+   - And allow to *hide bulking* in bpf map code
+
+Remember use helper: /bpf_redirect_map/ to activate bulking
+ - Using helper: *bpf_redirect* gives you */worse performance/* than /bpf_redirect_map/
+
+** Slide: Inventing redirect types via maps
+
+The *devmap*: =BPF_MAP_TYPE_DEVMAP=
+ - Contains /net_devices/, userspace adds them via ifindex to map-index
+
+The *cpumap*: =BPF_MAP_TYPE_CPUMAP=
+ - Allow redirecting RAW xdp_frame's to /remote CPU/
+   - SKB is created on remote CPU, and normal network stack invoked
+ - The map-index is the CPU number (the value is queue size)
+
+*AF_XDP* - “xskmap”: =BPF_MAP_TYPE_XSKMAP=
+ - Allow redirecting /RAW xdp frames into userspace/
+   - via new Address Family socket type: AF_XDP
+
 
 * For NIC driver developer
 :PROPERTIES:
