@@ -319,13 +319,35 @@ struct bpf_prog_load_attr prog_load_attr = {
 	.prog_type      = BPF_PROG_TYPE_XDP,
 };
 
-prog_load_addr.file = "xdp1_kern.o"
+prog_load_attr.file = "xdp1_kern.o"
 
 if (bpf_prog_load_xattr(&prog_load_attr, &obj, &prog_fd))
 	return EXIT_FAILURE;
 #+END_SRC
 BPF bytecode and map definitions from xdp1_kern.o are now ready to use and
 obj and prog_fd are set.
+
+** Slide: libbpf: ELF-object with multiple eBPF progs                :export:
+
+#+BEGIN_SRC C
+struct bpf_object *obj;
+int prog_fd;
+struct bpf_prog_load_attr prog_load_attr = { .prog_type = BPF_PROG_TYPE_XDP };
+
+prog_load_addr.file = "xdp_udp_drop_kern.o"
+
+if (bpf_prog_load_xattr(&prog_load_attr, &obj, &prog_fd) == 0) {
+	const char *prog_name = "xdp_drop_UDP"; /* ELF "SEC" name */
+	struct bpf_program *prog;
+
+	prog = bpf_object__find_program_by_title(obj, prog_name);
+	prog_fd = bpf_program__fd(prog);
+}
+#+END_SRC
+
+Possible to have several eBPF program in one object file
+ - libbpf can find program by section "title" name
+
 
 ** Slide: libbpf: attaching XDP prog to ifindex                 :export:
 
