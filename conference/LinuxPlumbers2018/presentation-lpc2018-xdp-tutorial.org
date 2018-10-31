@@ -367,7 +367,7 @@ Since BPF maps can be used to communicate information (statistics in this exampl
 between the BPF program easily.  First locate the map:
 
 #+BEGIN_SRC C
-map = bpf_map__next(NULL, obj);
+struct bpf_map *map = bpf_object__find_map_by_name(obj, "rxcnt");
 if (!map) {
 	printf("finding a map in obj file failed\n");
 	return EXIT_FAILURE;
