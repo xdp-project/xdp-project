@@ -274,6 +274,9 @@ Simple function call /parse_ipv4/ used in previous example
 - *Needs inlining* as BPF bytes code doesn't have function calls
 - Again *remember boundry checks*, else verifier reject program
 
+
+* Coding with libbpf                                                 :export:
+
 ** Slide: libbpf: loading ELF-object code                       :export:
 
 Userspace program must call BPF syscall to insert program info kernel
