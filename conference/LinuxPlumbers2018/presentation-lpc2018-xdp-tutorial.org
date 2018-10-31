@@ -379,24 +379,28 @@ map_fd = bpf_map__fd(map);
 
 Map file descriptor (/map_fd/) needed to interactive with BPF syscall
 
-** Slide: Accessing eBPF map from user space                         :export:
+** Slide: Reading eBPF map data from user space                      :export:
 
-Now the map contents can be accessed like this:
+Now the map contents can be accessed via /map_fd/ like this:
 #+BEGIN_SRC C
-unsigned int nr_cpus = bpf_num_possible_cpus(); int cpu;
+unsigned int nr_cpus = bpf_num_possible_cpus();
 __u64 values[nr_cpus];
 __u32 key = 17;
 __u64 sum = 0;
+int cpu;
 
 if (bpf_map_lookup_elem(map_fd, &key, &value))
 	return EXIT_FAILURE;
 
+/* Kernel return memcpy version of counters stored per CPU */
 for (cpu = 0; cpu < nr_cpus; cpu++)
 	sum += values[cpu];
 
 printf("key %u value %llu\n", key, sum);
 #+END_SRC
 
+Userspace gets more work of summing counters per CPU
+ - which allows BPF kernel prog to run faster (not using atomic ops)
 
 * Advanced building block                                            :export:
 :PROPERTIES:
