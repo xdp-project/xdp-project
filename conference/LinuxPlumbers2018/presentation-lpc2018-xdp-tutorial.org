@@ -126,15 +126,17 @@ Be inspirational: New programmable layer in network stack.
 
 ** XDP design goals                                                  :export:
 
-XDP operate at same level L2/L3 level as kernel-bypass solutions (DPDK)
- - Network stack was build with socket-delivery use-case in focus (SKB)
+/Close the performance gap/ to */kernel-bypass/* solutions
+ - *Not a goal to be faster than kernel-bypass*
+ - Operate directly on packet buffers (*DPDK*)
+ - Decrease number of instructions executed per packet
 
-XDP goals
- - /Close the performance gap/ to kernel-bypass solutions
-   * *Not a goal to be faster*
+Operate on packets before being converted to SKBs
+ - Kernel Network stack built for socket-delivery use-case
+
+Work in concert with existing network stack without kernel modifications
  - Provide in-kernel alternative, that is *more flexible*
-   * */Don’t steal the entire NIC/*
- - Work in concert with existing network stack without kernel modifications
+ - */Don't steal the entire NIC!/*
 
 ** Slide: XDP kernel hooks                                           :export:
 
