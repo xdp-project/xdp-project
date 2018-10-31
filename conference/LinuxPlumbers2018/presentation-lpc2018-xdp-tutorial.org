@@ -265,8 +265,8 @@ How do you code these XDP programs?
 ** Slide: XDP restricted-C code example : Drop UDP                   :export:
 
 #+BEGIN_SRC C
-SEC("xdp1") /* Marks first eBPF program section in ELF-binary */
-int xdp_prog_drop_all_UDP(struct xdp_md *ctx) /* Name visible with bpftool */
+SEC("xdp_drop_UDP") /* section in ELF-binary and "program_by_title" in libbpf */
+int xdp_prog_drop_all_UDP(struct xdp_md *ctx) /* "name" visible with bpftool */
 {
 	void *data_end = (void *)(long)ctx->data_end; void *data = (void *)(long)ctx->data;
 	struct ethhdr *eth = data; u64 nh_off; u32 ipproto = 0;
