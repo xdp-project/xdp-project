@@ -119,19 +119,10 @@ Covering the basics of XDP first
 Be inspirational: New programmable layer in network stack.
 #+END_NOTES
 
-*New, programmable layer* in the kernel network stack
- - Native Mode XDP
-   - Driver level hook available just after DMA of buffer descriptor
-   - Process packets before SKB allocation /No waiting for memory allocation!/
- - SKB or Generic Mode XDP
-   - Called from netif_receive_skb()
-   - Driver independent, but more instructions needed for each packet
-
-Run-time programmable packet processing inside the kernel *not kernel bypass*
-
-Programs are compiled to platform-independent /eBPF bytecode/
-
-Object files can be loaded on multiple kernels and architectures /without recompiling/
+- *New, programmable layer* in the kernel network stack
+- Run-time programmable packet processing inside the kernel *not kernel bypass*
+- Programs are compiled to platform-independent /eBPF bytecode/
+- Object files can be loaded on multiple kernels and architectures /without recompiling/
 
 ** XDP design goals                                                  :export:
 
@@ -145,6 +136,18 @@ XDP goals
    * */Don’t steal the entire NIC/*
  - Work in concert with existing network stack without kernel modifications
 
+** Slide: XDP kernel hooks                                           :export:
+
+Native Mode XDP
+ - *Driver hook* available just after DMA of buffer descriptor
+ - Process packets /before/ SKB allocation - /No waiting for memory allocation!/
+ - /Smallest/ number of instructions executed before running XDP program
+ - */Driver modification/* required to use this mode
+SKB or Generic Mode XDP
+ - XDP hook called from */netif_receive_skb()/*
+ - Process packets */after/* packet DMA and skb allocation completed
+ - *Larger* number of instructions executed before running XDP program
+ - /Driver independent/
 
 * Basic building blocks                                              :export:
 :PROPERTIES:
