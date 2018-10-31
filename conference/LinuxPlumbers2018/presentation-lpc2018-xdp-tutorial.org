@@ -322,8 +322,7 @@ struct bpf_prog_load_attr prog_load_attr = {
 prog_load_addr.file = "xdp1_kern.o"
 
 if (bpf_prog_load_xattr(&prog_load_attr, &obj, &prog_fd))
-	return 1;
-
+	return EXIT_FAILURE;
 #+END_SRC
 BPF bytecode and map definitions from xdp1_kern.o are now ready to use and
 obj and prog_fd are set.
@@ -338,7 +337,7 @@ static __u32 xdp_flags = XDP_FLAGS_DRV_MODE /* or XDP_FLAGS_SKB_MODE */
 
 if (bpf_set_link_xdp_fd(ifindex, prog_fd, xdp_flags) < 0) {
 	printf("link set xdp fd failed\n");
-	return 1;
+	return EXIT_FAILURE;
 }
 #+END_SRC
 
@@ -378,7 +377,7 @@ between the BPF program easily.  First locate the map:
 map = bpf_map__next(NULL, obj);
 if (!map) {
 	printf("finding a map in obj file failed\n");
-	return 1;
+	return EXIT_FAILURE;
 }
 map_fd = bpf_map__fd(map);
 #+END_SRC
@@ -389,7 +388,7 @@ __u32 key = 17;
 __u64 value;
 
 if (bpf_map_lookup_elem(map_fd, &key, &value))
-	return 1;
+	return EXIT_FAILURE;
 
 printf("key %u value %llu\n", key, value);
 #+END_SRC
