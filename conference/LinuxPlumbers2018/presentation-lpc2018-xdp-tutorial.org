@@ -363,7 +363,7 @@ if (value)
 
 ** Slide: Accessing eBPF map from user space                       :export:
 
-Since BPF maps can bee used to communicate information (statistics in this example)
+Since BPF maps can be used to communicate information (statistics in this example)
 between the BPF program easily.  First locate the map:
 
 #+BEGIN_SRC C
