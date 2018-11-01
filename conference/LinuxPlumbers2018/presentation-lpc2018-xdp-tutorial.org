@@ -106,12 +106,11 @@ Section below with :export: tags are the slides.
 
 
 * Slide: What will you learn?                                        :export:
-
-* Introduction to XDP                                                 :export:
-:PROPERTIES:
-:reveal_extra_attr: class="mid-slide"
-:END:
-Covering the basics of XDP first
+- Introduction to XDP and relationship to eBPF
+- Foundational elements of XDP
+- XDP program sample code
+- Advanced XDP concepts
+- Notes for driver developers
 
 ** Slide: What is XDP?                                               :export:
 
@@ -149,7 +148,7 @@ SKB or Generic Mode XDP
  - XDP hook called from */netif_receive_skb()/*
  - Process packets */after/* packet DMA and skb allocation completed
  - *Larger* number of instructions executed before running XDP program
- - /Driver independent/
+ - /Driver indep
 
 * XDP relationship with eBPF                                         :export:
 :PROPERTIES:
@@ -411,7 +410,7 @@ printf("key %u value %llu\n", key, sum);
 Userspace would sum counters per CPU
 This allows eBPF kernel program to run faster since not using atomic ops
 
-* Advanced building block                                            :export:
+* Advanced XDP Concepts                                              :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
