@@ -148,7 +148,7 @@ SKB or Generic Mode XDP
  - XDP hook called from */netif_receive_skb()/*
  - Process packets */after/* packet DMA and skb allocation completed
  - *Larger* number of instructions executed before running XDP program
- - /Driver indep
+ - /Driver independent/
 
 * XDP relationship with eBPF                                         :export:
 :PROPERTIES:
