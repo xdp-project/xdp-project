@@ -269,7 +269,7 @@ Other talks will cover this:
 ** Slide: Packet drop performance (from paper)                      :export:
 [[file:images/drop-test.svg]]
 ** Slide: Packet redirect performance (from paper)                   :export:
-[[file:images/drop-redirect.svg]]
+[[file:images/redirect-test.svg]]
 
 * Evolving XDP
 :PROPERTIES:
