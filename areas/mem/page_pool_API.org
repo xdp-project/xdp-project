@@ -238,6 +238,18 @@ to drop frames and see almost the same drop performance as driver level code
 (via calling xdp_return_frame_rx_napi).
 
 
+** Fast rhashtable lookup in __xdp_return
+
+In __xdp_return there is a rhashtable_lookup() call on the xdp_mem_info->id,
+which looks like a performance issue, but it isn't. While we would like to
+amortized this via an explicit bulk return API, the lookup is surprisingly
+fast.
+
+The reason behind this being fast, is that the hash function defined
+(xdp_mem_id_hashfn) is not really a hash function, as it simply returns the id
+as a key.  Given we use a cyclic increasing ID, the key/id is unique and
+"hash-distributed" enough already.
+
 * Warning: missing pieces in page_pool
 
 ** Currently: fully-locked page-recycle call
