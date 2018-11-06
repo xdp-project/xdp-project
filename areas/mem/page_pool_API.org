@@ -128,7 +128,8 @@ For storing the DMA-addr (dma_addr_t), we could use the =hmm_data= area.
 
 In =mm/hmm.c= the callback pgmap->page_free is assigned to =hmm_devmem_free=,
 and =pagemap->data= is the instance of the =devmap= itself.  This could fairly
-easily be adaped for page_pool_put_page().
+easily be adapted for calling page_pool_put_page(), where the =pagemap->data=
+will be the instance of the =page_pool=.
 
 The level and use of indirect calls (e.g. page->pgmap->page_free) is slightly
 concerning (in a spectre-v2 context).
