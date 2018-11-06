@@ -67,12 +67,17 @@ When the frame travel as an SKB into the network stack, then we lost the
 reliable return hook, as the netstack returns the pages based refcnt.
 
 
-* Regaining the return hook
+* Regaining the return hook or tracking pages
 
-What are the options for reestablishing a return hook point?  There are 3
-options, two options for creating a return hook or instead keeping track of
-outstanding frames traveling the system.
+When wanting to keep pages DMA mapped, how to make sure:
+ (1) that DMA mapped frames are not leaked, but
+ (2) all appropiately DMA unmapped eventually, and
+ (3) where to store the DMA-addr (for use in DMA-sync and eventual unmap)
 
+There are three options, two options for creating a return hook or instead
+keeping track of outstanding frames traveling the system.
+
+What are the options for reestablishing a return hook point?
 The two return hooks are:
  - Page alloactor layer via put_page.
  - Network stack layer via __kfree_skb().
@@ -121,6 +126,8 @@ associated with being a MEMORY_DEVICE_PRIVATE type using ZONE_DEVICE.
 
 
 ** Return-hook: via SKB
+
+
 
 ** Keep track of pages
 
