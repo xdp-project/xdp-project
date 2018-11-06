@@ -1,8 +1,8 @@
 # -*- fill-column: 79; -*-
 #+Title: Evolving the page_pool API
 
-The page_pool API was accepted into kernel 4.18 (?), and only used by one
-driver mlx5.  This doc is about evolving the page_pool API.
+The page_pool API was accepted into kernel 4.18, and only used by one driver
+mlx5.  This doc is about evolving the page_pool API.
 
 * The page_pool is NOT finished
 
@@ -36,6 +36,23 @@ Basic idea:
  - No need to keep track of pages traveling system, they are returned by
    =put_page= API.
 
+* The XDP dream scenario
+
+The XDP dream scenario is about returning frame-pages, with no refcnt changes
+to the struct-page.  The optimal XDP case is 1-page per frame/packet with page
+refcnt==1, and a put_page() call that catch refcnt==1, and recycle the page for
+reuse.
+
+This is very hard to acheive, as (see later) some kind of sync operation is
+needed when recycling pages, back to originating device, but that can be
+amortized through bulking.
+
+When no XDP program is configured on the device, it might be better for memory
+usage to split the page into two packets, and use a refcnt based model, as the
+overhead of other part of network stack might not dwarf the benefit of this
+memory vs speed optimization.
+
+
 * Status today: lost reliable return hook
 
 The big difference today is the page_pool is not hooked into =put_page= and the
@@ -48,6 +65,12 @@ us a reliable return hook.
 When the frame travel as an SKB into the network stack, then we lost the
 reliable return hook, as the netstack returns the pages based refcnt.
 
+
+* Regaining the return hook
+
+What are the options for reestablishing a return hook point?  There are 3
+options, two options for creating a return hook or instead keeping track of
+outstanding frames traveling the system.
 
 
 
@@ -116,11 +139,10 @@ can be acheived by having knowledge about (and separating) what context the
 kernel is running in (softirq/bh, hardirq, process-context).
 
 
-* How do we evolve the page_pool API?
-
 
 * Notes
 
+How do we evolve the page_pool API?
 
 What does the explict return (point) API give us?
 
