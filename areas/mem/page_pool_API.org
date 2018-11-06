@@ -43,7 +43,7 @@ to the struct-page.  The optimal XDP case is 1-page per frame/packet with page
 refcnt==1, and a put_page() call that catch refcnt==1, and recycle the page for
 reuse.
 
-This is very hard to acheive, as (see later) some kind of sync operation is
+This is very hard to achieve, as (see later) some kind of sync operation is
 needed when recycling pages, back to originating device, but that can be
 amortized through bulking.
 
@@ -71,7 +71,7 @@ reliable return hook, as the netstack returns the pages based refcnt.
 
 When wanting to keep pages DMA mapped, how to make sure:
  (1) that DMA mapped frames are not leaked, but
- (2) all appropiately DMA unmapped eventually, and
+ (2) all appropriately DMA unmapped eventually, and
  (3) where to store the DMA-addr (for use in DMA-sync and eventual unmap)
 
 There are three options, two options for creating a return hook or instead
@@ -105,7 +105,7 @@ TODO investigate: The page "zonenum" must be ZONE_DEVICE, which semantic is
 unclear, more info needed.  Can this type of page be used for "normal" network
 stack delivery?
 
-The code that endup being called is: __put_devmap_managed_page(page); The
+The code that end-up being called is: __put_devmap_managed_page(page); The
 callback in __put_devmap_managed_page(), is implemented by calling:
 page->pgmap->page_free(page, page->pgmap->data);
 
@@ -124,9 +124,17 @@ TODO: Read =include/linux/memremap.h= and figure out, (a) that struct
 dev_pagemap is used for, and (b) what it means and what requirements are
 associated with being a MEMORY_DEVICE_PRIVATE type using ZONE_DEVICE.
 
+For storing the DMA-addr (dma_addr_t), we could use the =hmm_data= area.
+
+In =mm/hmm.c= the callback pgmap->page_free is assigned to =hmm_devmem_free=,
+and =pagemap->data= is the instance of the =devmap= itself.  This could fairly
+easily be adaped for page_pool_put_page().
+
+The level and use of indirect calls (e.g. page->pgmap->page_free) is slightly
+concerning (in a spectre-v2 context).
+
 
 ** Return-hook: via SKB
-
 
 
 ** Keep track of pages
