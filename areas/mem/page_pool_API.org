@@ -60,7 +60,8 @@ MM-layer.  This means we *lost the reliable return hook point*, which made it
 easy to keep the page DMA mapped.
 
 When XDP redirecting (XDP_REDIRECT) as an xdp_frame, the XDP return API gives
-us a reliable return hook.
+us a reliable return hook. (We don't do it today, but it should be fairly easy
+to keep the frame DMA mapped for redirect+return path).
 
 When the frame travel as an SKB into the network stack, then we lost the
 reliable return hook, as the netstack returns the pages based refcnt.
@@ -71,6 +72,58 @@ reliable return hook, as the netstack returns the pages based refcnt.
 What are the options for reestablishing a return hook point?  There are 3
 options, two options for creating a return hook or instead keeping track of
 outstanding frames traveling the system.
+
+The two return hooks are:
+ - Page alloactor layer via put_page.
+ - Network stack layer via __kfree_skb().
+
+The alternative is to keep track of outstanding frames at the driver layer via
+elevating refcnt.
+
+** Return-hook: put_page
+
+The original idea was to modify put_page() to catch pages with refcnt==1 and
+recycle those.  This was rejected upstream, but meanwhile a hook have been
+created at the exact spot we need.
+
+The function calls used is called: put_devmap_managed_page().
+
+It is used by HMM (Heterogeneous Memory Management), which is used by device
+memory like GPU on board memory.  The DAX system also leverage this via type
+MEMORY_DEVICE_FS_DAX.
+
+The question is
+ (1) can page_pool also leverage this,
+ (2) is the performance good enough.
+
+TODO investigate: The page "zonenum" must be ZONE_DEVICE, which semantic is
+unclear, more info needed.  Can this type of page be used for "normal" network
+stack delivery?
+
+The code that endup being called is: __put_devmap_managed_page(page); The
+callback in __put_devmap_managed_page(), is implemented by calling:
+page->pgmap->page_free(page, page->pgmap->data);
+
+From struct-page the part containing this area looks like:
+
+#+BEGIN_SRC C
+	struct {	/* ZONE_DEVICE pages */
+		/** @pgmap: Points to the hosting device page map. */
+		struct dev_pagemap *pgmap;
+		unsigned long hmm_data;
+		unsigned long _zd_pad_1;	/* uses mapping */
+	};
+#+END_SRC
+
+TODO: Read =include/linux/memremap.h= and figure out, (a) that struct
+dev_pagemap is used for, and (b) what it means and what requirements are
+associated with being a MEMORY_DEVICE_PRIVATE type using ZONE_DEVICE.
+
+
+** Return-hook: via SKB
+
+** Keep track of pages
+
 
 
 
