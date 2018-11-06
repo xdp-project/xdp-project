@@ -64,8 +64,8 @@ known that no concurrent users of this page_pool exist, thus it is still safe).
 
 A NIC driver creates a page_pool per RX-queue.  Combined with the protection
 provide by NAPI context (per RX-queue), allow page_pool to get pages from a
-completely unlocked array-style stack-queue. (Code see struct pp_alloc_cache).
-It is difficult to get any faster, than this.
+completely unlocked array-style stack-queue (see struct pp_alloc_cache).  It is
+difficult to get any faster than this.
 
 Code from: __page_pool_get_cached()
 
@@ -79,8 +79,15 @@ Code from: __page_pool_get_cached()
 
 ** Extremely fast recycle direct
 
+Another optimization leveraged by page_pool is that, for frames that needs to
+be dropped while still running under the RX NAPI context, either for error
+cases or explicit drop due to XDP_DROP action.  The API call
+page_pool_recycle_direct() can be used, which as described above, simply
+returns the page to an array stack (code in __page_pool_recycle_direct()).
 
-__page_pool_recycle_direct()
+One advantage is that even with XDP_REDIRECT, the redirect core-code can choose
+to drop frames and see almost the same drop performance as driver level code
+(via calling xdp_return_frame_rx_napi).
 
 
 * Warning: missing pieces in page_pool
