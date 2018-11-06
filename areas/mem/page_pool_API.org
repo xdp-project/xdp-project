@@ -1,0 +1,71 @@
+# -*- fill-column: 79; -*-
+#+Title: Evolving the page_pool API
+
+The page_pool API was accepted into kernel 4.18 (?), and only used by one
+driver mlx5.
+
+* The page_pool is NOT finished
+
+Lets be clear upfront: *The page_pool API is not finished*.
+
+It is not ready to be used by all drivers, in the current state.
+The mlx5 driver is _also_ not using the API optimally.
+
+We both need to evolve the API, but also need to take some fundamental design
+choices for the direction of the page_pool API.
+
+* History
+
+The page_pool was adapted from my proposals at MM-summit 2016+2017:
+
+ http://people.netfilter.org/hawk/presentations/MM-summit2016/generic_page_pool_mm_summit2016.pdf
+ http://people.netfilter.org/hawk/presentations/MM-summit2017/MM-summit2017-JesperBrouer.pdf
+
+Jesper posted some RFC page_pool patches around that time.  That code was
+adapted and is now part of the network stack, under =net/core/page_pool.c= and
+=include/net/page_pool.h=.
+
+The original code was designed to be part of kernel the MM-layer.  It hooked
+into the =put_page()= call, and also used parts of struct-page for storing info
+that allows for returning the page back to the originating device (to allow
+keeping the page DMA mapped for the device).
+
+Basic idea:
+ - Pages stays DMA mapped as long as they are in the pool.
+ - Driver use DMA-sync API to control when data is writable by CPU
+ - No need to keep track of pages traveling system, they are returned by
+   =put_page= API.
+
+* Status today
+
+The big difference today is the page_pool is not hooked into =put_page= and the
+MM-layer.  This means we *lost the reliable return hook point*, which made it
+easy to keep the page DMA mapped.
+
+When XDP redirecting (XDP_REDIRECT) as an xdp_frame, the XDP return API gives
+us a reliable return hook.
+
+When the frame travel as an SKB into the network stack, then we lost the
+reliable return hook, as the netstack returns the pages based refcnt.
+
+
+
+
+
+
+
+
+
+
+
+* How do we evolve the page_pool API?
+
+
+* Notes
+
+
+What does the explict return (point) API give us?
+
+Remember: the keep DMA mapped, is also a feature that needs to be leveraged
+used by the XDP APIs.  Right now, the ndo_xdp_xmit does TX DMA map and DMA
+unmap in completion.
