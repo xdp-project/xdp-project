@@ -137,6 +137,62 @@ concerning (in a spectre-v2 context).
 
 ** Return-hook: via SKB
 
+Another possible return hook is when the SKB (sk_buff) is freed.
+
+SKB freeing basically all goes through =__kfree_skb()=, and following the code
+path expanding code-inside for reaching freeing the page addr:
+
+#+BEGIN_SRC C
+void __kfree_skb(struct sk_buff *skb)
+{
+	skb_release_all(skb) {
+		if (likely(skb->head)) {
+			skb_release_data(skb) {
+				skb_free_head(skb) {
+					if (skb->head_frag) {
+						skb_free_frag(skb->head) {
+							page_frag_free(addr);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+#+END_SRC
+
+Here the skb->head_frag bit is used for saying that the packet data is
+allocated from a page (both covering page fragments and order-0 pages).
+
+We need some extra info at =__kfree_skb()= time, in-order to know what
+page_pool the data-page need to be returned to, and this info can only be
+derived from the SKB.  Extending struct sk_buff (SKB) is a very sensitive
+topic, and is in-general not allowed. Thus, we have to reduce the info needed
+in the SKB to the absolute minimum.
+
+The DMA-addr (8-bytes) could be stored in the struct-page at page->private.
+
+The XDP-redirect system, uses =struct xdp_mem_info= for storing the necessary
+info in the (struct) xdp_frame.  The xdp_mem_info is 8 bytes, and could be
+reduced further, (1) 'type' can easily be made smaller (given enum xdp_mem_type
+is smaller), and (2) is artificially capped at MEM_ID_MAX=0xFFFE.
+
+#+BEGIN_SRC C
+struct xdp_mem_info {
+        u32                        type;                 /*     0     4 */
+        u32                        id;                   /*     4     4 */
+        /* size: 8, cachelines: 1, members: 2 */
+        /* last cacheline: 8 bytes */
+};
+#+END_SRC
+
+Reusing xdp_mem_info for storing the info, would allow us to reuse the
+xdp_return_frame() API more or less directly.
+
+*Crazy idea*: Use one bit in SKB, saying this originates from an xdp_frame, and
+via skb->head pointer, find offset to start of xdp_frame, and then use the
+struct xdp_mem_info, and return frame like/via xdp_return_frame() API.
+
 
 ** Keep track of pages
 
