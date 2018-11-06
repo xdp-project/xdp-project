@@ -2,7 +2,7 @@
 #+Title: Evolving the page_pool API
 
 The page_pool API was accepted into kernel 4.18 (?), and only used by one
-driver mlx5.
+driver mlx5.  This doc is about evolving the page_pool API.
 
 * The page_pool is NOT finished
 
@@ -32,11 +32,11 @@ keeping the page DMA mapped for the device).
 
 Basic idea:
  - Pages stays DMA mapped as long as they are in the pool.
- - Driver use DMA-sync API to control when data is writable by CPU
+ - Driver use DMA-sync API to control when data is writable by CPU.
  - No need to keep track of pages traveling system, they are returned by
    =put_page= API.
 
-* Status today
+* Status today: lost reliable return hook
 
 The big difference today is the page_pool is not hooked into =put_page= and the
 MM-layer.  This means we *lost the reliable return hook point*, which made it
@@ -52,10 +52,61 @@ reliable return hook, as the netstack returns the pages based refcnt.
 
 
 
+* Understanding page_pool details
+
+Some details about the page_pool API that might not be obvious.
+
+** Extremely fast alloc page
+
+The page_pool leverage the knowledge/requirement, that allocations MUST happen
+from NAPI context. (During driver init of RX ring, not in NAPI context, it is
+known that no concurrent users of this page_pool exist, thus it is still safe).
+
+A NIC driver creates a page_pool per RX-queue.  Combined with the protection
+provide by NAPI context (per RX-queue), allow page_pool to get pages from a
+completely unlocked array-style stack-queue. (Code see struct pp_alloc_cache).
+It is difficult to get any faster, than this.
+
+Code from: __page_pool_get_cached()
+
+#+BEGIN_SRC C
+	if (likely(pool->alloc.count)) {
+		/* Fast-path */
+		page = pool->alloc.cache[--pool->alloc.count];
+		return page;
+	}
+#+END_SRC
+
+** Extremely fast recycle direct
 
 
+__page_pool_recycle_direct()
 
 
+* Warning: missing pieces in page_pool
+
+** Currently: fully-locked page-recycle call
+
+When the RFC page_pool got ripped out and converted it to be used in network
+stack, the ALF (Array-based Lock Free) queue was dropped.  Instead the ptr_ring
+was used and replaced the internal page_pool queue. The ptr_ring actually do
+have some performance advantages over ALF-queue, e.g.  reduces the cross-CPU
+cache-coherency talk, and is faster cross CPU.
+
+One disadvantage is that ptr_ring_produce (or ptr_ring_produce_bh) call takes a
+lock.  And it is currently called per returned page, see
+__page_pool_recycle_into_ring(). This obviously is a scalability issue waiting
+to happen, when/if multiple CPUs want to return packet originating from the
+same RX-queue.
+
+Thus, this need to be fixed/improved. The basic idea to address this is through
+bulking.  But there are two ways to introduce (1) expose an explicit bulk
+return API, or (2) hide it in the page_pool API via clever lockless per CPU
+store (that return pages in a bulk).
+
+Jesper have a lot of details for option (2), as a significant performance gain
+can be acheived by having knowledge about (and separating) what context the
+kernel is running in (softirq/bh, hardirq, process-context).
 
 
 * How do we evolve the page_pool API?
