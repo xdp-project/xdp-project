@@ -314,9 +314,10 @@ kernel is running in (softirq/bh, hardirq, process-context).
 * Benchmark based development
 <<sec:bench>>
 
-I'm a strong believer in benchmark based development.  Thus, I encourage doing
+In-order to live-up to the performance requirements of XDP, it is important
+that we use a benchmark driven development model.  Thus, it is encouraged doing
 Proof-of-Concept (PoC) implementations and modifications to the kernel and
-evaluate the performance.
+evaluate the performance, for every step.
 
 ** What is the overhead of "fully-locked page-recycle call"
 
