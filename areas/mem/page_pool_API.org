@@ -24,7 +24,7 @@ choices for the direction of the page_pool API.
 The overall goals of the page_pool is:
 
 (1) Keep pages DMA-mapped (driver only use DMA-sync where needed).
-(2) Faster recycle API than page-allocator.
+(2) Faster recycle API than page-allocator (see [[sec:bench]])
 (3) Common allocator API for simplifying NIC drivers.
 (4) Better integration with network stack, not just XDP usage.
 
@@ -299,6 +299,9 @@ __page_pool_recycle_into_ring(). This obviously is a scalability issue waiting
 to happen, when/if multiple CPUs want to return packet originating from the
 same RX-queue.
 
+See [[sec:bench]] for benchmarks showing this is still very fast, in the non-lock
+congested case.
+
 Thus, this need to be fixed/improved. The basic idea to address this is through
 bulking.  But there are two ways to introduce (1) expose an explicit bulk
 return API, or (2) hide it in the page_pool API via clever lockless per CPU
@@ -309,6 +312,7 @@ can be acheived by having knowledge about (and separating) what context the
 kernel is running in (softirq/bh, hardirq, process-context).
 
 * Benchmark based development
+<<sec:bench>>
 
 I'm a strong believer in benchmark based development.  Thus, I encourage doing
 Proof-of-Concept (PoC) implementations and modifications to the kernel and
@@ -347,7 +351,6 @@ doesn't represent any real pps (just to relate this to pps numbers).
 
 
 * Notes
-
 
 Remember: the keep DMA mapped, is also a feature that needs to be leveraged
 used by the XDP APIs.  Right now, the ndo_xdp_xmit does TX DMA map and DMA
