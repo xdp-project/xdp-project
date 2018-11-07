@@ -4,6 +4,10 @@
 The page_pool API was accepted into kernel 4.18, and only used by one driver
 mlx5.  This doc is about evolving the page_pool API.
 
+Generally kernel 4.18 introduced the ability for XDP to have knowledge about
+what memory allocator type the driver (per) RX-queue is using, via xdp_rxq_info
+and info in xdp_frame.  This opens up for innovation in this area.
+
 * The page_pool is NOT finished
 
 Lets be clear upfront: *The page_pool API is not finished*.
@@ -13,6 +17,7 @@ The mlx5 driver is _also_ not using the API optimally.
 
 We both need to evolve the API, but also need to take some fundamental design
 choices for the direction of the page_pool API.
+
 
 * History
 
