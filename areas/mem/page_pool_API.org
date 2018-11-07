@@ -85,6 +85,10 @@ The two return hooks are:
 The alternative is to keep track of outstanding frames at the driver layer via
 elevating refcnt.
 
+An advantage of a guaranteed return hook, which page_pool doesn't depend on, is
+that the device driver can use memory pages that are special, e.g. device HW
+memory area, or pages already mapped into userspace.
+
 ** Return-hook: put_page
 
 The original idea was to modify put_page() to catch pages with refcnt==1 and
@@ -134,6 +138,9 @@ will be the instance of the =page_pool=.
 The level and use of indirect calls (e.g. page->pgmap->page_free) is slightly
 concerning (in a spectre-v2 context).
 
+Feasibility: (not needed for page_pool as is) Investigate if pages can be VMA
+mapped into userspace.  There are indications that this is not possible, given
+the ZONE_DEVICE and page->pgmap share page->mapping area.
 
 ** Return-hook: via SKB
 
