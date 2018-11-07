@@ -30,7 +30,7 @@ The overall goals of the page_pool is:
 
 ** mlx5 today
 
-Today mlx5 is not using the DMA-mapping part and is basically using page_pool,
+Today mlx5 is not using the DMA-mapping part and is basically using page_pool
 as a fast alloc-side cache (see later why it is fast), and a return point for
 XDP-redirect. Packets send towards netstack still have a refcnt based recycle
 scheme, as a driver-layer on-top of page_pool.
@@ -38,7 +38,7 @@ scheme, as a driver-layer on-top of page_pool.
 
 * History
 
-The page_pool was adapted from my proposals at MM-summit 2016+2017:
+The page_pool was adapted from Jesper's proposals at MM-summit 2016+2017:
 
  http://people.netfilter.org/hawk/presentations/MM-summit2016/generic_page_pool_mm_summit2016.pdf
  http://people.netfilter.org/hawk/presentations/MM-summit2017/MM-summit2017-JesperBrouer.pdf
@@ -308,13 +308,46 @@ Jesper have a lot of details for option (2), as a significant performance gain
 can be acheived by having knowledge about (and separating) what context the
 kernel is running in (softirq/bh, hardirq, process-context).
 
+* Benchmark based development
+
+I'm a strong believer in benchmark based development.  Thus, I encourage doing
+Proof-of-Concept (PoC) implementations and modifications to the kernel and
+evaluate the performance.
+
+** What is the overhead of "fully-locked page-recycle call"
+
+Benchmark based development notes: Proof-of-Concept (PoC) modified mlx5 driver
+and bq_xmit_all (devmap.c) to call xdp_return_frame (vs normally calling
+xdp_return_frame_rx_napi), xdp_redirect_map frame out a driver with
+ndo_xdp_xmit, but manually unload XDP from egress driver, causing driver
+ndo_xdp_xmit to return error, causing all xdp_frame to be freed/returned.
+Diff (1/14340444-1/12728465)*10^9 = -8.83 ns difference.
+ - The performance with xdp_return_frame  was: 12,728,465 pps.
+ - The perf with xdp_return_frame_rx_napi was: 14,340,444 pps
+Thus, in a non-lock congested case, the performance is still very good.
+
+** What is the overhead of page order-0 allocations
+
+The base overhead of allocating and freeing an order-0 page in a tight loop,
+always hitting the PCP fast-path, measured with prototype kernel module
+[[https://github.com/netoptimizer/prototype-kernel/blob/master/kernel/mm/bench/page_bench01.c#L54-L57][page_bench01]].
+
+#+BEGIN_EXAMPLE
+dmesg output
+[ 1315.759541] page_bench01: alloc_pages order:0(4096B/x1) 223 cycles per-4096B 223 cycles
+[ 1315.768139] time_bench: Type:alloc_pages_order_step Per elem: 223 cycles(tsc) 62.096 ns (step:0)
+ - (measurement period time:0.062096443 sec time_interval:62096443)
+ - (invoke count:1000000 tsc_interval:223548984)
+#+END_EXAMPLE
+
+Show alloc+free order-0 page cost: 223 cycles or 62.096 ns.  This almost
+consume the entire budget for 10Gbit/s wirespeed which is 67.2 ns.  Converting,
+62.096 ns to packets per sec equal (1/62.096*10^9) 16,104,097 pps, which
+doesn't represent any real pps (just to relate this to pps numbers).
 
 
 * Notes
 
-How do we evolve the page_pool API?
-
-What does the explict return (point) API give us?
 
 Remember: the keep DMA mapped, is also a feature that needs to be leveraged
 used by the XDP APIs.  Right now, the ndo_xdp_xmit does TX DMA map and DMA
