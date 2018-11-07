@@ -229,8 +229,41 @@ struct xdp_mem_info, and return frame like/via xdp_return_frame() API.
 
 ** Keep track of pages
 
+The network stack current handling of packet-data pages is refcnt based.
 
+So, what is the trick used by drivers that want to (1) keep the page DMA-mapped
+and (2) do faster recycle (than going through page-allocator)?.  It obviously
+need to leverage a refcnt based scheme on the page.
 
+The general idea is to elevate the refcnt on the page, before sending it
+through the network stack, and keep the page pointer on a tracking
+waiting-queue/list (often a queue).  Thus, this waiting-queue contains pages
+that are in-flight, and there is no signal or callback when they are "done".
+To figure-out when a page is available for reuse, the driver must poll or
+revisit this waiting-queue and by observing the page refcnt know if the page
+can be reused now.
+
+Most drivers poll or revisit the waiting-queue, when doing other work, like
+when needing to refill the RX-ring with fresh frames/pages.  There are
+different strategies when head of the waiting-queue contains a page that is
+still in-flight, as it could mean several things. (1) could indicate too fast
+recycling and next pages are likely also not-ready for reuse, or (2) could be
+this page is being held by e.g. TCP stack for retransmit while the next page
+could be ready for reuse.  Thus, there is a choice to either (a) keep the page
+for next round (hoping it will be reusable soon) or (b) release the page by
+DMA-unmapping and returning the page to the page-allocator.
+
+When the page_pool interacts with XDP, it gets pages returned from XDP via the
+xdp_return_frame API hook/callback.  Given network stack doesn't provide such
+hook, the mlx5 driver used its existing refcnt based recycle queue, on-top of
+page_pool.  And page_pool was modified to fall-through to put_page() if refcnt
+is not equal 1.  This double layer result in the page_pool cannot be
+responsible for the DMA-mapping.
+
+An alternative to introducing a return-hook for the network stack, is to
+integrate a refcnt based waiting-queue inside page_pool, that is only used when
+frames/pages travel through the network stack.  This is a hybrid approach, but
+integrating this would allow page_pool to keep the DMA-mapping.
 
 
 * Understanding page_pool details
