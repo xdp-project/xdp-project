@@ -48,9 +48,13 @@ to the struct-page.  The optimal XDP case is 1-page per frame/packet with page
 refcnt==1, and a put_page() call that catch refcnt==1, and recycle the page for
 reuse.
 
-This is very hard to achieve, as (see later) some kind of sync operation is
-needed when recycling pages, back to originating device, but that can be
-amortized through bulking.
+This is basically what happens, today in mlx5, when XDP-redirect activate
+ndo_xdp_xmit() out another device, and at other-device DMA-TX completion the
+pages are returned via xdp_return_frame, what call page_pool_put_page.
+
+The goal of zero-atomic operations is very hard to achieve, as some kind of
+sync operation is needed when recycling pages, back to originating device, but
+that can be amortized through bulking (see later).
 
 When no XDP program is configured on the device, it might be better for memory
 usage to split the page into two packets, and use a refcnt based model, as the
