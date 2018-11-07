@@ -19,6 +19,23 @@ We both need to evolve the API, but also need to take some fundamental design
 choices for the direction of the page_pool API.
 
 
+* Overall goals of page_pool
+
+The overall goals of the page_pool is:
+
+(1) Keep pages DMA-mapped (driver only use DMA-sync where needed).
+(2) Faster recycle API than page-allocator.
+(3) Common allocator API for simplifying NIC drivers.
+(4) Better integration with network stack, not just XDP usage.
+
+** mlx5 today
+
+Today mlx5 is not using the DMA-mapping part and is basically using page_pool,
+as a fast alloc-side cache (see later why it is fast), and a return point for
+XDP-redirect. Packets send towards netstack still have a refcnt based recycle
+scheme, as a driver-layer on-top of page_pool.
+
+
 * History
 
 The page_pool was adapted from my proposals at MM-summit 2016+2017:
