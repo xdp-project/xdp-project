@@ -77,5 +77,26 @@ Daniel and Alexei
 
 ** Driver developers
 
+* Working groups
 
+** page_pool
 
+People interested in working on page_pool API:
+ - Tariq Toukan <tariqt@mellanox.com> / <ttoukan.linux@gmail.com>
+ - Ilias Apalodimas <ilias.apalodimas@linaro.org>
+
+Potential people interested:
+ - Willy Tarreau <w@1wt.eu>
+ - mykyta.iziumtsev@gmail.com (Ericsson engineer)
+ - ard.biesheuvel@linaro.org (from Linaro)
+
+People to keep in loop:
+ - Toke
+ - Andy Gospodarek <gospo@broadcom.com>
+ - Daniel
+ - Alexei?
+
+Drivers that will get XDP and use page_pool:
+ - driver: mlx5
+ - driver: mvpp2  board: Macchiatobin
+ - driver: mvneta board: espressobin + Turris-Omnia
