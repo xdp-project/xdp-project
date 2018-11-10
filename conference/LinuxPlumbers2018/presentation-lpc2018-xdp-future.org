@@ -266,6 +266,19 @@ Other talks will cover this:
    [[http://vger.kernel.org/lpc-networking2018.html#session-15][eBPF / XDP based firewall and packet filtering]]
 
 
+* Slide: Performance Graps: XDP vs. DPDK                             :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Don't have time look at performance details
+- Go read our [[https://github.com/tohojo/xdp-paper][XDP-paper]]
+
+Following graphs show:
+- XDP have /closed the gap/ to DPDK, but there is still a gap
+- For packet forwarding, *XDP_TX* is faster than DPDK
+
+
 ** Slide: Packet drop performance (from paper)                      :export:
 [[file:images/drop-test.svg]]
 ** Slide: Packet redirect performance (from paper)                   :export:
