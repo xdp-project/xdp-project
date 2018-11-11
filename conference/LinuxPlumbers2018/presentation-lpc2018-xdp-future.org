@@ -272,10 +272,10 @@ Other talks will cover this:
 :END:
 
 Don't have time look at performance details
-- Go read our [[https://github.com/tohojo/xdp-paper][XDP-paper]]
+- Go read our [[https://github.com/tohojo/xdp-paper][XDP paper]]
 
 Following graphs show:
-- XDP have /closed the gap/ to DPDK, but there is still a gap
+- XDP has /narrowed the gap/ to DPDK, but not quite caught up
 - For packet forwarding, *XDP_TX* is faster than DPDK
 
 
