@@ -720,6 +720,16 @@ One XDP indirect call we cannot remove: Invoking BPF program
 - Discovering supported XDP features for a device
 - Adding an egress hook to XDP
 - NIC memory models and DMA mapping
+
+* End                                                                :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Thanks to all contributors
+ - XDP + eBPF /combined effort/ of *many* people
+
+
 * Skipped topics                                                   :noexport:
 ** Topic (maybe skip): Usability: User Experience and Debugging
 
