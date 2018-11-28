@@ -1,0 +1,406 @@
+#+Title: Setup espressobin
+
+* NIC driver
+
+This project is heavily focused on the network driver of the board.
+ - Driver: mvneta
+ - Code: drivers/net/ethernet/marvell/mvneta.c
+
+#+BEGIN_EXAMPLE
+# ethtool -i eth0
+driver: mvneta
+#+END_EXAMPLE
+
+The espressobin board have three physical NIC RG45 ports. They appear
+to Linux as lan0, lan1 and wan.  The board DTS file describe eth0 as
+the CPU port.
+
+Info from: arch/arm64/boot/dts/marvell/armada-3720-espressobin.dts
+
+#+BEGIN_EXAMPLE
+                ports {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        port@0 {
+                                reg = <0>;
+                                label = "cpu";
+                                ethernet = <&eth0>;
+                        };
+
+                        port@1 {
+                                reg = <1>;
+                                label = "wan";
+                                phy-handle = <&switch0phy0>;
+                        };
+
+                        port@2 {
+                                reg = <2>;
+                                label = "lan0";
+                                phy-handle = <&switch0phy1>;
+                        };
+
+                        port@3 {
+                                reg = <3>;
+                                label = "lan1";
+                                phy-handle = <&switch0phy2>;
+                        };
+
+                };
+#+END_EXAMPLE
+
+The driver of these ports are listed using driver: dsa.
+
+#+BEGIN_EXAMPLE
+# ethtool -i wan
+driver: dsa
+
+# ethtool -i lan0
+driver: dsa
+#+END_EXAMPLE
+
+* Wiki setup info 
+
+http://wiki.espressobin.net/tiki-index.php?page=Boot+from+removable+storage+-+Ubuntu#Ubuntu_16.04.4_LTS
+
+* Board info in U-Boot
+
+#+BEGIN_EXAMPLE
+U-Boot 2017.03-armada-17.10.2-g14aeedc (Jun 01 2018 - 15:39:10 +0800)
+
+Model: Marvell Armada 3720 Community Board ESPRESSOBin
+       CPU    @ 1000 [MHz]
+       L2     @ 800 [MHz]
+       TClock @ 200 [MHz]
+       DDR    @ 800 [MHz]
+DRAM:  1 GiB
+U-Boot DT blob at : 000000003f7161b8
+Comphy-0: USB3          5 Gbps    
+Comphy-1: PEX0          2.5 Gbps  
+Comphy-2: SATA0         6 Gbps    
+#+END_EXAMPLE
+
+* Uboot config
+
+Got to boot prompt "Marvell>>".
+
+Follow: "Setting U-Boot parameters"
+ http://wiki.espressobin.net/tiki-index.php?page=Boot+from+removable+storage+-+Ubuntu#Ubuntu_16.04.4_LTS
+
+Changed command to: =ext4ls mmc 0:2=
+
+Check that the micro SD card has necessary files using the ext4ls command:
+
+#+BEGIN_EXAMPLE
+Marvell>> ext4ls mmc 0:2
+[...]
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+Marvell>> ext4ls mmc 0:2 boot
+<DIR>       4096 .
+<DIR>       4096 ..
+        18772480 Image
+           36904 armada-8040-mcbin.dtb
+            8586 armada-3720-espressobin.dtb
+#+END_EXAMPLE
+
+There are only a few variables required to boot from microSD card. First, set proper image and device tree path and name:
+
+#+BEGIN_EXAMPLE
+setenv image_name boot/Image
+setenv fdt_name boot/armada-3720-espressobin.dtb
+#+END_EXAMPLE
+
+
+List existing env via printenv:
+
+#+BEGIN_EXAMPLE
+Marvell>> printenv
+baudrate=115200
+bootargs=console=ttyMV0,115200 earlycon=ar3700_uart,0xd0012000 root=/dev/mmcblk0p1 rw rootwait net.ifnames=0 biosdev0
+bootcmd=mmc dev 0; ext4load mmc 0:1 $kernel_addr $image_name;ext4load mmc 0:1 $fdt_addr $fdt_name;setenv bootargs $cr
+webootdelay=2
+console=console=ttyMV0,115200 earlycon=ar3700_uart,0xd0012000
+eth1addr=00:51:82:11:22:01
+eth2addr=00:51:82:11:22:02
+eth3addr=00:51:82:11:22:03
+ethact=neta@30000
+ethaddr=F0:AD:4E:06:E0:88
+ethprime=eth0
+fdt_addr=0x4f00000
+fdt_high=0xffffffffffffffff
+fdt_name=boot/armada-3720-espressobin.dtb
+fdtcontroladdr=3f7161b8
+gatewayip=10.4.50.254
+get_images=tftpboot $kernel_addr $image_name; tftpboot $fdt_addr $fdt_name; run get_ramfs
+get_ramfs=if test "${ramfs_name}" != "-"; then setenv ramfs_addr 0x8000000; tftpboot $ramfs_addr $ramfs_name; else si
+hostname=marvell
+image_name=boot/Image
+initrd_addr=0xa00000
+initrd_size=0x2000000
+ipaddr=0.0.0.0
+kernel_addr=0x5000000
+loadaddr=0x5000000
+netdev=eth0
+netmask=255.255.255.0
+ramfs_addr=0x8000000
+ramfs_name=-
+root=root=/dev/nfs rw
+rootpath=/srv/nfs/
+serverip=0.0.0.0
+set_bootargs=setenv bootargs $console $root ip=$ipaddr:$serverip:$gatewayip:$netmask:$hostname:$netdev:none nfsroot=s
+stderr=serial@12000
+stdin=serial@12000
+stdout=serial@12000
+Environment size: 1476/65532 bytes
+#+END_EXAMPLE
+
+
+Next, set the boot command by defining the bootmmc variable, which we
+will use to boot from the microSD card.
+
+This had to be adjusted, as the wiki page assume first partition is
+the root/boot device, and in our case it is the second.
+
+Original:
+#+BEGIN_EXAMPLE
+setenv bootmmc 'mmc dev 0; ext4load mmc 0:1 $kernel_addr $image_name;ext4load mmc 0:1 $fdt_addr $fdt_name;setenv bootargs $console root=/dev/mmcblk0p1 rw rootwait; booti $kernel_addr - $fdt_addr'
+#+END_EXAMPLE
+
+Modified:
+
+#+BEGIN_EXAMPLE
+setenv bootmmc 'mmc dev 0; ext4load mmc 0:2 $kernel_addr $image_name;ext4load mmc 0:2 $fdt_addr $fdt_name;setenv bootargs $console root=/dev/mmcblk0p2 rw rootwait; booti $kernel_addr - $fdt_addr'
+#+END_EXAMPLE
+
+Change the default boot command:
+
+#+BEGIN_EXAMPLE
+setenv bootcmd 'run bootmmc'
+#+END_EXAMPLE
+
+You can preserve the set variables across reboots using the saveenv command.
+
+#+BEGIN_EXAMPLE
+Marvell>> saveenv
+Saving Environment to SPI Flash...
+SF: Detected mx25u3235f with page size 256 Bytes, erase size 64 KiB, total 4 MiB
+Erasing SPI flash...Writing to SPI flash...done
+#+END_EXAMPLE
+
+Finally, boot the ESPRESSObin either with run bootmmc
+
+#+BEGIN_EXAMPLE
+run bootmmc
+#+END_EXAMPLE
+
+** Backup/fallback kernel
+
+Setup a U-Boot fallback option in case I upload a broken kernel:
+
+#+BEGIN_EXAMPLE
+setenv bootmmc.works 'mmc dev 0; ext4load mmc 0:2 $kernel_addr boot/Image.works;ext4load mmc 0:2 $fdt_addr boot/armada-3720-espressobin.dtb.works;setenv bootargs $console root=/dev/mmcblk0p2 rw rootwait; booti $kernel_addr - $fdt_addr'
+run bootmmc.works
+#+END_EXAMPLE
+
+* Ubuntu tar.gz hack
+
+Got Ubuntu tar image from apalos/ilias.  Just mounted a macchiatobin
+image and tar extracted into this...
+
+Thus, when booting it have Ilias kernel:
+
+#+BEGIN_EXAMPLE
+ # uname -a
+ Linux localhost.localdomain 4.19.0-rc7-02549-g3ddeac6 #1 SMP PREEMPT Fri Oct 19 15:38:27 EEST 2018 aarch64 aarch64 aarch64 GNU/Linux
+#+END_EXAMPLE
+
+* Extra packages
+
+Install some extra software packages:
+ - ethtool
+ - ssh
+ - rsync
+ - sysstat
+
+Trying to compile tools/perf/
+
+- apt install gcc make ncurses-dev
+
+- apt-get install build-essential
+
+- apt install binutils-dev
+
+Take from:
+ https://www.quora.com/How-do-I-compile-a-Linux-perf-tool-with-all-features-For-Linux-4-0-on-Ubuntu
+
+- apt-get install flex bison libunwind*
+  apt-get install libelf-dev libaudit-dev libdw-dev python-dev \
+    binutils-dev libnuma-dev libgtk2.0-dev libbfd-dev libelf1 \
+    libperl-dev libnuma-dev  libslang2 libslang2-dev \
+    libunwind8 libunwind8-dev binutils-multiarch-dev elfutils \
+    libiberty-dev
+
+Not found: libslang-dev
+
+Should have removed: libgtk2.0-dev
+
+#+BEGIN_EXAMPLE
+Makefile.config:445: No sys/sdt.h found, no SDT events are defined, please install systemtap-sdt-devel or systemtap-sdt-dev
+Makefile.config:583: No libcrypto.h found, disables jitted code injection, please install libssl-devel or libssl-dev
+Makefile.config:814: No libbabeltrace found, disables 'perf data' CTF format support, please install libbabeltrace-dev[el]/libbabeltrace-ctf-dev
+Makefile.config:840: No alternatives command found, you need to set JDIR= to point to the root of your Java directory
+
+#+END_EXAMPLE
+
+apt install libbabeltrace-ctf-dev libbabeltrace-dev
+
+
+* Getting perf on Ubuntu
+
+The perf tool is a bit annoying on Ubuntu, as it maintains a
+linux-tools package per kernel version.  And the perf program is a
+script that looks for the real perf binary in a strange place.
+
+#+BEGIN_EXAMPLE
+apt-get update
+apt-get install linux-tools-common linux-tools-generic
+
+The following additional packages will be installed:
+  libdw1 libnuma1 libunwind8 linux-tools-4.15.0-38 linux-tools-4.15.0-38-generic
+The following NEW packages will be installed:
+  libdw1 libnuma1 libunwind8 linux-tools-4.15.0-38 linux-tools-4.15.0-38-generic linux-tools-common linux-tools-generic
+#+END_EXAMPLE
+
+Finding an perf binary:
+
+#+BEGIN_EXAMPLE
+# dpkg -S linux-tools- | grep perf
+linux-tools-4.15.0-38: /usr/lib/linux-tools-4.15.0-38/perf
+#+END_EXAMPLE
+
+* Ubuntu network setup via netplan
+
+Annoying Ubuntu (18.04.1 LTS) seems to have changed network interface
+setup, to a system called 'netplan'.
+
+** First failed attempt with netplan
+
+Follow:
+ https://websiteforstudents.com/configure-static-ip-addresses-on-ubuntu-18-04-beta/
+
+vi /etc/netplan/50-network.yaml
+
+#+BEGIN_SRC yaml
+cat > /etc/netplan/50-network.yaml << EOF
+network:
+    ethernets:
+        eth0:
+            addresses: [192.168.42.43/24]
+            gateway4: 192.168.42.1
+            nameservers:
+              addresses: [1.1.1.1, 8.8.8.8]
+            dhcp4: no
+    version: 2
+EOF
+#+END_SRC
+
+Run: netplan apply
+
+** Second attempt with netplan
+
+After booting another kernel on espressobin, it comes up with
+interfaces: lan0, lan1 and wan. But now networking is broken.
+
+The IP-address needs to be assigned to one of the corresponding ports.
+But I cannot get a working netplan config!  As it seems
+netplan/networkd depend on link up.
+
+New network setup:
+
+#+BEGIN_EXAMPLE
+cat < /etc/netplan/50-network.yaml << EOF
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    lan0:
+      dhcp4: no
+      addresses:
+        - 192.168.42.43/24
+      gateway4: 192.168.42.1
+      nameservers:
+          addresses: [1.1.1.1, 8.8.8.8]
+    eth0:
+      dhcp4: true
+EOF
+#+END_EXAMPLE
+
+https://askubuntu.com/questions/1046420/why-is-netplan-networkd-not-bringing-up-a-static-ethernet-interface
+
+ConfigureWithoutCarrier=true
+
+Hints: there exists related files under: /etc/systemd/network/ and
+netplan generates files under /run/systemd/network/.
+
+New file: /etc/systemd/network/10-lan0.network
+
+#+BEGIN_EXAMPLE
+cat >  /etc/systemd/network/10-lan0.network << EOF
+[Match]
+Name=lan0
+
+[Link]
+RequiredForOnline=no
+
+[Network]
+ConfigureWithoutCarrier=true
+Address=192.168.42.43/24
+Gateway=192.168.42.1
+DNS=192.168.42.1
+EOF
+#+END_EXAMPLE
+
+Make =wan= interface a test interface:
+
+#+BEGIN_EXAMPLE
+cat >  /etc/systemd/network/10-wan.network << EOF
+[Match]
+Name=wan
+
+[Link]
+RequiredForOnline=no
+
+[Network]
+ConfigureWithoutCarrier=true
+Address=10.1.1.2/24
+EOF
+#+END_EXAMPLE
+
+Info on different options for systemd-network setup:
+- https://www.freedesktop.org/software/systemd/man/systemd.network.html
+- https://wiki.archlinux.org/index.php/systemd-networkd
+
+
+* perf profiling on ubuntu with ARM64
+
+Annoying Ubuntu/Debian have their perf binary is a script that tried
+to detect the real perf binary via the kernel version.  This obviously
+doesn't work, when installing our own upstream kernel on the box.
+
+Having a hard-time cross-compiling perf, as compile server does not
+have the ARM64 libs this need to be linked with.  It is possible to
+compile it (remember CROSS_COMPILE and ARCH=arm64), but it is missing
+many of the features.
+
+So, this cmd produce limited perf-binary:
+#+BEGIN_EXAMPLE
+ make ARCH=arm64 LDFLAGS=-static NO_LIBPERL=1
+#+END_EXAMPLE
+
+On ubuntu/debian install: linux-tools.
+
+And then manually call e.g.: /usr/lib/linux-tools-4.15.0-38/perf
+
+
