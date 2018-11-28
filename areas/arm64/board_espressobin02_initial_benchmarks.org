@@ -1,0 +1,199 @@
+#+Title: Espressobin initial benchmarks
+
+* Baseline benchmark HW
+
+Performance baseline when dropping packets as early as possible with
+in iptables raw table:
+
+#+BEGIN_EXAMPLE
+# iptables -t raw -I PREROUTING -p udp --dport 9 -j DROP
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+Show adapter(s) (wan) statistics (ONLY that changed!)
+Ethtool(wan     ) stat:      1230687 (      1,230,687) <= hist_64bytes /sec
+Ethtool(wan     ) stat:      1230687 (      1,230,687) <= in_accepted /sec
+Ethtool(wan     ) stat:      1230687 (      1,230,687) <= in_da_unknown /sec
+Ethtool(wan     ) stat:     78883552 (     78,883,552) <= in_good_octets /sec
+Ethtool(wan     ) stat:      1230688 (      1,230,688) <= in_unicast /sec
+Ethtool(wan     ) stat:      9718014 (      9,718,014) <= rx_bytes /sec
+Ethtool(wan     ) stat:       211261 (        211,261) <= rx_packets /sec
+#+END_EXAMPLE
+
+* Performance gotcha with PTP-timestamping
+
+The config CONFIG_NET_PTP_CLASSIFY caused a funny issue.
+
+#+BEGIN_EXAMPLE
+# iptables -t raw -I PREROUTING -p udp --dport 9 -j DROP
+# nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    214885             0.0
+IpInAddrErrors                  1                  0.0
+IpExtInOctets                   9885452            0.0
+IpExtInNoECTPkts                214895             0.0
+#+END_EXAMPLE
+
+The top perf function is ___bpf_prog_run, and I didn't think any BPF
+program were activated.  (This also show that I forgot to enable
+JIT'ing of BPF).
+
+#+BEGIN_EXAMPLE
+# Overhead  Command          Shared Object       Symbol
+# ........  ...............  ..................  .........................................
+#
+    17.47%  ksoftirqd/0      [kernel.kallsyms]   [k] ___bpf_prog_run
+    17.18%  ksoftirqd/0      [kernel.kallsyms]   [k] mvneta_poll
+     6.86%  ksoftirqd/0      [kernel.kallsyms]   [k] __netif_receive_skb_core
+     5.68%  ksoftirqd/0      [kernel.kallsyms]   [k] ipt_do_table
+     4.55%  ksoftirqd/0      [kernel.kallsyms]   [k] memcpy
+     3.52%  ksoftirqd/0      [kernel.kallsyms]   [k] __pi___inval_dcache_area
+     3.27%  ksoftirqd/0      [kernel.kallsyms]   [k] dev_gro_receive
+     2.95%  ksoftirqd/0      [kernel.kallsyms]   [k] ip_rcv_core.isra.3
+     2.72%  ksoftirqd/0      [kernel.kallsyms]   [k] eth_type_trans
+     2.54%  ksoftirqd/0      [kernel.kallsyms]   [k] netif_receive_skb_internal
+     2.04%  ksoftirqd/0      [kernel.kallsyms]   [k] __netdev_alloc_skb
+     2.00%  ksoftirqd/0      [kernel.kallsyms]   [k] kmem_cache_alloc
+     1.98%  ksoftirqd/0      [kernel.kallsyms]   [k] kmem_cache_free
+     1.95%  ksoftirqd/0      [kernel.kallsyms]   [k] __rcu_read_unlock
+     1.73%  ksoftirqd/0      [kernel.kallsyms]   [k] edsa_rcv
+     1.66%  ksoftirqd/0      [kernel.kallsyms]   [k] dsa_switch_rcv
+#+END_EXAMPLE
+
+The net/dsa/dsa.c: dsa_switch_rcv() calls dsa_skb_defer_rx_timestamp()
+which call ptp_classify_raw(skb). This runs a BPF program.
+
+For disabling CONFIG_NET_PTP_CLASSIFY, disable PTP_1588_CLOCK ("PTP
+clock support").
+
+After removing this config:
+
+#+BEGIN_EXAMPLE
+# iptables -t raw -I PREROUTING -p udp --dport 9 -j DROP
+# nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    275774             0.0
+IpExtInOctets                   12686984           0.0
+IpExtInNoECTPkts                275804             0.0
+#+END_EXAMPLE
+
+* Random benchmark notes
+
+** branch-miss optimize#1
+
+Tried different branch-miss optimizations, not much performance gain
+seen in PPS numbers.
+
+Iptables raw drop UDP port 9, page_pool return via SKB hook
+
+#+BEGIN_EXAMPLE
+root@espressobin:~# /root/git/network-testing/bin/ethtool_stats.pl --dev wan
+Show adapter(s) (wan) statistics (ONLY that changed!)
+Ethtool(wan     ) stat:      1232139 (      1,232,139) <= hist_64bytes /sec
+Ethtool(wan     ) stat:      1232139 (      1,232,139) <= in_accepted /sec
+Ethtool(wan     ) stat:      1232139 (      1,232,139) <= in_da_unknown /sec
+Ethtool(wan     ) stat:     78797251 (     78,797,251) <= in_good_octets /sec
+Ethtool(wan     ) stat:      1232140 (      1,232,140) <= in_unicast /sec
+Ethtool(wan     ) stat:     11750425 (     11,750,425) <= rx_bytes /sec
+Ethtool(wan     ) stat:       255444 (        255,444) <= rx_packets /sec
+# nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    258796             0.0
+IpExtInOctets                   11904340           0.0
+IpExtInNoECTPkts                258791             0.0
+#+END_EXAMPLE
+
+Before:
+#+BEGIN_EXAMPLE
+/root/bin/perf stat -C0 -r 3 -e instructions -e cycles -e branches -e branch-misses sleep 1
+
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+         567582340      instructions  # 0.57  insn per cycle  ( +-  0.06% )
+        1003903661      cycles                                ( +-  0.00% )
+          59294520      branches                              ( +-  0.06% )
+           3795749      branch-misses # 6.40% of all branches ( +-  0.59% )
+
+         1.0040467 +- 0.0000353 seconds time elapsed  ( +-  0.00% )
+#+END_EXAMPLE
+
+#+BEGIN_SRC diff
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 0ffcbdd55fa9..591b25ca7d6b 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4930,14 +4930,14 @@ static int __netif_receive_skb_core(struct sk_buff *skb, bool pfmemalloc,
+        return ret;
+ }
+ 
+-static int __netif_receive_skb_one_core(struct sk_buff *skb, bool pfmemalloc)
++static inline int __netif_receive_skb_one_core(struct sk_buff *skb, bool pfmemalloc)
+ {
+        struct net_device *orig_dev = skb->dev;
+        struct packet_type *pt_prev = NULL;
+        int ret;
+ 
+        ret = __netif_receive_skb_core(skb, pfmemalloc, &pt_prev);
+-       if (pt_prev)
++       if (unlikely(pt_prev)) // observed arm-branch-miss
+                ret = pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
+        return ret;
+ }
+@@ -5032,7 +5032,7 @@ static int __netif_receive_skb(struct sk_buff *skb)
+ {
+        int ret;
+ 
+-       if (sk_memalloc_socks() && skb_pfmemalloc(skb)) {
++       if (unlikely(sk_memalloc_socks() && skb_pfmemalloc(skb))) { //arm-branch-miss
+                unsigned int noreclaim_flag;
+ 
+                /*
+@@ -5122,7 +5122,7 @@ static int netif_receive_skb_internal(struct sk_buff *skb)
+ 
+        net_timestamp_check(netdev_tstamp_prequeue, skb);
+ 
+-       if (skb_defer_rx_timestamp(skb))
++       if (unlikely(skb_defer_rx_timestamp(skb)))
+                return NET_RX_SUCCESS;
+ 
+        if (static_branch_unlikely(&generic_xdp_needed_key)) {
+#+END_SRC
+
+Branch misses reduced but PPS performance almost same
+
+#+BEGIN_EXAMPLE
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+         570457425      instructions              #    0.57  insn per cycle           ( +-  0.03% )
+        1003930748      cycles                                                        ( +-  0.00% )
+          59635014      branches                                                      ( +-  0.03% )
+           3308958      branch-misses             #    5.55% of all branches          ( +-  0.44% )
+
+         1.0040329 +- 0.0000472 seconds time elapsed  ( +-  0.00% )
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+Show adapter(s) (wan) statistics (ONLY that changed!)
+Ethtool(wan     ) stat:      1229617 (      1,229,617) <= hist_64bytes /sec
+Ethtool(wan     ) stat:      1229616 (      1,229,616) <= in_accepted /sec
+Ethtool(wan     ) stat:      1229616 (      1,229,616) <= in_da_unknown /sec
+Ethtool(wan     ) stat:     79821632 (     79,821,632) <= in_good_octets /sec
+Ethtool(wan     ) stat:      1229617 (      1,229,617) <= in_unicast /sec
+Ethtool(wan     ) stat:     11872789 (     11,872,789) <= rx_bytes /sec
+Ethtool(wan     ) stat:       258104 (        258,104) <= rx_packets /sec
+#+END_EXAMPLE
+
+
+* Debugging hints
+
+ ./scripts/faddr2line net/core/xdp.o __xdp_return+0x140
+
+#+BEGIN_EXAMPLE
+$ ./scripts/faddr2line net/core/xdp.o __xdp_return+0x140
+__xdp_return+0x140/0x2b8:
+__read_once_size at /home/jbrouer/git/kernel/apalos-bpf-next/./include/linux/compiler.h:182
+(inlined by) compound_head at /home/jbrouer/git/kernel/apalos-bpf-next/./include/linux/page-flags.h:143
+(inlined by) virt_to_head_page at /home/jbrouer/git/kernel/apalos-bpf-next/./include/linux/mm.h:660
+(inlined by) __xdp_return at /home/jbrouer/git/kernel/apalos-bpf-next/net/core/xdp.c:335
+#+END_EXAMPLE
+
