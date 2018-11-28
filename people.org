@@ -63,6 +63,8 @@ Developers unsorted:
 
 ** page_pool
 
+Proposal for evolving API see: [[file://areas/mem/page_pool01_evolving_API.org]]
+
 People interested in working on page_pool API:
  - Tariq Toukan <tariqt@mellanox.com> / <ttoukan.linux@gmail.com>
  - Ilias Apalodimas <ilias.apalodimas@linaro.org>
