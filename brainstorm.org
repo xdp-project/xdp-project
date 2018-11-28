@@ -4,7 +4,7 @@ This doc is for brainstorming.  Watch out for likely duplicates, clean
 them up progressively.
 
 Turn these notes into real issue or bug descriptions and move them
-into other docs like file:/~/git/xdp-notes/xdp_issues.org
+into other docs like [[file:xdp_issues.org]]
 
 * ip-util choose between generic/native-XDP
 
