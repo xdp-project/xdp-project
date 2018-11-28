@@ -27,55 +27,37 @@ for Facebook.
 
 * XDP developers
 
-** Developers unsorted
+eBPF maintainers:
+- Alexei Starovoitov
+- Daniel Borkmann
 
-Alexei Starovoitov
-Daniel Borkmann
+Core XDP developers:
+- Brenden Blanco <bblanco@gmail.com> (initial XDP patchset)
+- Tom Herbert <tom@herbertland.com> (coined XDP)
+- John Fastabend <john.fastabend@gmail.com>
+- Jakub Kicinski <jakub.kicinski@netronome.com> (netronome + core work)
+- Quentin Monnet <quentin.monnet@netronome.com> (netronome + core work)
+- David Ahern (fib lookup helper)
 
-Brenden Blanco <bblanco@gmail.com>
-Tom Herbert <tom@herbertland.com>
+eBPF core developers influencing XDP:
+- Martin KaFai Lau <kafai@fb.com>
 
-John Fastabend <john.fastabend@gmail.com>
+Driver developers:
+- Andy Gospodarek (bnxt_en + presentations)
+- Michael Chan (bnxt_en)
+- Saeed Mahameed (mlx5)
+- Tariq Toukan (mlx4)
+- Björn Töpel (i40e + ixgbe + AF_XDP)
+- Magnus Karlsson (i40e + AF_XDP)
+- Yuval Mintz (qede)
+- Sunil Goutham (thunderx)
+- Jason Wang (VM)
+- Michael S. Tsirkin (ptr_ring)
+- Edward Cree (sfc)
+- Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp> (veth)
 
-Martin KaFai Lau <kafai@fb.com>
-
-Jakub Kicinski <jakub.kicinski@netronome.com> (netronome + core work)
-
-Andy Gospodarek (mostly presentations)
-
-Michael Chan (bnxt_en)
-
-Saeed Mahameed (mlx5)
-
-Tariq Toukan (mlx4)
-
-Björn Töpel (i40e + AF_XDP)
-
-Magnus Karlsson (AF_XDP)
-
-Yuval Mintz (qede)
-
-Sunil Goutham (thunderx)
-
-Jason Wang (VM)
-
-Michael S. Tsirkin (ptr_ring)
-
-Edward Cree (sfc)
-
-David Ahern (fib lookup helper)
-
-PJ (still waiting for data_meta work)
-
-Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp> (veth)
-
-** eBPF maintainers
-
-Daniel and Alexei
-
-** Core developers
-
-** Driver developers
+Developers unsorted:
+- PJ (still waiting for data_meta work)
 
 * Working groups
 
