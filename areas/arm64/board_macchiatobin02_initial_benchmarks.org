@@ -176,6 +176,10 @@ It seems the DMA overhead does not exist with the SolidRun kernel
         ffffffc000085dd0 ret_from_fork ([kernel.kallsyms])
 #+END_EXAMPLE
 
+As can be seen from above, this kernel is not using the upstream =mvpp2=
+driver, but instead a driver (likely) named =mv_pp22=.  As the expected NAPI
+poll function in upstream =mvpp2= driver is named =mvpp2_poll=.
+
 ** Found DMA issue
 
 The memory getting allocated for RX buffers were above 40-bit.  Thus,
