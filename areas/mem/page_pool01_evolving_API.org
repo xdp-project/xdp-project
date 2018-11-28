@@ -10,7 +10,8 @@ and info in xdp_frame.  This opens up for innovation in this area.
 
 * The page_pool is NOT finished
 
-Lets be clear upfront: *The page_pool API is not finished*.
+Lets be clear upfront: *The page_pool API is not finished*
+(As of this writing <2018-11-28 Wed> and kernel release v4.19).
 
 It is not ready to be used by all drivers, in the current state.
 The mlx5 driver is _also_ not using the API optimally.
