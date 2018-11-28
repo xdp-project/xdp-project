@@ -1,0 +1,416 @@
+#+Title: Setup notes for board macchiatobin
+
+MacchiatoBIN, wiki docs:
+ - http://wiki.macchiatobin.net/tiki-index.php?page=Build+from+source+-+Kernel
+
+* Bootable Micro SD card
+
+Created a bootable Micro SD card via following:
+ - http://wiki.macchiatobin.net/tiki-index.php?page=Boot+from+removable+storage+-+Ubuntu
+
+Got at working image booting: 4.4.52-armada-17.10.3-g6adee55.
+
+* Works with upstream
+
+Managed to compile an upstream kernel based of bpf-next via script:
+ - [[https://github.com/netoptimizer/prototype-kernel/blob/master/scripts/kernel_arm64_push.sh][compile_kernel_arm64.sh]]
+
+And install/push and successfully reboot via script:
+ - [[https://github.com/netoptimizer/prototype-kernel/blob/master/scripts/kernel_arm64_push.sh][kernel_arm64_push.sh]]
+
+This kernel did have a DMA performance issue described in:
+ - [[file:board_macchiatobin02_initial_benchmarks.org]]
+
+
+* Macchiatobin kernel-config
+
+Need to get their kernel-config, as basis for my upstream kernel compile.
+
+#+begin_example
+ git clone https://github.com/MarvellEmbeddedProcessors/linux-marvell
+ git checkout linux-4.14.22-armada-18.09
+#+end_example
+
+Find 'mvebu_v8_lsp_defconfig'
+
+ arch/arm64/configs/mvebu_v8_lsp_defconfig
+
+#+begin_example
+ cp arch/arm64/configs/mvebu_v8_lsp_defconfig ~/git/kernel/bpf-next-arm/
+ cd ~/git/kernel/bpf-next-arm/
+ cp mvebu_v8_lsp_defconfig arch/arm64/configs
+ make ARCH=arm64 mvebu_v8_lsp_defconfig
+#+end_example
+
+* Brick by installing wrong kernel
+
+Managed to brick the box, by installing another kernel that didn't boot.
+See error below, and next section for how I unbricked the box.
+
+** Using Marvell kernel: 4.14.22-armada-18.09.3
+
+Caused crash:
+
+#+BEGIN_EXAMPLE
+Starting kernel ...
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 4.14.22-armada-18.09.3-ge5eb5621863c-dirty (jbrouer@firesoul) (gcc version 7.3.1 20180425 [lina8
+[    0.000000] Boot CPU: AArch64 Processor [410fd081]
+[    0.000000] Machine model: Marvell 8040 MACCHIATOBin
+[    0.000000] efi: Getting EFI parameters from FDT:
+[    0.000000] efi: UEFI not found.
+[    0.000000] cma: Reserved 256 MiB at 0x00000000b0000000
+[    0.000000] NUMA: No NUMA configuration found
+[    0.000000] NUMA: Faking a node at [mem 0x0000000000000000-0x000000013fffffff]
+[    0.000000] NUMA: NODE_DATA [mem 0x13ffc9380-0x13ffcae7f]
+[    0.000000] Zone ranges:
+[    0.000000]   DMA      [mem 0x0000000000000000-0x00000000ffffffff]
+[    0.000000]   Normal   [mem 0x0000000100000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000000000000-0x0000000003ffffff]
+[    0.000000]   node   0: [mem 0x0000000004200000-0x00000000043fffff]
+[    0.000000]   node   0: [mem 0x0000000005400000-0x00000000bfffffff]
+[    0.000000]   node   0: [mem 0x0000000100000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000000000000-0x000000013fffffff]
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.0 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: MIGRATE_INFO_TYPE not supported.
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] percpu: Embedded 26 pages/cpu @ffff80013ff5c000 s68504 r8192 d29800 u106496
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1027656
+[    0.000000] Policy zone: Normal
+[    0.000000] Kernel command line: console=ttyS0,115200 root=/dev/mmcblk1p2 rw rootwait
+[    0.000000] PID hash table entries: 4096 (order: 3, 32768 bytes)
+[    0.000000] software IO TLB [mem 0xabfff000-0xaffff000] (64MB) mapped at [ffff8000abfff000-ffff8000afffefff]
+[    0.000000] Memory: 3764660K/4175872K available (11260K kernel code, 742K rwdata, 3644K rodata, 704K init, 436K bss, 1490)
+[    0.000000] Virtual kernel memory layout:
+[    0.000000]     modules : 0xffff000000000000 - 0xffff000008000000   (   128 MB)
+[    0.000000]     vmalloc : 0xffff000008000000 - 0xffff7dffbfff0000   (129022 GB)
+[    0.000000]       .text : 0xffff000008080000 - 0xffff000008b80000   ( 11264 KB)
+[    0.000000]     .rodata : 0xffff000008b80000 - 0xffff000008f20000   (  3712 KB)
+[    0.000000]       .init : 0xffff000008f20000 - 0xffff000008fd0000   (   704 KB)
+[    0.000000]       .data : 0xffff000008fd0000 - 0xffff000009089a00   (   743 KB)
+[    0.000000]        .bss : 0xffff000009089a00 - 0xffff0000090f6dd8   (   437 KB)
+[    0.000000]     fixed   : 0xffff7dfffe7f9000 - 0xffff7dfffec00000   (  4124 KB)
+[    0.000000]     PCI I/O : 0xffff7dfffee00000 - 0xffff7dffffe00000   (    16 MB)
+[    0.000000]     vmemmap : 0xffff7e0000000000 - 0xffff800000000000   (  2048 GB maximum)
+[    0.000000]               0xffff7e0000000000 - 0xffff7e0005000000   (    80 MB actual)
+[    0.000000]     memory  : 0xffff800000000000 - 0xffff800140000000   (  5120 MB)
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] Preemptible hierarchical RCU implementation.
+[    0.000000]  RCU restricting CPUs from NR_CPUS=64 to nr_cpu_ids=4.
+[    0.000000]  Tasks RCU enabled.
+[    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] GIC: Adjusting CPU interface base to 0x00000000f022f000
+[    0.000000] GIC: Using split EOI/Deactivate mode
+[    0.000000] GICv2m: DT overriding V2M MSI_TYPER (base:160, num:32)
+[    0.000000] GICv2m: range[mem 0xf0280000-0xf0280fff], SPI[160:191]
+[    0.000000] GICv2m: DT overriding V2M MSI_TYPER (base:192, num:32)
+[    0.000000] GICv2m: range[mem 0xf0290000-0xf0290fff], SPI[192:223]
+[    0.000000] GICv2m: DT overriding V2M MSI_TYPER (base:224, num:32)
+[    0.000000] GICv2m: range[mem 0xf02a0000-0xf02a0fff], SPI[224:255]
+[    0.000000] GICv2m: DT overriding V2M MSI_TYPER (base:256, num:32)
+[    0.000000] GICv2m: range[mem 0xf02b0000-0xf02b0fff], SPI[256:287]
+[    0.000000] arch_timer: cp15 timer(s) running at 25.00MHz (phys).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x5c40939b5, max_idle_ns: 440795202646 ns
+[    0.000002] sched_clock: 56 bits at 25MHz, resolution 40ns, wraps every 4398046511100ns
+[    0.000159] Console: colour dummy device 80x25
+[    0.000182] Calibrating delay loop (skipped), value calculated using timer frequency.. 50.00 BogoMIPS (lpj=100000)
+[    0.000188] pid_max: default: 32768 minimum: 301
+[    0.000217] Security Framework initialized
+[    0.001136] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes)
+[    0.001599] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes)
+[    0.001624] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes)
+[    0.001642] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes)
+[    0.016000] ASID allocator initialised with 32768 entries
+[    0.023998] Hierarchical SRCU implementation.
+[    0.032156] EFI services will not be available.
+[    0.040012] smp: Bringing up secondary CPUs ...
+[    0.068178] Detected PIPT I-cache on CPU1
+[    0.068207] CPU1: Booted secondary processor [410fd081]
+[    0.096195] Detected PIPT I-cache on CPU2
+[    0.096216] CPU2: Booted secondary processor [410fd081]
+[    0.124218] Detected PIPT I-cache on CPU3
+[    0.124233] CPU3: Booted secondary processor [410fd081]
+[    0.124269] smp: Brought up 1 node, 4 CPUs
+[    0.124278] SMP: Total of 4 processors activated.
+[    0.124282] CPU features: detected feature: 32-bit EL0 Support
+[    0.124285] CPU features: detected feature: Kernel page table isolation (KPTI)
+[    0.128234] CPU: All CPU(s) started at EL2
+[    0.128246] alternatives: patching kernel code
+[    0.128660] devtmpfs: initialized
+[    0.130424] random: get_random_u32 called from bucket_table_alloc+0x108/0x258 with crng_init=0
+[    0.130626] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.130648] futex hash table entries: 1024 (order: 5, 131072 bytes)
+[    0.132629] xor: measuring software checksum speed
+[    0.172128]    8regs     :  6859.000 MB/sec
+[    0.212152]    8regs_prefetch:  5958.000 MB/sec
+[    0.252176]    32regs    :  7721.000 MB/sec
+[    0.292199]    32regs_prefetch:  6517.000 MB/sec
+[    0.292203] xor: using function: 32regs (7721.000 MB/sec)
+[    0.292209] pinctrl core: initialized pinctrl subsystem
+[    0.292368] random: fast init done
+[    0.292568] DMI not present or invalid.
+[    0.292668] NET: Registered protocol family 16
+[    0.293107] cpuidle: using governor menu
+[    0.293309] vdso: 2 pages (1 code @ ffff000008b86000, 1 data @ ffff000008fd5000)
+[    0.293318] hw-breakpoint: found 6 breakpoint and 4 watchpoint registers.
+[    0.293741] DMA: preallocated 256 KiB pool for atomic allocations
+[    0.293790] Serial: AMBA PL011 UART driver
+[    0.302072] HugeTLB registered 2.00 MiB page size, pre-allocated 0 pages
+[    0.368348] raid6: int64x1  gen()  1041 MB/s
+[    0.436356] raid6: int64x1  xor()   903 MB/s
+[    0.504394] raid6: int64x2  gen()  1442 MB/s
+[    0.572422] raid6: int64x2  xor()  1318 MB/s
+[    0.640463] raid6: int64x4  gen()  2283 MB/s
+[    0.708514] raid6: int64x4  xor()  1479 MB/s
+[    0.776544] raid6: int64x8  gen()  2039 MB/s
+[    0.844618] raid6: int64x8  xor()  1431 MB/s
+[    0.912628] raid6: neonx1   gen()  2087 MB/s
+[    0.980675] raid6: neonx1   xor()  2273 MB/s
+[    1.048724] raid6: neonx2   gen()  2829 MB/s
+[    1.116758] raid6: neonx2   xor()  2899 MB/s
+[    1.184809] raid6: neonx4   gen()  3574 MB/s
+[    1.252851] raid6: neonx4   xor()  3156 MB/s
+[    1.320892] raid6: neonx8   gen()  4117 MB/s
+[    1.388934] raid6: neonx8   xor()  3425 MB/s
+[    1.388937] raid6: using algorithm neonx8 gen() 4117 MB/s
+[    1.388940] raid6: .... xor() 3425 MB/s, rmw enabled
+[    1.388943] raid6: using neon recovery algorithm
+[    1.389163] ACPI: Interpreter disabled.
+[    1.389442] reg-fixed-voltage regulator-usb3-vbus0: could not find pctldev for node /cp0/config-space/system-controller@4e
+[    1.389561] vgaarb: loaded
+[    1.389699] SCSI subsystem initialized
+[    1.389922] usbcore: registered new interface driver usbfs
+[    1.389945] usbcore: registered new interface driver hub
+[    1.389972] usbcore: registered new device driver usb
+[    1.390222] pps_core: LinuxPPS API ver. 1 registered
+[    1.390226] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    1.390234] PTP clock support registered
+[    1.390374] EDAC MC: Ver: 3.0.0
+[    1.390497] dmi: Firmware registration failed.
+[    1.390562] Advanced Linux Sound Architecture Driver Initialized.
+[    1.390875] clocksource: Switched to clocksource arch_sys_counter
+[    1.390925] VFS: Disk quotas dquot_6.6.0
+[    1.390950] VFS: Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+[    1.391009] pnp: PnP ACPI: disabled
+[    1.393532] NET: Registered protocol family 2
+[    1.393735] TCP established hash table entries: 32768 (order: 6, 262144 bytes)
+[    1.393851] TCP bind hash table entries: 32768 (order: 7, 524288 bytes)
+[    1.394004] TCP: Hash tables configured (established 32768 bind 32768)
+[    1.394072] UDP hash table entries: 2048 (order: 4, 65536 bytes)
+[    1.394096] UDP-Lite hash table entries: 2048 (order: 4, 65536 bytes)
+[    1.394167] NET: Registered protocol family 1
+[    1.394309] RPC: Registered named UNIX socket transport module.
+[    1.394313] RPC: Registered udp transport module.
+[    1.394316] RPC: Registered tcp transport module.
+[    1.394318] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[    1.394580] hw perfevents: unable to count PMU IRQs
+[    1.394586] hw perfevents: /ap806/config-space@f0000000/pmu: failed to register PMU devices!
+[    1.394723] kvm [1]: 8-bit VMID
+[    1.394726] kvm [1]: IDMAP page: b71000
+[    1.394729] kvm [1]: HYP VA range: 800000000000:ffffffffffff
+[    1.395181] kvm [1]: vgic-v2@f0240000
+[    1.395231] kvm [1]: vgic interrupt IRQ1
+[    1.395238] kvm [1]: virtual timer IRQ4
+[    1.395288] kvm [1]: Hyp mode initialized successfully
+[    1.397241] audit: initializing netlink subsys (disabled)
+[    1.397300] audit: type=2000 audit(1.392:1): state=initialized audit_enabled=0 res=1
+[    1.397403] workingset: timestamp_bits=44 max_order=20 bucket_order=0
+[    1.399808] squashfs: version 4.0 (2009/01/31) Phillip Lougher
+[    1.404066] NFS: Registering the id_resolver key type
+[    1.404077] Key type id_resolver registered
+[    1.404080] Key type id_legacy registered
+[    1.404086] nfs4filelayout_init: NFSv4 File Layout Driver Registering...
+[    1.404092] Installing knfsd (copyright (C) 1996 okir@monad.swb.de).
+[    1.404225] 9p: Installing v9fs 9p2000 file system support
+[    1.405835] async_tx: api initialized (async)
+[    1.405901] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 245)
+[    1.405906] io scheduler noop registered
+[    1.405978] io scheduler cfq registered (default)
+[    1.405981] io scheduler mq-deadline registered
+[    1.405984] io scheduler kyber registered
+[    1.407417] armada-ap806-pinctrl f06f4000.system-controller:pinctrl: registered pinctrl driver
+[    1.407709] armada-cp110-pinctrl f2440000.system-controller:pinctrl: registered pinctrl driver
+[    1.407903] armada-cp110-pinctrl f4440000.system-controller:pinctrl: registered pinctrl driver
+[    1.410722] mv_xor_v2 f0400000.xor: Marvell Version 2 XOR driver
+[    1.410987] mv_xor_v2 f0420000.xor: Marvell Version 2 XOR driver
+[    1.411246] mv_xor_v2 f0440000.xor: Marvell Version 2 XOR driver
+[    1.411461] mv_xor_v2 f0460000.xor: Marvell Version 2 XOR driver
+[    1.411729] mv_xor_v2 f26a0000.xor: Marvell Version 2 XOR driver
+[    1.411951] mv_xor_v2 f26c0000.xor: Marvell Version 2 XOR driver
+[    1.412271] mv_xor_v2 f46a0000.xor: Marvell Version 2 XOR driver
+[    1.412500] mv_xor_v2 f46c0000.xor: Marvell Version 2 XOR driver
+[    1.414311] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+[    1.415026] console [ttyS0] disabled
+[    1.435192] f0512000.serial: ttyS0 at MMIO 0xf0512000 (irq = 8, base_baud = 12500000) is a 16550A
+[    2.554374] console [ttyS0] enabled
+[    2.558698] omap_rng f2760000.trng: Random Number Generator ver. 203b34c
+[    2.565534] omap_rng f4760000.trng: Random Number Generator ver. 203b34c
+[    2.572385] arm-smmu f0100000.iommu: probing hardware configuration...
+[    2.578947] arm-smmu f0100000.iommu: SMMUv2 with:
+[    2.583677] arm-smmu f0100000.iommu:         stage 1 translation
+[    2.589102] arm-smmu f0100000.iommu:         stage 2 translation
+[    2.594527] arm-smmu f0100000.iommu:         nested translation
+[    2.599866] arm-smmu f0100000.iommu:         coherent table walk
+[    2.605292] arm-smmu f0100000.iommu:         stream matching with 16 register groups
+[    2.612462] arm-smmu f0100000.iommu:         8 context banks (0 stage-2 only)
+[    2.619024] arm-smmu f0100000.iommu:         Supported page sizes: 0x61311000
+[    2.625585] arm-smmu f0100000.iommu:         Stage-1: 48-bit VA -> 48-bit IPA
+[    2.632144] arm-smmu f0100000.iommu:         Stage-2: 48-bit IPA -> 48-bit PA
+[    2.638927] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    2.647432] loop: module loaded
+[    2.651325] phy phy-f2120000.phy.5: phy poweron failed --> -1
+[    2.657120] ahci: probe of f2540000.sata failed with error -1
+[    2.663154] phy phy-f4120000.phy.7: phy poweron failed --> -1
+[    2.668943] ahci: probe of f4540000.sata failed with error -1
+[    2.675474] orion_spi f4700680.spi: CS0 configured for direct access
+[    2.682054] Bad mode in Error handler detected on CPU0, code 0xbf000000 -- SError
+[    2.689568] Internal error: Oops - bad mode: 0 [#1] PREEMPT SMP
+[    2.695511] Modules linked in:
+[    2.698581] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 4.14.22-armada-18.09.3-ge5eb5621863c-dirty #2
+[    2.707663] Hardware name: Marvell 8040 MACCHIATOBin (DT)
+[    2.713083] task: ffff80013b250000 task.stack: ffff80013b258000
+[    2.719030] PC is at _raw_spin_lock_irqsave+0x8/0x50
+[    2.724018] LR is at spi_statistics_add_transfer_stats+0x4c/0xe0
+[    2.730049] pc : [<ffff000008b706b8>] lr : [<ffff000008720d4c>] pstate: 800000c5
+[    2.737474] sp : ffff80013b25b4b0
+[    2.740801] x29: ffff80013b25b4b0 x28: 00000000cccccccd 
+[    2.746137] x27: 0000000000000000 x26: 0000000000000000 
+[    2.751472] x25: 0000000000001f40 x24: ffff80013af65c38 
+[    2.756807] x23: ffff80013af65cc8 x22: ffff80013af65800 
+[    2.762142] x21: ffff80013b25b760 x20: 0000000000000002 
+[    2.767477] x19: ffff80013af65cc8 x18: 0000000000000001 
+[    2.772812] x17: 0000000000000000 x16: 0000000000000000 
+[    2.778146] x15: ffffffffffffffff x14: ffff80013a92740a 
+[    2.783481] x13: ffff80013a927409 x12: 0000000000000030 
+[    2.788816] x11: 0000000000000030 x10: 0000000000000000 
+[    2.794151] x9 : 0000000000000004 x8 : 0000000000000002 
+[    2.799485] x7 : 0000000000000001 x6 : ffff80013ac35c81 
+[    2.804819] x5 : 0000000000000000 x4 : 0000000000000000 
+[    2.810152] x3 : 0000000000000040 x2 : ffff80013af65800 
+[    2.815486] x1 : ffff80013b25b760 x0 : ffff80013af65cc8 
+[    2.820820] Process swapper/0 (pid: 1, stack limit = 0xffff80013b258000)
+[    2.827548] Call trace:
+[    2.830002] Exception stack(0xffff80013b25b370 to 0xffff80013b25b4b0)
+[    2.836469] b360:                                   ffff80013af65cc8 ffff80013b25b760
+[    2.844331] b380: ffff80013af65800 0000000000000040 0000000000000000 0000000000000000
+[    2.852193] b3a0: ffff80013ac35c81 0000000000000001 0000000000000002 0000000000000004
+[    2.860055] b3c0: 0000000000000000 0000000000000030 0000000000000030 ffff80013a927409
+[    2.867916] b3e0: ffff80013a92740a ffffffffffffffff 0000000000000000 0000000000000000
+[    2.875778] b400: 0000000000000001 ffff80013af65cc8 0000000000000002 ffff80013b25b760
+[    2.883640] b420: ffff80013af65800 ffff80013af65cc8 ffff80013af65c38 0000000000001f40
+[    2.891502] b440: 0000000000000000 0000000000000000 00000000cccccccd ffff80013b25b4b0
+[    2.899363] b460: ffff000008720d4c ffff80013b25b4b0 ffff000008b706b8 00000000800000c5
+[    2.907225] b480: ffff80013af65cc8 ffff80013af65c38 ffffffffffffffff ffff0000087234d8
+[    2.915086] b4a0: ffff80013b25b4b0 ffff000008b706b8
+[    2.919983] [<ffff000008b706b8>] _raw_spin_lock_irqsave+0x8/0x50
+[    2.926016] [<ffff0000087234a8>] spi_transfer_one_message+0xc0/0x3b8
+[    2.932395] [<ffff000008723d58>] __spi_pump_messages+0x320/0x4e0
+[    2.938426] [<ffff000008724110>] __spi_sync+0x1d8/0x208
+[    2.943672] [<ffff00000872416c>] spi_sync+0x2c/0x50
+[    2.948570] [<ffff00000872428c>] spi_write_then_read+0xfc/0x1c8
+[    2.954514] [<ffff0000086fad44>] m25p80_read_reg+0x34/0x78
+[    2.960022] [<ffff00000870c82c>] spi_nor_read_id+0x24/0xf0
+[    2.965529] [<ffff00000870dde0>] spi_nor_scan+0x2f8/0x8f8
+[    2.970949] [<ffff0000086fb510>] m25p_probe+0x160/0x1a8
+[    2.976195] [<ffff000008722198>] spi_drv_probe+0x78/0xc8
+[    2.981529] [<ffff00000866794c>] driver_probe_device+0x22c/0x2d8
+[    2.987559] [<ffff000008667b50>] __device_attach_driver+0x98/0xf0
+[    2.993676] [<ffff000008665bb0>] bus_for_each_drv+0x48/0x98
+[    2.999270] [<ffff0000086675f8>] __device_attach+0xc0/0x130
+[    3.004865] [<ffff000008667c00>] device_initial_probe+0x10/0x18
+[    3.010808] [<ffff000008666ae0>] bus_probe_device+0x90/0x98
+[    3.016403] [<ffff000008664b18>] device_add+0x3d8/0x5e0
+[    3.021649] [<ffff000008722d80>] spi_add_device+0x130/0x1a0
+[    3.027245] [<ffff000008724c34>] spi_register_controller+0x41c/0x950
+[    3.033624] [<ffff000008726a00>] orion_spi_probe+0x348/0x3f0
+[    3.039306] [<ffff000008669670>] platform_drv_probe+0x58/0xb8
+[    3.045075] [<ffff00000866794c>] driver_probe_device+0x22c/0x2d8
+[    3.051106] [<ffff000008667ab0>] __driver_attach+0xb8/0xc0
+[    3.056614] [<ffff000008665af4>] bus_for_each_dev+0x4c/0x98
+[    3.062209] [<ffff000008667250>] driver_attach+0x20/0x28
+[    3.067542] [<ffff000008666dbc>] bus_add_driver+0x1ac/0x218
+[    3.073137] [<ffff000008668438>] driver_register+0x60/0xf8
+[    3.078645] [<ffff0000086695c0>] __platform_driver_register+0x40/0x48
+[    3.085113] [<ffff000008f55498>] orion_spi_driver_init+0x18/0x20
+[    3.091144] [<ffff000008083950>] do_one_initcall+0x38/0x120
+[    3.096740] [<ffff000008f20d0c>] kernel_init_freeable+0x188/0x22c
+[    3.102858] [<ffff000008b6ad68>] kernel_init+0x10/0x100
+[    3.108104] [<ffff000008084b68>] ret_from_fork+0x10/0x18
+[    3.113437] Code: 35ffffa2 d65f03c0 d53b4223 d50342df (d5384102) 
+[    3.119560] ---[ end trace 63e579e23212cab7 ]---
+[    3.124230] Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+[    3.124230] 
+[    3.133401] SMP: stopping secondary CPUs
+[    3.137342] Kernel Offset: disabled
+[    3.140843] CPU features: 0x1802000
+[    3.144344] Memory Limit: none
+[    3.147412] ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+#+END_EXAMPLE
+
+
+* Unbrick
+
+Read: http://wiki.macchiatobin.net/tiki-index.php?page=Boot+from+removable+storage+-+Ubuntu
+
+Interrupt U-boot, and get console "Marvell>>".
+
+#+BEGIN_EXAMPLE
+ Hit any key to stop autoboot:  0
+ Marvell>>
+
+ Marvell>> mmc dev 1
+ switch to partitions #0, OK
+ mmc1 is current device
+#+END_EXAMPLE
+
+The wiki differs here... I needed to use "1:2" and not "1:1".
+
+#+BEGIN_EXAMPLE
+Marvell>> ext4ls mmc 1:2 /
+<DIR>       4096 .
+<DIR>       4096 ..
+<DIR>      16384 lost+found
+[...]
+
+Marvell>> ext4ls mmc 1:2 /boot
+<DIR>       4096 .
+<DIR>       4096 ..
+        16816640 Image
+           30574 armada-8040-mcbin.dtb
+           36904 armada-8040-mcbin.dtb.orig
+        12783616 Image.orig
+#+END_EXAMPLE
+
+Original:
+
+#+BEGIN_EXAMPLE
+printenv bootmmc
+bootmmc=mmc dev 1; ext4load mmc 1:2 $kernel_addr $image_name;ext4load mmc 1:2 $fdt_addr $fdt_name;setenv bootargs $console root=/dev/mmcblk1p2 rw rootwait; booti $kernel_addr - $fdt_addr
+#+END_EXAMPLE
+
+Create special boot cmd for the .orig kernel and dtb file.
+
+#+BEGIN_EXAMPLE
+setenv image_name_orig boot/Image.orig
+setenv fdt_name_orig boot/armada-8040-mcbin.dtb.orig
+setenv bootorig 'mmc dev 1; ext4load mmc 1:2 $kernel_addr $image_name_orig;ext4load mmc 1:2 $fdt_addr $fdt_name_orig;setenv bootargs $console root=/dev/mmcblk1p2 rw rootwait; booti $kernel_addr - $fdt_addr'
+
+saveenv
+
+Marvell>> saveenv
+Saving Environment to SPI Flash...
+SF: Detected w25q32bv with page size 256 Bytes, erase size 4 KiB, total 4 MiB
+Erasing SPI flash...Writing to SPI flash...done
+#+END_EXAMPLE
+
+Start this new boot command:
+
+#+BEGIN_EXAMPLE
+run bootorig
+#+END_EXAMPLE
