@@ -34,11 +34,6 @@ HW drivers: ixgbe, i40e, mlx5
 SW drivers: veth, tun (tuntap), virtio_net
 
 
-** Status: Supported XDP drivers
-
-Slide with overview of drivers
-
-
 * Issue: ndo_xdp_xmit bound to XDP_REDIRECT
 
 Driver resources needed to handle a ndo_xdp_xmit() is currently tied
