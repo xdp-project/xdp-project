@@ -1,0 +1,215 @@
+# -*- fill-column: 79; -*-
+#+Title: MacchiatoBIN initial benchmarks and troubleshooting
+
+* Init benchmarks
+
+The initial benchmarks show something is wrong:
+
+#+BEGIN_EXAMPLE
+# Overhead  Command       Shared Object        Symbol                          
+# ........  ............  ...................  ................................
+#
+    18.52%  ksoftirqd/0   [kernel.kallsyms]    [k] ___bpf_prog_run
+    12.77%  ksoftirqd/0   [kernel.kallsyms]    [k] _raw_spin_unlock_irqrestore
+     9.86%  ksoftirqd/0   [kernel.kallsyms]    [k] memcpy
+     5.88%  ksoftirqd/0   [kernel.kallsyms]    [k] mvpp2_poll
+     5.22%  ksoftirqd/0   [kernel.kallsyms]    [k] netdev_alloc_frag
+     4.24%  ksoftirqd/0   [kernel.kallsyms]    [k] ipt_do_table
+     3.18%  ksoftirqd/0   [kernel.kallsyms]    [k] __ll_sc___cmpxchg_double
+#+END_EXAMPLE
+
+The pps performance is around 588 Kpps:
+
+#+BEGIN_EXAMPLE
+root@localhost:~# nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    587932             0.0
+IpExtInOctets                   27044596           0.0
+IpExtInNoECTPkts                587926             0.0
+#+END_EXAMPLE
+
+After some digging discover this is related to dhclient, loading an BPF filter
+(that is run via non-JIT).
+
+#+BEGIN_SRC bash
+# ps auxwww | grep /sbin/dhclient
+root      2802  0.0  0.0   5180  2064 ?        Ss   13:09   0:00 /sbin/dhclient -1 -v -pf /run/dhclient.eth2.pid -lf /var/lib/dhcp/dhclient.eth2.leases -I -df /var/lib/dhcp/dhclient6.eth2.leases eth2
+root      2919  0.0  0.0   5180  2460 ?        Ss   13:14   0:00 /sbin/dhclient -1 -v -pf /run/dhclient.eth1.pid -lf /var/lib/dhcp/dhclient.eth1.leases -I -df /var/lib/dhcp/dhclient6.eth1.leases eth1
+root      2960  0.0  0.0   5180  1972 ?        Ss   13:14   0:00 /sbin/dhclient -1 -v -pf /run/dhclient.eth0.pid -lf /var/lib/dhcp/dhclient.eth0.leases -I -df /var/lib/dhcp/dhclient6.eth0.leases eth0
+
+root@localhost:~# kill 2960
+root@localhost:~# nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    772614             0.0
+IpExtInOctets                   35540290           0.0
+IpExtInNoECTPkts                772615             0.0
+#+END_SRC
+
+Killing the dhclient on the test interface, result in performance increase to
+773 Kpps.
+
+* NIC to CPU scaling
+
+Only 1-CPU active
+
+Fix via:
+
+#+BEGIN_EXAMPLE
+ ethtool -K eth0 rxhash on
+ ethtool -X eth0 equal 4
+#+END_EXAMPLE
+
+* netperf initial test
+
+** Localhost performance with netperf
+
+netperf TCP_RR localhost:  35,591 Trans/sec
+
+#+BEGIN_EXAMPLE
+# ./netperf -l 10 127.0.0.1 -t TCP_RR
+MIGRATED TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to localhost () port 0 AF_INET : first burst 0
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
+
+16384  131072 1        1       10.00    35591.53   
+16384  131072
+#+END_EXAMPLE
+
+netperf TCP_STREAM localhost: 18.4 Gbit/s
+
+#+BEGIN_EXAMPLE
+# ./netperf -l 10 127.0.0.1 -t TCP_STREAM
+MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to localhost () port 0 AF_INET
+Recv   Send    Send                          
+Socket Socket  Message  Elapsed              
+Size   Size    Size     Time     Throughput  
+bytes  bytes   bytes    secs.    10^6bits/sec  
+
+131072  16384  16384    10.00    18458.83   
+#+END_EXAMPLE
+
+
+** netperf from firesoul via ixgbe1
+
+netperf TCP_RR from-remote-host:  8,064 Trans/sec
+
+#+BEGIN_EXAMPLE
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
+
+16384  87380  1        1       10.00    8064.82   
+16384  131072
+#+END_EXAMPLE
+
+netperf TCP_STREAM from-remote-host: 4.7Gbit/s
+
+#+BEGIN_EXAMPLE
+Recv   Send    Send                          
+Socket Socket  Message  Elapsed              
+Size   Size    Size     Time     Throughput  
+bytes  bytes   bytes    secs.    10^6bits/sec  
+
+131072  16384  16384    60.00    4696.04   
+#+END_EXAMPLE
+
+
+* Issue: Macchiatobin DMA overhead too large
+
+The overhead of the DMA operations are too large.  Perf investigations
+indicate that the DMA swiotlb code is using bounce buffers for this
+device, which should not be needed on this platform.
+
+** mvpp2 DMA code notes
+
+drivers/net/ethernet/marvell/mvpp2/
+
+#+BEGIN_SRC C
+ err = dma_set_mask(&pdev->dev, MVPP2_DESC_DMA_MASK);
+ #define MVPP2_DESC_DMA_MASK  DMA_BIT_MASK(40)
+#+END_SRC
+
+#+BEGIN_SRC C
+#ifdef CONFIG_ARCH_HAS_PHYS_TO_DMA
+static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
+{
+	if (!dev->dma_mask)
+		return false;
+
+	return addr + size - 1 <= *dev->dma_mask;
+}
+#endif
+#+END_SRC
+
+#+BEGIN_SRC bash
+$ grep CONFIG_ARCH_HAS_PHYS_TO_DMA .config
+NOTHING
+#+END_SRC
+
+Arm64 goes through here: arch/arm64/mm/dma-mapping.c
+
+#+BEGIN_SRC bash
+ $ gg __swiotlb_unmap_page
+ arch/arm64/mm/dma-mapping.c:static void __swiotlb_unmap_page(struct device *dev, dma_addr_t dev_addr,
+ arch/arm64/mm/dma-mapping.c:    .unmap_page = __swiotlb_unmap_page,
+#+END_SRC
+
+** DMA works with 4.4.52-armada-17.10.3-g6adee55
+
+It seems the DMA overhead does not exist with the SolidRun kernel
+4.4.52-armada-17.10.3-g6adee55.
+
+#+BEGIN_EXAMPLE
+ softirqd/0     3 [000]   232.996180:     399703 cycles:ppp: 
+        ffffffc00044012c swiotlb_unmap_page ([kernel.kallsyms])
+        ffffffc000093678 __swiotlb_unmap_page ([kernel.kallsyms])
+        ffffffc0004a7b90 mv_pp2x_rx ([kernel.kallsyms])
+        ffffffc0004a86bc mv_pp22_poll ([kernel.kallsyms])
+        ffffffc0007aa468 net_rx_action ([kernel.kallsyms])
+        ffffffc0000ba43c __do_softirq ([kernel.kallsyms])
+        ffffffc0000ba594 run_ksoftirqd ([kernel.kallsyms])
+        ffffffc0000d577c smpboot_thread_fn ([kernel.kallsyms])
+        ffffffc0000d245c kthread ([kernel.kallsyms])
+        ffffffc000085dd0 ret_from_fork ([kernel.kallsyms])
+#+END_EXAMPLE
+
+** Found DMA issue
+
+The memory getting allocated for RX buffers were above 40-bit.  Thus,
+the (steaming) DMA mapping is forced to go through bounce-buffers.
+
+Work-around by setting GFP_DMA32 flag:
+
+#+BEGIN_SRC diff
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index b4ee5c8b928f..87daf0e270a8 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -353,7 +353,7 @@ static void *__netdev_alloc_frag(unsigned int fragsz, gfp_t gfp_mask)
+  */
+ void *netdev_alloc_frag(unsigned int fragsz)
+ {
+-       return __netdev_alloc_frag(fragsz, GFP_ATOMIC);
++       return __netdev_alloc_frag(fragsz, GFP_ATOMIC | GFP_DMA32);
+ }
+ EXPORT_SYMBOL(netdev_alloc_frag);
+#+END_SRC
+
+The performance increase is large:
+
+#+BEGIN_SRC bash
+ # nstat -n && sleep 1 && nstat
+ #kernel
+ IpInReceives                    1142041            0.0
+ IpExtInOctets                   52533932           0.0
+ IpExtInNoECTPkts                1142042            0.0
+#+END_SRC
+
+Benchmark after work-around with GFP_DMA32:
+ - Before: 772,614 pps
+ - Now:  1,142,041 pps
+ - 1142041/772614 = 1.478 => approx 48% improvement
+
