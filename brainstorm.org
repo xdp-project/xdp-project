@@ -18,36 +18,7 @@ I need this when testing veth, which now got native-XDP.
 
 * XDP on ARM-boards
 
-XDP does in principle work on ARM
- - Drivers: cavium/thunderx
- - But upstream XDP developers don't have HW to test/improve
-
-Looking at different ARM boards and NIC drivers:
-
-** Driver: mvpp2
-
-(mvpp2) Board: 2x10G MACCHIATObin (Quad 1.6GHz ARMADA A8040)
-   https://www.solid-run.com/marvell-armada-family/macchiatobin/
-
-** Driver: mvneta
-
-(mvneta) Board#1: ClearFog (ARMADA 38x SoC) from Marvell
- - single or dual core ARMv7 (Cortex A9) @ up to 1.6 GHz with 1MB L2 cache
- https://www.solid-run.com/marvell-armada-family/clearfog/
- https://blog.hypriot.com/post/introducing-the-clearfog-pro-router-board/
- https://blog.hypriot.com/post/clearfog-pro-part-2-lets-run-docker/
-
-(mvneta) Board#2: Marvell Armada 3700LP (88F3720)
- - dual core ARM Cortex A53 processor up to 1.2GHz
- http://espressobin.net/tech-spec/
-
-(mvneta) Board#3: OpenBlocks AX3
- http://wtarreau.blogspot.com/2013/12/line-rate-http-server-on-openblocks-ax3.html
-
-** ARM work cooperating with
-
- - Ilias Apalodimas <ilias.apalodimas@linaro.org>
- - Willy Tarreau <w@1wt.eu>
+See [[file:areas/arm64/README.org]]
 
 * Crazy-idea: XDP-redirect re-handle about-to-be-dropped packets
 

@@ -1,0 +1,38 @@
+# -*- fill-column: 79; -*-
+#+TITLE: Finding ARM64 hardware for XDP project
+
+XDP does in principle work on ARM
+ - Drivers: cavium/thunderx
+ - But upstream XDP developers don't have HW to test/improve
+
+XDP is centered around support in the NIC driver.  Thus, this search for
+suitable ARM64 developement boards, order the document after the NIC driver and
+finds boards that have the NIC hardware corresponding to the driver.
+
+NIC drivers and corresponding ARM64 boards:
+
+* Driver: mvneta
+
+(mvneta) Board#1: *ClearFog*
+ - (ARMADA 38x SoC) from Marvell
+ - single or dual core ARMv7 (Cortex A9) @ up to 1.6 GHz with 1MB L2 cache
+ - https://www.solid-run.com/marvell-armada-family/clearfog/
+ - https://blog.hypriot.com/post/introducing-the-clearfog-pro-router-board/
+ - https://blog.hypriot.com/post/clearfog-pro-part-2-lets-run-docker/
+
+(mvneta) Board#2: *Espressobin*
+ - Marvell Armada 3700LP (88F3720)
+ - dual core ARM Cortex A53 processor up to 1.2GHz
+ - http://espressobin.net/tech-spec/
+
+(mvneta) Board#3: *OpenBlocks AX3*
+ - http://wtarreau.blogspot.com/2013/12/line-rate-http-server-on-openblocks-ax3.html
+
+(mvneta) Board#4: *Turris Omnia*
+ - https://omnia.turris.cz/en/
+
+* Driver: mvpp2
+
+(mvpp2) Board: 2x10G MACCHIATObin (Quad 1.6GHz ARMADA A8040)
+ - https://www.solid-run.com/marvell-armada-family/macchiatobin/
+

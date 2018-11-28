@@ -1,0 +1,10 @@
+#+TITLE: XDP for ARM devel and benchmarks notes
+
+This directory contains notes written while developing XDP support for
+different ARM64 boards.
+
+* Collaborators
+
+ARM64 work cooperating with:
+ - Ilias Apalodimas <ilias.apalodimas@linaro.org>
+ - Willy Tarreau <w@1wt.eu>
