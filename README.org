@@ -2,5 +2,5 @@
 #+TITLE: The XDP collaboration project
 
 This git repository is a *work-in-progress* workspace for collaborating on the
-XDP project.  It provides en easy and git-diff trackable way to share notes,
+XDP project.  It provides an easy and git-diff trackable way to share notes,
 benchmarks and work-in-progress items.
