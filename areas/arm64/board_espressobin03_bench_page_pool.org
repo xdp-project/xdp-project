@@ -1,0 +1,155 @@
+#+Title: Benchmarks for branch mvneta_03_page_pool_recycle
+
+Benchmark investigations and experiments on git branch
+mvneta_03_page_pool_recycle located here:
+ - https://github.com/apalos/bpf-next/commits/mvneta_03_page_pool_recycle
+
+This doc describe some experiments done on top of mentioned branch,
+which change driver mvneta to use page_pool and 1-page-per RX-frame.
+Plus adding a recycle hook in netstack-core in =skb_free_head()= which
+gets called by =__kfree_skb()=.
+
+This netstack/SKB callback hook is one of the mentioned solutions in:
+ - [[file:../mem/page_pool01_evolving_API.org]]
+
+* Patch desc notes
+
+For branch mvneta_03_page_pool_recycle
+
+** Patch desc: net: core: add recycle capabilities on skbs via page_pool API
+
+net: core: add recycle capabilities on skbs via page_pool API
+
+This patch is changing struct sk_buff, and is thus per-definition
+controversial upstream.
+
+TODO: Argue why the placement of xdp_mem_info is correct, and
+argue how handling of SKB cloning is still correct.
+
+IDEA: We could change/extend xdp_mem_info with 8-bit flags, that could
+contain/replace skb->head_frag and skb->pfmemalloc.  This likely
+require another patch to be reviewable.
+
+* Experiments while testing
+
+** Remove wrong prefetch in mvneta_rx_swbm
+
+Before (with wrong prefetch):
+ - 2195983      cache-misses #    0.854 % of all cache refs
+
+#+BEGIN_EXAMPLE
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+  569786261  instructions    #    0.57  insn per cycle           ( +-  0.00% )
+ 1003904562  cycles                                              ( +-  0.00% )
+  250976363  bus-cycles                                          ( +-  0.00% )
+    2195983  cache-misses    #    0.854 % of all cache refs      ( +-  0.02% )
+  257083692  cache-references                                    ( +-  0.00% )
+   59939555  branches                                            ( +-  0.00% )
+    4179109  branch-misses   #    6.97% of all branches          ( +-  0.04% )
+#+END_EXAMPLE
+
+After removing prefetch:
+ - 1354464      cache-misses #    0.520 % of all cache refs
+ -  841519 (2195983-1354464) less cache-misses
+
+#+BEGIN_EXAMPLE
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+  576645517  instructions    #    0.57  insn per cycle           ( +-  0.13% )
+ 1003882263  cycles                                              ( +-  0.00% )
+  250970714  bus-cycles                                          ( +-  0.00% )
+    1354464  cache-misses    #    0.520 % of all cache refs      ( +-  0.13% )
+  260314221  cache-references                                    ( +-  0.13% )
+   60712134  branches                                            ( +-  0.13% )
+    4310594  branch-misses   #    7.10% of all branches          ( +-  0.78% )
+
+  1.0040368 +- 0.0000266 seconds time elapsed  ( +-  0.00% )
+#+END_EXAMPLE
+
+Adding prefetch after dma_sync, seem to be bad:
+ - 2122745      cache-misses              #    0.816 % of all cache refs
+
+#+BEGIN_EXAMPLE
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+         575902276      instructions              #    0.57  insn per cycle           ( +-  0.01% )
+        1003959366      cycles                                                        ( +-  0.00% )
+         250981924      bus-cycles                                                    ( +-  0.01% )
+           2122745      cache-misses              #    0.816 % of all cache refs      ( +-  0.07% )
+         260062100      cache-references                                              ( +-  0.01% )
+          60362006      branches                                                      ( +-  0.01% )
+           4241670      branch-misses             #    7.03% of all branches          ( +-  0.01% )
+
+         1.0041323 +- 0.0000282 seconds time elapsed  ( +-  0.00% )
+#+END_EXAMPLE
+
+** Instruction cache misses
+
+It is very alarming that the L1-icache-load-misses is so high!
+
+#+BEGIN_EXAMPLE
+perf stat -C0 -r 3 -e L1-icache-load -e L1-icache-load-misses \
+                   -e L1-dcache-loads -e L1-dcache-load-misses \
+		   -e L1-dcache-stores -e L1-dcache-store-misses \
+		   sleep 1
+
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+         425783707      L1-icache-load                                                ( +-  0.15% )
+          10713567      L1-icache-load-misses     #    2.52% of all L1-icache hits    ( +-  1.03% )
+         258114938      L1-dcache-loads                                               ( +-  0.16% )
+           1374091      L1-dcache-load-misses     #    0.53% of all L1-dcache hits    ( +-  0.27% )
+         258115686      L1-dcache-stores                                              ( +-  0.16% )
+           1374112      L1-dcache-store-misses                                        ( +-  0.27% )
+
+         1.0040808 +- 0.0000513 seconds time elapsed  ( +-  0.01% )
+
+Show adapter(s) (wan) statistics (ONLY that changed!)
+Ethtool(wan     ) stat:      1227002 (      1,227,002) <= hist_64bytes /sec
+Ethtool(wan     ) stat:      1227002 (      1,227,002) <= in_accepted /sec
+Ethtool(wan     ) stat:      1227002 (      1,227,002) <= in_da_unknown /sec
+Ethtool(wan     ) stat:     80529040 (     80,529,040) <= in_good_octets /sec
+Ethtool(wan     ) stat:      1227002 (      1,227,002) <= in_unicast /sec
+Ethtool(wan     ) stat:     11454740 (     11,454,740) <= rx_bytes /sec
+Ethtool(wan     ) stat:       249016 (        249,016) <= rx_packets /sec
+#+END_EXAMPLE
+
+** kfree_skb instead of napi_gro_receive
+
+A quick test to estimate HW early drop speeds, is to simply replace
+driver call to napi_gro_receive() with kfree_skb().
+
+This early drop test show 519Kpps.
+
+#+BEGIN_EXAMPLE
+$ sar -n DEV 2 100
+Average:        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s    %ifutil
+Average:         eth0 519360.00      0.50  34488.75      0.02      28.25
+Average:        bond0      0.00      0.00      0.00      0.00       0.00
+Average:           lo      0.50      0.50      0.04      0.04       0.00
+Average:          wan      0.00      0.00      0.00      0.00       0.00
+Average:         lan0      0.00      0.50      0.00      0.02       0.00
+Average:         lan1      0.00      0.00      0.00      0.00       0.00
+#+END_EXAMPLE
+
+This also reduce I-cache usage significantly.
+
+#+BEGIN_EXAMPLE
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+         271648034      L1-icache-load                                                ( +-  0.00% )
+            352879      L1-icache-load-misses     #    0.13% of all L1-icache hits    ( +-  0.36% )
+         187930437      L1-dcache-loads                                               ( +-  0.01% )
+           1327673      L1-dcache-load-misses     #    0.71% of all L1-dcache hits    ( +-  0.08% )
+         187930908      L1-dcache-stores                                              ( +-  0.01% )
+           1327679      L1-dcache-store-misses                                        ( +-  0.08% )
+
+         1.0040270 +- 0.0000299 seconds time elapsed  ( +-  0.00% )
+#+END_EXAMPLE
+
+
+** Use netif_receive_skb_list
+
+TODO: Test if using netif_receive_skb_list() helps performance.
+As that is also an I-cache optimization.
