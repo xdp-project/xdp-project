@@ -10,7 +10,9 @@ Closer look at other drivers.
 
  - ixgbe driver is doing the right thing.
 
- - i40e have a bug, where RX/TX stats are swapped (strange!).
+ - i40e had a bug, where RX/TX stats are swapped (fixed in
+   commit [[https://git.kernel.org/torvalds/c/cdec2141c24e][cdec2141c24e(v4.20-rc1)]]
+   ("i40e: report correct statistics when XDP is enabled")).
 
  - mlx5 driver is not updating the regular RX/TX counters, but A LOT
    of other ethtool stats counters (which are the ones I usually
