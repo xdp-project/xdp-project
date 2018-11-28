@@ -2,6 +2,9 @@
 
 * Issue: Missing update of ifconfig counters
 
+Progress: @dsahern (David Ahern) have started an email thread on the
+subject: [[https://www.spinics.net/lists/netdev/msg535239.html][consistency for statistics with XDP mode]]
+
 Some drivers are not updating the "ifconfig" stats counters,
 when in XDP mode.  This makes receive or send via XDP invisible to
 sysadm/management tools.  This for-sure is going to cause confusion.
