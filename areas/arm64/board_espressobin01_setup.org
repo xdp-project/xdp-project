@@ -1,4 +1,7 @@
-#+Title: Setup espressobin
+#+Title: Setup notes for board espressobin
+
+The Espressobin board homepage:
+ - http://espressobin.net/tech-spec/
 
 * NIC driver
 
