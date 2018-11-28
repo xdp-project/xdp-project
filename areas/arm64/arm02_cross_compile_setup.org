@@ -1,0 +1,36 @@
+# -*- fill-column: 79; -*-
+#+Title: Setup ARM cross compile on build server
+
+Notes on howto get cross compiler working for ARM64.
+
+Goal: Need/want to get an upstream kernel running on my ARM64-bit hardware.
+
+* Getting pre-compiled cross compiler
+
+Linaro provides this:
+https://releases.linaro.org/components/toolchain/binaries/latest-7/aarch64-linux-gnu/
+
+Download this one:
+ https://releases.linaro.org/components/toolchain/binaries/latest-7/aarch64-linux-gnu/gcc-linaro-7.3.1-2018.05-x86_64_aarch64-linux-gnu.tar.xz
+
+Untar it on some directory e.g. =/home/${USER}/cross-compilers/=
+
+* Compile
+
+Got compile script from @apalos : https://pastebin.com/AK9Wbav5
+
+Default config amd basic compile cmd:
+ =make ARCH=arm64 defconfig=
+
+#+BEGIN_SRC bash
+export VERSION=gcc-linaro-7.3.1-2018.05-x86_64_aarch64-linux-gnu
+export CROSS_COMPILE="/home/${USER}/cross-compilers/${VERSION}/bin/aarch64-linux-gnu-"
+
+make ARCH=arm64 CROSS_COMPILE=$CROSS_COMPILE
+#+END_SRC
+
+Created script: compile_kernel_arm64.sh
+ - https://github.com/netoptimizer/prototype-kernel/blob/master/scripts/kernel_arm64_push.sh
+
+Also created script to push kernel to remove host:
+ - https://github.com/netoptimizer/prototype-kernel/blob/master/scripts/kernel_arm64_push.sh
