@@ -1,0 +1,108 @@
+# -*- fill-column: 79; -*-
+#+Title: Benchmarks for branch mvneta_04_page_pool_xdp
+
+Benchmark investigations and experiments on git branch
+mvneta_04_page_pool_recycle_xdp located here:
+ - https://github.com/apalos/bpf-next/commits/mvneta_04_page_pool_recycle_xdp
+
+* XDP_DROP bench with xdp1
+
+#+BEGIN_EXAMPLE
+root@espressobin:~/samples/bpf# ./xdp1 3 &
+proto 0:     660053 pkt/s
+proto 0:     660147 pkt/s
+proto 0:     658249 pkt/s
+proto 0:     659691 pkt/s
+
+/root/bin/perf stat -C0 -r 3 -e L1-icache-load -e L1-icache-load-misses \
+                   -e L1-dcache-loads -e L1-dcache-load-misses \
+		   -e L1-dcache-stores -e L1-dcache-store-misses \
+		   sleep 1
+
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+  201678946  L1-icache-load                                       ( +-  0.01% )
+     523274  L1-icache-load-misses  # 0.26% of all L1-icache hits ( +-  0.20% )
+  120263097  L1-dcache-loads                                      ( +-  0.01% )
+    2112043  L1-dcache-load-misses  # 1.76% of all L1-dcache hits ( +-  0.20% )
+  120263364  L1-dcache-stores                                     ( +-  0.01% )
+    2112046  L1-dcache-store-misses                               ( +-  0.20% )
+
+/root/bin/perf stat -C0 -r 3 -e instructions -e cycles -e bus-cycles \
+  -e cache-misses -e cache-references -e branches -e branch-misses sleep 1
+
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+         324082590      instructions              #    0.32  insn per cycle           ( +-  0.01% )
+        1003857272      cycles                                                        ( +-  0.00% )
+         250964427      bus-cycles                                                    ( +-  0.00% )
+           2105450      cache-misses              #    1.744 % of all cache refs      ( +-  0.11% )
+         120754222      cache-references                                              ( +-  0.02% )
+          31402039      branches                                                      ( +-  0.02% )
+            936484      branch-misses             #    2.98% of all branches          ( +-  0.25% )
+
+#+END_EXAMPLE
+
+** XDP_DROP remove prefetch of data
+
+The amount of cache-misses are too high, remove the prefetch on packet data:
+
+#+BEGIN_SRC diff
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index b37264750090..3b1624959b89 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -2051,7 +2051,7 @@ static int mvneta_rx_swbm(struct napi_struct *napi,
+                                                      rx_bytes,
+                                                      DMA_FROM_DEVICE);
+                        /* Prefetch header */
+-                       prefetch(data);
++                       // prefetch(data); // perf show issue here
+ 
+                        rx_desc->buf_phys_addr = 0;
+                        xdp.data_hard_start = data;
+#+END_SRC
+
+Perf stat data *after* removing prefetch:
+
+Shows cache-misses reduced
+ * before 2,105,450
+ * after    950,486
+ * reduction: 1,154,964
+ * 1154964 / 660053 pps = 1.7498 cache-miss per packet reduction
+ * Indication that prefetch tries to prefetch more than one cache-line
+
+#+BEGIN_EXAMPLE
+root@espressobin:~/samples/bpf# ./xdp1 3 &
+proto 0:     666439 pkt/s
+proto 0:     667531 pkt/s
+proto 0:     668113 pkt/s
+proto 0:     668110 pkt/s
+
+ # export PATH=/root/bin:$PATH
+ # perf stat -C0 -r 3 -e L1-icache-load -e L1-icache-load-misses -e L1-dcache-loads -e L1-dcache-load-misses -e L1-dcache-stores -e L1-dcache-store-misses sleep 1
+
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+  204788837  L1-icache-load                                      ( +-  0.02% )
+     482820  L1-icache-load-misses # 0.24% of all L1-icache hits ( +-  0.34% )
+  121029887  L1-dcache-loads                                     ( +-  0.01% )
+     950486  L1-dcache-load-misses # 0.79% of all L1-dcache hits ( +-  0.07% )
+  121027251  L1-dcache-stores                                    ( +-  0.01% )
+     950480  L1-dcache-store-misses                              ( +-  0.07% )
+
+  1.0039657 +- 0.0000370 seconds time elapsed  ( +-  0.00% )
+
+# /root/bin/perf stat -C0 -r 3 -e instructions -e cycles -e bus-cycles -e cache-misses -e cache-references -e branches -e branch-misses sleep 1
+
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+  326643916  instructions    #    0.33  insn per cycle           ( +-  0.02% )
+ 1003829805  cycles                                              ( +-  0.00% )
+  250957824  bus-cycles                                          ( +-  0.00% )
+     952515  cache-misses    #    0.787 % of all cache refs      ( +-  0.15% )
+  121039240  cache-references                                    ( +-  0.02% )
+   31649922  branches                                            ( +-  0.02% )
+     939670  branch-misses   #    2.97% of all branches          ( +-  0.07% )
+
+#+END_EXAMPLE
