@@ -33,13 +33,13 @@ proto 0:     659691 pkt/s
 
  Performance counter stats for 'CPU(s) 0' (3 runs):
 
-         324082590      instructions              #    0.32  insn per cycle           ( +-  0.01% )
-        1003857272      cycles                                                        ( +-  0.00% )
-         250964427      bus-cycles                                                    ( +-  0.00% )
-           2105450      cache-misses              #    1.744 % of all cache refs      ( +-  0.11% )
-         120754222      cache-references                                              ( +-  0.02% )
-          31402039      branches                                                      ( +-  0.02% )
-            936484      branch-misses             #    2.98% of all branches          ( +-  0.25% )
+  324082590  instructions     #    0.32  insn per cycle           ( +-  0.01% )
+ 1003857272  cycles                                               ( +-  0.00% )
+  250964427  bus-cycles                                           ( +-  0.00% )
+    2105450  cache-misses     #    1.744 % of all cache refs      ( +-  0.11% )
+  120754222  cache-references                                     ( +-  0.02% )
+   31402039  branches                                             ( +-  0.02% )
+     936484  branch-misses    #    2.98% of all branches          ( +-  0.25% )
 
 #+END_EXAMPLE
 
@@ -106,3 +106,35 @@ proto 0:     668110 pkt/s
      939670  branch-misses   #    2.97% of all branches          ( +-  0.07% )
 
 #+END_EXAMPLE
+
+* Testing ideas
+
+** TODO recompile with out RCU/preempt
+
+Did some branch-miss profiling, and it shows branch-misses in RCU
+read-side.  Plus the calls to RCU-read-side also consume I-cache.
+Thus, experiment with compiling kernel without preempt as that
+basically removed the need for RCU-read-side code.
+
+CONFIG_PREEMPT_NONE: No Forced Preemption (Server):
+
+#+BEGIN_EXAMPLE
+No Forced Preemption (Server)
+CONFIG_PREEMPT_NONE:                                                │
+  │                                                                 │
+  │ This is the traditional Linux preemption model, geared towards  │
+  │ throughput. It will still provide good latencies most of the    │
+  │ time, but there are no guarantees and occasional longer delays  │
+  │ are possible.                                                   │
+  │                                                                 │
+  │ Select this option if you are building a kernel for a server or │
+  │ scientific/computation system, or if you want to maximize the   │
+  │ raw processing power of the kernel, irrespective of scheduling  │
+  │ latencies.
+
+ Prompt: No Forced Preemption (Server)          │
+  │   Location:                                 │
+  │     -> General setup                        │
+  │       -> Preemption Model (<choice> [=y])   │
+#+END_EXAMPLE
+
