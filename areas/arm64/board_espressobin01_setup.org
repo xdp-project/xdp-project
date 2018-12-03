@@ -68,6 +68,11 @@ http://wiki.espressobin.net/tiki-index.php?page=Boot+from+removable+storage+-+Ub
 
 * Board info in U-Boot
 
+After you press the reset key on your ESPRESSObin board, the system
+should reboot, and you see something like this via the serial console
+cable.
+
+Jesper's board:
 #+BEGIN_EXAMPLE
 U-Boot 2017.03-armada-17.10.2-g14aeedc (Jun 01 2018 - 15:39:10 +0800)
 
