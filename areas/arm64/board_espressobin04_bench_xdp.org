@@ -15,9 +15,9 @@ proto 0:     658249 pkt/s
 proto 0:     659691 pkt/s
 
 /root/bin/perf stat -C0 -r 3 -e L1-icache-load -e L1-icache-load-misses \
-                   -e L1-dcache-loads -e L1-dcache-load-misses \
-		   -e L1-dcache-stores -e L1-dcache-store-misses \
-		   sleep 1
+   -e L1-dcache-loads -e L1-dcache-load-misses \
+   -e L1-dcache-stores -e L1-dcache-store-misses \
+   sleep 1
 
  Performance counter stats for 'CPU(s) 0' (3 runs):
 
@@ -248,3 +248,54 @@ proto 0:     693651 pkt/s
 From the 10836 NET_RX/s we can calculate the NAPI poll budget getting
 used, here: 693651 / 10836 = 64.01 packets.  This is spot on for the
 expected NAPI poll budget of 64.
+
+** Test: Comment out code in mvneta_rx_swbm
+
+The main NAPI poll RX funtion in driver mvneta mvneta_rx_swbm() have
+special handling of "Middle or Last descriptor" inside this main loop,
+which could cause I-cache issues.  Hack comment it out... and test.
+
+The code-size delta is 60 bytes in mvneta_poll:
+#+BEGIN_EXAMPLE
+$ ./scripts/bloat-o-meter vmlinux2 vmlinux
+add/remove: 0/3 grow/shrink: 0/1 up/down: 0/-84 (-84)
+Function                                     old     new   delta
+e843419@0975_0000d554_34                       8       -      -8
+e843419@0929_0000cd2d_1628                     8       -      -8
+e843419@087e_0000ba28_258                      8       -      -8
+mvneta_poll                                 3108    3048     -60
+Total: Before=15472523, After=15472439, chg -0.00%
+#+END_EXAMPLE
+
+Testing with xdp1/XDP_DROP on eth0.
+
+Before: 696194 pkt/s
+#+BEGIN_EXAMPLE
+perf stat -C0 -r 3 -e L1-icache-load -e L1-icache-load-misses -e L1-dcache-loads -e L1-dcache-load-misses -e L1-dcache-stores -e L1-dcache-store-misses sleep 1
+
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+         187683394      L1-icache-load                                                ( +-  0.04% )
+            506294      L1-icache-load-misses     #    0.27% of all L1-icache hits    ( +-  1.11% )
+         114865063      L1-dcache-loads                                               ( +-  0.03% )
+           1013416      L1-dcache-load-misses     #    0.88% of all L1-dcache hits    ( +-  0.13% )
+         114865277      L1-dcache-stores                                              ( +-  0.03% )
+           1013417      L1-dcache-store-misses                                        ( +-  0.13% )
+#+END_EXAMPLE
+
+After: 692034 pkt/s
+#+BEGIN_EXAMPLE
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+         186047636      L1-icache-load                                                ( +-  0.06% )
+            435807      L1-icache-load-misses     #    0.23% of all L1-icache hits    ( +-  0.78% )
+         113598029      L1-dcache-loads                                               ( +-  0.04% )
+           1264343      L1-dcache-load-misses     #    1.11% of all L1-dcache hits    ( +-  0.71% )
+         113598235      L1-dcache-stores                                              ( +-  0.04% )
+           1264346      L1-dcache-store-misses                                        ( +-  0.71% )
+#+END_EXAMPLE
+
+Strange results, as PPS is slightly worse (692034-696194 = -4160 pps),
+but the L1-icache-load-misses, are improved (435807-506294 = -70487
+I-cache-misses).
+
