@@ -1,0 +1,89 @@
+#+Title: Benchmarks for branch mvneta_04_page_pool_recycle_xdp
+
+Benchmark investigations and experiments on git branch
+mvneta_04_page_pool_recycle_xdp located here:
+ - https://github.com/apalos/bpf-next/tree/mvneta_04_page_pool_recycle_xdp
+
+This doc describes some experiments done on top of mentioned branch.
+This branch is based on mvneta_03_page_pool_recycle.
+Details on the page pool recycle results can be found here:
+ - [[file:board_espressobin03_bench_page_pool.org]]
+
+* Patch desc notes
+
+For branch mvneta_04_page_pool_recycle_xdp
+All patches from mvneta_03_page_pool_recycle are included
+
+** Patch desc: net: mvneta: Add basic XDP support
+
+Adds basic XDP support (only XDP_DROP/XDP_REDIRECT)
+
+TODO: This is still incomplete for upstream, since there's no
+XDP_TX or ndo_xdp_xmit support.
+
+This patch also moves the bogus prefetch() to be executed
+after the dma_sync calls
+
+* Testing
+
+** XDP_DROP, net.core.bpf_jit_enable=0, 64b packets
+pps: 389660 pkt/s
+
+#+BEGIN_EXAMPLE
+xdp1 `cat /sys/class/net/eth0/ifindex` &
+perf stat -C0 -r3 sleep 1
+
+Performance counter stats for 'CPU(s) 0' (3 runs):
+
+           1005.47 msec cpu-clock                 #    1.000 CPUs utilized            ( +-  0.00% )
+               274      context-switches          #  272.968 M/sec                    ( +-  1.89% )
+                 0      cpu-migrations            #    0.000 K/sec
+                 0      page-faults               #    0.000 K/sec
+         800838872      cycles                    # 796854.599 GHz                    ( +-  0.00% )
+         354067461      instructions              #    0.44  insn per cycle           ( +-  0.01% )
+          36061456      branches                  # 35882046.103 M/sec                ( +-  0.01% )
+           1114089      branch-misses             #    3.09% of all branches          ( +-  0.46% )
+
+         1.0056889 +- 0.0000422 seconds time elapsed  ( +-  0.00% )
+#+END_EXAMPLE
+
+** XDP_DROP, net.core.bpf_jit_enable=1, 64b packets
+pps: 514312 pkt/s
+
+#+BEGIN_EXAMPLE
+xdp1 `cat /sys/class/net/eth0/ifindex` &
+perf stat -C0 -r3 sleep 1
+
+Performance counter stats for 'CPU(s) 0' (3 runs):
+
+           1005.60 msec cpu-clock                 #    1.000 CPUs utilized            ( +-  0.01% )
+               260      context-switches          #  259.038 M/sec                    ( +-  2.11% )
+                 0      cpu-migrations            #    0.000 K/sec
+                 3      page-faults               #    2.985 M/sec                    ( +-100.00% )
+         800937795      cycles                    # 796953.030 GHz                    ( +-  0.01% )
+         312413374      instructions              #    0.39  insn per cycle           ( +-  0.02% )
+          30277527      branches                  # 30126892.537 M/sec                ( +-  0.03% )
+            922725      branch-misses             #    3.05% of all branches          ( +-  0.06% )
+
+          1.005799 +- 0.000128 seconds time elapsed  ( +-  0.01% )
+#+END_EXAMPLE
+
+** XDP_DROP, net.core.bpf_jit_enable=1, 64b packet, Instruction cache misses
+
+#+BEGIN_EXAMPLE
+perf stat -C0 -r 3 -e L1-icache-load -e L1-icache-load-misses \
+                   -e L1-dcache-loads -e L1-dcache-load-misses \
+		   -e L1-dcache-stores -e L1-dcache-store-misses \
+		   sleep 1
+
+Performance counter stats for 'CPU(s) 0' (3 runs):
+
+         196802264      L1-icache-load                                                ( +-  0.04% )
+            843051      L1-icache-load-misses     #    0.43% of all L1-icache hits    ( +-  0.59% )
+         118669618      L1-dcache-loads                                               ( +-  0.05% )
+           1800140      L1-dcache-load-misses     #    1.52% of all L1-dcache hits    ( +-  0.27% )
+         118670252      L1-dcache-stores                                              ( +-  0.05% )
+           1800147      L1-dcache-store-misses                                        ( +-  0.27% )
+
+         1.0057090 +- 0.0000860 seconds time elapsed  ( +-  0.01% )
+#+END_EXAMPLE
