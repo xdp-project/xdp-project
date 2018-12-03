@@ -208,14 +208,20 @@ Perf stats performance for CONFIG_PREEMPT_NONE measurements:
 #+BEGIN_EXAMPLE
  Performance counter stats for 'CPU(s) 0' (3 runs):
 
-   311683229      instructions              #    0.31  insn per cycle           ( +-  0.00% )
-  1003777048      cycles                                                        ( +-  0.00% )
-   250944417      bus-cycles                                                    ( +-  0.00% )
-     1225570      cache-misses              #    1.074 % of all cache refs      ( +-  0.22% )
-   114109895      cache-references                                              ( +-  0.01% )
-    27106182      branches                                                      ( +-  0.02% )
-      226928      branch-misses             #    0.84% of all branches          ( +-  0.72% )
+   311683229  instructions     #    0.31  insn per cycle        ( +-  0.00% )
+  1003777048  cycles                                            ( +-  0.00% )
+   250944417  bus-cycles                                        ( +-  0.00% )
+     1225570  cache-misses     #    1.074 % of all cache refs   ( +-  0.22% )
+   114109895  cache-references                                  ( +-  0.01% )
+    27106182  branches                                          ( +-  0.02% )
+      226928  branch-misses    #    0.84% of all branches       ( +-  0.72% )
 #+END_EXAMPLE
+
+Analysis: The branch-misses were reduced significantly when recompiled
+with CONFIG_PREEMPT_NONE, which compiles out the RCU-read-side locks:
+ - Before: 31402039  branches  939670  branch-misses # 2.97% of all branches
+ - After:  27106182  branches  226928  branch-misses # 0.84% of all branches
+ - Diff:   -4295857  branches -712742  branch-misses
 
 Below output from mpstat to verify general system performance.
 
