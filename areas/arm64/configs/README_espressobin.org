@@ -1,0 +1,27 @@
+#+Title: Kernel config notes on espressobin
+
+* Options
+
+** Governors 
+Enabling these options or disabling governors in general gives us the best
+performance.
+	- CONFIG_ARM_ARMADA_37XX_CPUFREQ
+	- CONFIG_CPU_FREQ
+	- CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE
+
+Enabling any other governor like:
+	- CONFIG_CPU_FREQ_GOV_POWERSAVE
+	- CONFIG_CPU_FREQ_GOV_USERSPACE
+	- CONFIG_CPU_FREQ_GOV_ONDEMAND
+	- CONFIG_CPU_FREQ_GOV_CONSERVATIVE
+	- CONFIG_CPU_FREQ_GOV_SCHEDUTIL
+
+and enabling it's configuration will likely lead to a raw performance drop.
+
+
+** DSA
+Enabling CONFIG_NET_DSA=y will provide 3 network interfaces lan0, lan1 and wan,
+as well as a master DSA interface eth0. All XDP tests must run for eth0 since 
+XDP is designed to run on hardware devices.
+
+Disabling this option will only provide a single eth0 interface.
