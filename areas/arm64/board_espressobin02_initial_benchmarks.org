@@ -1,5 +1,28 @@
 #+Title: Espressobin initial benchmarks
 
+* Hardware
+
+#+BEGIN_EXAMPLE
+root@espressobin:~# lscpu
+Architecture:        aarch64
+Byte Order:          Little Endian
+CPU(s):              2
+On-line CPU(s) list: 0,1
+Thread(s) per core:  1
+Core(s) per socket:  2
+Socket(s):           1
+NUMA node(s):        1
+Vendor ID:           ARM
+Model:               4
+Model name:          Cortex-A53
+Stepping:            r0p4
+CPU max MHz:         1000.0000
+CPU min MHz:         200.0000
+BogoMIPS:            25.00
+NUMA node0 CPU(s):   0,1
+Flags:               fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid
+#+END_EXAMPLE
+
 * Baseline benchmark HW
 
 Performance baseline when dropping packets as early as possible with
