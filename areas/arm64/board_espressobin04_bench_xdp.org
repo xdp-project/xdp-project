@@ -182,14 +182,22 @@ Perf stats performance for CONFIG_PREEMPT_NONE measurements, L1 cache:
 #+BEGIN_EXAMPLE
  Performance counter stats for 'CPU(s) 0' (3 runs):
 
-  186193917      L1-icache-load                                                ( +-  0.02% )
-     423491      L1-icache-load-misses     #    0.23% of all L1-icache hits    ( +-  0.33% )
-  114063063      L1-dcache-loads                                               ( +-  0.02% )
-    1222909      L1-dcache-load-misses     #    1.07% of all L1-dcache hits    ( +-  0.09% )
-  114063101      L1-dcache-stores                                              ( +-  0.02% )
-    1222908      L1-dcache-store-misses                                        ( +-  0.09% )
+  186193917  L1-icache-load                                      ( +-  0.02% )
+     423491  L1-icache-load-misses # 0.23% of all L1-icache hits ( +-  0.33% )
+  114063063  L1-dcache-loads                                     ( +-  0.02% )
+    1222909  L1-dcache-load-misses # 1.07% of all L1-dcache hits ( +-  0.09% )
+  114063101  L1-dcache-stores                                    ( +-  0.02% )
+    1222908  L1-dcache-store-misses                              ( +-  0.09% )
 #+END_EXAMPLE
 
+Analysis: L1-icache-load were reduced significantly:
+ - Before: 204788837 L1-icache-load => (204788837/667531*64) 19634 bytes code
+ - After:  186193917 L1-icache-load => (186193917/693440*64) 17185 bytes code
+
+The L1-icache-load-misses were also reduce a bit:
+ - Before: 482820  L1-icache-load-misses # 0.24% of all L1-icache hits
+ - After:  423491  L1-icache-load-misses # 0.23% of all L1-icache hits
+ - Diff:    59329
 
 Perf stats performance for CONFIG_PREEMPT_NONE measurements:
 
@@ -204,7 +212,6 @@ Perf stats performance for CONFIG_PREEMPT_NONE measurements:
     27106182      branches                                                      ( +-  0.02% )
       226928      branch-misses             #    0.84% of all branches          ( +-  0.72% )
 #+END_EXAMPLE
-
 
 Below output from mpstat to verify general system performance.
 
