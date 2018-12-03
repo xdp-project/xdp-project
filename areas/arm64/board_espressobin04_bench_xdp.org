@@ -92,7 +92,21 @@ proto 0:     668110 pkt/s
      950480  L1-dcache-store-misses                              ( +-  0.07% )
 
   1.0039657 +- 0.0000370 seconds time elapsed  ( +-  0.00% )
+#+END_EXAMPLE
 
+From the L1-icache-load (204788837) we can estimate/deduce the size of
+our active code, knowing the packets-per-sec (667531 pps).  Each
+packet basically activate the same code path per 64 packets, and then
+there is some NAPI code and refill code, but it will only happen once
+every 64 packets.
+
+Code size estimate:
+ - 204788837/667531 306.79 cache-lines per packet
+ - Cache-line size 64 bytes: 306.79 * 64 = 19635 bytes code in use?
+ - Unsure about espressobin I-cache size, but at-least 32 KB (?)
+ - Maybe always fetch two cache-lines: 306.79 * 64 * 2 = 39269 bytes ?
+
+#+BEGIN_EXAMPLE
 # /root/bin/perf stat -C0 -r 3 -e instructions -e cycles -e bus-cycles -e cache-misses -e cache-references -e branches -e branch-misses sleep 1
 
  Performance counter stats for 'CPU(s) 0' (3 runs):
@@ -107,9 +121,10 @@ proto 0:     668110 pkt/s
 
 #+END_EXAMPLE
 
-* Testing ideas
 
-** TODO recompile with out RCU/preempt
+* Testing some ideas
+
+** Recompile with out RCU/preempt (CONFIG_PREEMPT_NONE)
 
 Did some branch-miss profiling, and it shows branch-misses in RCU
 read-side.  Plus the calls to RCU-read-side also consume I-cache.
@@ -138,3 +153,81 @@ CONFIG_PREEMPT_NONE:                                                │
   │       -> Preemption Model (<choice> [=y])   │
 #+END_EXAMPLE
 
+Up and running:
+
+#+BEGIN_EXAMPLE
+# uname -a
+Linux espressobin 4.20.0-rc1-mvneta_04+ #25 SMP Mon Dec 3 11:33:18 CET 2018 aarch64 aarch64 aarch64 GNU/Linux
+#+END_EXAMPLE
+
+This does improve performance:
+ - Before: 668113
+ - After:  693440
+ - 693440-668113 = +25327 pps
+ - (1/668113-1/693440)*10^9 = 54.66 ns
+
+#+BEGIN_EXAMPLE
+# ./xdp1 3 &
+proto 0:     466516 pkt/s
+proto 0:     693440 pkt/s
+proto 0:     693822 pkt/s
+proto 0:     693735 pkt/s
+proto 0:     489783 pkt/s
+^C
+root@espressobin:~/samples/bpf#
+#+END_EXAMPLE
+
+Perf stats performance for CONFIG_PREEMPT_NONE measurements, L1 cache:
+
+#+BEGIN_EXAMPLE
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+  186193917      L1-icache-load                                                ( +-  0.02% )
+     423491      L1-icache-load-misses     #    0.23% of all L1-icache hits    ( +-  0.33% )
+  114063063      L1-dcache-loads                                               ( +-  0.02% )
+    1222909      L1-dcache-load-misses     #    1.07% of all L1-dcache hits    ( +-  0.09% )
+  114063101      L1-dcache-stores                                              ( +-  0.02% )
+    1222908      L1-dcache-store-misses                                        ( +-  0.09% )
+#+END_EXAMPLE
+
+
+Perf stats performance for CONFIG_PREEMPT_NONE measurements:
+
+#+BEGIN_EXAMPLE
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+   311683229      instructions              #    0.31  insn per cycle           ( +-  0.00% )
+  1003777048      cycles                                                        ( +-  0.00% )
+   250944417      bus-cycles                                                    ( +-  0.00% )
+     1225570      cache-misses              #    1.074 % of all cache refs      ( +-  0.22% )
+   114109895      cache-references                                              ( +-  0.01% )
+    27106182      branches                                                      ( +-  0.02% )
+      226928      branch-misses             #    0.84% of all branches          ( +-  0.72% )
+#+END_EXAMPLE
+
+
+Below output from mpstat to verify general system performance.
+
+#+BEGIN_EXAMPLE
+$ mpstat -P ALL -u -I SCPU -I SUM 2
+  CPU    %usr   %nice    %sys %iowait    %irq   %soft    %idle
+  all    0.00    0.00    0.00    0.00    0.75   49.25    50.00
+    0    0.00    0.00    0.00    0.00    1.50   98.50     0.00
+    1    0.00    0.00    0.00    0.00    0.00    0.50    99.50
+
+  CPU    intr/s
+  all  11960.50
+    0  11096.00
+    1     66.00
+
+  CPU  TIMER/s   NET_TX/s   NET_RX/s  IRQ_POLL/s  TASKLET/s    SCHED/s   RCU/s
+    0   250.00       0.00   10836.00        0.00       0.00       7.50    2.50
+    1    22.00       0.00       0.00        0.00       0.00      42.50    1.50
+
+# Measured:
+proto 0:     693651 pkt/s
+#+END_EXAMPLE
+
+From the 10836 NET_RX/s we can calculate the NAPI poll budget getting
+used, here: 693651 / 10836 = 64.01 packets.  This is spot on for the
+expected NAPI poll budget of 64.
