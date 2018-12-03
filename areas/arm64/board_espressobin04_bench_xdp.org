@@ -126,6 +126,10 @@ Code size estimate:
 
 ** Recompile with out RCU/preempt (CONFIG_PREEMPT_NONE)
 
+Kernel .config files used located here:
+ - Before: [[file:configs/jesper_config01-with-preempt]]
+ - After:  [[file:configs/jesper_config02_PREEMPT_NONE]]
+
 Did some branch-miss profiling, and it shows branch-misses in RCU
 read-side.  Plus the calls to RCU-read-side also consume I-cache.
 Thus, experiment with compiling kernel without preempt as that
