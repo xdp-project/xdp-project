@@ -1,0 +1,87 @@
+# -*- fill-column: 79; -*-
+#+Title: Implementing page_pool return-hook via SKB
+
+This document is the development notes, while implementing page_pool
+return-hook via SKB (See section "Return-hook: via SKB" in
+[[file:page_pool01_evolving_API.org]])
+
+* Basic idea
+
+SKB freeing basically all goes through =__kfree_skb()=, and following
+the code path expanding relevant code-inside (see below), then is it
+fairly clear that skb_free_head() is a candidate for a page_pool
+return hook.
+
+#+BEGIN_SRC C
+void __kfree_skb(struct sk_buff *skb)
+{
+	skb_release_all(skb) {
+		if (likely(skb->head)) {
+			skb_release_data(skb) {
+				skb_free_head(skb) {
+					// Catch page_pool pages here via xdp_return_skb_page
+					if (skb->head_frag) {
+						skb_free_frag(skb->head) {
+							page_frag_free(addr);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+#+END_SRC
+
+
+* Wrong recycle on two branches
+
+Git tree: https://github.com/apalos/bpf-next
+Branches:
+ - mvneta_03_page_pool_recycle
+ - mvneta_04_page_pool_recycle_xdp
+
+The issue is wrong placement of xdp_mem_info in struct sk_buff, as it
+is placed in between headers_start and headers_end.
+
+The issue arise when either using skb_copy() or pskb_copy(), which
+allocates a new data-area and copy over contents.  But
+__copy_skb_header() memcpy, old SKB area between headers_start to
+headers_end, which also include xdp_mem_info.  Thus, on kfree_skb the
+hook for page_pool return is invoked, for this mem-area that didn't
+originate from page_pool.
+
+Move xdp_mem_info, just after members (flags) head_frag and
+pfmemalloc. As a future plan, we could move introduce a __u8 flags
+member to xdp_mem_info and move flags head_frag and pfmemalloc into
+this area.
+
+
+* Testing procedures
+
+** Multicast traffic
+
+Multicast traffic requires skb_clone'ing, so here is a test case with
+multicast:
+
+I setup:
+ - IP 192.168.200.1 is configured on the espressobin board.
+ - IP 192.168.200.2 is configured on client/PC
+
+On espressobin start iperf server:
+
+#+BEGIN_EXAMPLE
+ ifconfig eth0 192.168.200.1
+ route add -net 224.0.0.0 netmask 240.0.0.0 eth0
+ iperf -s -u -B 226.94.1.1 -i 1
+#+END_EXAMPLE
+
+On client/PC start iperf client::
+
+#+BEGIN_EXAMPLE
+ iperf -c 226.94.1.1 -u -T 32 -t 30 -i 1 -B 192.168.200.2 -b1000Mbit
+#+END_EXAMPLE
+
+With iperf multicast the server joins the mcast stream and starts
+receiving packets.
+
+
