@@ -23,6 +23,17 @@ NUMA node0 CPU(s):   0,1
 Flags:               fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid
 #+END_EXAMPLE
 
+** More info on hardware
+
+The Cortex-A53 MPCore instruction cache is 2-way set associative
+ - Instruction cache doc: http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0500j/CJHEICEB.html
+ - General L1-cache info: http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0500j/CJHEICEB.html
+
+But we don't know the exact size of the I-cache on Espressobin. As
+quote: "The implementer configures the instruction and data caches
+independently during implementation, to sizes of 8KB, 16KB, 32KB, or
+64KB."
+
 * Baseline benchmark HW
 
 Performance baseline when dropping packets as early as possible with
