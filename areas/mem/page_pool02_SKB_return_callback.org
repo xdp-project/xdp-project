@@ -55,6 +55,7 @@ pfmemalloc. As a future plan, we could move introduce a __u8 flags
 member to xdp_mem_info and move flags head_frag and pfmemalloc into
 this area.
 
+Fixed in [[https://github.com/apalos/bpf-next/commit/dd84df8d72f792ac9bbfa9fb9e424b4ae9d0ebad][this commit]] that will be squashed before upstreaming.
 
 * Testing procedures
 
