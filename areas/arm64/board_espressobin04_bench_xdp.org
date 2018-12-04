@@ -299,3 +299,124 @@ Strange results, as PPS is slightly worse (692034-696194 = -4160 pps),
 but the L1-icache-load-misses, are improved (435807-506294 = -70487
 I-cache-misses).
 
+** Playing with other perf events
+
+#+BEGIN_EXAMPLE
+pipeline:
+  agu_dep_stall                                     
+       [Cycles there is an interlock for a load/store instruction waiting for data to calculate the address in
+        the AGU]
+  decode_dep_stall                                  
+       [Cycles the DPU IQ is empty and there is a pre-decode error being processed]
+  ic_dep_stall                                      
+       [Cycles the DPU IQ is empty and there is an instruction cache miss being processed]
+  iutlb_dep_stall                                   
+       [Cycles the DPU IQ is empty and there is an instruction micro-TLB miss being processed]
+  ld_dep_stall                                      
+       [Cycles there is a stall in the Wr stage because of a load miss]
+  other_interlock_stall                             
+       [Cycles there is an interlock other than Advanced SIMD/Floating-point instructions or load/store
+        instruction]
+  other_iq_dep_stall                                
+       [Cycles that the DPU IQ is empty and that is not because of a recent micro-TLB miss, instruction cache
+        miss or pre-decode error]
+  simd_dep_stall                                    
+       [Cycles there is an interlock for an Advanced SIMD/Floating-point operation]
+  st_dep_stall                                      
+       [Cycles there is a stall in the Wr stage because of a store]
+  stall_sb_full                                     
+       [Data Write operation that stalls the pipeline because the store buffer is full]
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+perf stat -C0 -r 3 -e agu_dep_stall -e decode_dep_stall -e ic_dep_stall \
+-e ld_dep_stall -e st_dep_stall -e iutlb_dep_stall  sleep 1
+
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+   57895390      agu_dep_stall              ( +-  0.00% )
+          0      decode_dep_stall         
+    3819668      ic_dep_stall               ( +-  0.74% )
+  486917106      ld_dep_stall               ( +-  0.00% )
+  107229705      st_dep_stall               ( +-  0.01% )
+     684001      iutlb_dep_stall            ( +-  0.12% )
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+perf stat -C0 -r 3 -e agu_dep_stall -e decode_dep_stall -e ic_dep_stall \
+-e ld_dep_stall -e iutlb_dep_stall -e other_interlock_stall \
+-e other_iq_dep_stall -e simd_dep_stall -e st_dep_stall -e stall_sb_full \
+sleep 1
+
+    57710381      agu_dep_stall                  ( +-  0.02% )  (59.96%)
+           0      decode_dep_stall               (60.16%)
+     4025870      ic_dep_stall                   ( +-  1.29% )  (60.16%)
+   485093041      ld_dep_stall                   ( +-  0.01% )  (60.16%)
+      685257      iutlb_dep_stall                ( +-  0.37% )  (60.16%)
+    36521529      other_interlock_stall          ( +-  0.02% )  (60.16%)
+     1445909      other_iq_dep_stall             ( +-  0.23% )  (59.97%)
+           0      simd_dep_stall                 (59.76%)
+   106689231      st_dep_stall                   ( +-  0.01% )  (59.76%)
+       33677      stall_sb_full                  ( +-  0.33% )  (59.76%)
+
+  1.00412169 +- 0.00000383 seconds time elapsed  ( +-  0.00% )
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+perf stat -C0 -r 3 -e instructions -e cycles \
+ -e ic_dep_stall -e ld_dep_stall -e st_dep_stall \
+ -e agu_dep_stall -e stall_sb_full -e other_interlock_stall \
+ sleep 1
+
+    399566325      instructions  #  0.40  insn per cycle ( +-  0.01% )  (74.51%)
+   1000680946      cycles                                ( +-  0.00% )  (87.25%)
+      3496508      ic_dep_stall                          ( +-  1.32% )  (87.38%)
+    485837259      ld_dep_stall                          ( +-  0.00% )  (87.65%)
+    106977052      st_dep_stall                          ( +-  0.01% )  (87.65%)
+     57750275      agu_dep_stall                         ( +-  0.01% )  (87.65%)
+        47449      stall_sb_full                         ( +-  0.16% )  (87.65%)
+     36577300      other_interlock_stall                 ( +-  0.01% )  (87.52%)
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+perf stat -C0 -r 3 -e instructions -e cycles \
+ -e ic_dep_stall -e ld_dep_stall -e st_dep_stall \
+ -e agu_dep_stall -e other_interlock_stall \
+ sleep 1
+
+# options:no_touch
+./xdp_rxq_info --d eth0 --action XDP_DROP
+
+Running XDP on dev:eth0 (ifindex:3) action:XDP_DROP options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      0       708595      0          
+XDP-RX CPU      total   708595     
+
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+   400824190      instructions     #    0.40  insn per cycle  ( +-  0.00% )
+  1003962088      cycles                                      ( +-  0.00% )
+     3399851      ic_dep_stall                                ( +-  1.30% )
+   487539028      ld_dep_stall                                ( +-  0.01% )
+   107368181      st_dep_stall                                ( +-  0.01% )
+    57959951      agu_dep_stall                               ( +-  0.01% )
+    36690192      other_interlock_stall                       ( +-  0.00% )
+
+# options:read
+./xdp_rxq_info --d eth0 --a XDP_DROP --read
+
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      0       616934      0          
+XDP-RX CPU      total   616934     
+
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+   367662048      instructions         # 0.37  insn per cycle  ( +-  0.01% )
+  1003952335      cycles                                       ( +-  0.00% )
+     3285485      ic_dep_stall                                 ( +-  0.42% )
+   531033126      ld_dep_stall                                 ( +-  0.01% )
+    95498417      st_dep_stall                                 ( +-  0.01% )
+    54374611      agu_dep_stall                                ( +-  0.01% )
+    34716242      other_interlock_stall                        ( +-  0.01% )
+#+END_EXAMPLE
+
