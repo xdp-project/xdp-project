@@ -34,6 +34,13 @@ quote: "The implementer configures the instruction and data caches
 independently during implementation, to sizes of 8KB, 16KB, 32KB, or
 64KB."
 
+From the [[http://espressobin.net/wp-content/uploads/2017/01/ESPRESSObin-V3-Hardware-Block-diagram-v3-1.pdf][Espressobin Block-diagram]] it can be seen that the CPU/SoC
+used is a Marvell A3720, which we assume corresponds to 88F3720, the
+ARMADA 3700 Family.  This CPU have 32KB L1 I-Cache.  And 32KB L1
+D-cache, which is 4-way set associative (Parity/ECC protection). Info
+found this via [[https://www.marvell.com/documents/qc8hltbjybmpjhx36ckw/][this]] and [[https://www.marvell.com/documents/hqtbvtoezipfsycgnkhm/][this]] link.
+
+
 * Baseline benchmark HW
 
 Performance baseline when dropping packets as early as possible with
