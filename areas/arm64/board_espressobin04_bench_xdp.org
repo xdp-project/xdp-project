@@ -420,3 +420,12 @@ XDP-RX CPU      total   616934
     34716242      other_interlock_stall                        ( +-  0.01% )
 #+END_EXAMPLE
 
+** New kernel config with tracing
+
+In-order to use some of the other XDP sample/bpf program, we need to
+enable tracing, as XDP error handling use tracing.  Thus, enable this
+in a new config:
+
+New kernel config with tracing:
+ - [[file:configs/jesper_config03-with-tracing]]
+
