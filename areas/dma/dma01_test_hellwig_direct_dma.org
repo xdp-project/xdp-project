@@ -24,6 +24,18 @@ indirect calls, that we cannot avoid.
  - 2. NAPI net_rx_action call drivers napi_poll function per 64 packets
 
 
+* Summary of results
+
+Using XDP_REDIRECT between drivers RX ixgbe(10G) redirect TX i40e(40G),
+via BPF devmap (used samples/bpf/xdp_redirect_map) . (Note choose
+higher TX link-speed to assure that we don't to have a TX bottleneck).
+
+Performance numbers in packets/sec (XDP_REDIRECT ixgbe -> i40e):
+ - 11913154 (11,913,154) pps - baseline compiled without retpoline
+ -  7438283  (7,438,283) pps - regression due to CONFIG_RETPOLINE
+ -  9610088  (9,610,088) pps - mitigation via Hellwig dma-direct-calls
+
+
 * Testing Hellwig branch "dma-direct-calls"
 
 Testing with Hellwig's branch "dma-direct-calls"
