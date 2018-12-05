@@ -16,5 +16,110 @@ $ cd hellwig
 $ git checkout dma-direct-calls
 #+END_EXAMPLE
 
+* General notes
+
+Even if removing/mitigating all DMA indirect calls, then there is still two
+indirect calls, that we cannot avoid.
+ - 1. Indirect eBPF XDP call invoked for every xdp_buff
+ - 2. NAPI net_rx_action call drivers napi_poll function per 64 packets
+
+
 * Initial testing
+
+Testing with Hellwig's branch "dma-direct-calls"
+
+** Driver ixgbe
+
+*** ixgbe: XDP_DROP branch "dma-direct-calls"
+
+XDP_DROP performance okay, but AFAICR it was also okay before, as it was only
+affected by DMA-sync call.
+
+#+BEGIN_EXAMPLE
+Running XDP on dev:ixgbe2 (ifindex:9) action:XDP_DROP options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      3       14,435,891  0          
+XDP-RX CPU      total   14,435,891 
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    3:3   14,435,902  0          
+rx_queue_index    3:sum 14,435,902 
+#+END_EXAMPLE
+
+*** ixgbe: XDP_REDIRECT devmap
+
+XDP redirect (via devmap) RX:ixgbe2 -> TX:i40e1, this is redirect from RX
+link-speed 10Gbit/s out TXC 40Gbit/s link-speed to make sure TX side is not
+bottleneck.
+
+#+BEGIN_EXAMPLE
+sudo ./xdp_redirect_map  $(</sys/class/net/ixgbe2/ifindex) \
+  $(</sys/class/net/i40e1/ifindex)
+$ sudo ./xdp_redirect_map  $(</sys/class/net/ixgbe2/ifindex) \
+                           $(</sys/class/net/i40e1/ifindex)
+input: 9 output: 2
+map[0] (vports) = 4, map[1] (map) = 5, map[2] (count) = 0
+ifindex 2:    4153765 pkt/s
+ifindex 2:    9618042 pkt/s
+ifindex 2:    9614312 pkt/s
+#+END_EXAMPLE
+
+Notice we cannot trust the output from =xdp_redirect_map=, as it only measures
+XDP-RX packets, it doesn't know if packets gets dropped. Thus, measure this via
+ethtool stats counters and program [[https://github.com/netoptimizer/network-testing/blob/master/bin/ethtool_stats.pl][ethtool_stats.pl]], which also use highres
+timers to get correct time interval.
+
+First *ALWAYS* make sure generator is sending fast enough:
+#+BEGIN_EXAMPLE
+./pktgen_sample03_burst_single_flow.sh -i ixgbe2 -d 10.10.10.2 -m 00:1b:21:bb:9a:86 -t2
+[generator ~]$ ~/git/network-testing/bin/ethtool_stats.pl --sec 2 --dev ixgbe2
+Show adapter(s) (ixgbe2) statistics (ONLY that changed!)
+Ethtool(ixgbe2  ) stat:    892843312 (    892,843,312) <= tx_bytes /sec
+Ethtool(ixgbe2  ) stat:    952366643 (    952,366,643) <= tx_bytes_nic /sec
+Ethtool(ixgbe2  ) stat:     14880722 (     14,880,722) <= tx_packets /sec
+Ethtool(ixgbe2  ) stat:     14880725 (     14,880,725) <= tx_pkts_nic /sec
+Ethtool(ixgbe2  ) stat:    446544842 (    446,544,842) <= tx_queue_0_bytes /sec
+Ethtool(ixgbe2  ) stat:      7442414 (      7,442,414) <= tx_queue_0_packets /sec
+Ethtool(ixgbe2  ) stat:    446298470 (    446,298,470) <= tx_queue_1_bytes /sec
+Ethtool(ixgbe2  ) stat:      7438308 (      7,438,308) <= tx_queue_1_packets /sec
+#+END_EXAMPLE
+
+Device-Under-Test (DUT):
+#+BEGIN_EXAMPLE
+Show adapter(s) (ixgbe2 i40e1) statistics (ONLY that changed!)
+Ethtool(ixgbe2  ) stat:     12192478 (     12,192,478) <= fdir_miss /sec
+Ethtool(ixgbe2  ) stat:    575904896 (    575,904,896) <= rx_bytes /sec
+Ethtool(ixgbe2  ) stat:    952519117 (    952,519,117) <= rx_bytes_nic /sec
+Ethtool(ixgbe2  ) stat:      2970896 (      2,970,896) <= rx_missed_errors /sec
+Ethtool(ixgbe2  ) stat:      2313797 (      2,313,797) <= rx_no_dma_resources /sec
+Ethtool(ixgbe2  ) stat:      9598415 (      9,598,415) <= rx_packets /sec
+Ethtool(ixgbe2  ) stat:     11912216 (     11,912,216) <= rx_pkts_nic /sec
+Ethtool(ixgbe2  ) stat:    575904896 (    575,904,896) <= rx_queue_3_bytes /sec
+Ethtool(ixgbe2  ) stat:      9598415 (      9,598,415) <= rx_queue_3_packets /sec
+Ethtool(i40e1   ) stat:    615042613 (    615,042,613) <= port.tx_bytes /sec
+Ethtool(i40e1   ) stat:      9610060 (      9,610,060) <= port.tx_size_64 /sec
+Ethtool(i40e1   ) stat:      9610058 (      9,610,058) <= port.tx_unicast /sec
+Ethtool(i40e1   ) stat:    576603475 (    576,603,475) <= rx_bytes /sec
+Ethtool(i40e1   ) stat:      9610058 (      9,610,058) <= rx_packets /sec
+Ethtool(i40e1   ) stat:      9610088 (      9,610,088) <= tx_unicast /sec
+#+END_EXAMPLE
+
+The result: 9610088 (9,610,088) packets/sec
+
+Some perf stats during this redirect (happend to run on CPU-3):
+#+BEGIN_EXAMPLE
+$ sudo ~/perf stat -C3 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 3' (4 runs):
+
+  3,961,360,880  cycles                                             ( +-  0.03% )
+  8,086,316,342  instructions          #  2.04  insn per cycle      ( +-  0.03% )
+     49,625,870  cache-references                                   ( +-  0.03% )
+          2,010  cache-misses          #  0.004 % of all cache refs ( +-  9.50% )
+  1,615,852,192  branches:k                                         ( +-  0.03% )
+     23,732,952  branch-misses:k       #  1.47% of all branches     ( +-  0.03% )
+      2,568,064  l2_rqsts.all_code_rd                               ( +-  0.12% )
+      2,001,369  l2_rqsts.code_rd_hit                               ( +-  0.15% )
+        566,683  l2_rqsts.code_rd_miss                              ( +-  0.10% )
+#+END_EXAMPLE
 
