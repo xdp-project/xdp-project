@@ -429,3 +429,120 @@ in a new config:
 New kernel config with tracing:
  - [[file:configs/jesper_config03-with-tracing]]
 
+
+
+
+* Fixing XDP_REDIRECT
+
+XDP_REDIRECT via CPUMAP didn't work.  This was due to wrong
+XDP-headroom setting.
+
+Quickfix:
+#+BEGIN_SRC diff
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 15753bb321d6..a2de8ede3650 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -2053,7 +2053,8 @@ static int mvneta_rx_swbm(struct napi_struct *napi,
+ 
+                        rx_desc->buf_phys_addr = 0;
+                        xdp.data_hard_start = data;
+-                       xdp.data = data + XDP_PACKET_HEADROOM;
++                       xdp.data = data + MVNETA_MH_SIZE + NET_SKB_PAD;
+                        xdp_set_data_meta_invalid(&xdp);
+                        xdp.data_end = xdp.data + rx_bytes;
+                        xdp.rxq = &rxq->xdp_rxq;
+
+#+END_SRC
+
+TODO: Need to adjust driver RX DMA offset to use XDP_PACKET_HEADROOM
+offset instead of MVNETA_MH_SIZE + NET_SKB_PAD.  As above quickfix
+have issues, as NET_SKB_PAD is only 32 bytes, leaving no room for
+headroom adjustment for XDP programs.
+
+** Crash with tcpdump + cpumap-redirect
+
+Provoked crash with tcpdump + cpumap-redirect
+
+Was running =xdp_redirect_cpu= to CPU-1:
+#+BEGIN_EXAMPLE
+ root@espressobin:~/samples/bpf# ./xdp_redirect_cpu --dev eth0 --cpu 1 --sec 2
+#+END_EXAMPLE
+
+Normal traffic was working, and I could also run =tcpdump= on the
+traffic, without any crash.
+
+Starting pktgen towards the box:
+#+BEGIN_EXAMPLE
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          0       598701         0           0          
+XDP-RX          total   598701         0          
+cpumap-enqueue    0:1   598702         255802      7.73       bulk-average
+cpumap-enqueue  sum:1   598702         255802      7.73       bulk-average
+cpumap_kthread  1       342908         0           13         sched
+cpumap_kthread  total   342908         0           13         sched-sum
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+END_EXAMPLE
+
+Starting tcpdump (=tcpdump -ni eth0 -c 10=) while pktgen was running
+caused the following crash:
+
+#+BEGIN_EXAMPLE
+root@espressobin:~/samples/bpf# tcpdump -ni eth0 -c 10
+
+[ 1051.131522] Unable to handle kernel paging request at virtual address ffff8000286460e2
+[ 1051.136840] Mem abort info:
+[ 1051.139721]   ESR = 0x96000021
+[ 1051.142830]   Exception class = DABT (current EL), IL = 32 bits
+[ 1051.148931]   SET = 0, FnV = 0
+[ 1051.152066]   EA = 0, S1PTW = 0
+[ 1051.155291] Data abort info:
+[ 1051.158239]   ISV = 0, ISS = 0x00000021
+[ 1051.162190]   CM = 0, WnR = 0
+[ 1051.165242] swapper pgtable: 4k pages, 48-bit VAs, pgdp = 0000000061e455eb
+[ 1051.172347] [ffff8000286460e2] pgd=000000002fff9803, pud=000000002fff8803, pmd=00f8000028600f11
+[ 1051.181309] Internal error: Oops: 96000021 [#1] SMP
+[ 1051.186288] Modules linked in:
+[ 1051.189429] CPU: 1 PID: 2661 Comm: cpumap/1/map:53 Tainted: G        W         4.20.0-rc1-mvneta_04-ftrace+ #33
+[ 1051.199815] Hardware name: Globalscale Marvell ESPRESSOBin Board (DT)
+[ 1051.206447] pstate: 40000005 (nZcv daif -PAN -UAO)
+[ 1051.211385] pc : __ll_sc_atomic_add+0x4/0x18
+[ 1051.215767] lr : __skb_clone+0xe0/0x110
+[ 1051.219705] sp : ffff800029dcbc50
+[ 1051.223111] x29: ffff800029dcbc50 x28: 000000000000f800 
+[ 1051.228575] x27: ffff00000941f5a8 x26: ffff800028646050 
+[ 1051.234041] x25: 0000000000000036 x24: 0000000000000044 
+[ 1051.239506] x23: 0000000000000044 x22: ffff80002df3f000 
+[ 1051.244972] x21: ffff80002df3f000 x20: ffff80002cd20e00 
+[ 1051.250438] x19: ffff80002cd20a00 x18: 0000000000000000 
+[ 1051.255904] x17: 0000000000000000 x16: 0000000000000000 
+[ 1051.261369] x15: 0000000000000000 x14: 0000000000000000 
+[ 1051.266835] x13: 0000000000000000 x12: 0000000000000000 
+[ 1051.272301] x11: 0000000000000000 x10: 0000000000000000 
+[ 1051.277766] x9 : 0000000000000000 x8 : 0000000000000002 
+[ 1051.283231] x7 : 0000000000000010 x6 : 0000000000000000 
+[ 1051.288696] x5 : 0000000005dc3874 x4 : ffff80002ffde6e0 
+[ 1051.294163] x3 : 0000000000000001 x2 : ffff8000286460c2 
+[ 1051.299629] x1 : ffff8000286460e2 x0 : 0000000000000001 
+[ 1051.305096] Process cpumap/1/map:53 (pid: 2661, stack limit = 0x000000000a301b75)
+[ 1051.312801] Call trace:
+[ 1051.315312]  __ll_sc_atomic_add+0x4/0x18
+[ 1051.319344]  skb_clone+0x74/0xd8
+[ 1051.322662]  packet_rcv+0xf4/0x3c8
+[ 1051.326155]  __netif_receive_skb_core+0x4ec/0x8a8
+[ 1051.330991]  __netif_receive_skb_one_core+0x4c/0x90
+[ 1051.336008]  netif_receive_skb_core+0x24/0x30
+[ 1051.340491]  cpu_map_kthread_run+0x1b8/0x330
+[ 1051.344881]  kthread+0x134/0x138
+[ 1051.348195]  ret_from_fork+0x10/0x1c
+[ 1051.351869] Code: 97fffe9d 17ffffee 00000000 f9800031 (885f7c31) 
+[ 1051.358146] ---[ end trace a15310814ce864fe ]---
+[ 1051.362888] Kernel panic - not syncing: Fatal exception in interrupt
+[ 1051.369428] SMP: stopping secondary CPUs
+[ 1051.373463] Kernel Offset: disabled
+[ 1051.377045] CPU features: 0x2,2080200c
+[ 1051.380896] Memory Limit: none
+[ 1051.384035] ---[ end Kernel panic - not syncing: Fatal exception in interrupt ]---
+#+END_EXAMPLE
