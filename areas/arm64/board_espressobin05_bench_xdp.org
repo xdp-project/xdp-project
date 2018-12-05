@@ -24,7 +24,14 @@ XDP_TX or ndo_xdp_xmit support.
 This patch also moves the bogus prefetch() to be executed
 after the dma_sync calls
 
-* Testing
+* Testing with board operating at 800MHz
+
+Notice below =perf stat= cycles counter reveled that the CPU as
+operating at 800MHz, while it should operate at 1GHz. Thus, below PPS
+number are lower than expected.
+
+This was tracked down to CPU "governors" kernel config.  And
+documented in kernel config recommendations [[file:configs/README_espressobin.org]]
 
 ** XDP_DROP, net.core.bpf_jit_enable=0, 64b packets
 pps: 389660 pkt/s
@@ -35,16 +42,16 @@ perf stat -C0 -r3 sleep 1
 
 Performance counter stats for 'CPU(s) 0' (3 runs):
 
-           1005.47 msec cpu-clock                 #    1.000 CPUs utilized            ( +-  0.00% )
-               274      context-switches          #  272.968 M/sec                    ( +-  1.89% )
-                 0      cpu-migrations            #    0.000 K/sec
-                 0      page-faults               #    0.000 K/sec
-         800838872      cycles                    # 796854.599 GHz                    ( +-  0.00% )
-         354067461      instructions              #    0.44  insn per cycle           ( +-  0.01% )
-          36061456      branches                  # 35882046.103 M/sec                ( +-  0.01% )
-           1114089      branch-misses             #    3.09% of all branches          ( +-  0.46% )
+    1005.47 msec cpu-clock         #    1.000 CPUs utilized            ( +-  0.00% )
+        274      context-switches  #  272.968 M/sec                    ( +-  1.89% )
+          0      cpu-migrations    #    0.000 K/sec
+          0      page-faults       #    0.000 K/sec
+  800838872      cycles            # 796854.599 GHz                    ( +-  0.00% )
+  354067461      instructions      #    0.44  insn per cycle           ( +-  0.01% )
+   36061456      branches          # 35882046.103 M/sec                ( +-  0.01% )
+    1114089      branch-misses     #    3.09% of all branches          ( +-  0.46% )
 
-         1.0056889 +- 0.0000422 seconds time elapsed  ( +-  0.00% )
+  1.0056889 +- 0.0000422 seconds time elapsed  ( +-  0.00% )
 #+END_EXAMPLE
 
 ** XDP_DROP, net.core.bpf_jit_enable=1, 64b packets
