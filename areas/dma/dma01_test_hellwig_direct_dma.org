@@ -1,0 +1,20 @@
+# -*- fill-column: 79; -*-
+#+TITLE: Testing Hellwig "dma-direct-calls" patchset
+
+Christoph Hellwig <hch@lst.de> is helping out addressing/mitigating the
+RETPOLINE overhead, which XDP suffers under.
+
+* Patchset avail here
+
+Gitweb: on branch "dma-direct-calls"
+ - http://git.infradead.org/users/hch/misc.git/shortlog/refs/heads/dma-direct-calls
+
+Git checkout procedure:
+#+BEGIN_EXAMPLE
+$ git clone git://git.infradead.org/users/hch/misc.git hellwig
+$ cd hellwig
+$ git checkout dma-direct-calls
+#+END_EXAMPLE
+
+* Initial testing
+

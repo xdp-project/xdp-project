@@ -1,0 +1,9 @@
+# -*- fill-column: 79; -*-
+#+TITLE: DMA issues that affect XDP
+
+The CONFIG_RETPOLINE kernel config caused a huge regression for XDP
+benchmarks.  Primary for caused by an increase cost for the DMA calls,
+which uses indirect calls.  The DMA-sync call happens just before the
+BPF prog is invoked.  But it is primary XDP_REDIRECT which is affected
+as it (currently) cannot hide the DMA call (TX-map calls).
+
