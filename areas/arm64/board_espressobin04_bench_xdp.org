@@ -628,3 +628,166 @@ Got a new crash dump that contains the DSA calls:
 [ 5651.246308] ---[ end Kernel panic - not syncing: Fatal exception in interrupt ]---
 #+END_EXAMPLE
 
+*** Test: compile without CONFIG_NET_DSA
+
+As described in [[file:configs/README_espressobin.org]], it is possible to
+compile the kernel without DSA support and only get a =eth0= device.
+
+Base performance with pktgen and UdpNoPorts listening:
+#+BEGIN_EXAMPLE
+# nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    175528             0.0
+IpInDelivers                    175529             0.0
+IpOutRequests                   1                  0.0
+IcmpOutMsgs                     1                  0.0
+IcmpOutDestUnreachs             1                  0.0
+IcmpMsgOutType3                 1                  0.0
+UdpNoPorts                      175532             0.0
+IpExtInOctets                   8074978            0.0
+IpExtOutOctets                  74                 0.0
+IpExtInNoECTPkts                175543             0.0
+#+END_EXAMPLE
+
+Base iptables-raw drop performance:
+#+BEGIN_EXAMPLE
+# iptables -t raw -I PREROUTING -p udp --dport 9 -j DROP
+# nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    271882             0.0
+IpExtInOctets                   12506894           0.0
+IpExtInNoECTPkts                271888             0.0
+#+END_EXAMPLE
+
+Base XDP_DROP performance:
+#+BEGIN_EXAMPLE
+root@espressobin:~/samples/bpf# ./xdp1 3
+proto 17:     214293 pkt/s
+proto 17:     637069 pkt/s
+proto 6:          1 pkt/s
+proto 17:     637052 pkt/s
+proto 6:          0 pkt/s
+proto 17:     637063 pkt/s
+proto 0:          0 pkt/s
+proto 6:          0 pkt/s
+proto 17:     637031 pkt/s
+proto 0:          0 pkt/s
+proto 6:          0 pkt/s
+proto 17:     636984 pkt/s
+proto 17:     637092 pkt/s
+proto 17:     637095 pkt/s
+proto 17:     637108 pkt/s
+#+END_EXAMPLE
+
+XDP redirect to CPUMAP performance, still with iptables-raw DROP rule
+installed:
+
+#+BEGIN_EXAMPLE
+./xdp_redirect_cpu --dev eth0 --cpu 1 --prog 0
+
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          0       599627         0           0          
+XDP-RX          total   599627         0          
+cpumap-enqueue    0:1   599629         146492      7.68       bulk-average
+cpumap-enqueue  sum:1   599629         146492      7.68       bulk-average
+cpumap_kthread  1       453146         0           10         sched
+cpumap_kthread  total   453146         0           10         sched-sum
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+
+## How is the two CPUs stall states in this case:
+
+root@espressobin:~# perf stat -C0 -r 3 -e instructions -e cycles \
+>  -e ic_dep_stall -e ld_dep_stall -e st_dep_stall \
+>  -e agu_dep_stall -e other_interlock_stall \
+>  sleep 1
+
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+   416818501      instructions              #    0.41  insn per cycle           ( +-  0.20% )
+  1006393445      cycles                                                        ( +-  0.24% )
+     5354128      ic_dep_stall                                                  ( +-  2.56% )
+   440123686      ld_dep_stall                                                  ( +-  0.27% )
+   146402891      st_dep_stall                                                  ( +-  0.29% )
+    45322568      agu_dep_stall                                                 ( +-  0.21% )
+    39839152      other_interlock_stall                                         ( +-  0.22% )
+
+     1.00663 +- 0.00238 seconds time elapsed  ( +-  0.24% )
+
+root@espressobin:~# perf stat -C1 -r 3 -e instructions -e cycles  -e ic_dep_stall -e ld_dep_stall -e st_dep_stall  -e agu_dep_stall -e other_interlock_stall  sleep 1
+
+ Performance counter stats for 'CPU(s) 1' (3 runs):
+
+    623493723      instructions              #    0.62  insn per cycle           ( +-  0.23% )
+   1003541681      cycles                                                        ( +-  0.26% )
+     89469357      ic_dep_stall                                                  ( +-  0.48% )
+    249753757      ld_dep_stall                                                  ( +-  0.30% )
+     17664197      st_dep_stall                                                  ( +-  0.44% )
+     73642323      agu_dep_stall                                                 ( +-  0.21% )
+     52164271      other_interlock_stall                                         ( +-  0.26% )
+
+      1.00555 +- 0.00126 seconds time elapsed  ( +-  0.13% )
+#+END_EXAMPLE
+
+See if it crash with tcpdump... it unfortunately did crash, with
+CONFIG_NET_DSA disabled:
+
+#+BEGIN_EXAMPLE
+root@espressobin:~# tcpdump -ni eth0 -c 10
+
+[ 1090.840107] Unable to handle kernel paging request at virtual address ffff80002830b0a2
+[ 1090.845430] Mem abort info:
+[ 1090.848314]   ESR = 0x96000021
+[ 1090.851425]   Exception class = DABT (current EL), IL = 32 bits
+[ 1090.857545]   SET = 0, FnV = 0
+[ 1090.860680]   EA = 0, S1PTW = 0
+[ 1090.863902] Data abort info:
+[ 1090.866828]   ISV = 0, ISS = 0x00000021
+[ 1090.870807]   CM = 0, WnR = 0
+[ 1090.873857] swapper pgtable: 4k pages, 48-bit VAs, pgdp = 00000000e1121d66
+[ 1090.880922] [ffff80002830b0a2] pgd=000000002fff9803, pud=000000002fff8803, pmd=00f8000028200f11
+[ 1090.889886] Internal error: Oops: 96000021 [#1] SMP
+[ 1090.894877] Modules linked in:
+[ 1090.898016] CPU: 1 PID: 2595 Comm: cpumap/1/map:9 Tainted: G        W         4.20.0-rc1-mvneta_04-ftrace+ #34
+[ 1090.908313] Hardware name: Globalscale Marvell ESPRESSOBin Board (DT)
+[ 1090.914947] pstate: 40000005 (nZcv daif -PAN -UAO)
+[ 1090.919886] pc : __ll_sc_atomic_add+0x4/0x18
+[ 1090.924269] lr : __skb_clone+0xe0/0x110
+[ 1090.928203] sp : ffff800029983c50
+[ 1090.931608] x29: ffff800029983c50 x28: 0000000000000008 
+[ 1090.937074] x27: ffff0000093ff528 x26: ffff80002830b050 
+[ 1090.942538] x25: 000000000000002e x24: 000000000000003c 
+[ 1090.948004] x23: 000000000000003c x22: ffff80002e063000 
+[ 1090.953470] x21: ffff80002e063000 x20: ffff80002cc29000 
+[ 1090.958935] x19: ffff80002cc29800 x18: 0000000000000000 
+[ 1090.964401] x17: 0000000000000000 x16: 0000000000000000 
+[ 1090.969867] x15: 0000000000000000 x14: 0000000000000000 
+[ 1090.975332] x13: 0000000000000000 x12: 0000000000000000 
+[ 1090.980797] x11: 0000000000000000 x10: 0000000000000000 
+[ 1090.986263] x9 : 0000000000000000 x8 : 000000000000000c 
+[ 1090.991728] x7 : 0000000000000010 x6 : ffff80002cc29700 
+[ 1090.997194] x5 : 000000000cecf1f0 x4 : ffff80002ffde6e0 
+[ 1091.002660] x3 : 0000000000000001 x2 : ffff80002830b082 
+[ 1091.008126] x1 : ffff80002830b0a2 x0 : 0000000000000001 
+[ 1091.013594] Process cpumap/1/map:9 (pid: 2595, stack limit = 0x0000000066b64fd9)
+[ 1091.021208] Call trace:
+[ 1091.023722]  __ll_sc_atomic_add+0x4/0x18
+[ 1091.027751]  skb_clone+0x74/0xd8
+[ 1091.031068]  packet_rcv+0xf4/0x3c8
+[ 1091.034562]  __netif_receive_skb_core+0x4ec/0x8a8
+[ 1091.039399]  __netif_receive_skb_one_core+0x4c/0x90
+[ 1091.044416]  netif_receive_skb_core+0x24/0x30
+[ 1091.048900]  cpu_map_kthread_run+0x1b8/0x330
+[ 1091.053289]  kthread+0x134/0x138
+[ 1091.056603]  ret_from_fork+0x10/0x1c
+[ 1091.060278] Code: 97fffe9d 17ffffee 00000000 f9800031 (885f7c31) 
+[ 1091.066555] ---[ end trace 7cc3f44ef88b16d7 ]---
+[ 1091.071297] Kernel panic - not syncing: Fatal exception in interrupt
+[ 1091.077836] SMP: stopping secondary CPUs
+[ 1091.081871] Kernel Offset: disabled
+[ 1091.085453] CPU features: 0x2,2080200c
+[ 1091.089304] Memory Limit: none
+[ 1091.092443] ---[ end Kernel panic - not syncing: Fatal exception in interrupt ]---
+#+END_EXAMPLE
+
