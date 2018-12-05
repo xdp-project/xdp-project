@@ -24,9 +24,10 @@ indirect calls, that we cannot avoid.
  - 2. NAPI net_rx_action call drivers napi_poll function per 64 packets
 
 
-* Initial testing
+* Testing Hellwig branch "dma-direct-calls"
 
 Testing with Hellwig's branch "dma-direct-calls"
+ - 4.20.0-rc4-hellwig-dma-direct+
 
 ** Driver ixgbe
 
@@ -123,3 +124,83 @@ $ sudo ~/perf stat -C3 -e cycles -e  instructions -e cache-references -e cache-m
         566,683  l2_rqsts.code_rd_miss                              ( +-  0.10% )
 #+END_EXAMPLE
 
+* Baseline kernel with retpoline
+
+Need a baseline kernel, just before Hellwigs patches:
+
+#+BEGIN_EXAMPLE
+ git checkout -b hellwig-baseline ef78e5ec9214
+#+END_EXAMPLE
+
+** Driver ixgbe
+
+*** ixgbe: XDP_DROP (baseline-RETPOLINE)
+
+#+BEGIN_EXAMPLE
+sudo ./xdp_rxq_info --dev ixgbe2 --action XDP_DROP
+Running XDP on dev:ixgbe2 (ifindex:7) action:XDP_DROP options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      4       14,602,534  0          
+XDP-RX CPU      total   14,602,534 
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    4:4   14,602,528  0          
+rx_queue_index    4:sum 14,602,528 
+#+END_EXAMPLE
+
+*** ixgbe: XDP_REDIRECT devmap (baseline-RETPOLINE)
+
+XDP redirect (via devmap) RX:ixgbe2 -> TX:i40e1, this is redirect from RX
+link-speed 10Gbit/s out TXC 40Gbit/s link-speed to make sure TX side is not
+bottleneck.
+
+#+BEGIN_EXAMPLE
+[broadwell kernel-bpf-samples]$ sudo ./xdp_redirect_map  $(</sys/class/net/ixgbe2/ifindex) $(</sys/class/net/i40e1/ifindex)
+input: 7 output: 3
+map[0] (vports) = 4, map[1] (map) = 5, map[2] (count) = 0
+ifindex 3:    1926575 pkt/s
+ifindex 3:    7445550 pkt/s
+ifindex 3:    7443763 pkt/s
+ifindex 3:    7445031 pkt/s
+#+END_EXAMPLE
+
+Need ethtool_stats evidence:
+#+BEGIN_EXAMPLE
+$ ethtool_stats.pl --dev i40e1 --dev ixgbe2 --dev ixgbe1  --sec 2
+Show adapter(s) (i40e1 ixgbe2 ixgbe1) statistics (ONLY that changed!)
+Ethtool(i40e1   ) stat:    476049953 (    476,049,953) <= port.tx_bytes /sec
+Ethtool(i40e1   ) stat:      7438296 (      7,438,296) <= port.tx_size_64 /sec
+Ethtool(i40e1   ) stat:      7438281 (      7,438,281) <= port.tx_unicast /sec
+Ethtool(i40e1   ) stat:    446296831 (    446,296,831) <= rx_bytes /sec
+Ethtool(i40e1   ) stat:      7438281 (      7,438,281) <= rx_packets /sec
+Ethtool(i40e1   ) stat:      7438283 (      7,438,283) <= tx_unicast /sec
+Ethtool(ixgbe2  ) stat:     11442358 (     11,442,358) <= fdir_miss /sec
+Ethtool(ixgbe2  ) stat:    446127207 (    446,127,207) <= rx_bytes /sec
+Ethtool(ixgbe2  ) stat:    951162765 (    951,162,765) <= rx_bytes_nic /sec
+Ethtool(ixgbe2  ) stat:      3662929 (      3,662,929) <= rx_missed_errors /sec
+Ethtool(ixgbe2  ) stat:      3763511 (      3,763,511) <= rx_no_dma_resources /sec
+Ethtool(ixgbe2  ) stat:      7435453 (      7,435,453) <= rx_packets /sec
+Ethtool(ixgbe2  ) stat:     11198987 (     11,198,987) <= rx_pkts_nic /sec
+Ethtool(ixgbe2  ) stat:    446127207 (    446,127,207) <= rx_queue_4_bytes /sec
+Ethtool(ixgbe2  ) stat:      7435453 (      7,435,453) <= rx_queue_4_packets /sec
+#+END_EXAMPLE
+
+Result: i40e1 sending  7438283 (7,438,283) <= tx_unicast /sec
+
+#+BEGIN_EXAMPLE
+$ sudo ~/perf stat -C4 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (4 runs):
+
+ 3,804,156,271  cycles                                            ( +-  0.01% )
+ 5,855,352,513  instructions         #  1.54  insn per cycle      ( +-  0.00% )
+    37,489,166  cache-references                                  ( +-  0.00% )
+           225  cache-misses         #  0.001 % of all cache refs ( +- 38.96% )
+ 1,233,166,715  branches:k                                        ( +-  0.00% )
+    55,575,551  branch-misses:k      #  4.51% of all branches     ( +-  0.00% )
+       649,513  l2_rqsts.all_code_rd                              ( +-  0.45% )
+       547,581  l2_rqsts.code_rd_hit                              ( +-  0.41% )
+       101,945  l2_rqsts.code_rd_miss                             ( +-  0.80% )
+
+     1.0011470 +- 0.0000522 seconds time elapsed  ( +-  0.01% )
+#+END_EXAMPLE
