@@ -554,3 +554,77 @@ $ ./scripts/faddr2line vmlinux packet_rcv+0xf4
 packet_rcv+0xf4/0x3c8:
 packet_rcv at net/packet/af_packet.c:2078
 #+END_EXAMPLE
+
+Strange, it seems that tcpdump writing into /dev/null does not crash
+the kernel, while tcpdump that tries to show packet output on console
+does cause crash.
+
+#+BEGIN_EXAMPLE
+ # tcpdump -ni eth0 -w /dev/null  # <-- Does NOT crash
+vs.
+ # tcpdump -ni eth0 -c 10  # <-- Does crash
+#+END_EXAMPLE
+
+Got a new crash dump that contains the DSA calls:
+
+#+BEGIN_EXAMPLE
+[ 5650.971841] Unable to handle kernel paging request at virtual address ffff80002baa80e2
+[ 5650.977167] Mem abort info:
+[ 5650.980044]   ESR = 0x96000021
+[ 5650.983185]   Exception class = DABT (current EL), IL = 32 bits
+[ 5650.989299]   SET = 0, FnV = 0
+[ 5650.992406]   EA = 0, S1PTW = 0
+[ 5650.995628] Data abort info:
+[ 5650.998562]   ISV = 0, ISS = 0x00000021
+[ 5651.002528]   CM = 0, WnR = 0
+[ 5651.005589] swapper pgtable: 4k pages, 48-bit VAs, pgdp = 00000000704a343a
+[ 5651.012663] [ffff80002baa80e2] pgd=000000002fff9803, pud=000000002fff8803, pmd=00f800002ba00f11
+[ 5651.021627] Internal error: Oops: 96000021 [#1] SMP
+[ 5651.026610] Modules linked in:
+[ 5651.029750] CPU: 1 PID: 3097 Comm: cpumap/1/map:53 Tainted: G        W         4.20.0-rc1-mvneta_04-ftrace+ #33
+[ 5651.040135] Hardware name: Globalscale Marvell ESPRESSOBin Board (DT)
+[ 5651.046768] pstate: 40000005 (nZcv daif -PAN -UAO)
+[ 5651.051706] pc : __ll_sc_atomic_add+0x4/0x18
+[ 5651.056088] lr : __skb_clone+0xe0/0x110
+[ 5651.060025] sp : ffff80002902bb60
+[ 5651.063431] x29: ffff80002902bb60 x28: 0000000000000008 
+[ 5651.068895] x27: ffff00000941f528 x26: ffff80002baa8058 
+[ 5651.074361] x25: 000000000000002e x24: 000000000000003c 
+[ 5651.079827] x23: 000000000000003c x22: ffff80002b804000 
+[ 5651.085292] x21: ffff80002b804000 x20: ffff80002c8c6300 
+[ 5651.090757] x19: ffff80002c8c6900 x18: 0000000000000000 
+[ 5651.096223] x17: 0000000000000000 x16: 0000000000000000 
+[ 5651.101689] x15: 0000000000000000 x14: 0000000000000000 
+[ 5651.107155] x13: 0000000000000000 x12: 0000000000000000 
+[ 5651.112620] x11: 0000000000000000 x10: 0000000000000000 
+[ 5651.118086] x9 : 0000000000000000 x8 : 0000000000000002 
+[ 5651.123551] x7 : 0000000000000010 x6 : ffff80002c8c6e00 
+[ 5651.129017] x5 : 0000000004cb0fb4 x4 : ffff80002ffde6e0 
+[ 5651.134482] x3 : 0000000000000001 x2 : ffff80002baa80c2 
+[ 5651.139948] x1 : ffff80002baa80e2 x0 : 0000000000000001 
+[ 5651.145417] Process cpumap/1/map:53 (pid: 3097, stack limit = 0x00000000feacb5a1)
+[ 5651.153120] Call trace:
+[ 5651.155631]  __ll_sc_atomic_add+0x4/0x18
+[ 5651.159663]  skb_clone+0x74/0xd8
+[ 5651.162982]  packet_rcv+0xf4/0x3c8
+[ 5651.166474]  __netif_receive_skb_core+0x4ec/0x8a8
+[ 5651.171311]  __netif_receive_skb_one_core+0x4c/0x90
+[ 5651.176329]  __netif_receive_skb+0x28/0x78
+[ 5651.180541]  netif_receive_skb_internal+0x40/0xe0
+[ 5651.185378]  netif_receive_skb+0x24/0xb0
+[ 5651.189412]  dsa_switch_rcv+0xd4/0x168
+[ 5651.193263]  __netif_receive_skb_one_core+0x68/0x90
+[ 5651.198281]  netif_receive_skb_core+0x24/0x30
+[ 5651.202764]  cpu_map_kthread_run+0x1b8/0x330
+[ 5651.207153]  kthread+0x134/0x138
+[ 5651.210467]  ret_from_fork+0x10/0x1c
+[ 5651.214142] Code: 97fffe9d 17ffffee 00000000 f9800031 (885f7c31) 
+[ 5651.220419] ---[ end trace b5b150d41f496d6f ]---
+[ 5651.225161] Kernel panic - not syncing: Fatal exception in interrupt
+[ 5651.231700] SMP: stopping secondary CPUs
+[ 5651.235736] Kernel Offset: disabled
+[ 5651.239317] CPU features: 0x2,2080200c
+[ 5651.243167] Memory Limit: none
+[ 5651.246308] ---[ end Kernel panic - not syncing: Fatal exception in interrupt ]---
+#+END_EXAMPLE
+
