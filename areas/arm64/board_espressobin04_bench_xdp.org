@@ -546,3 +546,11 @@ root@espressobin:~/samples/bpf# tcpdump -ni eth0 -c 10
 [ 1051.380896] Memory Limit: none
 [ 1051.384035] ---[ end Kernel panic - not syncing: Fatal exception in interrupt ]---
 #+END_EXAMPLE
+
+Notice that function =packet_rcv= is the tcpdump/af_packet code.
+
+#+BEGIN_EXAMPLE
+$ ./scripts/faddr2line vmlinux packet_rcv+0xf4
+packet_rcv+0xf4/0x3c8:
+packet_rcv at net/packet/af_packet.c:2078
+#+END_EXAMPLE
