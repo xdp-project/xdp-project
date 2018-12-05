@@ -127,6 +127,7 @@ $ sudo ~/perf stat -C3 -e cycles -e  instructions -e cache-references -e cache-m
 * Baseline kernel with retpoline
 
 Need a baseline kernel, just before Hellwigs patches:
+ - Linux broadwell 4.20.0-rc4-hellwig-baseline+ #3 SMP PREEMPT
 
 #+BEGIN_EXAMPLE
  git checkout -b hellwig-baseline ef78e5ec9214
@@ -203,4 +204,63 @@ $ sudo ~/perf stat -C4 -e cycles -e  instructions -e cache-references -e cache-m
        101,945  l2_rqsts.code_rd_miss                             ( +-  0.80% )
 
      1.0011470 +- 0.0000522 seconds time elapsed  ( +-  0.01% )
+#+END_EXAMPLE
+
+
+* Baseline kernel with no-retpoline
+
+What was performance before RETPOLINE? Testing without CONFIG_RETPOLINE
+ - Linux broadwell 4.20.0-rc4-hellwig-baseline-no-retpoline+ #4 SMP PREEMPT
+
+** Driver ixgbe
+
+*** ixgbe: XDP_REDIRECT devmap (baseline-NO-retpoline)
+
+#+BEGIN_EXAMPLE
+[jbrouer@broadwell kernel-bpf-samples]$ sudo ./xdp_redirect_map  $(</sys/class/net/ixgbe2/ifindex) $(</sys/class/net/i40e1/ifindex)
+input: 7 output: 2
+map[0] (vports) = 4, map[1] (map) = 5, map[2] (count) = 0
+ifindex 2:    2049760 pkt/s
+ifindex 2:   11913696 pkt/s
+ifindex 2:   11930501 pkt/s
+ifindex 2:   11930700 pkt/s
+ifindex 2:   11930911 pkt/s
+#+END_EXAMPLE
+
+Need ethtool_stats evidence:
+#+BEGIN_EXAMPLE
+Show adapter(s) (i40e1 ixgbe2 ixgbe1) statistics (ONLY that changed!)
+Ethtool(i40e1   ) stat:    762445780 (    762,445,780) <= port.tx_bytes /sec
+Ethtool(i40e1   ) stat:     11913151 (     11,913,151) <= port.tx_size_64 /sec
+Ethtool(i40e1   ) stat:     11913224 (     11,913,224) <= port.tx_unicast /sec
+Ethtool(i40e1   ) stat:    714789220 (    714,789,220) <= rx_bytes /sec
+Ethtool(i40e1   ) stat:     11913154 (     11,913,154) <= rx_packets /sec
+Ethtool(i40e1   ) stat:     11913154 (     11,913,154) <= tx_unicast /sec
+Ethtool(ixgbe2  ) stat:     13562215 (     13,562,215) <= fdir_miss /sec
+Ethtool(ixgbe2  ) stat:    716557813 (    716,557,813) <= rx_bytes /sec
+Ethtool(ixgbe2  ) stat:    953785825 (    953,785,825) <= rx_bytes_nic /sec
+Ethtool(ixgbe2  ) stat:      1734254 (      1,734,254) <= rx_missed_errors /sec
+Ethtool(ixgbe2  ) stat:      1226028 (      1,226,028) <= rx_no_dma_resources /sec
+Ethtool(ixgbe2  ) stat:     11942630 (     11,942,630) <= rx_packets /sec
+Ethtool(ixgbe2  ) stat:     13168654 (     13,168,654) <= rx_pkts_nic /sec
+Ethtool(ixgbe2  ) stat:    716557813 (    716,557,813) <= rx_queue_2_bytes /sec
+Ethtool(ixgbe2  ) stat:     11942630 (     11,942,630) <= rx_queue_2_packets /sec
+#+END_EXAMPLE
+
+Result: i40e1 = 11913154 (11,913,154) <= tx_unicast /sec
+
+#+BEGIN_EXAMPLE
+$ sudo ~/perf stat -C2 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 2' (4 runs):
+
+  3,804,824,894  cycles                                            ( +-  0.01% )
+  9,088,780,992  instructions         # 2.39  insn per cycle       ( +-  0.01% )
+     60,232,927  cache-references                                  ( +-  0.01% )
+            231  cache-misses         # 0.000 % of all cache refs  ( +- 28.11% )
+  1,802,487,890  branches:k                                        ( +-  0.01% )
+      2,434,529  branch-misses:k      # 0.14% of all branches      ( +-  0.04% )
+        874,547  l2_rqsts.all_code_rd                              ( +-  2.29% )
+        742,335  l2_rqsts.code_rd_hit                              ( +-  1.85% )
+        132,198  l2_rqsts.code_rd_miss                             ( +-  4.78% )
 #+END_EXAMPLE
