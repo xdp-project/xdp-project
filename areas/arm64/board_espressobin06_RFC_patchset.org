@@ -1,0 +1,48 @@
+# -*- fill-column: 71; -*-
+#+Title: Prepare RFC patchset for upstream to show page_pool plans
+
+* Cover-letter
+
+This RFC patchset shows the plans for allowing page_pool to handle and
+maintain DMA map/unmap of the pages it serves to the driver.  For this
+to work a return hook in the network core is introduced, which also
+involves extending sk_buff with the necessary information.
+
+The overall purpose is to simplify drivers, by providing a page
+allocation API that does recycling, each driver doesn't have to
+reinvent its own recycling scheme.  Using page_poll in a driver does
+not require implementing XDP support, but it makes it trivially easy
+to do so.  The recycles code leverage the XDP recycle APIs.
+
+The Marvell mvneta driver was used in this patchset to demonstrate how
+to use the API, and tested on the EspressoBIN board.  We also have
+patches enabling XDP for this driver, but they are not part of this
+patchset as we want review of the general idea of the page_pool return
+SKB hook.
+
+A driver using page_pool and XDP redirecting into CPUMAP, will also
+take advantage of the new SKB return hook, this is currently only mlx5.
+
+
+The longer term plans involves allowing other types of allocators to
+use this return hook.  Partigularly allowing zero-copy AF_XDP frames
+to travel further into the netstack, if userspace page have been
+restricted to read-only.
+
+
+* Patch descriptions
+
+Prepare patch desc in this docs, before updating git-repo.
+
+
+
+
+* Apalos/Ilias comments:
+
+TODO: Mention jumbo frames are not tested and needs proper test/review,
+
+Remeber to Cc Ard.
+
+Mention for mvneta "we are not syncing the buffer back to the device
+for now, since mvneta does not need that"
+
