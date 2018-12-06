@@ -18,10 +18,11 @@ $ git checkout dma-direct-calls
 
 * General notes
 
-Even if removing/mitigating all DMA indirect calls, then there is still two
-indirect calls, that we cannot avoid.
- - 1. Indirect eBPF XDP call invoked for every xdp_buff
- - 2. NAPI net_rx_action call drivers napi_poll function per 64 packets
+Even if removing/mitigating all DMA indirect calls, then there are still some
+indirect calls, that we cannot avoid:
+ - 1. For every packet: Indirect eBPF XDP prog call
+ - 2. For every 16th packet: net_device->ndo_xdp_xmit
+ - 3. For every 64th packet: NAPI net_rx_action call drivers napi_poll funcptr
 
 
 * Summary of results
