@@ -3,16 +3,18 @@
 
 * Cover-letter
 
+Subj: page_pool DMA handling and allow to recycles frames via SKB
+
 This RFC patchset shows the plans for allowing page_pool to handle and
 maintain DMA map/unmap of the pages it serves to the driver.  For this
 to work a return hook in the network core is introduced, which also
 involves extending sk_buff with the necessary information.
 
 The overall purpose is to simplify drivers, by providing a page
-allocation API that does recycling, each driver doesn't have to
-reinvent its own recycling scheme.  Using page_poll in a driver does
-not require implementing XDP support, but it makes it trivially easy
-to do so.  The recycles code leverage the XDP recycle APIs.
+allocation API that does recycling, such that each driver doesn't have
+to reinvent its own recycling scheme.  Using page_pool in a driver
+does not require implementing XDP support, but it makes it trivially
+easy to do so.  The recycles code leverage the XDP recycle APIs.
 
 The Marvell mvneta driver was used in this patchset to demonstrate how
 to use the API, and tested on the EspressoBIN board.  We also have
@@ -20,28 +22,107 @@ patches enabling XDP for this driver, but they are not part of this
 patchset as we want review of the general idea of the page_pool return
 SKB hook.
 
-A driver using page_pool and XDP redirecting into CPUMAP, will also
-take advantage of the new SKB return hook, this is currently only mlx5.
+A driver using page_pool and XDP redirecting into CPUMAP or veth, will
+also take advantage of the new SKB return hook, this is currently only mlx5.
 
 
 The longer term plans involves allowing other types of allocators to
-use this return hook.  Partigularly allowing zero-copy AF_XDP frames
+use this return hook.  Particularly allowing zero-copy AF_XDP frames
 to travel further into the netstack, if userspace page have been
 restricted to read-only.
+
+
+* People needing to see/review patchset
+
+stg mail --version=RFC --prefix="net-next" -e -E --to meup \
+ --cc ilias.apalodimas@linaro.org \
+ --to netdev --to davem --cc daniel --cc alexei \
+ --cc w@1wt.eu --cc ard.biesheuvel@linaro.org \
+ --cc jason --cc mykyta.iziumtsev@gmail.com \
+ --cc toke --cc tariq --cc bjorn --cc saeed \
+ page_pool-add-helper-functions..veth_transfer_mem_info
+
+
+To:
+ - Daniel and Alexei
+
+Cc:
+ - Ard
+ - Jason Wang
+ - Willy
+
 
 
 * Patch descriptions
 
 Prepare patch desc in this docs, before updating git-repo.
 
+** net: core: add recycle capabilities on skbs via page_pool API
 
+This patch is changing struct sk_buff, and is thus per-definition
+controversial.
+
+Place a new member 'mem_info' of type struct xdp_mem_info, just after
+members (flags) head_frag and pfmemalloc, And not in between
+headers_start/end to ensure skb_copy() and pskb_copy() work as-is.
+Copying mem_info during skb_clone() is required.  This makes sure that
+pages are correctly freed or recycled during the altered
+skb_free_head() invocation.
+
+The 'mem_info' name is chosen as this is not strictly tied to XDP,
+although the XDP return infrastructure is used.  As a future plan, we
+could introduce a __u8 flags member to xdp_mem_info and move flags
+head_frag and pfmemalloc into this area.
+
+** net: mvneta: remove copybreak, prefetch and use build_skb
+
+The driver memcpy for packets < 256b and it's recycle tricks are not
+needed anymore.  As previous patch introduces buffer recycling using
+the page_pool API (although recycling doesn't get fully activated in
+this patch).  After this switch to using build_skb().
+
+This patch implicit fixes a driver bug where the memory is copied
+prior to it's syncing for the CPU, in the < 256b case (as this case is
+removed).
+
+We also remove the data prefetch completely. The original driver had
+the prefetch misplaced before any dma_sync operations took place.
+Based on Jesper's analysis even if the prefetch is placed after
+any DMA sync ops it ends up hurting performance.
+
+** mvneta: activate page recycling via skb using page_pool
+
+Previous mvneta patches have already started to use page_pool, but
+this was primarily for RX page alloc-side and for doing DMA map/unmap
+handling.  Pages traveling through the netstack was unmapped and
+returned through the normal page allocator.
+
+It is now time to activate that pages are recycled back. This involves
+registering the page_pool with the XDP rxq memory model API, even-though
+the driver doesn't support XDP itself yet.  And simply updating the
+SKB->mem_info field with info from the xdp_rxq_info.
+
+** cpumap fix
+
+xdp: bpf: cpumap redirect must update skb->mem_info
+
+XDP-redirect to CPUMAP is about creating the SKB outside the driver
+(and on another CPU) via xdp_frame info. Transfer the xdp_frame mem
+info to the new SKB mem_info field.
+
+** veth fix
+
+veth: xdp_frames redirected into veth need to transfer xdp_mem_info
+
+XDP frames redirected into a veth device, that choose XDP_PASS end-up
+creating an SKB from the xdp_frame.  The xdp_frame mem info need to be
+transferred into the SKB.
 
 
 * Apalos/Ilias comments:
 
 TODO: Mention jumbo frames are not tested and needs proper test/review,
-
-Remeber to Cc Ard.
+ - Jesper fixed that
 
 Mention for mvneta "we are not syncing the buffer back to the device
 for now, since mvneta does not need that"
