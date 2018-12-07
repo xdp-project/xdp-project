@@ -37,11 +37,14 @@ Performance numbers in packets/sec (XDP_REDIRECT ixgbe -> i40e):
  - 11913154 (11,913,154) pps - baseline compiled without retpoline
  -  7438283  (7,438,283) pps - regression due to CONFIG_RETPOLINE
  -  9610088  (9,610,088) pps - mitigation via Hellwig dma-direct-calls
- - 10049223 (10,049,223) pps - Hellwig branch dma-direct-calls.2
+ - 10049223 (10,049,223) pps - Hellwig branch dma-direct-calls.2 + RETPOLINE
+ - 11762603 (11,762,603) pps - Hellwig branch dma-direct-calls.2 but no-retpoline
 
 Do notice at these extreme speeds the pps number increase rabbit with
 small changes, e.g. difference to new branch is:
  - (1/9610088-1/10049223)*10^9 = 4.54 nanosec faster
+ - Diff: (1/11913154-1/10049223)*10^9 = -15.57 nanosec
+ - Diff: (1/11913154-1/11761275)*10^9 =  -1.08 nanosec
 
 From the inst per cycle, it is clear that retpolines are stalling the CPU
 pipeline:
@@ -52,6 +55,7 @@ pipeline:
 | 7,438,283  |           1.54 |
 | 9,610,088  |           2.04 |
 | 10,049,223 |           1.99 |
+| 11,762,603 |           2.30 |
 |            |                |
 
 
@@ -63,6 +67,7 @@ Strangely the Instruction-Cache is also under heavier pressure:
 | 7,438,283  | 649,513              | 547,581              | 101,945               |
 | 9,610,088  | 2,568,064            | 2,001,369            | 566,683               |
 | 10,049,223 | 1,232,818            | 1,152,514            | 80,299                |
+| 11,762,603 | 1,383,597            | 1,148,387            | 235,186               |
 |            |                      |                      |                       |
 
 
@@ -356,4 +361,50 @@ $ sudo ~/perf stat -C5 -e cycles -e  instructions -e cache-references -e cache-m
       1,232,818  l2_rqsts.all_code_rd                                ( +-  1.02% )
       1,152,514  l2_rqsts.code_rd_hit                                ( +-  1.07% )
          80,299  l2_rqsts.code_rd_miss                               ( +-  0.23% )
+#+END_EXAMPLE
+
+* Kernel git branch dma-direct-calls.2 but NO-retpoline
+
+What is the effect of the DMA API changes (branch dma-direct-calls.2),
+when NOT compiled with RETPOLINE, that is an intersting question?  As
+we want to make sure we don't introduce any regressions while working
+on fixing/mitigating retpoline.
+
+Result: 11762603 (11,762,603) <= tx_unicast /sec
+
+#+BEGIN_EXAMPLE
+Show adapter(s) (i40e1 ixgbe2 ixgbe1) statistics (ONLY that changed!)
+Ethtool(i40e1   ) stat:    752806181 (    752,806,181) <= port.tx_bytes /sec
+Ethtool(i40e1   ) stat:     11762598 (     11,762,598) <= port.tx_size_64 /sec
+Ethtool(i40e1   ) stat:     11762587 (     11,762,587) <= port.tx_unicast /sec
+Ethtool(i40e1   ) stat:    705755244 (    705,755,244) <= rx_bytes /sec
+Ethtool(i40e1   ) stat:     11762587 (     11,762,587) <= rx_packets /sec
+Ethtool(i40e1   ) stat:     11762603 (     11,762,603) <= tx_unicast /sec
+Ethtool(ixgbe2  ) stat:     13494045 (     13,494,045) <= fdir_miss /sec
+Ethtool(ixgbe2  ) stat:    706543665 (    706,543,665) <= rx_bytes /sec
+Ethtool(ixgbe2  ) stat:    953585273 (    953,585,273) <= rx_bytes_nic /sec
+Ethtool(ixgbe2  ) stat:      1796888 (      1,796,888) <= rx_missed_errors /sec
+Ethtool(ixgbe2  ) stat:      1327168 (      1,327,168) <= rx_no_dma_resources /sec
+Ethtool(ixgbe2  ) stat:     11775728 (     11,775,728) <= rx_packets /sec
+Ethtool(ixgbe2  ) stat:     13102884 (     13,102,884) <= rx_pkts_nic /sec
+Ethtool(ixgbe2  ) stat:    706543665 (    706,543,665) <= rx_queue_0_bytes /sec
+Ethtool(ixgbe2  ) stat:     11775728 (     11,775,728) <= rx_queue_0_packets /sec
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+$ sudo ~/perf stat -C0 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 0' (4 runs):
+
+     3,804,288,765      cycles                                                        ( +-  0.00% )
+     8,760,707,840      instructions              #    2.30  insn per cycle           ( +-  0.01% )
+        58,578,076      cache-references                                              ( +-  0.02% )
+               688      cache-misses              #    0.001 % of all cache refs      ( +- 72.00% )
+     1,717,330,768      branches:k                                                    ( +-  0.01% )
+         2,393,738      branch-misses:k           #    0.14% of all branches          ( +-  0.10% )
+         1,383,597      l2_rqsts.all_code_rd                                          ( +-  3.21% )
+         1,148,387      l2_rqsts.code_rd_hit                                          ( +-  3.02% )
+           235,186      l2_rqsts.code_rd_miss                                         ( +-  4.21% )
+
+        1.00117914 +- 0.00000689 seconds time elapsed  ( +-  0.00% )
 #+END_EXAMPLE
