@@ -30,13 +30,18 @@ indirect calls, that we cannot avoid:
 Using XDP_REDIRECT between drivers RX ixgbe(10G) redirect TX i40e(40G),
 via BPF devmap (used samples/bpf/xdp_redirect_map) . (Note choose
 higher TX link-speed to assure that we don't to have a TX bottleneck).
-The baseline-kernel is at commit [[ https://git.kernel.org/torvalds/c/ef78e5ec9214][ef78e5ec9214]], which is commit just
+The baseline-kernel is at commit [[https://git.kernel.org/torvalds/c/ef78e5ec9214][ef78e5ec9214]], which is commit just
 before Hellwigs changes in this tree.
 
 Performance numbers in packets/sec (XDP_REDIRECT ixgbe -> i40e):
  - 11913154 (11,913,154) pps - baseline compiled without retpoline
  -  7438283  (7,438,283) pps - regression due to CONFIG_RETPOLINE
  -  9610088  (9,610,088) pps - mitigation via Hellwig dma-direct-calls
+ - 10049223 (10,049,223) pps - Hellwig branch dma-direct-calls.2
+
+Do notice at these extreme speeds the pps number increase rabbit with
+small changes, e.g. difference to new branch is:
+ - (1/9610088-1/10049223)*10^9 = 4.54 nanosec faster
 
 From the inst per cycle, it is clear that retpolines are stalling the CPU
 pipeline:
@@ -46,6 +51,8 @@ pipeline:
 | 11,913,154 |           2.39 |
 | 7,438,283  |           1.54 |
 | 9,610,088  |           2.04 |
+| 10,049,223 |           1.99 |
+|            |                |
 
 
 Strangely the Instruction-Cache is also under heavier pressure:
@@ -55,6 +62,7 @@ Strangely the Instruction-Cache is also under heavier pressure:
 | 11,913,154 | 874,547              | 742,335              | 132,198               |
 | 7,438,283  | 649,513              | 547,581              | 101,945               |
 | 9,610,088  | 2,568,064            | 2,001,369            | 566,683               |
+| 10,049,223 | 1,232,818            | 1,152,514            | 80,299                |
 |            |                      |                      |                       |
 
 
@@ -297,4 +305,55 @@ $ sudo ~/perf stat -C2 -e cycles -e  instructions -e cache-references -e cache-m
         874,547  l2_rqsts.all_code_rd                              ( +-  2.29% )
         742,335  l2_rqsts.code_rd_hit                              ( +-  1.85% )
         132,198  l2_rqsts.code_rd_miss                             ( +-  4.78% )
+#+END_EXAMPLE
+
+* Kernel new git branch dma-direct-calls.2
+
+Branch: dma-direct-calls.2
+ - Tree: git://git.infradead.org/users/hch/misc.git
+
+** ixgbe: XDP_REDIRECT devmap (branch dma-direct-calls.2)
+
+Redirect via:
+#+BEGIN_EXAMPLE
+$ sudo ./xdp_redirect_map  $(</sys/class/net/ixgbe2/ifindex) $(</syslass/net/i40e1/ifindex)
+#+END_EXAMPLE
+
+Evidence from ethtool_stats.pl of TX:
+ - Result: 10049223 (10,049,223) <= tx_unicast /sec
+
+#+BEGIN_EXAMPLE
+Show adapter(s) (i40e1 ixgbe2 ixgbe1) statistics (ONLY that changed!)
+Ethtool(i40e1   ) stat:    643150456 (    643,150,456) <= port.tx_bytes /sec
+Ethtool(i40e1   ) stat:     10049223 (     10,049,223) <= port.tx_size_64 /sec
+Ethtool(i40e1   ) stat:     10049223 (     10,049,223) <= port.tx_unicast /sec
+Ethtool(i40e1   ) stat:    602953350 (    602,953,350) <= rx_bytes /sec
+Ethtool(i40e1   ) stat:     10049223 (     10,049,223) <= rx_packets /sec
+Ethtool(i40e1   ) stat:     10049223 (     10,049,223) <= tx_unicast /sec
+Ethtool(ixgbe2  ) stat:     12416007 (     12,416,007) <= fdir_miss /sec
+Ethtool(ixgbe2  ) stat:    603733053 (    603,733,053) <= rx_bytes /sec
+Ethtool(ixgbe2  ) stat:    953235369 (    953,235,369) <= rx_bytes_nic /sec
+Ethtool(ixgbe2  ) stat:      2822742 (      2,822,742) <= rx_missed_errors /sec
+Ethtool(ixgbe2  ) stat:      2009357 (      2,009,357) <= rx_no_dma_resources /sec
+Ethtool(ixgbe2  ) stat:     10062218 (     10,062,218) <= rx_packets /sec
+Ethtool(ixgbe2  ) stat:     12071567 (     12,071,567) <= rx_pkts_nic /sec
+Ethtool(ixgbe2  ) stat:    603733053 (    603,733,053) <= rx_queue_5_bytes /sec
+Ethtool(ixgbe2  ) stat:     10062218 (     10,062,218) <= rx_queue_5_packets /sec
+#+END_EXAMPLE
+
+Perf stat:
+#+BEGIN_EXAMPLE
+$ sudo ~/perf stat -C5 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 5' (4 runs):
+
+  3,804,336,574  cycles                                              ( +-  0.00% )
+  7,578,166,786  instructions           # 1.99  insn per cycle       ( +-  0.00% )
+     50,265,409  cache-references                                    ( +-  0.00% )
+            223  cache-misses           # 0.000 % of all cache refs  ( +- 34.62% )
+  1,512,375,528  branches:k                                          ( +-  0.00% )
+     24,152,484  branch-misses:k        # 1.60% of all branches      ( +-  0.00% )
+      1,232,818  l2_rqsts.all_code_rd                                ( +-  1.02% )
+      1,152,514  l2_rqsts.code_rd_hit                                ( +-  1.07% )
+         80,299  l2_rqsts.code_rd_miss                               ( +-  0.23% )
 #+END_EXAMPLE
