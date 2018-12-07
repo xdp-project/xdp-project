@@ -36,6 +36,25 @@ Performance numbers in packets/sec (XDP_REDIRECT ixgbe -> i40e):
  -  7438283  (7,438,283) pps - regression due to CONFIG_RETPOLINE
  -  9610088  (9,610,088) pps - mitigation via Hellwig dma-direct-calls
 
+From the inst per cycle, it is clear that retpolines are stalling the CPU
+pipeline:
+
+| pps        | insn per cycle |
+|------------+----------------|
+| 11,913,154 |           2.39 |
+| 7,438,283  |           1.54 |
+| 9,610,088  |           2.04 |
+
+
+Strangely the Instruction-Cache is also under heavier pressure:
+
+| pps        | l2_rqsts.all_code_rd | l2_rqsts.code_rd_hit | l2_rqsts.code_rd_miss |
+|------------+----------------------+----------------------+-----------------------|
+| 11,913,154 | 874,547              | 742,335              | 132,198               |
+| 7,438,283  | 649,513              | 547,581              | 101,945               |
+| 9,610,088  | 2,568,064            | 2,001,369            | 566,683               |
+|            |                      |                      |                       |
+
 
 * Testing Hellwig branch "dma-direct-calls"
 
