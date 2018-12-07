@@ -34,7 +34,7 @@ restricted to read-only.
 
 * People needing to see/review patchset
 
-stg mail --version=RFC --prefix="net-next" -e -E --to meup \
+stg mail --version=RFC --prefix="net-next" -e --to meup \
  --cc ilias.apalodimas@linaro.org \
  --to netdev --to davem --cc daniel --cc alexei \
  --cc w@1wt.eu --cc ard.biesheuvel@linaro.org \
