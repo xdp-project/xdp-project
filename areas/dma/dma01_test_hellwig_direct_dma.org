@@ -30,6 +30,8 @@ indirect calls, that we cannot avoid:
 Using XDP_REDIRECT between drivers RX ixgbe(10G) redirect TX i40e(40G),
 via BPF devmap (used samples/bpf/xdp_redirect_map) . (Note choose
 higher TX link-speed to assure that we don't to have a TX bottleneck).
+The baseline-kernel is at commit [[ https://git.kernel.org/torvalds/c/ef78e5ec9214][ef78e5ec9214]], which is commit just
+before Hellwigs changes in this tree.
 
 Performance numbers in packets/sec (XDP_REDIRECT ixgbe -> i40e):
  - 11913154 (11,913,154) pps - baseline compiled without retpoline
