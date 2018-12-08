@@ -408,3 +408,37 @@ $ sudo ~/perf stat -C0 -e cycles -e  instructions -e cache-references -e cache-m
 
         1.00117914 +- 0.00000689 seconds time elapsed  ( +-  0.00% )
 #+END_EXAMPLE
+
+* Investigate overhead of BPF-indirect retpoline
+
+Find way to disable retpoline for BPF XDP indirect call to test DMA
+patches. As described earlier:
+
+Even if removing/mitigating all DMA indirect calls, then there are still some
+indirect calls, that we cannot avoid:
+ - 1. For every packet: Indirect eBPF XDP prog call
+ - 2. For every 16th packet: net_device->ndo_xdp_xmit
+ - 3. For every 64th packet: NAPI net_rx_action call drivers napi_poll funcptr
+
+I would like to benchmark removing the per packet retpoline, as this
+will tell us how close the DMA-patchset can bring a RETPOLINE enabled
+kernel to the performance we see without retpoline.
+
+
+#+BEGIN_SRC diff
+diff --git a/include/linux/filter.h b/include/linux/filter.h
+index de629b706d1d..ed0a5153e2a0 100644
+--- a/include/linux/filter.h
++++ b/include/linux/filter.h
+@@ -619,7 +619,9 @@ static inline u32 bpf_prog_run_clear_cb(const struct bpf_prog *prog,
+        return BPF_PROG_RUN(prog, skb);
+ }
+ 
+-static __always_inline u32 bpf_prog_run_xdp(const struct bpf_prog *prog,
++static __always_inline
++__attribute__((indirect_branch("keep")))
++u32 bpf_prog_run_xdp(const struct bpf_prog *prog,
+                                            struct xdp_buff *xdp)
+ {
+        /* Caller needs to hold rcu_read_lock() (!), otherwise program
+#+END_SRC
