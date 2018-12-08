@@ -424,6 +424,10 @@ I would like to benchmark removing the per packet retpoline, as this
 will tell us how close the DMA-patchset can bring a RETPOLINE enabled
 kernel to the performance we see without retpoline.
 
+Found that it is possible via GCC attributes to disable retpoline on a
+per function basis via __attribute__.
+
+** First-attempt: Disable retpoline in bpf_prog_run_xdp
 
 #+BEGIN_SRC diff
 diff --git a/include/linux/filter.h b/include/linux/filter.h
@@ -442,3 +446,172 @@ index de629b706d1d..ed0a5153e2a0 100644
  {
         /* Caller needs to hold rcu_read_lock() (!), otherwise program
 #+END_SRC
+
+Not much difference:
+#+BEGIN_EXAMPLE
+Show adapter(s) (i40e1 ixgbe2 ixgbe1) statistics (ONLY that changed!)
+Ethtool(i40e1   ) stat:    658856830 (    658,856,830) <= port.tx_bytes /sec
+Ethtool(i40e1   ) stat:     10294638 (     10,294,638) <= port.tx_size_64 /sec
+Ethtool(i40e1   ) stat:     10294622 (     10,294,622) <= port.tx_unicast /sec
+Ethtool(i40e1   ) stat:    617678278 (    617,678,278) <= rx_bytes /sec
+Ethtool(i40e1   ) stat:     10294638 (     10,294,638) <= rx_packets /sec
+Ethtool(i40e1   ) stat:     10294622 (     10,294,622) <= tx_unicast /sec
+Ethtool(ixgbe2  ) stat:     12439699 (     12,439,699) <= fdir_miss /sec
+Ethtool(ixgbe2  ) stat:    616748552 (    616,748,552) <= rx_bytes /sec
+Ethtool(ixgbe2  ) stat:    951259886 (    951,259,886) <= rx_bytes_nic /sec
+Ethtool(ixgbe2  ) stat:      2724778 (      2,724,778) <= rx_missed_errors /sec
+Ethtool(ixgbe2  ) stat:      1859527 (      1,859,527) <= rx_no_dma_resources /sec
+Ethtool(ixgbe2  ) stat:     10279143 (     10,279,143) <= rx_packets /sec
+Ethtool(ixgbe2  ) stat:     12138660 (     12,138,660) <= rx_pkts_nic /sec
+Ethtool(ixgbe2  ) stat:    616748552 (    616,748,552) <= rx_queue_1_bytes /sec
+Ethtool(ixgbe2  ) stat:     10279143 (     10,279,143) <= rx_queue_1_packets /sec
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+$ sudo ~/perf stat -C1 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 1' (4 runs):
+
+  3,985,155,205  cycles                                             ( +-  0.01% )
+  7,762,244,304  instructions          # 1.95  insn per cycle       ( +-  0.02% )
+     50,783,229  cache-references                                   ( +-  0.01% )
+            304  cache-misses          # 0.001 % of all cache refs  ( +- 29.14% )
+  1,549,114,820  branches:k                                         ( +-  0.02% )
+     24,751,253  branch-misses:k       # 1.60% of all branches      ( +-  0.03% )
+      1,115,008  l2_rqsts.all_code_rd                               ( +-  0.62% )
+      1,026,484  l2_rqsts.code_rd_hit                               ( +-  0.46% )
+         88,493  l2_rqsts.code_rd_miss                              ( +-  2.59% )
+#+END_EXAMPLE
+
+** Second attempt: Disable a lot more retpoline function calls
+
+Wonder it is the dev->ndo_xdp_xmit call?
+Or napi->poll call?
+
+Disable a lot more retpoline function calls:
+
+#+BEGIN_SRC diff
+b/drivers/net/ethernet/intel/ixgbe/ixgbe_maidiff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index 113b38e0defb..528bdeb73e73 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -2269,7 +2269,9 @@ static void ixgbe_rx_buffer_flip(struct ixgbe_ring *rx_ring,
+  *
+  * Returns amount of work completed
+  **/
+-static int ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
++static
++__attribute__((indirect_branch("keep")))
++int ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
+                               struct ixgbe_ring *rx_ring,
+                               const int budget)
+ {
+diff --git a/include/linux/filter.h b/include/linux/filter.h
+index de629b706d1d..ed0a5153e2a0 100644
+--- a/include/linux/filter.h
++++ b/include/linux/filter.h
+@@ -619,7 +619,9 @@ static inline u32 bpf_prog_run_clear_cb(const struct bpf_prog *prog,
+        return BPF_PROG_RUN(prog, skb);
+ }
+ 
+-static __always_inline u32 bpf_prog_run_xdp(const struct bpf_prog *prog,
++static __always_inline
++__attribute__((indirect_branch("keep")))
++u32 bpf_prog_run_xdp(const struct bpf_prog *prog,
+                                            struct xdp_buff *xdp)
+ {
+        /* Caller needs to hold rcu_read_lock() (!), otherwise program
+diff --git a/kernel/bpf/devmap.c b/kernel/bpf/devmap.c
+index 191b79948424..05e7aa9a7dcc 100644
+--- a/kernel/bpf/devmap.c
++++ b/kernel/bpf/devmap.c
+@@ -217,7 +217,10 @@ void __dev_map_insert_ctx(struct bpf_map *map, u32 bit)
+        __set_bit(bit, bitmap);
+ }
+ 
+-static int bq_xmit_all(struct bpf_dtab_netdev *obj,
++
++static
++__attribute__((indirect_branch("keep")))
++int bq_xmit_all(struct bpf_dtab_netdev *obj,
+                       struct xdp_bulk_queue *bq, u32 flags,
+                       bool in_napi_ctx)
+ {
+diff --git a/net/core/dev.c b/net/core/dev.c
+index ddc551f24ba2..0374e4ab920f 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -6027,7 +6027,9 @@ static struct napi_struct *napi_by_id(unsigned int napi_id)
+ 
+ #define BUSY_POLL_BUDGET 8
+ 
+-static void busy_poll_stop(struct napi_struct *napi, void *have_poll_lock)
++static
++__attribute__((indirect_branch("keep")))
++void busy_poll_stop(struct napi_struct *napi, void *have_poll_lock)
+ {
+        int rc;
+ 
+@@ -6260,7 +6262,9 @@ void netif_napi_del(struct napi_struct *napi)
+ }
+ EXPORT_SYMBOL(netif_napi_del);
+ 
+-static int napi_poll(struct napi_struct *n, struct list_head *repoll)
++static
++__attribute__((indirect_branch("keep")))
++int napi_poll(struct napi_struct *n, struct list_head *repoll)
+ {
+        void *have;
+        int work, weight;
+@@ -6322,7 +6326,9 @@ static int napi_poll(struct napi_struct *n, struct list_head *repoll)
+        return work;
+ }
+ 
+-static __latent_entropy void net_rx_action(struct softirq_action *h)
++static __latent_entropy
++__attribute__((indirect_branch("keep")))
++void net_rx_action(struct softirq_action *h)
+ {
+        struct softnet_data *sd = this_cpu_ptr(&softnet_data);
+        unsigned long time_limit = jiffies +
+#+END_SRC
+
+That seems to work!
+ - Result: 11700004 (11,700,004) <= tx_unicast /sec
+
+#+BEGIN_EXAMPLE
+Show adapter(s) (i40e1 ixgbe2 ixgbe1) statistics (ONLY that changed!)
+Ethtool(i40e1   ) stat:    748800324 (    748,800,324) <= port.tx_bytes /sec
+Ethtool(i40e1   ) stat:     11700005 (     11,700,005) <= port.tx_size_64 /sec
+Ethtool(i40e1   ) stat:     11700005 (     11,700,005) <= port.tx_unicast /sec
+Ethtool(i40e1   ) stat:    702000304 (    702,000,304) <= rx_bytes /sec
+Ethtool(i40e1   ) stat:     11700005 (     11,700,005) <= rx_packets /sec
+Ethtool(i40e1   ) stat:     11700004 (     11,700,004) <= tx_unicast /sec
+Ethtool(ixgbe2  ) stat:     13418440 (     13,418,440) <= fdir_miss /sec
+Ethtool(ixgbe2  ) stat:    702554251 (    702,554,251) <= rx_bytes /sec
+Ethtool(ixgbe2  ) stat:    952906870 (    952,906,870) <= rx_bytes_nic /sec
+Ethtool(ixgbe2  ) stat:      1836691 (      1,836,691) <= rx_missed_errors /sec
+Ethtool(ixgbe2  ) stat:      1343245 (      1,343,245) <= rx_no_dma_resources /sec
+Ethtool(ixgbe2  ) stat:     11709238 (     11,709,238) <= rx_packets /sec
+Ethtool(ixgbe2  ) stat:     13052485 (     13,052,485) <= rx_pkts_nic /sec
+Ethtool(ixgbe2  ) stat:    702554251 (    702,554,251) <= rx_queue_4_bytes /sec
+Ethtool(ixgbe2  ) stat:     11709238 (     11,709,238) <= rx_queue_4_packets /sec
+#+END_EXAMPLE
+
+Perf show very high insn per cycle:
+#+BEGIN_EXAMPLE
+$ sudo ~/perf stat -C4 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (4 runs):
+
+     3,804,219,793      cycles                                                        ( +-  0.00% )
+     8,705,888,459      instructions              #    2.29  insn per cycle           ( +-  0.01% )
+        57,981,158      cache-references                                              ( +-  0.01% )
+               760      cache-misses              #    0.001 % of all cache refs      ( +- 60.81% )
+     1,703,235,429      branches:k                                                    ( +-  0.01% )
+         3,529,431      branch-misses:k           #    0.21% of all branches          ( +-  0.04% )
+           698,408      l2_rqsts.all_code_rd                                          ( +-  0.38% )
+           601,881      l2_rqsts.code_rd_hit                                          ( +-  0.42% )
+            96,514      l2_rqsts.code_rd_miss                                         ( +-  0.18% )
+#+END_EXAMPLE
+
