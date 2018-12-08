@@ -39,12 +39,14 @@ Performance numbers in packets/sec (XDP_REDIRECT ixgbe -> i40e):
  -  9610088  (9,610,088) pps - mitigation via Hellwig dma-direct-calls
  - 10049223 (10,049,223) pps - Hellwig branch dma-direct-calls.2 + RETPOLINE
  - 11762603 (11,762,603) pps - Hellwig branch dma-direct-calls.2 but no-retpoline
+ - 11700004 (11,700,004) pps - dma-direct-calls.2 + RETPOLINE, attribute hacks
 
 Do notice at these extreme speeds the pps number increase rabbit with
 small changes, e.g. difference to new branch is:
  - (1/9610088-1/10049223)*10^9 = 4.54 nanosec faster
  - Diff: (1/11913154-1/10049223)*10^9 = -15.57 nanosec
  - Diff: (1/11913154-1/11761275)*10^9 =  -1.08 nanosec
+ - Diff: (1/11913154-1/11700004)*10^9 =  -1.53 nanosec
 
 From the inst per cycle, it is clear that retpolines are stalling the CPU
 pipeline:
