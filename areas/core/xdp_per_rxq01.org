@@ -1,0 +1,91 @@
+# -*- fill-column: 76; -*-
+#+Title: Have XDP programs per RX-queue
+
+From the very beginning of the XDP design it was envisoned (by Jesper) that
+it should be possible to assign an *XDP program per NIC hardware RX-queue*
+number.  This idea was rejected by upstream, due to usability concerns.
+*Today there is single XDP program per netdev*.
+
+This document is an attempt to re-visit this idea, argue why it makes sense,
+and come-up with a design and sematics that can be accepted upstream.
+
+* Original idea
+
+Original idea behind per RX-queue handling comes from Van Jacobson's
+NetChannels ([[http://www.lemis.com/grog/Documentation/vj/lca06vj.pdf][PDF]]), as this is the building block for creating a SPSC channel
+into a socket or user-application. (SPSC = Single Producer Single Consumer).
+
+* Small step the direction: xdp_rxq_info
+
+In kernel [[https://git.kernel.org/torvalds/c/aecd67b60722d][v4.16]] struct xdp_rxq_info was introduce, which contains
+information specific to each RX-queue in the driver.  E.g. this struct
+contains the RX queue_index number.
+
+#+BEGIN_SRC C
+struct xdp_rxq_info {
+	struct net_device *dev;
+	u32 queue_index;
+	u32 reg_state;
+	struct xdp_mem_info mem;
+};
+#+END_SRC
+
+In kernel [[https://git.kernel.org/torvalds/c/5ab073ffd3264][v4.18]] both xdp_mem_type was introduce and type [[https://git.kernel.org/torvalds/c/02b55e5657c3a][MEM_TYPE_ZERO_COPY]]
+was added. This is specifically used by XDP programs that want to redirect
+into AF_XDP sockets, as XDP redirect core code need to identify AF_XDP
+zero-copy frames.
+
+But also the *RX queue_index is needed by the XDP developer* using AF_XDP
+sockets, as AF_XDP sockets have a strict SPSC relationship with a specific
+RX-queue.  Thus (in the single/global netdev XDP program model) the XDP
+developer must make sure that correct =ctx->rx_queue_index= is
+XDP_REDIRECT'ed into the corresponding XSKMAP index (else frame is dropped
+in =__xsk_map_redirect()= by dev and queue_id check in =xsk_rcv()=).
+
+#+BEGIN_SRC C
+enum xdp_mem_type {
+	MEM_TYPE_PAGE_SHARED = 0, /* Split-page refcnt based model */
+	MEM_TYPE_PAGE_ORDER0,     /* Orig XDP full page model */
+	MEM_TYPE_PAGE_POOL,
+	MEM_TYPE_ZERO_COPY,
+	MEM_TYPE_MAX,
+};
+
+struct xdp_mem_info {
+	u16 type; /* enum xdp_mem_type */
+	u16 id;
+};
+#+END_SRC
+
+* Bottleneck in single/global netdev XDP program
+
+As XDP grows, and more use-cases are added, then I fear that the single XDP
+program per netdev is going to be a performance bottleneck.  As the single
+XDP program, will have to perform a lot of common checks before it knows
+what use-case this packet match. E.g. as described above AF_XDP redirect
+requires reading =ctx->rx_queue_index= and core =xsk_rcv()= function also
+need to (re)check this is correct.
+
+With an XDP program per RX-queue, we can instead leverage the hardware to
+pre-filter/sort packets, and thus simplify the XDP programs. For AF_XDP
+zero-copy we already depend on NIC hardware filters being setup.  The
+optimization for AF_XDP, is that the checks of rx_queue_index (and dev) can
+instead be moved to setup time, instead of runtime fast-path.
+
+The second level optimization is to store extra info per RX-queue that
+allows us do take a more direct action.  E.g. in case of AF_XDP storing the
+xsk-sock, allows to more-or-less call =xsk_rcv()= directly, which allow us
+to skip part of the XDP redirect code code. (p.s. do remeber to handle the
+flush at NAPI-end).
+
+* Depending on NIC hardware filter setup
+
+For XDP progs per RX-queue to make sense, we do need to setup NIC hardware
+filters to steer trafic to specific RX-queues.  AF_XDP zero-copy already
+have this dependency.
+
+There are several ways to configure NIC hardware filter, e.g. ethtool or TC
+hardware offloads.  It is generally out of scope for XDP to do this setup
+itself.  It is a setup dependency that need to be handled (outside and)
+before attaching the XDP program.
+
