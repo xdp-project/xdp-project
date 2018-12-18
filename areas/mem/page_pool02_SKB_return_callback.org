@@ -68,6 +68,43 @@ This patchset corresponds to:
  - Git tree: https://github.com/apalos/bpf-next
  - Branch: [[https://github.com/apalos/bpf-next/commits/mvneta_07_page_pool_recycle][mvneta_07_page_pool_recycle]]
 
+** RFC-feedback
+
+DaveM didn't reject the 4 bytes extra in SKB ([[https://patchwork.ozlabs.org/patch/1009121/#2048112][link]])
+
+DaveM pointed out that page->private is only 32-bit on 32-bit Architectures AND
+use-cases exists where hardware need 64-bit DMA addresses.  Thus, the
+page->private member isn't large enough in those use-cases.
+
+Eric Dumazet pointed out that we might be missing some case, that manipulates
+the pages directly:
+ - skb_try_coalesce
+ - splice() stuff
+ - GRO
+ - skb cloning
+ - tcp_zerocopy_receive() (TCP RX zero copy)
+ - more generally all paths that can grab pages from skbs.
+
+One design choice that solves many of Eric's concerns is that page_pool pages
+(that still contain DMA state) MUST NOT be used as part of SKB "frags" or
+frag-list.  Only the skb->head that points to the data "page", can belong to a
+page_pool.  After our changes to mvneta driver, we use build_skb() that uses
+the page_pool data-pointer as skb->head.  The driver (mvneta) still have
+jumbo-frame support which uses SKB "frags", to handle that case, we "release"
+the page_pool state by calling page_pool_unmap_page() in driver, when assigning
+(the payload beyond PAGE_SIZE) it as "frags" (via skb_add_rx_frag() call).
+
+TODO: go through each case Eric pointed out and check constraints.
+
+*** Case: skb_try_coalesce()
+
+skb_try_coalesce() was broken, as it converts the skb->head into a skb "frags"
+of another SKB.
+
+TODO: Look into code solutions
+ - (1) simply reject coalesce action if mem_info->type is set
+ - (2) "release" page_pool state, via calling page_pool_unmap_page()
+
 * Testing procedures
 
 ** Multicast traffic
