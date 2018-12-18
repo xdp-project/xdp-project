@@ -89,3 +89,42 @@ hardware offloads.  It is generally out of scope for XDP to do this setup
 itself.  It is a setup dependency that need to be handled (outside and)
 before attaching the XDP program.
 
+* Notes
+
+** Refactor idea: move xdp_rxq_info to net_device/netdev_rx_queue
+
+Should we move =xdp_rxq_info= into net_device->_rx[] which is =struct
+netdev_rx_queue=.  (Saeed actually proposed this originally).
+
+#+BEGIN_SRC C
+/* This structure contains an instance of an RX queue. */
+struct netdev_rx_queue {
+#ifdef CONFIG_RPS
+	struct rps_map __rcu		*rps_map;
+	struct rps_dev_flow_table __rcu	*rps_flow_table;
+#endif
+	struct kobject			kobj;
+	struct net_device		*dev;
+	struct xdp_rxq_info		xdp_rxq;
+#ifdef CONFIG_XDP_SOCKETS
+	struct xdp_umem                 *umem;
+#endif
+} ____cacheline_aligned_in_smp;
+#+END_SRC
+
+As can be seen it already contains an =xdp_rxq_info= member =xdp_rxq=, which
+is used by generic XDP.  But given (Daniel was wise enough) to add a
+restriction that XDP-native and XDP-generic cannot co-exist on the same
+net_device, thus this member could also be used by native-XDP.
+
+** Refactor idea: xdp/bpf_prog into netdev_rx_queue/net_device
+
+The "global" bpf_prog in generic-XDP is stored in =net_device= member
+=xdp_prog=.  For generic-XDP to gain XDP-prog per RX-queue support, we could
+extend =netdev_rx_queue= with a =xdp_prog= member (type struct =bpf_prog=).
+
+It would be interesting to investigate if it is possible to make drivers
+(native-XDP) also use =net_device->xdp_prog= or =netdev_rx_queue->xdp_prog=
+instead of storing this in driver local data structures. (As XDP-native and
+XDP-generic cannot co-exist, this should be possible).
+
