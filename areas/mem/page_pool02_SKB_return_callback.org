@@ -33,7 +33,7 @@ void __kfree_skb(struct sk_buff *skb)
 #+END_SRC
 
 
-* Wrong recycle on two branches
+* (pre-RFC) Wrong recycle on two branches
 
 Git tree: https://github.com/apalos/bpf-next
 Branches:
@@ -56,6 +56,17 @@ member to xdp_mem_info and move flags head_frag and pfmemalloc into
 this area.
 
 Fixed in [[https://github.com/apalos/bpf-next/commit/dd84df8d72f792ac9bbfa9fb9e424b4ae9d0ebad][this commit]] that will be squashed before upstreaming.
+
+* RFC-patchset
+
+Upstream RFC patchset was send <2018-12-07 Fri>.
+ - Subject: [net-next PATCH RFC 0/8] page_pool DMA handling and allow to  recycles frames via SKB
+ - Message-ID: <154413868810.21735.572808840657728172.stgit@firesoul>
+ - https://patchwork.ozlabs.org/project/netdev/list/?series=80284&state=%2a
+
+This patchset corresponds to:
+ - Git tree: https://github.com/apalos/bpf-next
+ - Branch: [[https://github.com/apalos/bpf-next/commits/mvneta_07_page_pool_recycle][mvneta_07_page_pool_recycle]]
 
 * Testing procedures
 
