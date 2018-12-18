@@ -1,5 +1,5 @@
 # -*- fill-column: 76; -*-
-#+Title: Have XDP programs per RX-queue
+#+Title: Design: Having XDP programs per RX-queue
 
 From the very beginning of the XDP design it was envisoned (by Jesper) that
 it should be possible to assign an *XDP program per NIC hardware RX-queue*
@@ -30,7 +30,7 @@ struct xdp_rxq_info {
 };
 #+END_SRC
 
-In kernel [[https://git.kernel.org/torvalds/c/5ab073ffd3264][v4.18]] both xdp_mem_type was introduce and type [[https://git.kernel.org/torvalds/c/02b55e5657c3a][MEM_TYPE_ZERO_COPY]]
+In kernel [[https://git.kernel.org/torvalds/c/5ab073ffd3264][v4.18]] both =xdp_mem_type= was introduce and type [[https://git.kernel.org/torvalds/c/02b55e5657c3a][MEM_TYPE_ZERO_COPY]]
 was added. This is specifically used by XDP programs that want to redirect
 into AF_XDP sockets, as XDP redirect core code need to identify AF_XDP
 zero-copy frames.
@@ -69,14 +69,14 @@ need to (re)check this is correct.
 With an XDP program per RX-queue, we can instead leverage the hardware to
 pre-filter/sort packets, and thus simplify the XDP programs. For AF_XDP
 zero-copy we already depend on NIC hardware filters being setup.  The
-optimization for AF_XDP, is that the checks of rx_queue_index (and dev) can
+optimization for AF_XDP is, that the checks of rx_queue_index (and dev) can
 instead be moved to setup time, instead of runtime fast-path.
 
 The second level optimization is to store extra info per RX-queue that
 allows us do take a more direct action.  E.g. in case of AF_XDP storing the
-xsk-sock, allows to more-or-less call =xsk_rcv()= directly, which allow us
-to skip part of the XDP redirect code code. (p.s. do remeber to handle the
-flush at NAPI-end).
+=xsk_sock= allows to basically call =xsk_rcv()= directly, which in-return
+allow us to skip part of the XDP redirect-core code. (p.s. do remeber to
+handle the flush at NAPI-end).
 
 * Depending on NIC hardware filter setup
 
