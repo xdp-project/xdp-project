@@ -229,3 +229,57 @@ into account.
 
 AFAIK this also affect =net_device->_rx[]= and =dev->real_num_rx_queues=,
 which might be relevant according to above refactor-ideas.
+
+
+* Code notes for AF_XDP sockets
+
+** AF_XDP bind
+
+The AF_XDP socket bind call is an interesting hook point, that could be
+leveraged.
+
+The xdp_umem_assign_dev() call in xsk_bind() call XDP setup-NDO:
+#+BEGIN_SRC diff
+diff --git a/net/xdp/xsk.c b/net/xdp/xsk.c
+index 07156f43d295..6004634858b3 100644
+--- a/net/xdp/xsk.c
++++ b/net/xdp/xsk.c
+@@ -473,7 +473,7 @@ static int xsk_bind(struct socket *sock, struct sockaddr *addr, int addr_len)
+                              xs->umem->chunk_mask);
+                xskq_set_umem(xs->umem->cq, xs->umem->size,
+                              xs->umem->chunk_mask);
+-
++// Notice: end-up calling into dev-XDP-setup call dev->netdev_ops->ndo_bpf()
+                err = xdp_umem_assign_dev(xs->umem, dev, qid, flags);
+                if (err)
+                        goto out_unlock;
+#+END_SRC
+
+Inside =xdp_umem_assign_dev()= it also register =umem= in =netdev->_rx[]=
+(and =_tx[]=):
+
+#+BEGIN_SRC diff
+diff --git a/net/xdp/xdp_umem.c b/net/xdp/xdp_umem.c
+index a264cf2accd0..8424368f834e 100644
+--- a/net/xdp/xdp_umem.c
++++ b/net/xdp/xdp_umem.c
+@@ -87,7 +87,7 @@ int xdp_umem_assign_dev(struct xdp_umem *umem, struct net_device *dev,
+                err = -EBUSY;
+                goto out_rtnl_unlock;
+        }
+-
++       // Registers itself in netdev->_rx[] and _tx[]
+        xdp_reg_umem_at_qid(dev, umem, queue_id);
+        umem->dev = dev;
+        umem->queue_id = queue_id;
+@@ -104,7 +104,7 @@ int xdp_umem_assign_dev(struct xdp_umem *umem, struct net_device *dev,
+        bpf.command = XDP_SETUP_XSK_UMEM;
+        bpf.xsk.umem = umem;
+        bpf.xsk.queue_id = queue_id;
+-
++       // Calling XDP setup-NDO:
+        err = dev->netdev_ops->ndo_bpf(dev, &bpf);
+        if (err)
+                goto err_unreg_umem;
+#+END_SRC
+
