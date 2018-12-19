@@ -13,7 +13,7 @@ and come-up with a design and sematics that can be accepted upstream.
 
 Why XDP per RX-queue makes sense.  Below sections explain the idea behind
 and why there is a need for supporting XDP programs attached to individual
-RX-queue of the NIC.
+RX-queue of the NIC.  And some of the steps already taken towards this goal.
 
 ** Original idea
 
