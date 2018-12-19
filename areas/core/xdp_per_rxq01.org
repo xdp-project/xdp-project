@@ -89,6 +89,39 @@ hardware offloads.  It is generally out of scope for XDP to do this setup
 itself.  It is a setup dependency that need to be handled (outside and)
 before attaching the XDP program.
 
+* Interface semantics
+
+The initial reason XDP programs per RX-queue was rejected was usability
+concerns.  Thus, it is important that we define and agree on the behavior
+and semantic meaning of the user-interface.
+
+** Proposal#1: RXQ-prog takes precedence
+
+Proposal#1 (Jesper): The RX-queue xdp_prog (RXQ-prog) takes precedence over
+the global xdp_prog (global-prog) installed on the netdev.  More
+specifically:
+ - If global-prog is already loaded, RXQ-prog takes-over/preplace for this
+   specific/single RXQ.
+ - When RXQ-prog is unloaded, global-prog takes-over (if installed)
+
+Details: What happens, if someone unloads the global-prog?
+ - Proposal#1.1 (Jesper): Unload global-prog keeps RXQ-prog's intact.
+ - Argument: There is a reason some application installed this specific
+   RXQ-prog, it will be unexpected for all these application if a global
+   unload (installing NULL xdp_prog) ignore/clear their specific setup.
+
+** Introspection tools
+
+For the user/sysadm it is also very important that the existing tools for
+listing XDP program are extended with support for listing the RXQ-prog's.
+
+In proposal#1.1: Clearing the global-prog does not clear the RXQ-prog's, but
+we can extend the tools with a new option to force-fully unload all XDP
+programs, although this is disruptive to the applications.
+
+TODO: Add sections describing ideas/plans on how-to extend the different
+tools (e.g. iproute2 and bpftool).
+
 * Code assesment
 
 ** Initial code assesment
