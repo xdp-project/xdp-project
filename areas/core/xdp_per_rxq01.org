@@ -110,6 +110,12 @@ Details: What happens, if someone unloads the global-prog?
    RXQ-prog, it will be unexpected for all these application if a global
    unload (installing NULL xdp_prog) ignore/clear their specific setup.
 
+For completeness: What happens, if someone load a global-prog, while
+existing RXQ-prog's exist:
+ - Then the RXQ-prog still take precedence.
+ - The global-prog is only install on the RXQs that doesn't have an RXQ-prog
+   associated.
+
 ** Covering future semantics
 
 It is part of the future optimization plans to change the RXQ-prog, such
