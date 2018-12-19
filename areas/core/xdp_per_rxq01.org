@@ -98,8 +98,10 @@ RX-queue data-structure.  Thus, part of the driver code should be ready to
 handle per RX-queue xdp_prog.
 
 The general code idea is that the driver simply fetch and run xdp_prog
-assigned to its RX-queue data-structure.  Runtime the driver doesn't really
-care if this is a global or RX-queue specific program.
+assigned to its RX-queue data-structure.  *Runtime* the driver doesn't
+really care if this is a global or RX-queue specific program. (Setup-time
+the driver or preferably core can add extra constraints checks for RX-queue
+specific programs for optimization reasons).
 
 The general question is with two types of xdp_prog's a global and RX-queue
 specific, where do we store these?  As these are going to be a need to
