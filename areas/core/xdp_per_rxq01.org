@@ -110,6 +110,24 @@ Details: What happens, if someone unloads the global-prog?
    RXQ-prog, it will be unexpected for all these application if a global
    unload (installing NULL xdp_prog) ignore/clear their specific setup.
 
+** Covering future semantics
+
+It is part of the future optimization plans to change the RXQ-prog, such
+that it isn't an actual BPF-prog any-longer.  E.g. in case of AF_XDP
+sockets, where all frames from a specific RXQ need to be redirected into a
+single =xsk_sock=, then we can avoid invoking BPF (which is a retpoline
+indirect call) and instead call =xsk_rcv()= directly.
+
+How do we keep the userspace tools and semantics the same?
+
+E.g. when listing the RXQ-prog's we should/must still display that an XDP
+program/hook is running on the RXQ ?  (if we are really nice, we can display
+that this is a "builtin" type X)
+
+E.g. when sysadm force-fully unload/remove the RXQ-prog from a queue, but
+this is a "builtin" type, then we should likely maintain the semantics and
+allow the sysadm to unload/remove this XDP-"hook".
+
 ** Introspection tools
 
 For the user/sysadm it is also very important that the existing tools for
