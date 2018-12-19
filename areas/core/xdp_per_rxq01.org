@@ -19,7 +19,7 @@ into a socket or user-application. (SPSC = Single Producer Single Consumer).
 
 In kernel [[https://git.kernel.org/torvalds/c/aecd67b60722d][v4.16]] struct xdp_rxq_info was introduce, which contains
 information specific to each RX-queue in the driver.  E.g. this struct
-contains the RX queue_index number.
+contains the RX =queue_index= number.
 
 #+BEGIN_SRC C
 struct xdp_rxq_info {
@@ -89,7 +89,25 @@ hardware offloads.  It is generally out of scope for XDP to do this setup
 itself.  It is a setup dependency that need to be handled (outside and)
 before attaching the XDP program.
 
-* Notes
+* Code assesment
+
+** Initial code assesment
+
+Most of the XDP drivers already have an xdp_prog pointer stored in some per
+RX-queue data-structure.  Thus, part of the driver code should be ready to
+handle per RX-queue xdp_prog.
+
+The general code idea is that the driver simply fetch and run xdp_prog
+assigned to its RX-queue data-structure.  Runtime the driver doesn't really
+care if this is a global or RX-queue specific program.
+
+The general question is with two types of xdp_prog's a global and RX-queue
+specific, where do we store these?  As these are going to be a need to
+reapply e.g. the global xdp_prog in case a RX-queue xdp_prog is removed.
+
+And it is possible/good to to keep this info centrally in e.g. net_device,
+to simplify the driver interface?
+
 
 ** Refactor idea: move xdp_rxq_info to net_device/netdev_rx_queue
 
