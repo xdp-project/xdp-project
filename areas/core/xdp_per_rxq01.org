@@ -174,6 +174,41 @@ reapply e.g. the global xdp_prog in case a RX-queue xdp_prog is removed.
 And it is possible/good to to keep this info centrally in e.g. net_device,
 to simplify the driver interface?
 
+** Extending XDP-setup NDO commands
+
+We (obviously) need to extend =enum bpf_netdev_command= with a new command,
+and extend =struct netdev_bpf= with a new union-struct to carry our info.
+
+Questions:
+ - Q1: What new commands do we need?
+ - Q2: What should this new union-struct contain?
+   * Should we think ahead and add a builtin-type member already?
+
+Code diff pointer:
+#+BEGIN_SRC diff
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 17d52a647fe5..7076353e71de 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -850,7 +850,7 @@ enum tc_setup_type {
+ /* These structures hold the attributes of bpf state that are being passed
+  * to the netdevice through the bpf op.
+  */
+-enum bpf_netdev_command {
++enum bpf_netdev_command { //HERE
+        /* Set or clear a bpf program used in the earliest stages of packet
+         * rx. The prog will have been loaded as BPF_PROG_TYPE_XDP. The callee
+         * is responsible for calling bpf_prog_put on any old progs that are
+@@ -873,7 +873,7 @@ struct bpf_prog_offload_ops;
+ struct netlink_ext_ack;
+ struct xdp_umem;
+ 
+-struct netdev_bpf {
++struct netdev_bpf { // and HERE
+        enum bpf_netdev_command command;
+        union {
+                /* XDP_SETUP_PROG */
+#+END_SRC
 
 ** Refactor idea: move xdp_rxq_info to net_device/netdev_rx_queue
 
