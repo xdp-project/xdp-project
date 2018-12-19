@@ -212,3 +212,20 @@ It would be interesting to investigate if it is possible to make drivers
 instead of storing this in driver local data structures. (As XDP-native and
 XDP-generic cannot co-exist, this should be possible).
 
+** Code gotchas: driver runtime changing num queues
+
+We need to check what happens when the driver change the number of queues
+runtime.  This can happen via ethtool:
+
+#+BEGIN_EXAMPLE
+ethtool --help | grep Channels
+        ethtool -l|--show-channels DEVNAME	Query Channels
+        ethtool -L|--set-channels DEVNAME	Set Channels
+#+END_EXAMPLE
+
+Drivers already need to handle this, and last-time I checked this was
+handled correctly in drivers.  Still, this is a code area we need to take
+into account.
+
+AFAIK this also affect =net_device->_rx[]= and =dev->real_num_rx_queues=,
+which might be relevant according to above refactor-ideas.
