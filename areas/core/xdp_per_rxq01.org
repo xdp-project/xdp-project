@@ -9,13 +9,19 @@ number.  This idea was rejected by upstream, due to usability concerns.
 This document is an attempt to re-visit this idea, argue why it makes sense,
 and come-up with a design and sematics that can be accepted upstream.
 
-* Original idea
+* Background for XDP per RX-queue
+
+Why XDP per RX-queue makes sense.  Below sections explain the idea behind
+and why there is a need for supporting XDP programs attached to individual
+RX-queue of the NIC.
+
+** Original idea
 
 Original idea behind per RX-queue handling comes from Van Jacobson's
 NetChannels ([[http://www.lemis.com/grog/Documentation/vj/lca06vj.pdf][PDF]]), as this is the building block for creating a SPSC channel
 into a socket or user-application. (SPSC = Single Producer Single Consumer).
 
-* Small step the direction: xdp_rxq_info
+** Small step the direction: xdp_rxq_info
 
 In kernel [[https://git.kernel.org/torvalds/c/aecd67b60722d][v4.16]] struct xdp_rxq_info was introduce, which contains
 information specific to each RX-queue in the driver.  E.g. this struct
@@ -57,7 +63,7 @@ struct xdp_mem_info {
 };
 #+END_SRC
 
-* Bottleneck in single/global netdev XDP program
+** Bottleneck in single/global netdev XDP program
 
 As XDP grows, and more use-cases are added, then I fear that the single XDP
 program per netdev is going to be a performance bottleneck.  As the single
@@ -78,7 +84,7 @@ allows us do take a more direct action.  E.g. in case of AF_XDP storing the
 allow us to skip part of the XDP redirect-core code. (p.s. do remeber to
 handle the flush at NAPI-end).
 
-* Depending on NIC hardware filter setup
+** Depending on NIC hardware filter setup
 
 For XDP progs per RX-queue to make sense, we do need to setup NIC hardware
 filters to steer trafic to specific RX-queues.  AF_XDP zero-copy already
@@ -88,6 +94,7 @@ There are several ways to configure NIC hardware filter, e.g. ethtool or TC
 hardware offloads.  It is generally out of scope for XDP to do this setup
 itself.  It is a setup dependency that need to be handled (outside and)
 before attaching the XDP program.
+
 
 * Interface semantics
 
