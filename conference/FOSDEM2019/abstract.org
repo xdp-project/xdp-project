@@ -1,0 +1,54 @@
+#+Title: Talk accepted for for FOSDEM 2019
+
+* Dates
+
+Important dates:
+ - Nov 25th 2018: Submission deadline for talk proposals
+ - Dec 17th 2018: Announcement of the final schedule
+ - Feb 2rd 2019: Software Defined Networking dev room
+
+* Submission for SDN-devroom
+
+FOSDEM 2019 Software Defined Networking Devroom CFP:
+ - http://mdr78.github.io/fosdem/2018/10/15/fosdem-2019-cfp.html
+
+FOSDEM system to submit and update:
+ - https://penta.fosdem.org/submission/FOSDEM19/events
+ - https://penta.fosdem.org/submission/FOSDEM19/event/8097
+
+The draft SDN devroom agenda is available here.
+ - https://fosdem.org/2019/schedule/track/software_defined_networking/
+
+* Submitted by
+
+Speakers
+ - Magnus Karlsson
+ - Jesper Dangaard Brouer
+ - Björn Töpel
+
+* Talk that was accepted
+
+The FOSDEM committee for SDN-devroom asked us (Magnus, Bjørn and I) to
+combine our two talks into one.
+
+Title:
+ - XDP (eXpress Data Path) as a building block for other FOSS projects
+
+Abstract:
+
+The eXpress Data Path (XDP) is a Linux kernel feature, that have gain
+a lot of traction over the last couple of years.  This talk is focused
+on how other FOSS projects can leverage XDP.  How we believe XDP
+should be seen as a software offload for the kernel network stack.
+
+The motivation is to plant FOSS seeds for collaboration by describing
+that XDP offers of facilities and capabilities.  But also explain that
+XDP is not the magic-bullet by framing the XDP design and what layer
+it operates at (e.g. no de-fragmentation) and what limits XDP impose
+when enabled (e.g. no jumbo-frames).
+
+In the second part of this talk we will focus on AF_XDP and how it can
+be leveraged by the DPDK project.  AF_XDP is a new socket type
+introduced in Linux 4.18, that allow the XDP driver hook to deliver
+raw frames into userspace.  This offers new opportunities for
+e.g. integrating with DPDK via a Poll Mode Driver (PMD) for AF_XDP.
