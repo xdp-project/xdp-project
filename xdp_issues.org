@@ -54,3 +54,6 @@ silently.
 
 Red Hat QA, got very confused by #2.
 
+* Issue: BTF-based metadata for XDP
+
+Waiting for tracing people to work out the details of BTF.
