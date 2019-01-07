@@ -1,0 +1,26 @@
+#+TITLE: XDP driver support status
+
+* XDP support wanted:
+XDP upstream support for the following drivers is highly desired.
+
+- ena
+- i40evf / iavf
+- ice
+- sfc
+
+* Drivers supporting XDP:
+The following drivers support XDP in upstream kernels.
+
+- mlx4
+- mlx5
+- i40e
+- ixgbe
+- ixgbevf
+- nfp
+- bnxt
+- thunder
+- dpaa2
+- qede
+- tun
+- veth
+- virtio_net
