@@ -4,28 +4,37 @@
 From the very beginning of the XDP design it was envisoned (by Jesper) that
 it should be possible to assign an *XDP program per NIC hardware RX-queue*
 number.  This idea was rejected by upstream, due to usability concerns.
-*Today there is single XDP program per netdev*.
 
-This document is an attempt to re-visit this idea, argue why it makes sense,
-and come-up with a design and sematics that can be accepted upstream.
+From 2016 up until July 2018 the model was "a single XDP program per
+netdev", when Jakub Kicinski added support
+[[https://git.kernel.org/torvalds/c/a25717d2b6043][XDP_ATTACHED_MULTI]] for
+multiple XDP programs simultaneously. In this mode, the kernel allows for
+attaching XDP programs in the driver/generic and hardware at the same time,
+given that the hardware has BPF offloading support.
+
+In this document the idea of a per-RX-queue XDP program is re-visited, and
+the rationale, design and semantics for this feature is outlined.
 
 * Background for XDP per RX-queue
 
-Why XDP per RX-queue makes sense.  Below sections explain the idea behind
-and why there is a need for supporting XDP programs attached to individual
-RX-queue of the NIC.  And some of the steps already taken towards this goal.
+This section explains the background and the need for supporting XDP
+programs attached to individual RX-queue of the NIC, and some of the steps
+already taken towards this goal.
 
 ** Original idea
 
 Original idea behind per RX-queue handling comes from Van Jacobson's
-NetChannels ([[http://www.lemis.com/grog/Documentation/vj/lca06vj.pdf][PDF]]), as this is the building block for creating a SPSC channel
-into a socket or user-application. (SPSC = Single Producer Single Consumer).
+NetChannels
+([[http://www.lemis.com/grog/Documentation/vj/lca06vj.pdf][PDF]]), as this
+is the building block for creating a Single Producer Single Consumer (SPSC)
+channel into a socket or user-application.
 
 ** Small step the direction: xdp_rxq_info
 
-In kernel [[https://git.kernel.org/torvalds/c/aecd67b60722d][v4.16]] struct xdp_rxq_info was introduce, which contains
-information specific to each RX-queue in the driver.  E.g. this struct
-contains the RX =queue_index= number.
+In kernel [[https://git.kernel.org/torvalds/c/aecd67b60722d][v4.16]] =struct
+xdp_rxq_info= was introduced, which contains information specific to each
+RX-queue in the driver.  E.g. this struct contains the RX =queue_index=
+number.
 
 #+BEGIN_SRC C
 struct xdp_rxq_info {
@@ -36,17 +45,18 @@ struct xdp_rxq_info {
 };
 #+END_SRC
 
-In kernel [[https://git.kernel.org/torvalds/c/5ab073ffd3264][v4.18]] both =xdp_mem_type= was introduce and type [[https://git.kernel.org/torvalds/c/02b55e5657c3a][MEM_TYPE_ZERO_COPY]]
-was added. This is specifically used by XDP programs that want to redirect
-into AF_XDP sockets, as XDP redirect core code need to identify AF_XDP
-zero-copy frames.
+In kernel [[https://git.kernel.org/torvalds/c/5ab073ffd3264][v4.18]] both
+=xdp_mem_type= was introduced and type
+[[https://git.kernel.org/torvalds/c/02b55e5657c3a][MEM_TYPE_ZERO_COPY]] was
+added.
 
-But also the *RX queue_index is needed by the XDP developer* using AF_XDP
-sockets, as AF_XDP sockets have a strict SPSC relationship with a specific
-RX-queue.  Thus (in the single/global netdev XDP program model) the XDP
-developer must make sure that correct =ctx->rx_queue_index= is
-XDP_REDIRECT'ed into the corresponding XSKMAP index (else frame is dropped
-in =__xsk_map_redirect()= by dev and queue_id check in =xsk_rcv()=).
+The =xdp_rxq_info= is associated to the =struct xdp_buff= via the struct
+member =rxq=. The kernel code and the XDP program can use the =struct
+xdp_rxq_info= traits in diffrent ways, e.g. AF_XDP uses the =xdp_mem_type=
+to determine how the packet was allocated. If the packet has mem type
+=MEM_TYPE_ZERO_COPY=, this means that the packet was allocated using a
+"zero-copy allocator/buffer provided by userspace" and the kernel to user
+copy can be elided.
 
 #+BEGIN_SRC C
 enum xdp_mem_type {
@@ -64,6 +74,26 @@ struct xdp_mem_info {
 #+END_SRC
 
 ** Bottleneck in single/global netdev XDP program
+
+For XDP program that use AF_XDP the =queue_index= trait, which let the XDP
+program know what RX-queue the packet originated from, is especially
+important.
+
+AF_XDP sockets communicates to/from user-space/kernel-space via SPSC
+queues. An XDP socket is accociated to a certain netdev RX-queue, which
+means that the (global/per-netdev) XDP program needs to track on which
+RX-queue the packet was received, and if there is a socket associated to
+that RX-queue, the packet is redirected to that socket. The XDP developer
+must make sure that correct =ctx->rx_queue_index= is XDP_REDIRECT'ed into
+the corresponding XSKMAP index (else frame is dropped in
+=__xsk_map_redirect()= by dev and queue_id check in =xsk_rcv()=).
+
+Further, an XDP program that directs certain flows to an XDP socket
+typically use hardware flow-steering to make sure that the flow(s) end up on
+dedicated RX-queues. The non-AF_XDP RX-queue typically use the regular
+kernel stack. This means that the model of a global/per-netdev XDP program
+will then penalize the non-AF_XDP aimed flows, since a "dummy"/trivial
+program is executed for the flows that are headed for the kernel.
 
 As XDP grows, and more use-cases are added, then I fear that the single XDP
 program per netdev is going to be a performance bottleneck.  As the single
@@ -95,24 +125,24 @@ hardware offloads.  It is generally out of scope for XDP to do this setup
 itself.  It is a setup dependency that need to be handled (outside and)
 before attaching the XDP program.
 
-
 * Interface semantics
 
 The initial reason XDP programs per RX-queue was rejected was usability
 concerns.  Thus, it is important that we define and agree on the behavior
 and semantic meaning of the user-interface.
 
-** Proposal#1: RXQ-prog takes precedence
+** Proposal: RXQ-prog takes precedence
 
-Proposal#1 (Jesper): The RX-queue xdp_prog (RXQ-prog) takes precedence over
-the global xdp_prog (global-prog) installed on the netdev.  More
-specifically:
- - If global-prog is already loaded, RXQ-prog takes-over/preplace for this
+Proposal#1: The RX-queue xdp_prog (RXQ-prog) takes precedence over the global
+xdp_prog (global-prog) installed on the netdev.  More specifically:
+ - If global-prog is already loaded, RXQ-prog takes-over/replaces for this
    specific/single RXQ.
- - When RXQ-prog is unloaded, global-prog takes-over (if installed)
+ - When RXQ-prog is unloaded, global-prog takes-over (if installed). If no
+   global-prog is installed, the RXQ-prog will simply be removed.
 
 Details: What happens, if someone unloads the global-prog?
- - Proposal#1.1 (Jesper): Unload global-prog keeps RXQ-prog's intact.
+ - Proposal#1.1 (Jesper): Unload global-prog keeps RXQ-prog's intact. The
+   global-prog only impacts the behavior when then RXQ-prog is removed.
  - Argument: There is a reason some application installed this specific
    RXQ-prog, it will be unexpected for all these application if a global
    unload (installing NULL xdp_prog) ignore/clear their specific setup.
@@ -123,7 +153,20 @@ existing RXQ-prog's exist:
  - The global-prog is only install on the RXQs that doesn't have an RXQ-prog
    associated.
 
+TODO: What about XDP_ATTACHED_MULTI and XDP_ATTACHED_HW? Any implications?
+XDP_ATTACHED_SKB? Can netdevs reject RXQ-prog support?
+
+Summary: There is a 2-level hierarchy of XDP programs. One global,
+global-prog, and one per-RX-queue program, RXQ-prog. global-prog and
+RXQ-prog can be set. If RXQ-prog is set, it has precedence over
+global-prog. When/if RXQ-prog is removed, global-prog is re-attached if set.
+
 ** Covering future semantics
+
+NOTE: (Björn) Is this section valid? Do we really want to relax the
+BPF-program part? Yes, I'd like to get rid of the retpoline, but *not* the
+BPF program. What kind of builtins, other than trivial programs (e.g. always
+XDP_PASS or always XDP_DIRECT) are there?
 
 It is part of the future optimization plans to change the RXQ-prog, such
 that it isn't an actual BPF-prog any-longer.  E.g. in case of AF_XDP
@@ -150,8 +193,72 @@ In proposal#1.1: Clearing the global-prog does not clear the RXQ-prog's, but
 we can extend the tools with a new option to force-fully unload all XDP
 programs, although this is disruptive to the applications.
 
-TODO: Add sections describing ideas/plans on how-to extend the different
-tools (e.g. iproute2 and bpftool).
+* iproute2
+
+The iproute2 suite (ip link) has support to query a device for XDP programs
+and also attaching XDP programs. This would need to be extended for
+per-RX-queue programs (RXQ-prog).
+
+For the query, the json output could be extended with an "qid" item. In the
+example below, RX-queue 7 has an attached RXQ-prog, and the program without
+the qid is the global-prog.
+
+#+BEGIN_SRC
+            "xdp": {
+                "mode": 4,
+                "attached": [ {
+                        "mode": 1,
+                        "prog": {
+                            "id": 7,
+                            "tag": "b3b16d7ef8ea98e4",
+                            "jited": 1
+                        }
+                    },{
+                        "mode": 1,
+                        "qid": 7,
+                        "prog": {
+                            "id": 11,
+                            "tag": "a0e2f2463514a59c"
+                            "jited": 1
+                        }
+                    } ]
+            },
+#+END_SRC
+
+and one example without a global-prog:
+
+#+BEGIN_SRC
+            "xdp": {
+                "mode": 1,
+		"qid": 7,
+                "prog": {
+                    "id": 11,
+                    "tag": "a0e2f2463514a59c",
+                    "jited": 1
+                },
+                "attached": [ {
+                        "mode": 1,
+			"qid": 7,
+                        "prog": {
+                            "id": 11,
+                            "tag": "a0e2f2463514a59c",
+                            "jited": 1
+                        }
+                    } ]
+            },
+#+END_SRC
+
+In order to attach an RXQ-prog, the "qid" argument would need to be added to
+the "xdp" subcommand of ip-link.
+
+TODO: Would it make sense to expose the number of available RX-queues via
+iproute2? Currently a user need to query that via "ethtool --show-channels".
+
+* bpftool
+
+The bpftool utility has, similar to iproute2, support to query a device for
+XDP programs, and require RXQ-prog support as well. Query would be analogous
+to iproute2.
 
 * Code assesment
 
@@ -184,30 +291,36 @@ Questions:
  - Q2: What should this new union-struct contain?
    * Should we think ahead and add a builtin-type member already?
 
+The simplest way is adding an "qid" to the query/setup
+commands. XDP_QUERY_PROG with an qid present, would query for the RXQ-prog
+on a certain queue. Analogous for setup. The logic for fallback when
+RXQ-prog is removed and such would be in the =dev_xdp_{un,}install= similar
+to how it is done today.
+
+Downsides?
+
 Code diff pointer:
 #+BEGIN_SRC diff
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 17d52a647fe5..7076353e71de 100644
+index 1377d085ef99..02feb990119c 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
-@@ -850,7 +850,7 @@ enum tc_setup_type {
- /* These structures hold the attributes of bpf state that are being passed
-  * to the netdevice through the bpf op.
-  */
--enum bpf_netdev_command {
-+enum bpf_netdev_command { //HERE
-        /* Set or clear a bpf program used in the earliest stages of packet
-         * rx. The prog will have been loaded as BPF_PROG_TYPE_XDP. The callee
-         * is responsible for calling bpf_prog_put on any old progs that are
-@@ -873,7 +873,7 @@ struct bpf_prog_offload_ops;
- struct netlink_ext_ack;
- struct xdp_umem;
- 
--struct netdev_bpf {
-+struct netdev_bpf { // and HERE
-        enum bpf_netdev_command command;
-        union {
-                /* XDP_SETUP_PROG */
+@@ -881,6 +881,7 @@ struct netdev_bpf {
+ 		/* XDP_SETUP_PROG */
+ 		struct {
+ 			u32 flags;
++			u16 queue_id; /* -1 is global */
+ 			struct bpf_prog *prog;
+ 			struct netlink_ext_ack *extack;
+ 		};
+@@ -889,6 +890,7 @@ struct netdev_bpf {
+ 			u32 prog_id;
+ 			/* flags with which program was installed */
+ 			u32 prog_flags;
++			u16 queue_id; /* -1 is global */
+ 		};
+ 		/* BPF_OFFLOAD_MAP_ALLOC, BPF_OFFLOAD_MAP_FREE */
+ 		struct {
 #+END_SRC
 
 ** Refactor idea: move xdp_rxq_info to net_device/netdev_rx_queue
@@ -247,6 +360,10 @@ It would be interesting to investigate if it is possible to make drivers
 instead of storing this in driver local data structures. (As XDP-native and
 XDP-generic cannot co-exist, this should be possible).
 
+This would also remove the need for passing the XDP program in the ndo_bpf
+implementation for the XDP-case, but not for the XDP HW-case.
+
+
 ** Code gotchas: driver runtime changing num queues
 
 We need to check what happens when the driver change the number of queues
@@ -265,6 +382,9 @@ into account.
 AFAIK this also affect =net_device->_rx[]= and =dev->real_num_rx_queues=,
 which might be relevant according to above refactor-ideas.
 
+NOTE: (Björn) For AF_XDP zero-copy we restrict/disable the posibility to
+change the number of queues via ethtool when there is a socket bound to a
+queue. This could apply to RXQ-prog as well.
 
 * Code notes for AF_XDP sockets
 
@@ -272,6 +392,10 @@ which might be relevant according to above refactor-ideas.
 
 The AF_XDP socket bind call is an interesting hook point, that could be
 leveraged.
+
+NOTE (Björn): I have some ideas here (RXQ-prog with the same lifetime as a
+socket, and more crazy stuff like relocating sockets into BPF code similar
+to BPF_LD_MAP_FD, but BPF_LD_SOCKET_FD).
 
 The xdp_umem_assign_dev() call in xsk_bind() call XDP setup-NDO:
 #+BEGIN_SRC diff
