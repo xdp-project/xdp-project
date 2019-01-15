@@ -1,19 +1,19 @@
-* XDP for TSN
-TSN requires low latencies and bounded jitter. 
-Although XDP doesn't offer bounded jitter the latency is greatly imporoved
+* XDP for TSN (Time-Sensitive Networking)
+TSN requires low latency and bounded jitter. 
+Although XDP doesn't offer bounded jitter the latency is greatly improved
 compared to the Linux kernel network stack on AF_XDP sockets.
-An idea would be isolate a number of CPUs from the scheduler and assign the
-NIC (and Rx irqs) on those CPUs. This would at least eliminate most of the
+An idea would be to isolate a number of CPUs from the scheduler and assign the
+NIC (and Rx irqs) on these CPUs. This would at least eliminate most of the
 jitter on the Rx path.
 
 * Measuring on armv8
-An easy way of measuring latencies from the napi Rx poller down to userspace
-is piggyback on XDP data_meta of the xdp_buf. 
+An easy way of measuring latency from the napi Rx poller down to user-space
+is piggyback on XDP data_meta of the xdp_buff struct.
 
 In the armv8 specific case the timestamp is acquired via 
 asm volatile("mrs %0, CNTVCT_EL0" : "=r" (ts));
 The user has to check the CNTFRQ_EL0 Timer Counter Frequency register and
-adjuct to get proper ns latencies.
+adjust to get proper ns latency.
 Arm Timer Counter Frequency resides in CNTFRQ_EL0 and is not guaranteed to 
 match CPU core speed. On our test platform this was set to 10^8 while the 
 core(s) were running on 1GHz.
@@ -21,18 +21,18 @@ The Virtual Timer Count register must also be identical in all CPUs.
 
 An easier way to implement this with slight more overhead (vDSO + LIBC) would
 be to use ktime_get_ns() in kernel and clock_gettime(CLOCK_MONOTONIC, &ts);
-in userspace. The asm approach offers more accuracy if all the requirements
+in user-space. The asm approach offers more accuracy if all the requirements
 are met since the timer register is accessible at EL0 and everything
 completes at EL0 without the need of any system calls.
 
 pseudo code can look line this:
-#+BEGIN_EXAMPLE
+#+BEGIN_SRC C
 - kernel driver:
 
 napi_poller(struct netsec_priv *priv, int budget)
 {
       struct xdp_buff xdp;
-      u64 ts = ktime_get_ns();
+      u64 ts;
 	
 	asm volatile("mrs %0, CNTVCT_EL0" : "=r" (ts));
       /* asm volatile ("isb sy"); */
@@ -43,12 +43,12 @@ napi_poller(struct netsec_priv *priv, int budget)
             memcpy(xdp.data_meta, &ts, sizeof(ts));
       }
 }
-#+END_EXAMPLE
+#+END_SRC
 
 Patch for xdpsock_user.c. After running xdpsock, we'll get a file 'xdp_speed'
 with recorded latencies. The example is really simple for now and doesn't
 account for possibly missed packets etc.
-#+BEGIN_EXAMPLE
+#+BEGIN_SRC diff
 - userspace xdpsock_user.c
 --- a/samples/bpf/xdpsock_user.c
 +++ b/samples/bpf/xdpsock_user.c
@@ -116,7 +116,7 @@ account for possibly missed packets etc.
     if (setrlimit(RLIMIT_MEMLOCK, &r)) {
 -- 
 2.19.1
-#+END_EXAMPLE
+#+END_SRC
 
 * Caveats and future improvements/testcases
 This approach will *not* offer absolute timings and can't serve as a
