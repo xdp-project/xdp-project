@@ -1,0 +1,137 @@
+* XDP for TSN
+TSN requires low latencies and bounded jitter. 
+Although XDP doesn't offer bounded jitter the latency is greatly imporoved
+compared to the Linux kernel network stack on AF_XDP sockets.
+An idea would be isolate a number of CPUs from the scheduler and assign the
+NIC (and Rx irqs) on those CPUs. This would at least eliminate most of the
+jitter on the Rx path.
+
+* Measuring on armv8
+An easy way of measuring latencies from the napi Rx poller down to userspace
+is piggyback on XDP data_meta of the xdp_buf. 
+
+In the armv8 specific case the timestamp is acquired via 
+asm volatile("mrs %0, CNTVCT_EL0" : "=r" (ts));
+The user has to check the CNTFRQ_EL0 Timer Counter Frequency register and
+adjuct to get proper ns latencies.
+Arm Timer Counter Frequency resides in CNTFRQ_EL0 and is not guaranteed to 
+match CPU core speed. On our test platform this was set to 10^8 while the 
+core(s) were running on 1GHz.
+The Virtual Timer Count register must also be identical in all CPUs.
+
+An easier way to implement this with slight more overhead (vDSO + LIBC) would
+be to use ktime_get_ns() in kernel and clock_gettime(CLOCK_MONOTONIC, &ts);
+in userspace. The asm approach offers more accuracy if all the requirements
+are met since the timer register is accessible at EL0 and everything
+completes at EL0 without the need of any system calls.
+
+pseudo code can look line this:
+#+BEGIN_EXAMPLE
+- kernel driver:
+
+napi_poller(struct netsec_priv *priv, int budget)
+{
+      struct xdp_buff xdp;
+      u64 ts = ktime_get_ns();
+	
+	asm volatile("mrs %0, CNTVCT_EL0" : "=r" (ts));
+      /* asm volatile ("isb sy"); */
+
+      while (done < budget) {
+            /* place timestamp ahead of the packet */
+            xdp.data_meta = xdp.data - sizeof(ts);
+            memcpy(xdp.data_meta, &ts, sizeof(ts));
+      }
+}
+#+END_EXAMPLE
+
+Patch for xdpsock_user.c. After running xdpsock, we'll get a file 'xdp_speed'
+with recorded latencies. The example is really simple for now and doesn't
+account for possibly missed packets etc.
+#+BEGIN_EXAMPLE
+- userspace xdpsock_user.c
+--- a/samples/bpf/xdpsock_user.c
++++ b/samples/bpf/xdpsock_user.c
+@@ -61,6 +61,10 @@ typedef __u32 u32;
+
+ static unsigned long prev_time;
+
++FILE *outfile;
++int cnt = 0;
++u64 packets[1048576];
++
+ enum benchmark_type {
+    BENCH_RXDROP = 0,
+    BENCH_TXONLY = 1,
+@@ -631,9 +635,14 @@ static void *poller(void *arg)
+
+ static void int_exit(int sig)
+ {
++   int i;
++
+    (void)sig;
+    dump_stats();
+    bpf_set_link_xdp_fd(opt_ifindex, -1, opt_xdp_flags);
++
++   for (i = 0; i < cnt; i++)
++       fprintf(outfile, "%d:%lld\n", i, packets[i]);
+    exit(EXIT_SUCCESS);
+ }
+
+@@ -791,14 +800,23 @@ static void rx_drop(struct xdpsock *xsk)
+ {
+    struct xdp_desc descs[BATCH_SIZE];
+    unsigned int rcvd, i;
++   __u64 tss, ts = 0;
+
+    rcvd = xq_deq(&xsk->rx, descs, BATCH_SIZE);
+    if (!rcvd)
+        return;
+
+    for (i = 0; i < rcvd; i++) {
+-       char *pkt = xq_get_data(xsk, descs[i].addr);
+-
++       char *pkt = xq_get_data(xsk, descs[i].addr - sizeof(ts));
++
++       asm volatile("mrs %0, CNTVCT_EL0" : "=r" (tss));
++       /* asm volatile ("isb sy"); */
++       ts = (u64) pkt[7] << 56 | (u64) pkt[6] << 48 |
++           (u64) pkt[5] << 40  | (u64) pkt[4] << 32 |
++           (u64) pkt[3] << 24 | (u64) pkt[2] << 16 |
++           (u64) pkt[1] << 8  | (u64) pkt[0];
++       packets[cnt] = (tss - ts) * 10; /* multiply value depends on CNTFRQ_EL0 */
++       cnt++;
+        hex_dump(pkt, descs[i].len, descs[i].addr);
+    }
+
+@@ -910,6 +928,9 @@ int main(int argc, char **argv)
+    int i, ret, key = 0;
+    pthread_t pt;
+
++   if ((outfile = fopen("xdp_speed", "w+")) == NULL)
++       return -1;
++
+    parse_command_line(argc, argv);
+
+    if (setrlimit(RLIMIT_MEMLOCK, &r)) {
+-- 
+2.19.1
+#+END_EXAMPLE
+
+* Caveats and future improvements/testcases
+This approach will *not* offer absolute timings and can't serve as a
+guarantee. 
+It will give as a rough estimation of the latency imporovements XDP sockets 
+can offer.  This only measures the time spent from napi poll handler->userspace.
+It does not include the time needed for the hardirq to be served or the
+softirq to be raised and executed. 
+
+If the NIC hardware offers timestamping we can sync (phc2sys) the userspace
+and NIC clocks and calculate the timing of the whole path, meaning the time
+spent from the moment the packet was received in the NIC down to being
+flushed into userspace.
+
+Another interesting experiment for XDP is find a hardware that supports both
+ptp and XDP-Zerocopy (i40e atm). We can then setup a network with 2 machines 
+using that hardware, sync their clocks with gptp, calculate end-to-end 
+latencies and compare them with the default linux network stack.
