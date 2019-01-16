@@ -59,15 +59,29 @@ Same EINVAL when loading on a NIC driver other than Netronome.  Can we
 instead return ENOTSUP ("Operation not supported"), to differentiate
 the cases?
 
-* xdp_buff need data_hard_end
+* Extend xdp_buff with member data_hard_end
 
-ixgbe and i40e choose to violate one-page-per-packet
+Issue arose when driver ixgbe and i40e choose to violate
+one-page-per-packet.  After this point, the frame-tail size became
+variable.  This cause issues when creating an SKB from an xdp_frame,
+see the workarounds in cpumap and veth, where the truesize is wrong
+and skb_shared_info placement is variable.
 
-Two reasons:
-#1 - extend frame tail, for DNS/other reply use-cases
- - NDIV needs this feature to convert to XDP
+This can be solved by introducing a new xdp_buff member named
+data_hard_end, which specify the maximum address data_end can be
+extended to.
 
-#2 - simplify XDP convert to SKB (else truesize is a lie)
+This will allow:
+
+ 1. BPF helper (bpf_xdp_adjust_tail) to extend "tail" (not just shrink
+    as today).  This allows for use-cases (1) do fast DNS replies via
+    XDP_TX, (2) NDIV (haproxy) also have some use-case that use
+    tail-extend.
+
+ 2. Create better SKBs based on an xdp_frame. (1) Allow placing
+    skb_shared_info section consistently.  (2) Use correct truesize.
+    (3) Allow for TCP coalescing these kind of SKBs.
+
 
 * DMA mapping xdp_frame
 
