@@ -50,11 +50,14 @@ dmesg to see big splast.
 * Usability: HW offload on non-supported driver/firmware return EINVAL
 
 E.g. Loading XDP/ebpf prog with HW offload on Netronome NIC, but wrong
-firmware, just sats EINVAL.  No help or hints that firmware needs to
+firmware, just says EINVAL.  No help or hints that firmware needs to
 be upgraded.
 
-Same EINVAL when loading on a NIC driver other than Netronome.
+How can we improve the usability / user-experience here?
 
+Same EINVAL when loading on a NIC driver other than Netronome.  Can we
+instead return ENOTSUP ("Operation not supported"), to differentiate
+the cases?
 
 * xdp_buff need data_hard_end
 
