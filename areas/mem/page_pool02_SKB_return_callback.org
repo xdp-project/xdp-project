@@ -111,6 +111,11 @@ TODO: Look into code solutions
  - (2) "release" page_pool state, via calling page_pool_unmap_page()
  - (3) use skb->frag_list coalesce instead
 
+
+*** Case: skb_gro_receive()
+
+
+
 * Testing procedures
 
 ** Multicast traffic
