@@ -1,6 +1,8 @@
-#+TITLE: Identify XDP issues
+#+TITLE: Top-level XDP project descriptions
+#+FILETAGS: XDP
+#+OPTIONS: ^:nil
 
-* Issue: Missing update of ifconfig counters
+* TODO Missing update of ifconfig counters
 
 Progress: @dsahern (David Ahern) have started an email thread on the
 subject: [[https://www.spinics.net/lists/netdev/msg535239.html][consistency for statistics with XDP mode]]
@@ -21,11 +23,12 @@ Closer look at other drivers.
    of other ethtool stats counters (which are the ones I usually
    monitor when testing).
 
+** NEXT Figure out the counter semantics upstream
 Need to have an upstream discussion, on what is the semantic.  IHMO
 the regular RX/TX counters must be updated even for XDP frames.
 
 
-* Issue: XDP_REDIRECT is few drivers
+* TODO Expanding XDP_REDIRECT support to more drivers
 
 Very few drivers support XDP_REDIRECT.
 
@@ -33,19 +36,36 @@ HW drivers: ixgbe, i40e, mlx5
 
 SW drivers: veth, tun (tuntap), virtio_net
 
+** NEXT Map out redirect support in drivers and make a plan
 
-* Issue: ndo_xdp_xmit bound to XDP_REDIRECT
+It would be useful with a complete list drivers that are missing some or all
+parts of REDIRECT support. Based on this we can make a plan for what to do about
+each of these.
+
+* TODO Better ndo_xdp_xmit resource management
+:PROPERTIES:
+:OWNER:    tohojo
+:END:
 
 Driver resources needed to handle a ndo_xdp_xmit() is currently tied
 to the driver having loaded an RX XDP program. This is strange, as
-allocating these Driver TX HW resources is independend.
+allocating these Driver TX HW resources is independent.
 
 This can quickly lead to exhausting HW resources, like IRQs lines or
 NIC TX HW queues, given it is assumed a TX queue is alloc/dedicated
 for each CPU core.
 
+The main idea for fixing this is to tie resource allocation to interface
+insertion into interface maps.
 
-* Issue: usability of xdp_redirect + xdp_redirect_map
+** NEXT Change non-map xdp_redirect helper to use a hidden map
+
+To be able to tie resource allocation to the interface maps, we first need to
+change the non-map redirect variant so it uses a map under the hood. Since
+xdp_redirect_map() is also significantly faster than the non-map variant, this
+change should be a win in itself.
+
+* TODO Usability of programs in samples/bpf - xdp_redirect + xdp_redirect_map
 
 The samples/bpf programs xdp_redirect + xdp_redirect_map are very user
 unfriendly.  #1 they use raw ifindex'es as input + output. #2 the
@@ -54,6 +74,10 @@ silently.
 
 Red Hat QA, got very confused by #2.
 
-* Issue: BTF-based metadata for XDP
+** NEXT Change sample programs to accept ifnames as well as indexes
+
+** NEXT Add TX counters to sample programs
+
+* WAIT BTF-based metadata for XDP
 
 Waiting for tracing people to work out the details of BTF.
