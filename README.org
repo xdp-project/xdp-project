@@ -4,3 +4,62 @@
 This git repository is a *work-in-progress* workspace for collaborating on the
 XDP project.  It provides an easy and git-diff trackable way to share notes,
 benchmarks and work-in-progress items.
+
+* Emacs setup and tips
+
+Since the notes in this repository are kept in Emacs org-mode, spending a bit
+of time getting familiar with the setup and workflow is probably worthwhile.
+
+** Project management with org-mode
+
+For project management in org-mode, we are heavily influenced by the setup
+described by Bernt Hansen [[http://doc.norang.ca/org-mode.html][in this document]]. There is a setup file in
+[[file:org-setup.el]] which contains setup code to configure Emacs to support the
+project management workflow described by Bernt. We have a few modifications to
+the workflow:
+
+- We don't use time clocking on tasks
+- We've added a notion of task (or project) ownership, to filter tasks owned by
+  others. Set the OWNER property on a task or project to claim ownership, which
+  will filter the task from other's agenda.
+
+The project TODO entries are managed in the top-level [[file:xdp-project.org][xdp-project.org file]],
+which in turn links to other .org files with notes etc in the different
+sub-directories.
+
+*** Interaction with Github issues and pull requests
+
+There are several people working on this project, who are comfortable with
+different workflows. We encourage the use of the org-mode project management
+style described above, and to keep notes and work-in-progress stuff in the
+repository. However, the Github management features are also valuable,
+especially for the things that require *direct coordination*. As such, we
+encourage the following guidelines for using Github issues and pull requests in
+this repository:
+
+Issues:
+
+- Open issues for tasks that
+  - require discussion between several people
+  - you wish to assign to others
+- Keep issues small and concrete
+
+Pull requests:
+
+- Open pull requests when:
+  - You want explicit feedback on something
+  - You are changing things in parts of the repository that are primarily
+    edited by someone else (to prevent stomping on other's work).
+- But feel free to commit work-in-progress notes or text directly to master
+
+** Other worthwhile Emacs tricks
+
+To support using git and Github in Emacs use the =magit= package with the
+=forge= extension. Magit is a full-featured interface for git itself, and Forge
+adds interaction with Github issues and pull requests directly to the Magit
+interface. There's also the =magit-stgit= package to add support for the
+'stacked git' package which can be useful for managing upstream kernel patch
+series.
+
+If using =helm= for Emacs, the =helm-org-rifle= package allows quick searching
+in all open org files.
