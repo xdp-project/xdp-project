@@ -854,3 +854,5 @@ Late deadlines first, then scheduled, then non-late deadlines"
 (add-hook 'org-agenda-mode-hook
           '(lambda () (org-defkey org-agenda-mode-map "M" 'org-agenda-month-view))
           'append)
+
+(provide 'org-setup)
