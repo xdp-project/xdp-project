@@ -1,5 +1,5 @@
 #+TITLE: Top-level XDP project descriptions
-#+FILETAGS: XDP
+#+CATEGORY: XDP
 #+OPTIONS: ^:nil
 
 * TODO Missing update of ifconfig counters
