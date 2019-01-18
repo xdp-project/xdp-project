@@ -65,18 +65,26 @@ change the non-map redirect variant so it uses a map under the hood. Since
 xdp_redirect_map() is also significantly faster than the non-map variant, this
 change should be a win in itself.
 
-* TODO Usability of programs in samples/bpf - xdp_redirect + xdp_redirect_map
+* TODO Usability of programs in samples/bpf
 
 The samples/bpf programs xdp_redirect + xdp_redirect_map are very user
 unfriendly.  #1 they use raw ifindex'es as input + output. #2 the
 pkt/s number count RX packets, not TX'ed packets which can be dropped
-silently.
-
-Red Hat QA, got very confused by #2.
+silently. Red Hat QA, got very confused by #2.
 
 ** NEXT Change sample programs to accept ifnames as well as indexes
 
 ** NEXT Add TX counters to sample programs
+
+** TODO Fix unloading wrong XDP on xdp-sample exit
+
+The XDP sample programs unconditionally unload the current running XDP program
+(via -1) on exit. If users are not careful with the order in-which they start
+and stop XDP programs, then they get confused.
+
+Almost done, but followup to make sure this gets merged upstream:
+Upstream [[https://patchwork.ozlabs.org/project/netdev/list/?series=86597&state=%2a][proposal V1]] (by [[https://patchwork.ozlabs.org/project/netdev/list/?submitter=75761][Maciej Fijalkowski]]) is to check if the BPF-prog-ID
+numbers match, before removing the current XDP-prog.
 
 * WAIT BTF-based metadata for XDP                                   :WAITING:
 
