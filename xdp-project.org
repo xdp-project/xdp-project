@@ -1,0 +1,96 @@
+#+TITLE: Top-level XDP project descriptions
+#+CATEGORY: XDP
+#+OPTIONS: ^:nil
+
+* TODO Missing update of ifconfig counters
+
+Progress: @dsahern (David Ahern) have started an email thread on the
+subject: [[https://www.spinics.net/lists/netdev/msg535239.html][consistency for statistics with XDP mode]]
+
+Some drivers are not updating the "ifconfig" stats counters,
+when in XDP mode.  This makes receive or send via XDP invisible to
+sysadm/management tools.  This for-sure is going to cause confusion.
+
+Closer look at other drivers.
+
+ - ixgbe driver is doing the right thing.
+
+ - i40e had a bug, where RX/TX stats are swapped (fixed in
+   commit [[https://git.kernel.org/torvalds/c/cdec2141c24e][cdec2141c24e(v4.20-rc1)]]
+   ("i40e: report correct statistics when XDP is enabled")).
+
+ - mlx5 driver is not updating the regular RX/TX counters, but A LOT
+   of other ethtool stats counters (which are the ones I usually
+   monitor when testing).
+
+** NEXT Figure out the counter semantics upstream
+Need to have an upstream discussion, on what is the semantic.  IHMO
+the regular RX/TX counters must be updated even for XDP frames.
+
+
+* TODO Expanding XDP_REDIRECT support to more drivers
+
+Very few drivers support XDP_REDIRECT.
+
+HW drivers: ixgbe, i40e, mlx5
+
+SW drivers: veth, tun (tuntap), virtio_net
+
+** NEXT Map out redirect support in drivers and make a plan
+
+It would be useful with a complete list drivers that are missing some or all
+parts of REDIRECT support. Based on this we can make a plan for what to do about
+each of these.
+
+* TODO Better ndo_xdp_xmit resource management
+:PROPERTIES:
+:OWNER:    tohojo
+:END:
+
+Driver resources needed to handle a ndo_xdp_xmit() is currently tied
+to the driver having loaded an RX XDP program. This is strange, as
+allocating these Driver TX HW resources is independent.
+
+This can quickly lead to exhausting HW resources, like IRQs lines or
+NIC TX HW queues, given it is assumed a TX queue is alloc/dedicated
+for each CPU core.
+
+The main idea for fixing this is to tie resource allocation to interface
+insertion into interface maps.
+
+** NEXT Change non-map xdp_redirect helper to use a hidden map
+
+To be able to tie resource allocation to the interface maps, we first need to
+change the non-map redirect variant so it uses a map under the hood. Since
+xdp_redirect_map() is also significantly faster than the non-map variant, this
+change should be a win in itself.
+
+* TODO Usability of programs in samples/bpf - xdp_redirect + xdp_redirect_map
+
+The samples/bpf programs xdp_redirect + xdp_redirect_map are very user
+unfriendly.  #1 they use raw ifindex'es as input + output. #2 the
+pkt/s number count RX packets, not TX'ed packets which can be dropped
+silently.
+
+Red Hat QA, got very confused by #2.
+
+** NEXT Change sample programs to accept ifnames as well as indexes
+
+** NEXT Add TX counters to sample programs
+
+* WAIT BTF-based metadata for XDP                                   :WAITING:
+
+Waiting for tracing people to work out the details of BTF.
+* WAIT XDP latency jit-vs-no jit, tuning etc                        :WAITING:
+[2019-01-18 Fri 13:55]
+How do we ensure consistently low latency packet processing is possible with
+XDP?
+
+This paper: [[https://www.net.in.tum.de/fileadmin/bibtex/publications/papers/ITC30-Packet-Filtering-eBPF-XDP.pdf][Performance Implications of Packet Filtering with Linux eBPF]]
+conclude that turning on the jit *increases* the number of outliers (though not
+quite clear if this is actually supported by their data). This should be
+investigated.
+
+Maybe write a tuning doc as well?
+
+WAIT status as this is low priority for now.
