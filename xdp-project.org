@@ -78,6 +78,19 @@ Red Hat QA, got very confused by #2.
 
 ** NEXT Add TX counters to sample programs
 
-* WAIT BTF-based metadata for XDP
+* WAIT BTF-based metadata for XDP                                   :WAITING:
 
 Waiting for tracing people to work out the details of BTF.
+* WAIT XDP latency jit-vs-no jit, tuning etc                        :WAITING:
+[2019-01-18 Fri 13:55]
+How do we ensure consistently low latency packet processing is possible with
+XDP?
+
+This paper: [[https://www.net.in.tum.de/fileadmin/bibtex/publications/papers/ITC30-Packet-Filtering-eBPF-XDP.pdf][Performance Implications of Packet Filtering with Linux eBPF]]
+conclude that turning on the jit *increases* the number of outliers (though not
+quite clear if this is actually supported by their data). This should be
+investigated.
+
+Maybe write a tuning doc as well?
+
+WAIT status as this is low priority for now.
