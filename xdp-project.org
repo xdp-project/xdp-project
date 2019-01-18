@@ -86,6 +86,20 @@ Almost done, but followup to make sure this gets merged upstream:
 Upstream [[https://patchwork.ozlabs.org/project/netdev/list/?series=86597&state=%2a][proposal V1]] (by [[https://patchwork.ozlabs.org/project/netdev/list/?submitter=75761][Maciej Fijalkowski]]) is to check if the BPF-prog-ID
 numbers match, before removing the current XDP-prog.
 
+** TODO Change XDP-samples to enforce native-XDP and report if not avail
+
+The default behaviour when attaching an XDP program on a driver that doesn't
+have native-XDP is to fallback to generic-XDP, without notifying the user of the
+end-state.
+
+This behaviour is also used by xdp-samples, which unfortunately have lead
+end-users to falsely think a given driver supports native-XDP. (QA are using
+these xdp-samples and create cases due to this confusion).
+
+Proposal is to change xdp-samples to enforce native-XDP, and report if this was
+not possible, together with help text that display cmdline option for enabling
+generic-XDP/SKB-mode.
+
 * WAIT BTF-based metadata for XDP                                   :WAITING:
 
 Waiting for tracing people to work out the details of BTF.
