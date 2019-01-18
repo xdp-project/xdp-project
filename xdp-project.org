@@ -100,6 +100,15 @@ Proposal is to change xdp-samples to enforce native-XDP, and report if this was
 not possible, together with help text that display cmdline option for enabling
 generic-XDP/SKB-mode.
 
+** TODO Add xdpsock option to allow XDP_PASS for AF_XDP zero-copy mode
+
+In AF_XDP zero-copy mode, sending frame to the network stack via XDP_PASS
+results in an expense code path, e.g new page_alloc for copy of payload and SKB
+alloc. We need this test how slow this code path is.
+
+Also consider testing XDP-level redirect out another net_device with AF_XDP-ZC
+enabled. (I think this will just drop the packets due to mem_type).
+
 * WAIT BTF-based metadata for XDP                                   :WAITING:
 
 Waiting for tracing people to work out the details of BTF.
