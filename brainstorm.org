@@ -9,15 +9,19 @@ into other docs like [[file:xdp_issues.org]]
 
 * bpf-selftest: improve XDP VLAN selftests
 
-XDP add/remove VLAN headers have a selftest in =tools/testing/selftests/bpf/=
-in files =test_xdp_vlan.c= and =test_xdp_vlan.sh=.
+XDP add/remove VLAN headers have a selftest in =tools/testing/selftests/bpf/= in
+files =test_xdp_vlan.c= and =test_xdp_vlan.sh=. This test was developed in
+conjunction with fixing a bug in generic-XDP (see kernel commit [[https://git.kernel.org/torvalds/c/297249569932][297249569932]]
+("net: fix generic XDP to handle if eth header was mangled")).
 
+Since driver =veth= got native-XDP support, the selftest no-longer tests
+generic-XDP code path.
 
+The ip utility (from iproute2) already support specifying, that an XDP prog must
+use generic XDP when loading an XDP prog (option =xdpgeneric=).
 
-The ip utility (from iproute2) support specifying, that an
-XDP prog must use generic XDP when loading an XDP prog.
-
-I need this when testing veth, which now got native-XDP.
+*Assignment* is to improve the selftest shell-script to test both generic-XDP
+and native-XDP (for veth driver).
 
 * General: Make Generic-XDP complient with Native-XDP features
 
