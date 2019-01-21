@@ -1,4 +1,5 @@
 #+TITLE: Brainstorm notes
+#+OPTIONS: ^:nil
 
 This doc is for brainstorming.  Watch out for likely duplicates, clean
 them up progressively.
@@ -6,10 +7,15 @@ them up progressively.
 Turn these notes into real issue or bug descriptions and move them
 into other docs like [[file:xdp_issues.org]]
 
-* ip-util choose between generic/native-XDP
+* bpf-selftest: improve XDP VLAN selftests
 
-The ip utility (from iproute2) does not support specifying, that an
-XDP prog need to sue generic-XDP.
+XDP add/remove VLAN headers have a selftest in =tools/testing/selftests/bpf/=
+in files =test_xdp_vlan.c= and =test_xdp_vlan.sh=.
+
+
+
+The ip utility (from iproute2) support specifying, that an
+XDP prog must use generic XDP when loading an XDP prog.
 
 I need this when testing veth, which now got native-XDP.
 
