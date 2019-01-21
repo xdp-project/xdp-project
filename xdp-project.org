@@ -109,7 +109,7 @@ alloc. We need this test how slow this code path is.
 Also consider testing XDP-level redirect out another net_device with AF_XDP-ZC
 enabled. (I think this will just drop the packets due to mem_type).
 
-* BPF-selftests - top-level TODOs
+* TODO BPF-selftests - top-level TODOs
 
 The kernel git-tree contains a lot of selftests for BPF located in:
 =tools/testing/selftests/bpf/=.
@@ -122,6 +122,21 @@ should have a goal of doing functional testing of the XDP core-code components
 Since driver =veth= got native-XDP support, we have an opportunity for writing
 selftests that cover both generic-XDP and native-XDP.
 
+** TODO bpf-selftest: improve XDP VLAN selftests
+
+*Assignment* is to improve the selftest shell-script to test both generic-XDP
+and native-XDP (for veth driver).
+
+XDP add/remove VLAN headers have a selftest in =tools/testing/selftests/bpf/= in
+files =test_xdp_vlan.c= and =test_xdp_vlan.sh=. This test was developed in
+conjunction with fixing a bug in generic-XDP (see kernel commit [[https://git.kernel.org/torvalds/c/297249569932][297249569932]]
+("net: fix generic XDP to handle if eth header was mangled")).
+
+Since driver =veth= got native-XDP support, the selftest no-longer tests
+generic-XDP code path.
+
+The ip utility (from iproute2) already support specifying, that an XDP prog must
+use generic XDP when loading an XDP prog (option =xdpgeneric=).
 
 * WAIT BTF-based metadata for XDP                                   :WAITING:
 
