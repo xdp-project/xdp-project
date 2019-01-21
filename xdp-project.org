@@ -109,6 +109,20 @@ alloc. We need this test how slow this code path is.
 Also consider testing XDP-level redirect out another net_device with AF_XDP-ZC
 enabled. (I think this will just drop the packets due to mem_type).
 
+* BPF-selftests - top-level TODOs
+
+The kernel git-tree contains a lot of selftests for BPF located in:
+=tools/testing/selftests/bpf/=.
+
+XDP (and its performance gain) is tied closely to NIC driver code, which makes
+it hard to implement selftests for (including benchmark selftests). Still we
+should have a goal of doing functional testing of the XDP core-code components
+(via selftests).
+
+Since driver =veth= got native-XDP support, we have an opportunity for writing
+selftests that cover both generic-XDP and native-XDP.
+
+
 * WAIT BTF-based metadata for XDP                                   :WAITING:
 
 Waiting for tracing people to work out the details of BTF.
