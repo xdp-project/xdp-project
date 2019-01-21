@@ -138,6 +138,15 @@ generic-XDP code path.
 The ip utility (from iproute2) already support specifying, that an XDP prog must
 use generic XDP when loading an XDP prog (option =xdpgeneric=).
 
+** TODO bpf-selftest: find XDP-selftests affected by veth native-XDP
+
+When driver =veth= got native-XDP support, then the XDP-selftests that were
+based on =veth= changed from testing generic-XDP into testing native-XDP.
+
+*Assignments:*
+1. Determine how many and which veth based XDP-selftests are affected
+2. Convert these selftests to test both generic-XDP and native-XDP
+
 * WAIT BTF-based metadata for XDP                                   :WAITING:
 
 Waiting for tracing people to work out the details of BTF.
