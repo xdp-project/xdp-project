@@ -426,8 +426,12 @@ I would like to benchmark removing the per packet retpoline, as this
 will tell us how close the DMA-patchset can bring a RETPOLINE enabled
 kernel to the performance we see without retpoline.
 
-Found that it is possible via GCC attributes to disable retpoline on a
+Found that it is possible via [[https://gcc.gnu.org/onlinedocs/gcc/x86-Function-Attributes.html#x86-Function-Attributes][GCC Function Attributes]] to disable retpoline on a
 per function basis via __attribute__.
+
+For an entire C-file RETPOLINE can be  *disabled* via [[https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html][GCC cmdline option]]
+=-mindirect-branch=keep=. Seems to be enabled with:
+=-mindirect-branch=thunk-extern=.
 
 ** First-attempt: Disable retpoline in bpf_prog_run_xdp
 
