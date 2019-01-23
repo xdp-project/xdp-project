@@ -860,4 +860,8 @@ Late deadlines first, then scheduled, then non-late deadlines"
           '(lambda () (org-defkey org-agenda-mode-map "M" 'org-agenda-month-view))
           'append)
 
+(require 'org-id)
+(setq org-id-method 'uuidgen
+      org-id-link-to-org-use-id 'create-if-interactive-and-no-custom-id)
+
 (provide 'org-setup)
