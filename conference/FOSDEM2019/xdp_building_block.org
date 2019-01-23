@@ -87,6 +87,60 @@ XDP is not first mover, but believe XDP is /different and better/
  - /Killer feature/: Integration with Linux kernel
  - Flexible sharing of NIC resources
 
+
+** Slide: What is XDP?                                              :export:
+
+XDP (eXpress Data Path) is a Linux *in-kernel fast-path*
+ - /New programmable layer in-front/ of traditional network stack
+ - Already accepted part of upstream kernels (and RHEL8)
+ - Operate at the same level and speeds as DPDK
+ - For L2-L3 use-cases: seeing x10 performance improvements!
+
+** Slide: Why is XDP needed?                                        :export:
+
+This is about *Kernel networking stack staying relevant*
+ - For emerging use-cases and markets
+
+Linux networking stack optimized for layers L4-L7
+ - Missing something to address L2-L3 use-cases/markets
+
+XDP operate at layers L2-L3
+
+
+@@html:<br/><small>@@
+
+If you forgot OSI model:
+ - L2=Ethernet
+ - L3=IPv4/IPv6
+ - L4=TCP/UDP
+ - L7=Applications
+
+@@html:</small>@@
+
+** Slide: Existing solutions: Not first mover                       :export:
+
+XDP is not first mover in this area
+ - But we believe /XDP is different and better/
+
+Existing *kernel bypass* solutions:
+ - netmap (FreeBSD), DPDK (Intel/LF), PF_ring (ntop)
+ - maglev (Google), Onload (SolarFlare)
+
+Commercial solutions /similar to XDP/:
+ - ndiv by HAproxy, product [[https://www.haproxy.com/products/aloha-hardware-appliance/][ALOHA]]
+
+** Slide: What makes XDP different and better?                      :export:
+
+*Not bypass*, but /in-kernel fast-path/
+
+The killer feature of XDP is integration with Linux kernel,
+ - Leverage existing kernel infrastructure, eco-system and market position
+ - Programmable flexibility via eBPF sandboxing (kernel infra)
+ - Flexible sharing of NIC resources between Linux and XDP
+ - Cooperation with netstack via eBPF-helpers and fallback-handling
+ - No need to reinject packets, like bypass solutions
+
+
 * Emacs tricks
 
 # Local Variables:
