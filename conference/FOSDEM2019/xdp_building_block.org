@@ -90,11 +90,17 @@ XDP is not first mover, but believe XDP is /different and better/
 
 ** Slide: What is XDP?                                              :export:
 
-XDP (eXpress Data Path) is a Linux *in-kernel fast-path*
+XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
  - /New programmable layer in-front/ of traditional network stack
  - Already accepted part of upstream kernels (and RHEL8)
  - Operate at the same level and speeds as DPDK
  - For L2-L3 use-cases: seeing x10 performance improvements!
+ - Can accelerate *in-kernel* L2-L3 use-cases (e.g. forwarding)
+
+What is /AF_XDP/? (the Address Family XDP socket)
+ - Hybrid *kernel-bypass* facility, move selective frames out of kernel
+ - XDP/eBPF prog filter packets and REDIRECT into AF_XDP socket
+ - Deliver raw L2 frames into userspace
 
 ** Slide: Why is XDP needed?                                        :export:
 
@@ -140,6 +146,9 @@ The killer feature of XDP is integration with Linux kernel,
  - Cooperation with netstack via eBPF-helpers and fallback-handling
  - No need to reinject packets, like bypass solutions
 
+/AF_XDP/ for /flexible/ *kernel-bypass*
+ - Cooperate with use-case needing fast raw frame access
+ - While leveraging existing kernel NIC drivers
 
 * Emacs tricks
 
