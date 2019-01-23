@@ -147,8 +147,32 @@ The killer feature of XDP is integration with Linux kernel,
  - No need to reinject packets, like bypass solutions
 
 /AF_XDP/ for /flexible/ *kernel-bypass*
- - Cooperate with use-case needing fast raw frame access
+ - Cooperate with use-case needing fast raw frame access in userspace
  - While leveraging existing kernel NIC drivers
+
+* Slide: XDP is a building block                                     :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Fundamental to understand that XDP is a building block
+
+** Slide: XDP is a building block                                   :export:
+
+@@html:<small>@@
+It is fundamental to understand
+@@html:</small>@@
+
+/XDP is a component/; a core facility provided by the kernel
+ - Put it together with other components to solve a task
+
+eBPF (incl XDP) is *not a product in itself*
+ - Existing (and new) Open Source projects will use these eBPF components
+
+/Full potential/ comes when
+ - Combining XDP-eBPF with other eBPF-hooks and facilities
+ - Construct a *"networking pipeline"* via kernel components
+ - The [[https://cilium.io/][Cilium]] project is a good example (container L4-L7 policy)
 
 * Emacs tricks
 
