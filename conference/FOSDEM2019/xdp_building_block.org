@@ -251,6 +251,7 @@ Ways to transfer /info between XDP and netstack/
  - XDP have 32 bytes *metadata* in-front of payload
    - TC-eBPF (cls_bpf) can read, and update SKB fields
    - E.g. save XDP lookup and use in TC-eBPF hook
+   - *AF_XDP* raw frames have this /metadata avail in-front of payload/
 
 * Slide: XDP integrating with other solutions                        :export:
 :PROPERTIES:
