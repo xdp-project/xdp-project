@@ -260,6 +260,41 @@ Ways to transfer /info between XDP and netstack/
    - TC-eBPF (cls_bpf) can read, and update SKB fields
    - E.g. save XDP lookup and use in TC-eBPF hook
 
+* Slide: XDP integrating with other solutions                        :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+How can the XDP component be used and integrated into other solutions?
+
+** Slide: XDP integration with DPDK                                  :export:
+
+*XDP poll-mode driver for DPDK*
+ - Based on [[https://www.kernel.org/doc/html/latest/networking/af_xdp.html][AF_XDP sockets]]
+   - XDP way to deliver raw frames into userspace
+ - [[https://patches.dpdk.org/project/dpdk/list/?series=1000&state=%2a][RFC patchset]] for AF_XDP PMD-driver sent on DPDK-mailing list by Intel
+
+Makes it /easier and more flexible for DPDK/
+ - Don't monopolize entire NIC, eBPF filter redirect to DPDK
+ - Run existing DPDK based apps on XDP-capable drivers
+ - Less setup restrictions, XDP works with vanilla kernels
+
+** Slide: XDP integration with VPP                                   :export:
+
+VPP (FD.io) *could* integrate via AF_XDP DPDK-PMD
+ - But already have other hooks e.g tun/tap
+ - Would it be more optimal with more "native" XDP integration?
+
+** Slide: XDP integration with OVS                                   :export:
+
+XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
+ - VMware (William Tu) presented different option at LPC-2018:
+   - [[http://vger.kernel.org/lpc-networking2018.html#session-7][Bringing the Power of eBPF to Open vSwitch]]
+ - *TC-eBPF*, (re)implemented OVS in eBPF (performance limited)
+ - *Offloading subset to XDP* (issue miss BPF-helpers to work)
+ - *AF_XDP*, huge performance gain
+
+
 * Emacs tricks
 
 # Local Variables:
