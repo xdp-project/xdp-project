@@ -145,12 +145,7 @@
 (setq org-refile-allow-creating-parent-nodes (quote confirm))
 
 ; Tags with fast selection keys
-(setq org-tag-alist (quote ((:startgroup)
-                            ("@errand" . ?e)
-                            ("@office" . ?o)
-                            ("@home" . ?H)
-                            (:endgroup)
-                            ("WAITING" . ?w)
+(setq org-tag-alist (quote (("WAITING" . ?w)
                             ("HOLD" . ?h)
                             ("PERSONAL" . ?P)
                             ("WORK" . ?W)
