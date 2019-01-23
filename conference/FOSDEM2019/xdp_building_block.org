@@ -219,6 +219,47 @@ Global load balancer market size grow from [[https://www.marketsandmarkets.com/M
    - veth can /RE-redirect/, allow *building interesting proxy-solutions*
 
 
+* Slide: Evolving XDP via leveraging existing solutions              :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+@@html:<small>@@
+XDP can (easily) be misused in same way as kernel-bypass solution
+@@html:</small>@@
+
+Being smart about how XDP is integrated into existing Open Source solutions
+ - Leverage existing eco-systems e.g. for control plane setup
+
+** Slide: Evolving XDP via BPF-helpers                               :export:
+
+@@html:<small>@@
+*We should encourage adding helpers instead of duplicating data in BPF maps*
+@@html:</small>@@
+
+Think of XDP as a /software offload layer for kernel netstack/
+ - Simply setup and use Linux netstack, but accelerate parts of it with XDP
+
+IP-routing good example: /Access routing table from XDP via BPF helpers/ (v4.18)
+ - Let Linux handle routing (daemons) and neighbour lookups
+ - Talk at LPC-2018 (David Ahern): [[http://vger.kernel.org/lpc-networking2018.html#session-1][Leveraging Kernel Tables with XDP]]
+
+Obvious *next target*: /Bridge lookup helper/
+ - Like IP-routing, transparent XDP accelerate bridge-forwarding
+   - Fallback for ARP-lookups, flooding etc.
+ - Huge potential *performance boost for Linux bridge* use-cases!
+
+
+** Slide: Transfer info between XDP and netstack                     :export:
+
+Ways to transfer /info between XDP and netstack/
+ - XDP can *modify packet headers* before netstack
+   - Pop/push headers influence RX-handler in netstack
+   - CloudFlare modify MAC-src on sampled dropped packets
+ - XDP have 32 bytes *metadata* in-front of payload
+   - TC-eBPF (cls_bpf) can read, and update SKB fields
+   - E.g. save XDP lookup and use in TC-eBPF hook
+
 * Emacs tricks
 
 # Local Variables:
