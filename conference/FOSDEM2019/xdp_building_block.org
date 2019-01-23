@@ -1,0 +1,27 @@
+# -*- fill-column: 79; -*-
+#+TITLE: XDP (eXpress Data Path) as a building block for other FOSS projects
+#+AUTHOR: Jesper Dangaard Brouer
+#+EMAIL: brouer@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: FOSDEM 2019
+
+This presentation will be given at [[https://fosdem.org/2019/][FOSDEM 2019]].
+
+Titled: [[https://fosdem.org/2019/schedule/event/xdp_overview_and_update/][XDP (eXpress Data Path) as a building block for other FOSS projects]]
+
+More info in file:abstract.org
+
+* Emacs tricks
+
+# Local Variables:
+# org-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# <h2 class=\"author\">Jesper Dangaard Brouer (Red Hat)<br/></h2>
+# <h3>FOSDEM 2019<br/>Brussels, Feb 2019</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
