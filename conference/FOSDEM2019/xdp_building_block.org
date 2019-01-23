@@ -260,6 +260,16 @@ Ways to transfer /info between XDP and netstack/
 
 How can the XDP component be used and integrated into other solutions?
 
+** Slide: XDP integration with OVS                                   :export:
+
+XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
+ - VMware (William Tu) presented different option at LPC-2018:
+   - [[http://vger.kernel.org/lpc-networking2018.html#session-7][Bringing the Power of eBPF to Open vSwitch]]
+ - *TC-eBPF*, (re)implemented OVS in eBPF (performance limited)
+ - *Offloading subset to XDP* (issue miss BPF-helpers to work)
+ - *AF_XDP*, huge performance gain
+
+
 ** Slide: XDP integration with DPDK                                  :export:
 
 *XDP poll-mode driver for DPDK*
@@ -277,16 +287,6 @@ Makes it /easier and more flexible for DPDK/
 VPP (FD.io) *could* integrate via AF_XDP DPDK-PMD
  - But already have other hooks e.g tun/tap
  - Would it be more optimal with more "native" XDP integration?
-
-** Slide: XDP integration with OVS                                   :export:
-
-XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
- - VMware (William Tu) presented different option at LPC-2018:
-   - [[http://vger.kernel.org/lpc-networking2018.html#session-7][Bringing the Power of eBPF to Open vSwitch]]
- - *TC-eBPF*, (re)implemented OVS in eBPF (performance limited)
- - *Offloading subset to XDP* (issue miss BPF-helpers to work)
- - *AF_XDP*, huge performance gain
-
 
 * Emacs tricks
 
