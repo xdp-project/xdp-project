@@ -1,6 +1,6 @@
 # -*- fill-column: 79; -*-
 #+TITLE: XDP (eXpress Data Path) as a building block for other FOSS projects
-#+AUTHOR: Jesper Dangaard Brouer
+#+AUTHOR: Jesper Dangaard Brouer and Magnus Karlsson
 #+EMAIL: brouer@redhat.com
 #+REVEAL_THEME: redhat
 #+REVEAL_TRANS: linear
@@ -90,7 +90,8 @@ XDP is not first mover, but believe XDP is /different and better/
 
 # Local Variables:
 # org-reveal-title-slide: "<h1 class=\"title\">%t</h1>
-# <h2 class=\"author\">Jesper Dangaard Brouer (Red Hat)<br/></h2>
+# <h2 class=\"author\">Jesper Dangaard Brouer (Red Hat)<br/>
+# Magnus Karlsson (Intel)<br/></h2>
 # <h3>FOSDEM 2019<br/>Brussels, Feb 2019</h3>"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
 # End:
