@@ -174,6 +174,51 @@ eBPF (incl XDP) is *not a product in itself*
  - Construct a *"networking pipeline"* via kernel components
  - The [[https://cilium.io/][Cilium]] project is a good example (container L4-L7 policy)
 
+* Slide: XDP use-cases                                               :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Areas and markets where XDP is /already being used/
+
+Touch upon *new potential* and opportunities
+- e.g. for Virtual-Machines (VM) and Containers
+
+** Market: Anti-DDoS                                                 :export:
+
+@@html:<small>@@
+Market: expected grow from [[https://www.marketsandmarkets.com/PressReleases/ddos-protection-mitigation.asp][USD 1.94B in 2018 to USD 4.10 Billion by 2023]]
+@@html:</small>@@
+
+The most obvious market for XDP is *anti-DDoS*
+
+Companies already deployed XDP in production for anti-DDoS
+ - /Facebook/, every packet goes through XDP for [[http://vger.kernel.org/lpc-networking2018.html#session-10][1.5 years]]
+ - /CloudFlare/ [[https://blog.cloudflare.com/l4drop-xdp-ebpf-based-ddos-mitigations/][switched to XDP]] (changed NIC vendor due to XDP support!)
+
+*New potential*: Protecting Containers and VMs
+ - /Containers/: Protect Kubernetes/OpenShift cluster with XDP
+ - /VM/: Host-OS protect Guest-OS'es via XDP
+   - Work-in-progress: allow vhost/virtio_net; upload XDP to Host-OS
+
+** Market: L4 Load-balancer                                          :export:
+
+@@html:<small>@@
+Global load balancer market size grow from [[https://www.marketsandmarkets.com/Market-Reports/load-balancer-market-236964606.html][USD 2.6B in 2018 to USD 5.0B by 2023]]
+@@html:</small>@@
+
+/Facebook/ were using the kernel Load-balancer IPVS
+ - Switched to using XDP instead: Reported /x10 performance improvement/
+ - Open Sourced their [[https://code.fb.com/open-source/open-sourcing-katran-a-scalable-network-load-balancer/][XDP load-balancer]] called [[https://github.com/facebookincubator/katran][katran]]
+
+*New potential*: Host-OS load-balance to VMs and Containers
+ - /VM/: Phy-NIC can XDP_REDIRECT into Guest-NIC
+   - driver tuntap queue XDP-raw frames to virtio_net; *avoid SKB in Host-OS*
+ - /Container/: Phy-NIC can XDP_REDIRECT into *veth* (kernel v4.20)
+   - driver veth alloc+build SKB outside driver-code; speedup *skip some code*
+   - veth can /RE-redirect/, allow *building interesting proxy-solutions*
+
+
 * Emacs tricks
 
 # Local Variables:
