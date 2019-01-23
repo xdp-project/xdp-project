@@ -65,6 +65,26 @@ $ node ~/git/decktape/decktape.js \
 The size is set to get slide text to fit on the page. And -p 100 makes it go
 faster.
 
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation.
+
+Colors are choosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Slide: Framing XDP                                                 :export:
+
+XDP: new /in-kernel programmable/ (eBPF) *layer before netstack*
+ - Similar speeds as DPDK
+XDP ensure that *Linux networking stays relevant*
+ - Operate at L2-L3, netstack operate L4-L7
+XDP is not first mover, but believe XDP is /different and better/
+ - /Killer feature/: Integration with Linux kernel
+ - Flexible sharing of NIC resources
+
 * Emacs tricks
 
 # Local Variables:
