@@ -21,6 +21,7 @@
 ;; referenced above for how to setup and use a git checkout of org-mode itself.
 
 (require 'org)
+(require 'org-tempo)
 
 ; Settings that you may want to customise
 (setq org-directory "~/git/org"
