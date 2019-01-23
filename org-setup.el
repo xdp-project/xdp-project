@@ -159,13 +159,22 @@
                             ("export" . ?x)
                             ("noexport". ?X))))
 
+(defvar-local org-extra-file-tags nil
+  "Extra file tags to be applied to this file. Can be set from
+  .dir-locals.el, for instance.")
+
+(defun thj/org-add-extra-file-tags (orig-fun &rest r)
+  "Add extra-file-tags before calling ORIG-FUN with args R."
+  (let ((org-file-tags (delete-dups (append org-extra-file-tags org-file-tags))))
+    (apply orig-fun r)))
+(advice-add 'org-scan-tags :around #'thj/org-add-extra-file-tags)
+(advice-add 'org-get-tags :around #'thj/org-add-extra-file-tags)
+
 ; Allow setting single tags without the menu
 (setq org-fast-tag-selection-single-key (quote expert))
 
 ; For tag searches ignore tasks with scheduled and deadline dates
 (setq org-agenda-tags-todo-honor-ignore-options t)
-
-
 
 ; Exclude DONE state tasks from refile targets
 (defun bh/verify-refile-target ()
