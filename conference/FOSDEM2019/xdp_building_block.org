@@ -105,10 +105,10 @@ What is /AF_XDP/? (the Address Family XDP socket)
 ** Slide: Why is XDP needed?                                        :export:
 
 This is about *Kernel networking stack staying relevant*
- - For emerging use-cases and markets
+ - For emerging use-cases and areas
 
 Linux networking stack optimized for layers L4-L7
- - Missing something to address L2-L3 use-cases/markets
+ - Missing something to address L2-L3 use-cases
 
 XDP operate at layers L2-L3
 
@@ -179,18 +179,14 @@ eBPF (incl XDP) is *not a product in itself*
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-Areas and markets where XDP is /already being used/
+Areas and use-cases where XDP is /already being used/
 
 Touch upon *new potential* and opportunities
 - e.g. for Virtual-Machines (VM) and Containers
 
-** Market: Anti-DDoS                                                 :export:
+** Use-case: Anti-DDoS                                              :export:
 
-@@html:<small>@@
-Market: expected grow from [[https://www.marketsandmarkets.com/PressReleases/ddos-protection-mitigation.asp][USD 1.94B in 2018 to USD 4.10 Billion by 2023]]
-@@html:</small>@@
-
-The most obvious market for XDP is *anti-DDoS*
+The most obvious use-case for XDP is *anti-DDoS*
 
 Companies already deployed XDP in production for anti-DDoS
  - /Facebook/, every packet goes through XDP for [[http://vger.kernel.org/lpc-networking2018.html#session-10][1.5 years]]
@@ -201,11 +197,7 @@ Companies already deployed XDP in production for anti-DDoS
  - /VM/: Host-OS protect Guest-OS'es via XDP
    - Work-in-progress: allow vhost/virtio_net; upload XDP to Host-OS
 
-** Market: L4 Load-balancer                                          :export:
-
-@@html:<small>@@
-Global load balancer market size grow from [[https://www.marketsandmarkets.com/Market-Reports/load-balancer-market-236964606.html][USD 2.6B in 2018 to USD 5.0B by 2023]]
-@@html:</small>@@
+** Use-case: L4 Load-balancer                                       :export:
 
 /Facebook/ were using the kernel Load-balancer IPVS
  - Switched to using XDP instead: Reported /x10 performance improvement/
