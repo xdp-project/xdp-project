@@ -297,6 +297,18 @@ Let take a closer look at AF_XDP
  - Diverting from XDP /in-kernel/ frame processing
  - Allow selective *kernel-bypass* via XDP_REDIRECT into AF_XDP sockets
 
+** Slide: Where does AF_XDP performance come from?                  :export:
+
+/Lock-free [[https://lwn.net/Articles/169961/][channel]] directly from driver RX-queue into AF_XDP socket/
+- Single-Producer/Single-Consumer (SPSC) descriptor ring queues
+- *Single*-/Producer/ (SP) via bind to specific RX-*/queue id/*
+  * NAPI-softirq assure only 1-CPU process 1-RX-queue id (per sched)
+- *Single*-/Consumer/ (SC) via 1-Application
+- *Bounded* buffer pool (UMEM) allocated by userspace (register with kernel)
+  * Descriptor(s) in ring(s) point into UMEM
+  * /No memory allocation/, but return frames to UMEM in timely manor
+
+
 * Emacs tricks
 
 # Local Variables:
