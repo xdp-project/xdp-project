@@ -324,6 +324,16 @@ AF_XDP /socket/: Associated /two rings/ *RX* and *TX*
  - FILL ring: application gives kernel area to RX fill
  - COMPLETION ring: kernel tell app TX done for area (can be reuse)
 
+** Slide: Gotcha by RX-queue id binding
+
+AF_XDP bound to */single RX-queue id/* (for SPSC performance reasons)
+- NIC default spread flows with RSS-hashing over RX-queues
+  * Traffic likely not hitting queue you expect
+- You *MUST* configure NIC *HW filters* to /steer to RX-queue id/
+  * Out of scope for XDP setup
+  * Use ethtool or TC HW offloading for filter setup
+
+
 * Emacs tricks
 
 # Local Variables:
