@@ -331,8 +331,13 @@ VPP (FD.io) *could* integrate via AF_XDP DPDK-PMD
 ** Slide: AF_XDP integration with Snabb Switch                      :export:
 
 [[https://github.com/snabbco/snabb/blob/master/README.md][Snabb Switch]]
-- How do we imagine integration?
-- Also via AF_XDP?
+- Implement a *AF_XDP driver?*
+- Allow leveraging kernel drivers that implement XDP
+  * Kernel community takes care of maintaining driver code
+- Any *performance loss/gap* to native Snabb driver*?*
+  * E.g. NAPI "only" bulk up-to 64 packets
+  * E.g. NAPI is not doing busy-polling 100%, more latency variance
+
 
 * Emacs tricks
 
