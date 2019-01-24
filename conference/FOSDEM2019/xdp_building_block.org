@@ -307,7 +307,8 @@ Let take a closer look at AF_XDP
 - *Bounded* buffer pool (UMEM) allocated by userspace (register with kernel)
   * Descriptor(s) in ring(s) point into UMEM
   * /No memory allocation/, but return frames to UMEM in timely manor
-
+- [[http://www.lemis.com/grog/Documentation/vj/lca06vj.pdf][Transport signature]] Van Jacobson talked about
+  * Replaced by XDP/eBPF program choosing to XDP_REDIRECT
 
 * Emacs tricks
 
