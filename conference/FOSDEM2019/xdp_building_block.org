@@ -288,6 +288,14 @@ VPP (FD.io) *could* integrate via AF_XDP DPDK-PMD
  - But already have other hooks e.g tun/tap
  - Would it be more optimal with more "native" XDP integration?
 
+
+* Slide: Focus on AF_XDP
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+
+
 * Emacs tricks
 
 # Local Variables:
