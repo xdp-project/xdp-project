@@ -287,6 +287,11 @@ VPP (FD.io) *could* integrate via AF_XDP DPDK-PMD
  - But already have other hooks e.g tun/tap
  - Would it be more optimal with more "native" XDP integration?
 
+** Slide: XDP integration with Snabb Switch                         :export:
+
+[[https://github.com/snabbco/snabb/blob/master/README.md][Snabb Switch]]
+- How do we imagine integration?
+- Also via AF_XDP?
 
 * Slide: Focus on AF_XDP                                             :export:
 :PROPERTIES:
