@@ -293,6 +293,9 @@ VPP (FD.io) *could* integrate via AF_XDP DPDK-PMD
 :reveal_extra_attr: class="mid-slide"
 :END:
 
+Let take a closer look at AF_XDP
+ - Diverting from XDP /in-kernel/ frame processing
+ - Allow selective *kernel-bypass* via XDP_REDIRECT into AF_XDP sockets
 
 * Emacs tricks
 
