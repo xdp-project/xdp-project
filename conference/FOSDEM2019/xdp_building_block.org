@@ -339,6 +339,27 @@ VPP (FD.io) *could* integrate via AF_XDP DPDK-PMD
   * E.g. NAPI is not doing busy-polling 100%, more latency variance
 
 
+* Slide: Performance numbers                                         :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Magnus want to talk about performance numbers for AF_XDP
+- Latest performance numbers, without any of the optimization details
+- Busy poll() with performance numbers
+- Where we are in performance compared to DPDK
+
+
+* Slide: Ongoing work                                                :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Magnus want to talk about ongoing work
+- Libbpf work
+- Packet clone for XDP ideas
+
+
 * Emacs tricks
 
 # Local Variables:
