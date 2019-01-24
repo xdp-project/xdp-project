@@ -262,6 +262,13 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
  - *Offloading subset to XDP* (issue miss BPF-helpers to work)
  - *AF_XDP*, huge performance gain
 
+* FIXME: Below slides move into AF_XDP slides
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Magnus should integrated next slides into AF_XDP focus
+
 ** Slide: XDP integration with DPDK                                 :export:
 
 *XDP poll-mode driver for DPDK*
