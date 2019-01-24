@@ -310,6 +310,15 @@ Let take a closer look at AF_XDP
 - [[http://www.lemis.com/grog/Documentation/vj/lca06vj.pdf][Transport signature]] Van Jacobson talked about
   * Replaced by XDP/eBPF program choosing to XDP_REDIRECT
 
+** Slide: Details: Actually *four* SPSC ring queues                 :export:
+
+AF_XDP /socket/: Associated /two rings/ *RX* and *TX*
+ - Descriptor(s) in ring point into UMEM
+/UMEM/ consists of a number of equally sized chunks
+ - Associated /two rings/: *FILL* ring and *COMPLETION* ring
+ - FILL ring: application gives kernel area to RX fill
+ - COMPLETION ring: kernel tell app TX done for area (can be reuse)
+
 * Emacs tricks
 
 # Local Variables:
