@@ -70,7 +70,7 @@ Not much room for describing the figure
 
 Execute python code in emacs via keyboard shortcut: =C-c C-c=
 
-#+BEGIN_SRC python :var fname="bar_chart.png" :var data=data01 :results file
+#+BEGIN_SRC python :var fname="bar_chart.svg" :var data=data01 :results file
 import matplotlib.pyplot as plt; plt.rcdefaults()
 import numpy as np
 
@@ -90,15 +90,14 @@ return fname
 #+END_SRC
 
 #+RESULTS:
-[[file:bar_chart.png]]
+[[file:bar_chart.svg]]
 
 
 * Slide: Example-2: Bar Chart                                        :export:
 
-file:bar_chart.png
+file:bar_chart.svg
 
-Not much room for describing the figure
-
+# No room for describing the figure when using SVG
 
 
 * Example-3: Python code for horizontal bar chart                  :noexport:
