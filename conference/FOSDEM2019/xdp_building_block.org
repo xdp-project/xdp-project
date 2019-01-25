@@ -253,14 +253,7 @@ Ways to transfer /info between XDP and netstack/
    - E.g. save XDP lookup and use in TC-eBPF hook
    - *AF_XDP* raw frames have this /metadata avail in-front of payload/
 
-* Slide: XDP integrating with other solutions                        :export:
-:PROPERTIES:
-:reveal_extra_attr: class="mid-slide"
-:END:
-
-How can the XDP component be used and integrated into other solutions?
-
-** Slide: XDP integration with OVS                                   :export:
+* Slide: XDP integration with OVS                                    :export:
 
 XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
  - VMware (William Tu) presented different option at LPC-2018:
@@ -269,8 +262,55 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
  - *Offloading subset to XDP* (issue miss BPF-helpers to work)
  - *AF_XDP*, huge performance gain
 
+* Slide: Focus on AF_XDP                                             :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
 
-** Slide: XDP integration with DPDK                                  :export:
+Let take a closer look at AF_XDP
+ - Diverting from XDP /in-kernel/ frame processing
+ - Allow selective *kernel-bypass* via XDP_REDIRECT into AF_XDP sockets
+
+** Slide: Where does AF_XDP performance come from?                  :export:
+
+/Lock-free [[https://lwn.net/Articles/169961/][channel]] directly from driver RX-queue into AF_XDP socket/
+- Single-Producer/Single-Consumer (SPSC) descriptor ring queues
+- *Single*-/Producer/ (SP) via bind to specific RX-*/queue id/*
+  * NAPI-softirq assure only 1-CPU process 1-RX-queue id (per sched)
+- *Single*-/Consumer/ (SC) via 1-Application
+- *Bounded* buffer pool (UMEM) allocated by userspace (register with kernel)
+  * Descriptor(s) in ring(s) point into UMEM
+  * /No memory allocation/, but return frames to UMEM in timely manor
+- [[http://www.lemis.com/grog/Documentation/vj/lca06vj.pdf][Transport signature]] Van Jacobson talked about
+  * Replaced by XDP/eBPF program choosing to XDP_REDIRECT
+
+** Slide: Details: Actually *four* SPSC ring queues                 :export:
+
+AF_XDP /socket/: Associated /two rings/ *RX* and *TX*
+ - Descriptor(s) in ring point into UMEM
+/UMEM/ consists of a number of equally sized chunks
+ - Associated /two rings/: *FILL* ring and *COMPLETION* ring
+ - FILL ring: application gives kernel area to RX fill
+ - COMPLETION ring: kernel tell app TX done for area (can be reuse)
+
+** Slide: Gotcha by RX-queue id binding
+
+AF_XDP bound to */single RX-queue id/* (for SPSC performance reasons)
+- NIC default spread flows with RSS-hashing over RX-queues
+  * Traffic likely not hitting queue you expect
+- You *MUST* configure NIC *HW filters* to /steer to RX-queue id/
+  * Out of scope for XDP setup
+  * Use ethtool or TC HW offloading for filter setup
+
+
+* Integration with AF_XDP                                            :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+How can *kernel-bypass* solutions use AF_XDP as a /building block/?
+
+** Slide: AF_XDP integration with DPDK                              :export:
 
 *XDP poll-mode driver for DPDK*
  - Based on [[https://www.kernel.org/doc/html/latest/networking/af_xdp.html][AF_XDP sockets]]
@@ -282,11 +322,43 @@ Makes it /easier and more flexible for DPDK/
  - Run existing DPDK based apps on XDP-capable drivers
  - Less setup restrictions, XDP works with vanilla kernels
 
-** Slide: XDP integration with VPP                                   :export:
+** Slide: AF_XDP integration with VPP                               :export:
 
 VPP (FD.io) *could* integrate via AF_XDP DPDK-PMD
  - But already have other hooks e.g tun/tap
  - Would it be more optimal with more "native" XDP integration?
+
+** Slide: AF_XDP integration with Snabb Switch                      :export:
+
+[[https://github.com/snabbco/snabb/blob/master/README.md][Snabb Switch]]
+- Implement a *AF_XDP driver?*
+- Allow leveraging kernel drivers that implement XDP
+  * Kernel community takes care of maintaining driver code
+- Any *performance loss/gap* to native Snabb driver*?*
+  * E.g. NAPI "only" bulk up-to 64 packets
+  * E.g. NAPI is not doing busy-polling 100%, more latency variance
+
+
+* Slide: Performance numbers                                         :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Magnus want to talk about performance numbers for AF_XDP
+- Latest performance numbers, without any of the optimization details
+- Busy poll() with performance numbers
+- Where we are in performance compared to DPDK
+
+
+* Slide: Ongoing work                                                :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Magnus want to talk about ongoing work
+- Libbpf work
+- Packet clone for XDP ideas
+
 
 * Emacs tricks
 
