@@ -27,11 +27,11 @@ Examples in section "Plotting with python"
 | legend       | rx_drop | nanosec per packet |  saved ns |
 |--------------+---------+--------------------+-----------|
 | baseline     |    15.1 |          66.225166 |        0. |
-| XDP_ATTACH   |    17.1 |          58.479532 |  7.745634 |
-| RM-indirect  |    23.4 |          42.735043 | 23.490123 |
+| ATTACH       |    17.1 |          58.479532 |  7.745634 |
+| 1-indirect   |    23.4 |          42.735043 | 23.490123 |
 | RM-switch    |    31.5 |          31.746032 | 34.479134 |
 | various      |    36.8 |          27.173913 | 39.051253 |
-| explicit-ctx |    39.3 |          25.445293 | 40.779873 |
+| ctx          |    39.3 |          25.445293 | 40.779873 |
 #+TBLFM: $3=(1/$2)*(1000)::$4=(@2$3)-$3
 
 * Example-1: Python pyplot code                                    :noexport:
@@ -41,24 +41,67 @@ Execute python code in emacs via keyboard shortcut: =C-c C-c=
 #+BEGIN_SRC python :var fname="rx_drop.png" :var data=data01 :results file
 import matplotlib.pyplot as plt
 
-txt, y, z, a = zip(*data)
+txt, rx_drop, c, d = zip(*data)
 
 fig = plt.figure()
-axes = fig.add_subplot(1,1,1)
-axes.plot(txt, y, marker='o')
-fig.savefig(fname)
+axes = fig.add_subplot(1,1, 1)
+axes.plot(txt, rx_drop, marker='o')
 
+plt.title('AF_XDP - RX-drop')
+fig.savefig(fname)
 return fname
 #+END_SRC
 
 #+RESULTS:
 [[file:rx_drop.png]]
 
-* Example-1 slide                                                    :export:
+* Slide: Example-1                                                   :export:
 
 file:rx_drop.png
 
 Not much room for describing the figure
+
+
+* Example-2: Python pyplot code                                    :noexport:
+
+Execute python code in emacs via keyboard shortcut: =C-c C-c=
+
+#+BEGIN_SRC python :var fname="bar_chart.png" :var data=data01 :results file
+import matplotlib.pyplot as plt
+
+txt, y, z, a = zip(*data)
+
+fig = plt.figure()
+axes = fig.add_subplot(1,1,1)
+axes.plot(txt, y, marker='o')
+
+import matplotlib.pyplot as plt; plt.rcdefaults()
+import numpy as np
+import matplotlib.pyplot as plt
+
+objects = [a[0] for a in data]
+y_pos = np.arange(len(objects))
+performance = [a[1] for a in data]
+
+plt.bar(y_pos, performance, align='center', alpha=0.6)
+plt.xticks(y_pos, objects)
+plt.ylabel('Mpps')
+plt.title('AF_XDP - RX-drop')
+
+fig.savefig(fname)
+return fname
+#+END_SRC
+
+#+RESULTS:
+[[file:bar_chart.png]]
+
+
+* Slide: Example-2: Bar Chart                                        :export:
+
+file:bar_chart.png
+
+Not much room for describing the figure
+
 
 * Emacs tricks
 
