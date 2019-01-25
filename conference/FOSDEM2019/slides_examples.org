@@ -24,17 +24,17 @@ Examples in section "Plotting with python"
 Different types of bar-chart's:
 - https://pythonspot.com/matplotlib-bar-chart/
 
-* Example-1: Data                                                    :export:
+* Data01 for Example-1 + 2 + 3                                       :export:
 
 #+tblname: data01
-| legend          | rx_drop | nanosec per packet | saved ns | improve ns since prev |
-|-----------------+---------+--------------------+----------+-----------------------|
-| baseline        |    15.1 |              66.23 |       0. |                     0 |
-| XDP_ATTACH      |    17.1 |              58.48 |     7.75 |                  7.75 |
-| remove-indirect |    23.4 |              42.74 |    23.49 |                 15.74 |
-| no-case-switch  |    31.5 |              31.75 |    34.48 |                 10.99 |
-| various         |    36.8 |              27.17 |    39.06 |                  4.58 |
-| explicit-ctx    |    39.3 |              25.45 |    40.78 |                  1.72 |
+| legend          | rx_drop | nanosec per pkt | saved ns | step ns improve |
+|-----------------+---------+-----------------+----------+-----------------|
+| baseline        |    15.1 |           66.23 |       0. |               0 |
+| XDP_ATTACH      |    17.1 |           58.48 |     7.75 |            7.75 |
+| remove-indirect |    23.4 |           42.74 |    23.49 |           15.74 |
+| no-case-switch  |    31.5 |           31.75 |    34.48 |           10.99 |
+| various         |    36.8 |           27.17 |    39.06 |            4.58 |
+| explicit-ctx    |    39.3 |           25.45 |    40.78 |            1.72 |
 #+TBLFM: $3=(1/$2)*(1000);%.2f::$4=(@2$3)-$3::$5=@-1$3-$3::@2$5=0
 
 
@@ -156,6 +156,80 @@ file:bar_chart_horizontal.svg
 
 Bar Chart Horizontal for RX-drop with AF_XDP
 
+* Data02                  :noexport:
+
+#+tblname: data02
+| legend                   | color     | rx_drop | tx_push | l2fwd |
+|--------------------------+-----------+---------+---------+-------|
+| AF_XDP run-to-completion | xkcd:blue |    39.1 |    68.0 |  22.4 |
+| AF_XDP poll()            | skyblue   |    30.4 |    51.1 |  16.4 |
+| DPDK scalar driver       | gray      |    52.8 |    64.2 |  20.0 |
+| DPDK vector driver       | yellow    |    73.0 |    73.7 |  22.5 |
+
+* Example-4: Python
+
+#+BEGIN_SRC python :var fname="solutions_compare.svg" :var data=data02 :results file
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import numpy as np
+mpl.rcParams['figure.figsize'] = [8.0+5, 4.5]
+
+legends = [a[0] for a in data]
+colors  = [a[1] for a in data]
+n_groups = 3
+
+# Extract data from org-table
+xdp1 =  data[0][2:5]
+xdp2 =  data[1][2:5]
+dpdk1 = data[2][2:5]
+dpdk2 = data[3][2:5]
+
+fig, ax = plt.subplots()
+index = np.arange(n_groups)
+bar_width = 0.20
+opacity = 0.69
+
+ax.set_ylabel('Mpps')
+ax.set_title('Comparison with DPDK')
+
+rect0 = ax.bar(index,             xdp1,  bar_width, align='center', alpha=opacity,
+        edgecolor='black', color=colors[0], label=legends[0])
+rect1 = ax.bar(index+bar_width,   xdp2,  bar_width, align='center', alpha=opacity,
+        edgecolor='black', color=colors[1], label=legends[1])
+rect2 = ax.bar(index+bar_width*2, dpdk1, bar_width, align='center', alpha=opacity,
+        edgecolor='black', color=colors[2], label=legends[2])
+rect3 = ax.bar(index+bar_width*3, dpdk2, bar_width, align='center', alpha=opacity,
+        edgecolor='black', color=colors[3], label=legends[3])
+
+ax.set_xticks(index + bar_width)
+ax.set_xticklabels(('rx_drop', 'tx_push', 'l2fwd'))
+
+def autolabel(rects):
+    # attach some text labels
+    for rect in rects:
+        height = rect.get_height()
+        ax.text(rect.get_x() + rect.get_width()/2., height,
+                height, ha='center', va='bottom')
+
+autolabel(rect0)
+autolabel(rect1)
+autolabel(rect2)
+autolabel(rect3)
+
+plt.legend()
+fig.savefig(fname)
+return fname
+#+END_SRC
+
+#+RESULTS:
+[[file:solutions_compare.svg]]
+
+
+* Slide: Example-4: Comparison against DPDK                          :export:
+
+file:solutions_compare.svg
+
+Compare AF_XDP against DPDK performance
 
 * Emacs tricks
 
