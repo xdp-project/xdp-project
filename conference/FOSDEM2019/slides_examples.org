@@ -71,17 +71,8 @@ Not much room for describing the figure
 Execute python code in emacs via keyboard shortcut: =C-c C-c=
 
 #+BEGIN_SRC python :var fname="bar_chart.png" :var data=data01 :results file
-import matplotlib.pyplot as plt
-
-txt, y, z, a = zip(*data)
-
-fig = plt.figure()
-axes = fig.add_subplot(1,1,1)
-axes.plot(txt, y, marker='o')
-
 import matplotlib.pyplot as plt; plt.rcdefaults()
 import numpy as np
-import matplotlib.pyplot as plt
 
 objects = [a[0] for a in data]
 y_pos = np.arange(len(objects))
@@ -92,7 +83,7 @@ plt.xticks(y_pos, objects)
 plt.ylabel('Mpps')
 plt.title('AF_XDP - RX-drop')
 
-fig.savefig(fname)
+plt.savefig(fname)
 return fname
 #+END_SRC
 
