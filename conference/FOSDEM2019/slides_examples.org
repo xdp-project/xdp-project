@@ -21,6 +21,9 @@ Found online resources:
 Examples in section "Plotting with python"
 - http://ehneilsen.net/notebook/orgExamples/org-examples.html
 
+Different types of bar-chart's:
+- https://pythonspot.com/matplotlib-bar-chart/
+
 * Example-1: Data                                                    :export:
 
 #+tblname: data01
@@ -63,7 +66,6 @@ file:rx_drop.png
 
 Not much room for describing the figure
 
-
 * Example-2: Python pyplot code                                    :noexport:
 
 Execute python code in emacs via keyboard shortcut: =C-c C-c=
@@ -103,6 +105,41 @@ return fname
 file:bar_chart.png
 
 Not much room for describing the figure
+
+
+
+* Example-3: Python code for horizontal bar chart                  :noexport:
+
+Matplotlib charts can create horizontal bar charts.
+ - Inspired by: https://pythonspot.com/matplotlib-bar-chart/
+
+Execute python code in emacs via keyboard shortcut: =C-c C-c=
+
+#+BEGIN_SRC python :var fname="bar_chart_horizontal.svg" :var data=data01 :results file
+import matplotlib.pyplot as plt; plt.rcdefaults()
+import numpy as np
+
+objects = [a[0] for a in data]
+y_pos = np.arange(len(objects))
+performance = [a[1] for a in data]
+
+plt.barh(y_pos, performance, align='center', alpha=0.6)
+plt.yticks(y_pos, objects)
+plt.xlabel('Mpps')
+plt.title('AF_XDP - RX-drop')
+
+plt.savefig(fname)
+return fname
+#+END_SRC
+
+#+RESULTS:
+[[file:bar_chart_horizontal.svg]]
+
+* Slide: Example-3: Bar Chart Horizontal                             :export:
+
+file:bar_chart_horizontal.svg
+
+# No room for info on slide any-longer
 
 
 * Emacs tricks
