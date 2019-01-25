@@ -43,11 +43,14 @@ Tables can also be exported in a slide
 
 Execute python code in emacs via keyboard shortcut: =C-c C-c=
 
-#+BEGIN_SRC python :var fname="rx_drop.png" :var data=data01 :results file
+#+BEGIN_SRC python :var fname="example-1.svg" :var data=data01 :results file
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.rcParams['figure.figsize'] = [8.0+4.9, 4.5]
 
 txt, rx_drop, c, d = zip(*data)
 
+plt.xkcd()
 fig = plt.figure()
 axes = fig.add_subplot(1,1, 1)
 axes.plot(txt, rx_drop, marker='o')
@@ -58,21 +61,25 @@ return fname
 #+END_SRC
 
 #+RESULTS:
-[[file:rx_drop.png]]
+[[file:example-1.svg]]
 
 * Slide: Example-1                                                   :export:
 
-file:rx_drop.png
+file:example-1.svg
 
 Not much room for describing the figure
+
 
 * Example-2: Python code for bar chart                             :noexport:
 
 Execute python code in emacs via keyboard shortcut: =C-c C-c=
 
 #+BEGIN_SRC python :var fname="bar_chart.svg" :var data=data01 :results file
-import matplotlib.pyplot as plt; plt.rcdefaults()
+import matplotlib.pyplot as plt
+import matplotlib as mpl
 import numpy as np
+'''PDF render resolution 1600 x 900 => 8 x 4.5'''
+mpl.rcParams['figure.figsize'] = [8.0+5, 4.5]
 
 objects = [a[0] for a in data]
 y_pos = np.arange(len(objects))
@@ -106,7 +113,7 @@ return fname
 
 file:bar_chart.svg
 
-# No room for describing the figure when using SVG
+Bar chart for AF_XDP RX-drop without touching data
 
 
 * Example-3: Python code for horizontal bar chart                  :noexport:
@@ -118,7 +125,9 @@ Execute python code in emacs via keyboard shortcut: =C-c C-c=
 
 #+BEGIN_SRC python :var fname="bar_chart_horizontal.svg" :var data=data01 :results file
 import matplotlib.pyplot as plt; plt.rcdefaults()
+import matplotlib as mpl
 import numpy as np
+mpl.rcParams['figure.figsize'] = [8.0+5, 4.5]
 
 objects = [a[0] for a in data]
 y_pos = np.arange(len(objects))
