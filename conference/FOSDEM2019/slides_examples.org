@@ -24,15 +24,17 @@ Examples in section "Plotting with python"
 * Example-1: Data                                                    :export:
 
 #+tblname: data01
-| legend       | rx_drop | nanosec per packet |  saved ns |
-|--------------+---------+--------------------+-----------|
-| baseline     |    15.1 |          66.225166 |        0. |
-| ATTACH       |    17.1 |          58.479532 |  7.745634 |
-| 1-indirect   |    23.4 |          42.735043 | 23.490123 |
-| RM-switch    |    31.5 |          31.746032 | 34.479134 |
-| various      |    36.8 |          27.173913 | 39.051253 |
-| ctx          |    39.3 |          25.445293 | 40.779873 |
-#+TBLFM: $3=(1/$2)*(1000)::$4=(@2$3)-$3
+| legend     | rx_drop | nanosec per packet | saved ns |
+|------------+---------+--------------------+----------|
+| baseline   |    15.1 |              66.23 |       0. |
+| ATTACH     |    17.1 |              58.48 |     7.75 |
+| 1-indirect |    23.4 |              42.74 |    23.49 |
+| RM-switch  |    31.5 |              31.75 |    34.48 |
+| various    |    36.8 |              27.17 |    39.06 |
+| ctx        |    39.3 |              25.45 |    40.78 |
+#+TBLFM: $3=(1/$2)*(1000);%.2f::$4=(@2$3)-$3
+
+Tables can also be exported in a slide
 
 * Example-1: Python pyplot code                                    :noexport:
 
