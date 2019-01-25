@@ -78,7 +78,9 @@ objects = [a[0] for a in data]
 y_pos = np.arange(len(objects))
 performance = [a[1] for a in data]
 
-plt.bar(y_pos, performance, align='center', alpha=0.6)
+my_colors = ['xkcd:blue', 'xkcd:orange', 'xkcd:green', 'xkcd:red',
+             'xkcd:purple', 'xkcd:brown' ]
+plt.bar(y_pos, performance, align='center', alpha=0.6, color=my_colors)
 plt.xticks(y_pos, objects)
 plt.ylabel('Mpps')
 plt.title('AF_XDP - RX-drop')
@@ -114,7 +116,11 @@ objects = [a[0] for a in data]
 y_pos = np.arange(len(objects))
 performance = [a[1] for a in data]
 
-plt.barh(y_pos, performance, align='center', alpha=0.6)
+'''Extract colors in the default property cycle'''
+prop_cycle = plt.rcParams['axes.prop_cycle']
+my_colors = prop_cycle.by_key()['color']
+
+plt.barh(y_pos, performance, align='center', alpha=0.6, color=my_colors)
 plt.yticks(y_pos, objects)
 plt.xlabel('Mpps')
 plt.title('AF_XDP - RX-drop')
