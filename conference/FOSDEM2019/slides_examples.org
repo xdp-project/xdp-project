@@ -66,7 +66,7 @@ return fname
 
 * Slide: Example-1                                                   :export:
 
-file:example-1.svg
+[[file:example-1.svg]]
 
 Not much room for describing the figure
 
@@ -112,7 +112,7 @@ return fname
 
 * Slide: Example-2: Bar Chart                                        :export:
 
-file:bar_chart.svg
+[[file:bar_chart.svg]]
 
 Bar chart for AF_XDP RX-drop without touching data
 
@@ -152,7 +152,7 @@ return fname
 
 * Slide: Example-3: Bar Chart Horizontal                             :export:
 
-file:bar_chart_horizontal.svg
+[[file:bar_chart_horizontal.svg]]
 
 Bar Chart Horizontal for RX-drop with AF_XDP
 
@@ -227,7 +227,7 @@ return fname
 
 * Slide: Example-4: Comparison against DPDK                          :export:
 
-file:solutions_compare.svg
+[[file:solutions_compare.svg]]
 
 Compare AF_XDP against DPDK performance
 
