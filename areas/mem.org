@@ -16,7 +16,11 @@ CLOSED: [2018-12-07 Fri]
 Org-link to section:
 [[file:mem/page_pool02_SKB_return_callback.org::*RFC-patchset]]
 
-** NEXT Prioritize page_pool options for skb_try_coalesce
+** DONE Prioritize page_pool options for skb_try_coalesce
+CLOSED: [2019-01-29 Tue 17:33]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-01-29 Tue 17:33]
+:END:
 
 ** TODO Doc code where netstack manipulate skb->head page
 
