@@ -1,6 +1,18 @@
-#+TITLE: Top-level XDP project descriptions
+#+TITLE: Top-level XDP project management
 #+CATEGORY: XDP
 #+OPTIONS: ^:nil
+
+This the top-level *XDP project management* file that contains *tasks* via
+org-mode =TODO=, =NEXT= and =DONE=. The [[file:areas][areas directory]] also contains *tasks*.
+It is recommended to use emacs when viewing and editing these  =.org= files, as
+the github rendering view removes the =TODO= and =DONE= marking on the tasks.
+
+Together with the emacs setup in [[file:../org-setup.el]], the extended
+=org-agenda= view can be used for project management, and the setup
+automatically detect [[http://doc.norang.ca/org-mode.html#TodoKeywordProjectTaskStates][Projects and Stuck Projects]]. For =org-agenda= view to
+pickup these tasks, make sure to [[http://doc.norang.ca/org-mode.html#AgendaSetup][configure]] =org-agenda-files= to include this
+directory and =areas/= directory.
+
 
 * TODO Missing update of ifconfig counters
 
