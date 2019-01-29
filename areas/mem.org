@@ -2,8 +2,9 @@
 #+Title: Project management for areas/mem
 #+OPTIONS: ^:nil
 
-This document contains org-mode tasks and TODOs for files under:
-[[file:mem/][areas/mem/]].
+This document contains *org-mode tasks* and TODOs for files under: [[file:mem/][areas/mem/]].
+It is recommended to use emacs when viewing and editing these =.org= files, as
+the github rendering view removes the =TODO= and =DONE= marking on the tasks.
 
 
 * TODO Implementing page_pool return-hook via SKB
