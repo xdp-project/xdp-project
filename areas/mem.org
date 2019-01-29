@@ -1,0 +1,24 @@
+# -*- fill-column: 79; -*-
+#+Title: Project management for areas/mem
+#+OPTIONS: ^:nil
+
+This document contains org-mode tasks and TODOs for files under:
+[[file:mem/][areas/mem/]].
+
+
+* TODO Implementing page_pool return-hook via SKB
+
+The work is recorded in [[file:mem/page_pool02_SKB_return_callback.org]]
+
+** DONE Post RFC-patchset for page_pool recycle with mvneta use-case
+CLOSED: [2018-12-07 Fri]
+
+Org-link to section:
+[[file:mem/page_pool02_SKB_return_callback.org::*RFC-patchset]]
+
+** NEXT Prioritize page_pool options for skb_try_coalesce
+
+** TODO Doc code where netstack manipulate skb->head page
+
+** TODO Add testing procedures actvating TCP coalesce code
+
