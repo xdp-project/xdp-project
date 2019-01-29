@@ -1,0 +1,11 @@
+# -*- fill-column: 79; -*-
+#+Title: Project management files
+#+OPTIONS: ^:nil
+
+This =areas= directory organising the XDP-project into different areas.
+
+Each area have an org-mode file (at *this level* with the name of the
+directory), which is used for *project management* purposes. Add tasks and
+TODOs to these files for each area, and then within that file link to the
+work-documents in the area sub-directory.
+
