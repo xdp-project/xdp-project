@@ -129,7 +129,11 @@ mem_type).
 It would be a big help diagnosing XDP issues if the xdp_monitor program also
 reported the errno.
 
+** TODO xdp_monitor: convert to use raw-tracepoints
 
+The raw-tracepoints are suppose to be much faster, and XDP monitor want to
+have as little impact on the system as possible. Thus, convert to use
+raw-tracepoints.
 
 * TODO BPF-selftests - top-level TODOs
 
