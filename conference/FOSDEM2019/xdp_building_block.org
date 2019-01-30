@@ -17,7 +17,7 @@ This presentation will be given at [[https://fosdem.org/2019/][FOSDEM 2019]].
 
 Titled: [[https://fosdem.org/2019/schedule/event/xdp_overview_and_update/][XDP (eXpress Data Path) as a building block for other FOSS projects]]
 
-More info in file:abstract.org
+More info in [[file:abstract.org]]
 
 * Export/generate presentation
 
@@ -262,7 +262,7 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
  - *Offloading subset to XDP* (issue miss BPF-helpers to work)
  - *AF_XDP*, huge performance gain
 
-* Slide: AF_XDP                                                     :export:
+* Slide: AF_XDP                                                      :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -270,10 +270,10 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 
 ** Slide: AF_XDP Basics                              :export:
 
-file:af_xdp.png
+[[file:images/af_xdp_v2.png]]
 
 
-* Performance                                            :export:
+* Performance                                                        :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -281,36 +281,36 @@ file:af_xdp.png
 
 ** Slide: Experimental Methodology                              :export:
 
- - Broadwell E5-2660 @ 2.7GHz
- - Linux 4.20
- - Spectre and Meltdown mitigations on
- - 2 i40e 40GBit/s NICs, 2 AF\_XDP sockets
+ - Broadwell E5-2660 @ 2.7GHz (have DDIO = L3 payload deliver)
+ - Linux kernel 4.20
+ - Spectre and Meltdown *mitigations on*
+ - 2 i40e 40GBit/s NICs, 2 AF_XDP sockets
  - Ixia load generator blasting at full 40 Gbit/s per NIC
 
 
 ** Slide: Performance Linux 4.20                              :export:
 
-file:results_4.20.png
+[[file:images/results_4.20.png]]
 
 
 ** Slide: Performance with Optimization Patches                    :export:
 
-file:results_opt.png
+[[file:images/results_opt.png]]
 
 
 ** Slide: Two ways of running an AF_XDP application                    :export:
 
-file:two_vs_one_core.png
+[[file:images/two_vs_one_core_v2.png]]
 
 
 ** Slide: Busy Poll() Results                              :export:
 
-file:results_poll.png
+[[file:images/results_poll.png]]
 
 
 ** Slide: Comparison with DPDK                              :export:
 
-file:results_dpdk.png
+[[file:images/results_dpdk.png]]
 
 
 * Integration with AF_XDP                                            :export:
@@ -351,28 +351,34 @@ A native AF_XDP driver would be more efficient
 - Implement an *AF_XDP driver?*
 - Allow leveraging kernel drivers that implement XDP
   * Kernel community takes care of maintaining driver code
-- Any *performance loss/gap* to native Snabb driver*?*
+- Any *performance loss/gap* to native Snabb driver *?*
   * E.g. NAPI "only" bulk up-to 64 packets
   * E.g. NAPI is not doing busy-polling 100%, more latency variance
 
 
-** Slide: Ongoing work                                                :export:
+** Slide: Ongoing work                                              :export:
 
  - Upstreaming performance optimizations
+ - XDP programs per queue
  - Libbpf: facilitating adoption
  - Packet clone for XDP
 
 
-** Slide: Summary
+* Slide: Summary                                                     :export:
 
- - Summarize the presentation
+ - XDP = Linux kernel fast path
+ - AF_XDP = packets to user-space from XDP
+ - DPDK speeds
+ - A /building block/ for a solution. Not a ready solution in itself.
+ - Many upcoming use cases,
+   -  e.g., OVS, XDP-offload netstack, DPDK PMD
+ - Come join the fun!
 
 
-* Backup Slides                                            :export:
+* Backup Slides                                                      :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
-
 
 ** Slide: Where does AF_XDP performance come from?                  :export:
 
@@ -396,7 +402,7 @@ AF_XDP /socket/: Associated /two rings/ *RX* and *TX*
  - FILL ring: application gives kernel area to RX fill
  - COMPLETION ring: kernel tell app TX done for area (can be reuse)
 
-** Slide: Gotcha by RX-queue id binding
+** Slide: Gotcha by RX-queue id binding                             :export:
 
 AF_XDP bound to */single RX-queue id/* (for SPSC performance reasons)
 - NIC default spread flows with RSS-hashing over RX-queues
