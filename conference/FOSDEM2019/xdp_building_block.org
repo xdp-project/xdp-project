@@ -17,7 +17,7 @@ This presentation will be given at [[https://fosdem.org/2019/][FOSDEM 2019]].
 
 Titled: [[https://fosdem.org/2019/schedule/event/xdp_overview_and_update/][XDP (eXpress Data Path) as a building block for other FOSS projects]]
 
-More info in file:abstract.org
+More info in [[file:abstract.org]]
 
 * Export/generate presentation
 
@@ -262,7 +262,7 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
  - *Offloading subset to XDP* (issue miss BPF-helpers to work)
  - *AF_XDP*, huge performance gain
 
-* Slide: AF_XDP                                                     :export:
+* Slide: AF_XDP                                                      :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -270,10 +270,10 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 
 ** Slide: AF_XDP Basics                              :export:
 
-file:af_xdp_v2.png
+[[file:af_xdp_v2.png]]
 
 
-* Performance                                            :export:
+* Performance                                                        :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -290,27 +290,27 @@ file:af_xdp_v2.png
 
 ** Slide: Performance Linux 4.20                              :export:
 
-file:results_4.20.png
+[[file:results_4.20.png]]
 
 
 ** Slide: Performance with Optimization Patches                    :export:
 
-file:results_opt.png
+[[file:results_opt.png]]
 
 
 ** Slide: Two ways of running an AF_XDP application                    :export:
 
-file:two_vs_one_core_v2.png
+[[file:two_vs_one_core_v2.png]]
 
 
 ** Slide: Busy Poll() Results                              :export:
 
-file:results_poll.png
+[[file:results_poll.png]]
 
 
 ** Slide: Comparison with DPDK                              :export:
 
-file:results_dpdk.png
+[[file:results_dpdk.png]]
 
 
 * Integration with AF_XDP                                            :export:
@@ -356,7 +356,7 @@ A native AF_XDP driver would be more efficient
   * E.g. NAPI is not doing busy-polling 100%, more latency variance
 
 
-** Slide: Ongoing work                                                :export:
+** Slide: Ongoing work                                              :export:
 
  - Upstreaming performance optimizations
  - XDP programs per queue
@@ -364,7 +364,7 @@ A native AF_XDP driver would be more efficient
  - Packet clone for XDP
 
 
-** Slide: Summary
+* Slide: Summary                                                     :export:
 
  - XDP = Linux kernel fast path
  - AF_XDP = packets to user-space from XDP
@@ -374,11 +374,10 @@ A native AF_XDP driver would be more efficient
  - Come join the fun!
 
 
-* Backup Slides                                            :export:
+* Backup Slides                                                      :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
-
 
 ** Slide: Where does AF_XDP performance come from?                  :export:
 
@@ -402,7 +401,7 @@ AF_XDP /socket/: Associated /two rings/ *RX* and *TX*
  - FILL ring: application gives kernel area to RX fill
  - COMPLETION ring: kernel tell app TX done for area (can be reuse)
 
-** Slide: Gotcha by RX-queue id binding
+** Slide: Gotcha by RX-queue id binding                             :export:
 
 AF_XDP bound to */single RX-queue id/* (for SPSC performance reasons)
 - NIC default spread flows with RSS-hashing over RX-queues
