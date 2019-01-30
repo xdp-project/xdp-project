@@ -124,6 +124,12 @@ Also consider testing XDP-level redirect out another net_device with
 AF_XDP-ZC enabled. (I think this will just drop the packets due to
 mem_type).
 
+** TODO xdp_monitor: record and show errno
+
+It would be a big help diagnosing XDP issues if the xdp_monitor program also
+reported the errno.
+
+
 
 * TODO BPF-selftests - top-level TODOs
 
