@@ -162,7 +162,7 @@ Bar Chart Horizontal for RX-drop with AF_XDP
 | legend                   | color     | rx_drop | tx_push | l2fwd |
 |--------------------------+-----------+---------+---------+-------|
 | AF_XDP run-to-completion | xkcd:blue |    39.1 |    68.0 |  22.4 |
-| AF_XDP poll()            | skyblue   |    30.4 |    51.1 |  16.4 |
+| AF_XDP poll() syscall    | skyblue   |    30.4 |    51.1 |  16.4 |
 | DPDK scalar driver       | gray      |    52.8 |    64.2 |  20.0 |
 | DPDK vector driver       | yellow    |    73.0 |    73.7 |  22.5 |
 
