@@ -130,7 +130,7 @@ XDP is not first mover in this area
 
 Existing *kernel bypass* solutions:
  - netmap (FreeBSD), DPDK (Intel/LF), PF_ring (ntop)
- - maglev (Google), Onload (SolarFlare)
+ - maglev (Google), Onload (SolarFlare), Snabb
 
 Commercial solutions /similar to XDP/:
  - ndiv by HAproxy, product [[https://www.haproxy.com/products/aloha-hardware-appliance/][ALOHA]]
