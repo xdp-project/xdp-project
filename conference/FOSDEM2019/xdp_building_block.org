@@ -366,13 +366,14 @@ A native AF_XDP driver would be more efficient
 
 * Slide: Summary                                                     :export:
 
- - XDP = Linux kernel fast path
- - AF_XDP = packets to user-space from XDP
+ - /XDP/ = Linux /kernel/ fast path
+ - *AF_XDP* = packets to *user-space* from /XDP/
  - DPDK speeds
  - A /building block/ for a solution. Not a ready solution in itself.
  - Many upcoming use cases,
-   -  e.g., OVS, XDP-offload netstack, DPDK PMD
+   - e.g., OVS, XDP-offload netstack, DPDK PMD
  - Come join the fun!
+   - [[https://github.com/xdp-project/xdp-project]]
 
 
 * Backup Slides                                                      :export:
