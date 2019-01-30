@@ -369,7 +369,7 @@ A native AF_XDP driver would be more efficient
  - XDP = Linux kernel fast path
  - AF_XDP = packets to user-space from XDP
  - DPDK speeds
- - A bilding block for a solution. Not a ready solution in itself.
+ - A building block for a solution. Not a ready solution in itself.
  - Many upcoming use cases e.g., OVS, netstack, DPDK PMD
  - Come join the fun!
 
