@@ -279,7 +279,7 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 :END:
 
 
-** Slide: Experimental Methodology                              :export:
+** Slide: Experimental Methodology                                  :export:
 
  - Broadwell E5-2660 @ 2.7GHz (have DDIO = L3 payload deliver)
  - Linux kernel 4.20
@@ -288,27 +288,27 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
  - Ixia load generator blasting at full 40 Gbit/s per NIC
 
 
-** Slide: Performance Linux 4.20                              :export:
+** Slide: Performance Linux 4.20                                    :export:
 
 [[file:images/results_4.20.png]]
 
 
-** Slide: Performance with Optimization Patches                    :export:
+** Slide: Performance with Optimization Patches                     :export:
 
 [[file:images/results_opt.png]]
 
 
-** Slide: Two ways of running an AF_XDP application                    :export:
+** Slide: Two ways of running an AF_XDP application                 :export:
 
 [[file:images/two_vs_one_core_v2.png]]
 
 
-** Slide: Poll() Syscall Results                              :export:
+** Slide: Poll() Syscall Results                                    :export:
 
 [[file:images/results_poll.png]]
 
 
-** Slide: Comparison with DPDK                              :export:
+** Slide: Comparison with DPDK                                      :export:
 
 [[file:images/results_dpdk.png]]
 
