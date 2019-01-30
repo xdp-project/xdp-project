@@ -329,7 +329,7 @@ How can *kernel-bypass* solutions use AF_XDP as a /building block/?
 
 Advantages:
  - Don't monopolize entire NIC
- - Split traffic to kernel with XDP. XDP support.
+ - Split traffic to kernel with XDP filter program
  - HW independent application binary
  - Isolation and robustness
  - Cloud-native support
