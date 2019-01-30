@@ -17,7 +17,7 @@ This presentation will be given at [[https://fosdem.org/2019/][FOSDEM 2019]].
 
 Titled: [[https://fosdem.org/2019/schedule/event/xdp_overview_and_update/][XDP (eXpress Data Path) as a building block for other FOSS projects]]
 
-More info in file:abstract.org
+More info in [[file:abstract.org]]
 
 * Export/generate presentation
 
@@ -270,7 +270,7 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 
 ** Slide: AF_XDP Basics                              :export:
 
-file:af_xdp.png
+[[file:af_xdp.png]]
 
 
 * Performance                                                        :export:
@@ -290,27 +290,27 @@ file:af_xdp.png
 
 ** Slide: Performance Linux 4.20                              :export:
 
-file:results_4.20.png
+[[file:results_4.20.png]]
 
 
 ** Slide: Performance with Optimization Patches                    :export:
 
-file:results_opt.png
+[[file:results_opt.png]]
 
 
 ** Slide: Two ways of running an AF_XDP application                    :export:
 
-file:two_vs_one_core.png
+[[file:two_vs_one_core.png]]
 
 
 ** Slide: Busy Poll() Results                              :export:
 
-file:results_poll.png
+[[file:results_poll.png]]
 
 
 ** Slide: Comparison with DPDK                              :export:
 
-file:results_dpdk.png
+[[file:results_dpdk.png]]
 
 
 * Integration with AF_XDP                                            :export:
