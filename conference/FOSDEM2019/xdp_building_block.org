@@ -351,7 +351,7 @@ A native AF_XDP driver would be more efficient
 - Implement an *AF_XDP driver?*
 - Allow leveraging kernel drivers that implement XDP
   * Kernel community takes care of maintaining driver code
-- Any *performance loss/gap* to native Snabb driver*?*
+- Any *performance loss/gap* to native Snabb driver *?*
   * E.g. NAPI "only" bulk up-to 64 packets
   * E.g. NAPI is not doing busy-polling 100%, more latency variance
 
@@ -369,8 +369,9 @@ A native AF_XDP driver would be more efficient
  - XDP = Linux kernel fast path
  - AF_XDP = packets to user-space from XDP
  - DPDK speeds
- - A building block for a solution. Not a ready solution in itself.
- - Many upcoming use cases e.g., OVS, netstack, DPDK PMD
+ - A /building block/ for a solution. Not a ready solution in itself.
+ - Many upcoming use cases,
+   -  e.g., OVS, XDP-offload netstack, DPDK PMD
  - Come join the fun!
 
 
