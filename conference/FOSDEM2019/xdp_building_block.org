@@ -270,7 +270,7 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 
 ** Slide: AF_XDP Basics                              :export:
 
-[[file:af_xdp_v2.png]]
+[[file:images/af_xdp_v2.png]]
 
 
 * Performance                                                        :export:
@@ -290,27 +290,27 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 
 ** Slide: Performance Linux 4.20                              :export:
 
-[[file:results_4.20.png]]
+[[file:images/results_4.20.png]]
 
 
 ** Slide: Performance with Optimization Patches                    :export:
 
-[[file:results_opt.png]]
+[[file:images/results_opt.png]]
 
 
 ** Slide: Two ways of running an AF_XDP application                    :export:
 
-[[file:two_vs_one_core_v2.png]]
+[[file:images/two_vs_one_core_v2.png]]
 
 
 ** Slide: Busy Poll() Results                              :export:
 
-[[file:results_poll.png]]
+[[file:images/results_poll.png]]
 
 
 ** Slide: Comparison with DPDK                              :export:
 
-[[file:results_dpdk.png]]
+[[file:images/results_dpdk.png]]
 
 
 * Integration with AF_XDP                                            :export:
