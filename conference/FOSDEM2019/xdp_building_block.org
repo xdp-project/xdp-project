@@ -281,10 +281,10 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 
 ** Slide: Experimental Methodology                              :export:
 
- - Broadwell E5-2660 @ 2.7GHz
- - Linux 4.20
- - Spectre and Meltdown mitigations on
- - 2 i40e 40GBit/s NICs, 2 AF\_XDP sockets
+ - Broadwell E5-2660 @ 2.7GHz (have DDIO = L3 payload deliver)
+ - Linux kernel 4.20
+ - Spectre and Meltdown *mitigations on*
+ - 2 i40e 40GBit/s NICs, 2 AF_XDP sockets
  - Ixia load generator blasting at full 40 Gbit/s per NIC
 
 
