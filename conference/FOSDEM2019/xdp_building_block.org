@@ -411,6 +411,9 @@ AF_XDP bound to */single RX-queue id/* (for SPSC performance reasons)
 - You *MUST* configure NIC *HW filters* to /steer to RX-queue id/
   * Out of scope for XDP setup
   * Use ethtool or TC HW offloading for filter setup
+- *Alternative* work-around
+  * /Create as many AF_XDP sockets as RXQs/
+  * Have userspace poll()/select on all sockets
 
 
 * Emacs tricks
