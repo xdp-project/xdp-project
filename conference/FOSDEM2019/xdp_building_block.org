@@ -270,7 +270,7 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 
 ** Slide: AF_XDP Basics                              :export:
 
-file:af_xdp.png
+file:af_xdp_v2.png
 
 
 * Performance                                            :export:
@@ -300,7 +300,7 @@ file:results_opt.png
 
 ** Slide: Two ways of running an AF_XDP application                    :export:
 
-file:two_vs_one_core.png
+file:two_vs_one_core_v2.png
 
 
 ** Slide: Busy Poll() Results                              :export:
@@ -359,13 +359,19 @@ A native AF_XDP driver would be more efficient
 ** Slide: Ongoing work                                                :export:
 
  - Upstreaming performance optimizations
+ - XDP programs per queue
  - Libbpf: facilitating adoption
  - Packet clone for XDP
 
 
 ** Slide: Summary
 
- - Summarize the presentation
+ - XDP = Linux kernel fast path
+ - AF_XDP = packets to user-space from XDP
+ - DPDK speeds
+ - A bilding block for a solution. Not a ready solution in itself.
+ - Many upcoming use cases e.g., OVS, netstack, DPDK PMD
+ - Come join the fun!
 
 
 * Backup Slides                                            :export:
