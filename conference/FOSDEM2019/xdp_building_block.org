@@ -303,7 +303,7 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 [[file:images/two_vs_one_core_v2.png]]
 
 
-** Slide: Busy Poll() Results                              :export:
+** Slide: Poll() Syscall Results                              :export:
 
 [[file:images/results_poll.png]]
 
