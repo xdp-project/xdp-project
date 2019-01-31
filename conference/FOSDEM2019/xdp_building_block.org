@@ -297,6 +297,8 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 
 [[file:images/results_opt.png]]
 
+Details see LPC2018 talk: [[http://vger.kernel.org/lpc-networking2018.html#session-11][The Path to DPDK speeds for AF_XDP]]
+# - Primarily about avoiding Spectre Retpoline calls
 
 ** Slide: Two ways of running an AF_XDP application                 :export:
 
