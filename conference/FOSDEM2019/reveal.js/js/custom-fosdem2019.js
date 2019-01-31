@@ -21,6 +21,8 @@ var authorHTML = [
     '&nbsp;', '&amp;&nbsp;',
     authorName2,
     '</span>',
+    '&nbsp;&nbsp;&nbsp;',
+    '<img src="./reveal.js/images/intel-logo-vector-01.png" />',
 ].join('');
 
 function addAuthor(selector) {
