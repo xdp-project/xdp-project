@@ -1,6 +1,20 @@
-#+TITLE: Top-level XDP project descriptions
+# -*- fill-column: 76; -*-
+#+TITLE: Top-level XDP project management
 #+CATEGORY: XDP
 #+OPTIONS: ^:nil
+
+This the top-level *XDP project management* file that contains *tasks* via
+org-mode =TODO=, =NEXT= and =DONE=. The [[file:areas][areas directory]] also contains
+*tasks*. It is recommended to use emacs when viewing and editing these
+=.org= files, as the github rendering view removes the =TODO= and =DONE=
+marking on the tasks.
+
+Together with the emacs setup in [[file:../org-setup.el]], the extended
+=org-agenda= view can be used for project management, and the setup
+automatically detect [[http://doc.norang.ca/org-mode.html#TodoKeywordProjectTaskStates][Projects and Stuck Projects]]. For =org-agenda= view to
+pickup these tasks, make sure to [[http://doc.norang.ca/org-mode.html#AgendaSetup][configure]] =org-agenda-files= to include
+this directory and =areas/= directory.
+
 
 * TODO Missing update of ifconfig counters
 
@@ -68,9 +82,9 @@ change should be a win in itself.
 * TODO Usability of programs in samples/bpf
 
 The samples/bpf programs xdp_redirect + xdp_redirect_map are very user
-unfriendly.  #1 they use raw ifindex'es as input + output. #2 the
-pkt/s number count RX packets, not TX'ed packets which can be dropped
-silently. Red Hat QA, got very confused by #2.
+unfriendly. #1 they use raw ifindex'es as input + output. #2 the pkt/s
+number count RX packets, not TX'ed packets which can be dropped silently.
+Red Hat QA, got very confused by #2.
 
 ** NEXT Change sample programs to accept ifnames as well as indexes
 
@@ -78,9 +92,9 @@ silently. Red Hat QA, got very confused by #2.
 
 ** TODO Fix unloading wrong XDP on xdp-sample exit
 
-The XDP sample programs unconditionally unload the current running XDP program
-(via -1) on exit. If users are not careful with the order in-which they start
-and stop XDP programs, then they get confused.
+The XDP sample programs unconditionally unload the current running XDP
+program (via -1) on exit. If users are not careful with the order in-which
+they start and stop XDP programs, then they get confused.
 
 Almost done, but followup to make sure this gets merged upstream:
 Upstream [[https://patchwork.ozlabs.org/project/netdev/list/?series=86597&state=%2a][proposal V1]] (by [[https://patchwork.ozlabs.org/project/netdev/list/?submitter=75761][Maciej Fijalkowski]]) is to check if the BPF-prog-ID
@@ -89,54 +103,66 @@ numbers match, before removing the current XDP-prog.
 ** TODO Change XDP-samples to enforce native-XDP and report if not avail
 
 The default behaviour when attaching an XDP program on a driver that doesn't
-have native-XDP is to fallback to generic-XDP, without notifying the user of the
-end-state.
+have native-XDP is to fallback to generic-XDP, without notifying the user of
+the end-state.
 
 This behaviour is also used by xdp-samples, which unfortunately have lead
 end-users to falsely think a given driver supports native-XDP. (QA are using
 these xdp-samples and create cases due to this confusion).
 
-Proposal is to change xdp-samples to enforce native-XDP, and report if this was
-not possible, together with help text that display cmdline option for enabling
-generic-XDP/SKB-mode.
+Proposal is to change xdp-samples to enforce native-XDP, and report if this
+was not possible, together with help text that display cmdline option for
+enabling generic-XDP/SKB-mode.
 
 ** TODO Add xdpsock option to allow XDP_PASS for AF_XDP zero-copy mode
 
 In AF_XDP zero-copy mode, sending frame to the network stack via XDP_PASS
-results in an expense code path, e.g new page_alloc for copy of payload and SKB
-alloc. We need this test how slow this code path is.
+results in an expense code path, e.g new page_alloc for copy of payload and
+SKB alloc. We need this test how slow this code path is.
 
-Also consider testing XDP-level redirect out another net_device with AF_XDP-ZC
-enabled. (I think this will just drop the packets due to mem_type).
+Also consider testing XDP-level redirect out another net_device with
+AF_XDP-ZC enabled. (I think this will just drop the packets due to
+mem_type).
+
+** TODO xdp_monitor: record and show errno
+
+It would be a big help diagnosing XDP issues if the xdp_monitor program also
+reported the errno.
+
+** TODO xdp_monitor: convert to use raw-tracepoints
+
+The raw-tracepoints are suppose to be much faster, and XDP monitor want to
+have as little impact on the system as possible. Thus, convert to use
+raw-tracepoints.
 
 * TODO BPF-selftests - top-level TODOs
 
 The kernel git-tree contains a lot of selftests for BPF located in:
 =tools/testing/selftests/bpf/=.
 
-XDP (and its performance gain) is tied closely to NIC driver code, which makes
-it hard to implement selftests for (including benchmark selftests). Still we
-should have a goal of doing functional testing of the XDP core-code components
-(via selftests).
+XDP (and its performance gain) is tied closely to NIC driver code, which
+makes it hard to implement selftests for (including benchmark selftests).
+Still we should have a goal of doing functional testing of the XDP core-code
+components (via selftests).
 
-Since driver =veth= got native-XDP support, we have an opportunity for writing
-selftests that cover both generic-XDP and native-XDP.
+Since driver =veth= got native-XDP support, we have an opportunity for
+writing selftests that cover both generic-XDP and native-XDP.
 
 ** TODO bpf-selftest: improve XDP VLAN selftests
 
-*Assignment* is to improve the selftest shell-script to test both generic-XDP
-and native-XDP (for veth driver).
+*Assignment* is to improve the selftest shell-script to test both
+generic-XDP and native-XDP (for veth driver).
 
-XDP add/remove VLAN headers have a selftest in =tools/testing/selftests/bpf/= in
-files =test_xdp_vlan.c= and =test_xdp_vlan.sh=. This test was developed in
-conjunction with fixing a bug in generic-XDP (see kernel commit [[https://git.kernel.org/torvalds/c/297249569932][297249569932]]
-("net: fix generic XDP to handle if eth header was mangled")).
+XDP add/remove VLAN headers have a selftest in =tools/testing/selftests/bpf/=
+in files =test_xdp_vlan.c= and =test_xdp_vlan.sh=. This test was developed
+in conjunction with fixing a bug in generic-XDP (see kernel commit
+[[https://git.kernel.org/torvalds/c/297249569932][297249569932]] ("net: fix generic XDP to handle if eth header was mangled")).
 
 Since driver =veth= got native-XDP support, the selftest no-longer tests
 generic-XDP code path.
 
-The ip utility (from iproute2) already support specifying, that an XDP prog must
-use generic XDP when loading an XDP prog (option =xdpgeneric=).
+The ip utility (from iproute2) already support specifying, that an XDP prog
+must use generic XDP when loading an XDP prog (option =xdpgeneric=).
 
 ** TODO bpf-selftest: find XDP-selftests affected by veth native-XDP
 
@@ -156,8 +182,8 @@ How do we ensure consistently low latency packet processing is possible with
 XDP?
 
 This paper: [[https://www.net.in.tum.de/fileadmin/bibtex/publications/papers/ITC30-Packet-Filtering-eBPF-XDP.pdf][Performance Implications of Packet Filtering with Linux eBPF]]
-conclude that turning on the jit *increases* the number of outliers (though not
-quite clear if this is actually supported by their data). This should be
+conclude that turning on the jit *increases* the number of outliers (though
+not quite clear if this is actually supported by their data). This should be
 investigated.
 
 Maybe write a tuning doc as well?

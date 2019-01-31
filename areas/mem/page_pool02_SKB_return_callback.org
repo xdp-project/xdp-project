@@ -106,10 +106,10 @@ TODO: go through each case Eric pointed out and check constraints.
 skb_try_coalesce() was broken, as it converts the skb->head into a skb "frags"
 of another SKB.
 
-TODO: Look into code solutions
- - (1) simply reject coalesce action if mem_info->type is set
- - (2) "release" page_pool state, via calling page_pool_unmap_page()
- - (3) use skb->frag_list coalesce instead
+Look into code solutions, in prioritized order:
+ 1. "release" page_pool state, via calling page_pool_unmap_page()
+ 2. use skb->frag_list coalesce instead
+ 3. simply reject coalesce action if mem_info->type is set (last-resort)
 
 
 *** Case: skb_gro_receive()

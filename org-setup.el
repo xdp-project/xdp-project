@@ -28,8 +28,8 @@
       org-default-notes-file (concat org-directory "/notes.org")
 
       ; ~/git/org is for your personal org files, ~/git/xdp-project will pick up
-      ; the xdp-project repository
-      org-agenda-files '("~/git/org/" "~/git/xdp-project/")
+      ; the xdp-project repository and areas/ directory
+      org-agenda-files '("~/git/org/" "~/git/xdp-project/" "~/git/xdp-project/areas/")
 
       ; This is your username; used for filtering tasks and projects by OWNER
       ; (set OWNER property on an entry to take ownership, and that entry will

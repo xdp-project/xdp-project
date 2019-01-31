@@ -1,0 +1,21 @@
+# -*- fill-column: 79; -*-
+#+Title: Project management files
+#+OPTIONS: ^:nil
+
+This =areas= directory organise the XDP-project into different areas.
+
+Each area have an org-mode file (at *this level* with the name of the
+directory), which is used for *project management* purposes. Add tasks and
+TODOs to these files for each area, and then within that file link to the
+work-documents in the area sub-directory.
+
+* Project management via emacs
+
+It is recommended to use emacs when viewing and editing these =.org= files, as
+the github rendering view removes the =TODO= and =DONE= marking on the tasks.
+
+Together with the emacs setup in [[file:../org-setup.el]], the extended
+=org-agenda= view can be used for project management, and the setup
+automatically detect [[http://doc.norang.ca/org-mode.html#TodoKeywordProjectTaskStates][Projects and Stuck Projects]]. For =org-agenda= view to
+pickup these tasks, make sure to [[http://doc.norang.ca/org-mode.html#AgendaSetup][configure]] =org-agenda-files= to include this
+directory.

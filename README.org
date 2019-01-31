@@ -23,8 +23,9 @@ the workflow:
   others. Set the OWNER property on a task or project to claim ownership, which
   will filter the task from other's agenda.
 
-The project TODO entries are managed in the top-level [[file:xdp-project.org][xdp-project.org file]],
-which in turn links to other .org files with notes etc in the different
+The project *tasks* and =TODO= entries are managed in the top-level
+[[file:xdp-project.org][xdp-project.org file]] and in =.org= files under directory =areas/=, which in
+turn links to other =.org= files with notes etc in the different
 sub-directories.
 
 *** Interaction with Github issues and pull requests
