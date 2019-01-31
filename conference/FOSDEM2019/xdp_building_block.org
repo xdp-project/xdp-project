@@ -81,9 +81,9 @@ Colors are choosen via org-mode italic/bold high-lighting:
 
 XDP: new /in-kernel programmable/ (eBPF) *layer before netstack*
  - Similar speeds as DPDK
-XDP ensure that *Linux networking stays relevant*
- - Operate at L2-L3, netstack operate L4-L7
-XDP is not first mover, but believe XDP is /different and better/
+XDP ensures that *Linux networking stays relevant*
+ - Operates at L2-L3, netstack is L4-L7
+XDP is not first mover, but we believe XDP is /different and better/
  - /Killer feature/: Integration with Linux kernel
  - Flexible sharing of NIC resources
 
@@ -99,12 +99,12 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 
 What is /AF_XDP/? (the Address Family XDP socket)
  - Hybrid *kernel-bypass* facility, move selective frames out of kernel
- - XDP/eBPF prog filter packets and REDIRECT into AF_XDP socket
- - Deliver raw L2 frames into userspace
+ - XDP/eBPF prog filters packets using REDIRECT into AF_XDP socket
+ - Delivers raw L2 frames into userspace
 
 ** Slide: Why is XDP needed?                                        :export:
 
-This is about *Kernel networking stack staying relevant*
+This is about *the Kernel networking stack staying relevant*
  - For emerging use-cases and areas
 
 Linux networking stack optimized for layers L4-L7
@@ -140,14 +140,14 @@ Commercial solutions /similar to XDP/:
 *Not bypass*, but /in-kernel fast-path/
 
 The killer feature of XDP is integration with Linux kernel,
- - Leverage existing kernel infrastructure, eco-system and market position
+ - Leverages existing kernel infrastructure, eco-system and market position
  - Programmable flexibility via eBPF sandboxing (kernel infra)
  - Flexible sharing of NIC resources between Linux and XDP
  - Cooperation with netstack via eBPF-helpers and fallback-handling
- - No need to reinject packets, like bypass solutions
+ - No need to reinject packets (unlike bypass solutions)
 
-/AF_XDP/ for /flexible/ *kernel-bypass*
- - Cooperate with use-case needing fast raw frame access in userspace
+/AF_XDP/ for /flexible/ *kernel bypass*
+ - Cooperate with use-cases needing fast raw frame access in userspace
  - While leveraging existing kernel NIC drivers
 
 * Slide: XDP is a building block                                     :export:
@@ -171,7 +171,7 @@ eBPF (incl XDP) is *not a product in itself*
 
 /Full potential/ comes when
  - Combining XDP-eBPF with other eBPF-hooks and facilities
- - Construct a *"networking pipeline"* via kernel components
+ - To construct a *"networking pipeline"* via kernel components
  - The [[https://cilium.io/][Cilium]] project is a good example (container L4-L7 policy)
 
 * Slide: XDP use-cases                                               :export:
@@ -182,11 +182,11 @@ eBPF (incl XDP) is *not a product in itself*
 Areas and use-cases where XDP is /already being used/
 
 Touch upon *new potential* and opportunities
-- e.g. for Virtual-Machines (VM) and Containers
+- e.g. for Virtual Machines (VM) and Containers
 
 ** Use-case: Anti-DDoS                                              :export:
 
-The most obvious use-case for XDP is *anti-DDoS*
+The most obvious use case for XDP is *anti-DDoS*
 
 Companies already deployed XDP in production for anti-DDoS
  - /Facebook/, every packet goes through XDP for [[http://vger.kernel.org/lpc-networking2018.html#session-10][1.5 years]]
@@ -199,15 +199,15 @@ Companies already deployed XDP in production for anti-DDoS
 
 ** Use-case: L4 Load-balancer                                       :export:
 
-/Facebook/ were using the kernel Load-balancer IPVS
+/Facebook/ was using the kernel Load-balancer IPVS
  - Switched to using XDP instead: Reported /x10 performance improvement/
  - Open Sourced their [[https://code.fb.com/open-source/open-sourcing-katran-a-scalable-network-load-balancer/][XDP load-balancer]] called [[https://github.com/facebookincubator/katran][katran]]
 
-*New potential*: Host-OS load-balance to VMs and Containers
+*New potential*: Host OS load-balancing to VMs and Containers
  - /VM/: Phy-NIC can XDP_REDIRECT into Guest-NIC
-   - driver tuntap queue XDP-raw frames to virtio_net; *avoid SKB in Host-OS*
+   - driver tuntap queues XDP-raw frames to virtio_net; *skip SKB in Host-OS*
  - /Container/: Phy-NIC can XDP_REDIRECT into *veth* (kernel v4.20)
-   - driver veth alloc+build SKB outside driver-code; speedup *skip some code*
+   - driver veth allocs+builds SKB outside driver-code; speedup *skip some code*
    - veth can /RE-redirect/, allow *building interesting proxy-solutions*
 
 
@@ -217,7 +217,7 @@ Companies already deployed XDP in production for anti-DDoS
 :END:
 
 @@html:<small>@@
-XDP can (easily) be misused in same way as kernel-bypass solution
+XDP can (easily) be misused in the same way as kernel bypass solutions
 @@html:</small>@@
 
 Being smart about how XDP is integrated into existing Open Source solutions
@@ -229,17 +229,17 @@ Being smart about how XDP is integrated into existing Open Source solutions
 *We should encourage adding helpers instead of duplicating data in BPF maps*
 @@html:</small>@@
 
-Think of XDP as a /software offload layer for kernel netstack/
- - Simply setup and use Linux netstack, but accelerate parts of it with XDP
+Think of XDP as a /software offload layer for the kernel netstack/
+ - Simply setup and use the Linux netstack, but accelerate parts of it with XDP
 
-IP-routing good example: /Access routing table from XDP via BPF helpers/ (v4.18)
+IP routing good example: /Access routing table from XDP via BPF helpers/ (v4.18)
  - Let Linux handle routing (daemons) and neighbour lookups
  - Talk at LPC-2018 (David Ahern): [[http://vger.kernel.org/lpc-networking2018.html#session-1][Leveraging Kernel Tables with XDP]]
 
 Obvious *next target*: /Bridge lookup helper/
- - Like IP-routing, transparent XDP accelerate bridge-forwarding
-   - Fallback for ARP-lookups, flooding etc.
- - Huge potential *performance boost for Linux bridge* use-cases!
+ - Like IP routing: transparent XDP acceleration of bridge forwarding
+   - Fallback for ARP lookups, flooding etc.
+ - Huge potential *performance boost for Linux bridge* use cases!
 
 
 ** Slide: Transfer info between XDP and netstack                     :export:
@@ -247,19 +247,19 @@ Obvious *next target*: /Bridge lookup helper/
 Ways to transfer /info between XDP and netstack/
  - XDP can *modify packet headers* before netstack
    - Pop/push headers influence RX-handler in netstack
-   - CloudFlare modify MAC-src on sampled dropped packets
- - XDP have 32 bytes *metadata* in-front of payload
-   - TC-eBPF (cls_bpf) can read, and update SKB fields
-   - E.g. save XDP lookup and use in TC-eBPF hook
-   - *AF_XDP* raw frames have this /metadata avail in-front of payload/
+   - CloudFlare modifies MAC-src on sampled dropped packets
+ - XDP have 32 bytes *metadata* in front of payload
+   - TC eBPF (cls_bpf) can read this, and update SKB fields
+   - E.g. save XDP lookup and use in TC eBPF hook
+   - *AF_XDP* raw frames have this /metadata avail in front of payload/
 
 * Slide: XDP integration with OVS                                    :export:
 
 XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
- - VMware (William Tu) presented different option at LPC-2018:
+ - VMware (William Tu) presented different options at LPC 2018:
    - [[http://vger.kernel.org/lpc-networking2018.html#session-7][Bringing the Power of eBPF to Open vSwitch]]
- - *TC-eBPF*, (re)implemented OVS in eBPF (performance limited)
- - *Offloading subset to XDP* (issue miss BPF-helpers to work)
+ - *TC eBPF*, (re)implemented OVS in eBPF (performance limited)
+ - *Offloading subset to XDP* (issue: missing some BPF helpers)
  - *AF_XDP*, huge performance gain
 
 * Slide: AF_XDP                                                      :export:
@@ -281,7 +281,7 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 
 ** Slide: Experimental Methodology                                  :export:
 
- - Broadwell E5-2660 @ 2.7GHz (have DDIO = L3 payload deliver)
+ - Broadwell E5-2660 @ 2.7GHz (with DDIO = L3 payload delivery)
  - Linux kernel 4.20
  - Spectre and Meltdown *mitigations on*
  - 2 i40e 40GBit/s NICs, 2 AF_XDP sockets
@@ -333,7 +333,7 @@ Advantages:
  - HW independent application binary
  - Isolation and robustness
  - Cloud-native support
- - Less setup restrictions
+ - Fewer setup restrictions
 
 
 ** Slide: AF_XDP integration with VPP                               :export:
@@ -367,7 +367,7 @@ A native AF_XDP driver would be more efficient
 * Slide: Summary                                                     :export:
 
  - /XDP/ = Linux /kernel/ fast path
- - *AF_XDP* = packets to *user-space* from /XDP/
+ - *AF_XDP* = packets to *user space* from /XDP/
  - DPDK speeds
  - A /building block/ for a solution. Not a ready solution in itself.
  - Many upcoming use cases,
@@ -386,27 +386,27 @@ A native AF_XDP driver would be more efficient
 /Lock-free [[https://lwn.net/Articles/169961/][channel]] directly from driver RX-queue into AF_XDP socket/
 - Single-Producer/Single-Consumer (SPSC) descriptor ring queues
 - *Single*-/Producer/ (SP) via bind to specific RX-*/queue id/*
-  * NAPI-softirq assure only 1-CPU process 1-RX-queue id (per sched)
+  * NAPI-softirq assures only 1-CPU process 1-RX-queue id (per sched)
 - *Single*-/Consumer/ (SC) via 1-Application
 - *Bounded* buffer pool (UMEM) allocated by userspace (register with kernel)
   * Descriptor(s) in ring(s) point into UMEM
-  * /No memory allocation/, but return frames to UMEM in timely manor
+  * /No memory allocation/, but return frames to UMEM in timely manner
 - [[http://www.lemis.com/grog/Documentation/vj/lca06vj.pdf][Transport signature]] Van Jacobson talked about
   * Replaced by XDP/eBPF program choosing to XDP_REDIRECT
 
 ** Slide: Details: Actually *four* SPSC ring queues                 :export:
 
-AF_XDP /socket/: Associated /two rings/ *RX* and *TX*
- - Descriptor(s) in ring point into UMEM
+AF_XDP /socket/: Has /two rings/: *RX* and *TX*
+ - Descriptor(s) in ring points into UMEM
 /UMEM/ consists of a number of equally sized chunks
- - Associated /two rings/: *FILL* ring and *COMPLETION* ring
+ - Has /two rings/: *FILL* ring and *COMPLETION* ring
  - FILL ring: application gives kernel area to RX fill
- - COMPLETION ring: kernel tell app TX done for area (can be reuse)
+ - COMPLETION ring: kernel tells app TX is done for area (can be reused)
 
 ** Slide: Gotcha by RX-queue id binding                             :export:
 
 AF_XDP bound to */single RX-queue id/* (for SPSC performance reasons)
-- NIC default spread flows with RSS-hashing over RX-queues
+- NIC by default spreads flows with RSS-hashing over RX-queues
   * Traffic likely not hitting queue you expect
 - You *MUST* configure NIC *HW filters* to /steer to RX-queue id/
   * Out of scope for XDP setup
