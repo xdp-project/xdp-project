@@ -292,6 +292,7 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 
 [[file:images/results_4.20.png]]
 
+*/Huge/* /improvement/ compared to AF_PACKET, more optimizations in pipeline
 
 ** Slide: Performance with Optimization Patches                     :export:
 
