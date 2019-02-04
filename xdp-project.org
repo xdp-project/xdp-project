@@ -189,3 +189,20 @@ investigated.
 Maybe write a tuning doc as well?
 
 WAIT status as this is low priority for now.
+
+* TODO XDP tutorial at Netdev 0x13
+
+XDP is an increasingly popular topic and technology.
+XDP builds on top of eBPF.
+
+This hands-on tutorial will provide guidance on
+getting started using XDP+eBPF technology with
+intention to let attendees for later
+leveraging it for your specific use-case.
+
+More details to be posted later.
+
+** NEXT Prepare materials for XDP tutorial
+DEADLINE: <2019-03-20 Wed>
+[2019-02-04 Mon 12:33]
+[[notmuch:id:43977d45-857f-87ef-07d5-553868882008@mojatatu.com][Email from Jamal Hadi Salim: XDP tutorial]]
