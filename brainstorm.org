@@ -160,7 +160,6 @@ Old list of stuff I need to work-on/fix for XDP/bpf project:
  * Bulking API for ndo_xdp_xmit
  * Address massive XDP regression due to CONFIG_RETPOLINE
  * Introduce bulking for generic-XDP (PoC test show +30% perf!!!)
- * Fix CPUMAP to work with generic-XDP
  * Implement ndo_xdp_xmit for macvlan (fast guest delivery)
  * Improve BPF doc
  * Improve XDP doc
@@ -173,10 +172,8 @@ Old list of stuff I need to work-on/fix for XDP/bpf project:
  * Help (Ahern) get XDP route/FIB lookup helper integrated
  * Work on bridge FIB table lookup helper
  * XDP get more info transferred to CPUMAP skb creation time
- * cpumap: GRO support
  * cpumap: RX hash support
  * cpumap: HW csum offload/info
- * Generalize CPUMAP skb creation, move SKB alloc out of driver code
  * Improve XDP cpumap redirect example: flow hashing (fix NIC HW hash)
  * Help get AF_XDP API and performance aligned
  * Help get AF_XDP zero-copy integrated via XDP return API
