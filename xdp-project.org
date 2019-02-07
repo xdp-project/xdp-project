@@ -70,14 +70,17 @@ NIC TX HW queues, given it is assumed a TX queue is alloc/dedicated
 for each CPU core.
 
 The main idea for fixing this is to tie resource allocation to interface
-insertion into interface maps.
+insertion into interface maps (kernel/bpf/devmap.c). As the =devmap= already
+have the needed synchronisation mechanisms and steps for safely adding and
+removing =net_devices= (e.g. stopping RX side, flushing remaining frames,
+waiting RCU period before freeing objects, etc.)
 
 ** NEXT Change non-map xdp_redirect helper to use a hidden map
 
-To be able to tie resource allocation to the interface maps, we first need to
-change the non-map redirect variant so it uses a map under the hood. Since
-xdp_redirect_map() is also significantly faster than the non-map variant, this
-change should be a win in itself.
+To be able to tie resource allocation to the interface maps (=devmap=), we
+first need to change the non-map redirect variant so it uses a map under the
+hood. Since xdp_redirect_map() is also significantly faster than the non-map
+variant, this change should be a win in itself.
 
 * TODO Usability of programs in samples/bpf
 
