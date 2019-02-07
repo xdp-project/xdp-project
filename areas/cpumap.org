@@ -40,6 +40,14 @@ The =cpumap= does not handle redirect for generic-XDP.  This have already
 confused people.  For completeness this should be fixed, but there is also
 an opportunity for performance improvements.
 
+** TODO Feature: cpumap bulk alloc SKBs
+
+It would be fairly trivial to bulk alloc SKBs via =kmem_cache_alloc_bulk()=
+API, when dequeuing in kthread (=cpu_map_kthread_run=).  One point is that
+when dequeuing xdp_frames from ptr_ring, a cacheline between two CPUs are
+touched, and we should reduce the time window as much as possible.  Then
+there is of-cause also the performance improvement of bulk alloc.
+
 ** TODO Feature: cpumap could use netif_receive_skb_list()
 
 ** TODO Feature: cpumap implement GRO handling
