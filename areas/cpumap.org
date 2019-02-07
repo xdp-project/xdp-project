@@ -34,3 +34,17 @@ generic way to transfer info needed for the SKB-fields, this related to XDP
 
 Tasks related to =cpumap= are filed under this section.
 
+** TODO Create BPF helper for skb_set_queue_mapping
+
+When doing CPUMAP redirect, then the SKB created have no =skb->queue_mapping=
+configured. This could be set by e.g. using TC filter/action =skbedit= (see man
+[[https://www.linux.org/docs/man8/tc-skbedit.html][tc-skbedit(8)]]), but we also want to allow this from TC cls_bpf. Reading
+=queue_mapping= from TC cls_bpf is already possible.
+
+This is needed as part of a larger IP-forwarding use-case, where CPUMAP redirect
+can be used for solving a TC root-qdisc locking problem, where
+customers/services needed to be bandwidth rate-limited (and global rate-limit of
+NIC is indifferent). This can be solved by using qdisc =MQ= and attaching a
+qdisc =HTB= on each leaf of =MQ=, and via an eBPF prog make sure the
+customers/services grouping is maintained and hit the same CPU+MQ TXq.
+
