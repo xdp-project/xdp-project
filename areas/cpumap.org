@@ -1,5 +1,5 @@
 # -*- fill-column: 76; -*-
-#+TITLE: Project management for areas/cpumap
+#+TITLE: Project management for CPUMAP
 #+CATEGORY: CPUMAP
 #+OPTIONS: ^:nil
 
@@ -14,4 +14,19 @@ This is a scalability and isolation mechanism, that allow separating the
 early driver network XDP layer, from the rest of the netstack, and assigning
 dedicated CPUs for this stage. This basically allows for 10G wirespeed
 pre-filtering via bpf, on the serving end-host running Linux.
+
+* Allocate SKB outside driver code
+
+The revolutionary and controversial idea with cpumap redirect is to remove
+the SKB allocation inside the drivers RX-path. Instead an =xdp_frame= is
+created that contains enough info to allocated the SKB later outside the
+driver code, in cpumap's case on a remote CPU, but the idea is to take this
+even further.
+
+*The future plans* are working towards creating Ethernet drivers that have
+no SKB allocations. Instead they will send these =xdp_frame= packets (in a
+bulk) to the network stack, that will handle creation of the SKBs and
+populate the appropriate SKB-fields. This work is currently stalled on a
+generic way to transfer info needed for the SKB-fields, this related to XDP
+*metadata* and *BTF* working areas.
 
