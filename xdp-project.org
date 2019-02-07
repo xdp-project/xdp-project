@@ -91,7 +91,9 @@ Red Hat QA, got very confused by #2.
 
 ** NEXT Change sample programs to accept ifnames as well as indexes
 
-** NEXT Add TX counters to sample programs
+** NEXT Add TX counters to redirect samples/bpf programs
+
+Simply include/sample the net_device TX stats.
 
 ** TODO Fix unloading wrong XDP on xdp-sample exit
 

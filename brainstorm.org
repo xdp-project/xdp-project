@@ -81,10 +81,6 @@ This will allow:
 
 Keeping DMA mapping in XDP return API.
 
-* Add samples/bpf/ using raw-tracepoints
-
-* Convert xdp_monitor to use raw-tracepoints
-
 * Convert samples/bpf/ to use libbpf as elf-loader
 
 * sample/bpf output XDP-mode (as QA forget to report)
@@ -113,8 +109,6 @@ QA is giving my output from xdp_redirect_cpu, but forget to say what
 interface this is loaded on.  Solve by simply outputting the interface
 in the output.
 
-* samples/bpf redirect example include net_device TX stats
-
 * samples/bpf upstream napi_monitor
 
 Missing an ifindex to match on in tracepoint
@@ -125,8 +119,6 @@ Missing an ifindex to match on in tracepoint
 * Generic-xdp how-to assure NAPI protect?
 
 * Make bulk work for generic xdp with devmap
-
-* Rx+tx ifconfig count update for xdp
 
 * Meta data implement missing for many drivers
 
@@ -177,7 +169,6 @@ Old list of stuff I need to work-on/fix for XDP/bpf project:
  * Improve XDP cpumap redirect example: flow hashing (fix NIC HW hash)
  * Help get AF_XDP API and performance aligned
  * Help get AF_XDP zero-copy integrated via XDP return API
- * xdp_monitor: improve to show error codes (to easier troubleshoot)
  * convert tracepoint to use ifindex instead of names (strcpy overhead)
  * XDP_REDIRECT: Detect buggy-drivers forgetting to clear per-CPU map
  * Streamline eBPF map-create return codes on errors
