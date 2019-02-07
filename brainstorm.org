@@ -101,8 +101,6 @@ Ref slides: http://people.netfilter.org/hawk/presentations/NetConf2017_Seoul/XDP
 Idea on slide 29 + 30:  Implement in BPF-code an Out-of-Order safe way
 to use cpumap-redirect to dynamically load-balance IP-flows.
 
-** BUG: CPUMAP not working for generic-xdp
-
 ** DONE Implement CPUMAP redirect with connection hashing over CPUs
 
  c4c202175424 ("Merge branch 'bpf-sample-cpumap-lb'")

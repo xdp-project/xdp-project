@@ -34,6 +34,12 @@ generic way to transfer info needed for the SKB-fields, this related to XDP
 
 Tasks related to =cpumap= are filed under this section.
 
+** TODO BUG: cpumap not working for generic-XDP
+
+The =cpumap= does not handle redirect for generic-XDP.  This have already
+confused people.  For completeness this should be fixed, but there is also
+an opportunity for performance improvements.
+
 ** TODO Create BPF helper for skb_set_queue_mapping
 
 When doing CPUMAP redirect, then the SKB created have no =skb->queue_mapping=
