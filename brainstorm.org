@@ -107,10 +107,6 @@ to use cpumap-redirect to dynamically load-balance IP-flows.
  1bca4e6b1863 ("samples/bpf: xdp_redirect_cpu load balance like Suricata")
  11395686586b ("samples/bpf: add Paul Hsieh's (LGPL 2.1) hash function SuperFastHash")
 
-** Feature: CPU map could use netif_receive_skb_list()
-
-** cpumap: Implement GRO handling
-
 ** xdp_redirect_cpu sample output interface-name and ifindex
 
 QA is giving my output from xdp_redirect_cpu, but forget to say what
