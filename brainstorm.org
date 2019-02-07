@@ -97,12 +97,6 @@ Ref slides: http://people.netfilter.org/hawk/presentations/NetConf2017_Seoul/XDP
 Idea on slide 29 + 30:  Implement in BPF-code an Out-of-Order safe way
 to use cpumap-redirect to dynamically load-balance IP-flows.
 
-** xdp_redirect_cpu sample output interface-name and ifindex
-
-QA is giving my output from xdp_redirect_cpu, but forget to say what
-interface this is loaded on.  Solve by simply outputting the interface
-in the output.
-
 * samples/bpf upstream napi_monitor
 
 Missing an ifindex to match on in tracepoint

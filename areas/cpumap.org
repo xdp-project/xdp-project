@@ -64,6 +64,13 @@ Upstream in commits:
 - [[https://git.kernel.org/torvalds/c/1bca4e6b1863][1bca4e6b1863]] ("samples/bpf: xdp_redirect_cpu load balance like Suricata")
 - [[https://git.kernel.org/torvalds/c/11395686586b][11395686586b]] ("samples/bpf: add Paul Hsieh's (LGPL 2.1) hash function SuperFastHash")
 
+** TODO sample xdp_redirect_cpu should output interface-name and ifindex
+
+This is a minor improvement. QA is giving output from xdp_redirect_cpu, but
+forget to say what interface this is loaded on.  Solve by simply outputting
+the interface in the output. Even better would be outputting driver name
+from corresponding ifindex.
+
 ** TODO Create BPF helper for skb_set_queue_mapping
 
 When doing CPUMAP redirect, then the SKB created have no =skb->queue_mapping=
