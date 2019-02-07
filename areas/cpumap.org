@@ -1,0 +1,17 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Project management for areas/cpumap
+#+CATEGORY: CPUMAP
+#+OPTIONS: ^:nil
+
+This document contains *org-mode tasks* and TODOs for [[https://github.com/torvalds/linux/blob/master/kernel/bpf/cpumap.c][cpumap]].
+
+This BPF map type CPUMAP (=BPF_MAP_TYPE_CPUMAP=) is used by XDP to
+=XDP_REDIRECT= into via BPF helper =bpf_redirect_map()=. This map type
+redirects raw XDP frames to another CPU. The remote CPU will do
+SKB-allocation and call the normal network stack.
+
+This is a scalability and isolation mechanism, that allow separating the
+early driver network XDP layer, from the rest of the netstack, and assigning
+dedicated CPUs for this stage. This basically allows for 10G wirespeed
+pre-filtering via bpf, on the serving end-host running Linux.
+
