@@ -89,17 +89,35 @@ Idea from [[http://people.netfilter.org/hawk/presentations/NetConf2017_Seoul/XDP
 Implement in BPF-code an Out-of-Order safe way to use cpumap-redirect to
 dynamically load-balance IP-flows.
 
+
+* TODO Use-case cpumap: Solving qdisc TX lock congestion for BW shaping
+
+This is a project that verifies and demonstrate how =cpumap= can be used for
+more complex use-cases like IP-forwarding and bandwidth shaping, while
+working in concert with other parts of the network stack, like qdisc and
+other eBPF hooks.
+
+The use-case is when a service provider (ISP or cloud provider) want to
+bandwidth rate-limited outgoing traffic for each service e.g. via HTB qdisc,
+but don't need global NIC rate-limiting. Where the service that need
+individual rate-limiting can be a broad variety, e.g. ISP end-user customers
+buying bandwidth, daemon services using network traffic, a container, etc.
+As long as this can be matched via a BPF hook or TC filter, and that the NIC
+link-rate is higher than the sold rate.
+
+The *problem*: With a default HTB setup, such a service will not scale with
+the number of CPU and NIC hardware RX+TX queues. The reason is that every
+transmitted packet have to be serialised through the qdisc root-lock on the
+HTB root qdisc.  This cause many CPUs to cause congestion on this lock.
+
+This project demonstrates how this can be solved by using the =MQ= qdisc and
+attaching a qdisc =HTB= on each leaf of =MQ=, and via an eBPF prog make sure
+the customers/services grouping is maintained and hit the same CPU+MQ TXq.
+
 ** TODO Create BPF helper for skb_set_queue_mapping
 
 When doing CPUMAP redirect, then the SKB created have no =skb->queue_mapping=
 configured. This could be set by e.g. using TC filter/action =skbedit= (see man
 [[https://www.linux.org/docs/man8/tc-skbedit.html][tc-skbedit(8)]]), but we also want to allow this from TC cls_bpf. Reading
 =queue_mapping= from TC cls_bpf is already possible.
-
-This is needed as part of a larger IP-forwarding use-case, where CPUMAP redirect
-can be used for solving a TC root-qdisc locking problem, where
-customers/services needed to be bandwidth rate-limited (and global rate-limit of
-NIC is indifferent). This can be solved by using qdisc =MQ= and attaching a
-qdisc =HTB= on each leaf of =MQ=, and via an eBPF prog make sure the
-customers/services grouping is maintained and hit the same CPU+MQ TXq.
 
