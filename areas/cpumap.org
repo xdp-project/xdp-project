@@ -52,6 +52,18 @@ there is of-cause also the performance improvement of bulk alloc.
 
 ** TODO Feature: cpumap implement GRO handling
 
+** DONE Implement CPUMAP redirect with connection hashing over CPUs
+CLOSED: [2018-08-10 Fri]
+
+The xdp_redirect_cpu code should default distribute packets via IP-flow
+hashing to avoid creating Out-of-Order packets, if someone just runs this
+out-of-the box.
+
+Upstream in commits:
+- [[https://git.kernel.org/torvalds/c/c4c202175424][c4c202175424]] ("Merge branch 'bpf-sample-cpumap-lb'")
+- [[https://git.kernel.org/torvalds/c/1bca4e6b1863][1bca4e6b1863]] ("samples/bpf: xdp_redirect_cpu load balance like Suricata")
+- [[https://git.kernel.org/torvalds/c/11395686586b][11395686586b]] ("samples/bpf: add Paul Hsieh's (LGPL 2.1) hash function SuperFastHash")
+
 ** TODO Create BPF helper for skb_set_queue_mapping
 
 When doing CPUMAP redirect, then the SKB created have no =skb->queue_mapping=

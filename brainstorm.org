@@ -97,12 +97,6 @@ Ref slides: http://people.netfilter.org/hawk/presentations/NetConf2017_Seoul/XDP
 Idea on slide 29 + 30:  Implement in BPF-code an Out-of-Order safe way
 to use cpumap-redirect to dynamically load-balance IP-flows.
 
-** DONE Implement CPUMAP redirect with connection hashing over CPUs
-
- c4c202175424 ("Merge branch 'bpf-sample-cpumap-lb'")
- 1bca4e6b1863 ("samples/bpf: xdp_redirect_cpu load balance like Suricata")
- 11395686586b ("samples/bpf: add Paul Hsieh's (LGPL 2.1) hash function SuperFastHash")
-
 ** xdp_redirect_cpu sample output interface-name and ifindex
 
 QA is giving my output from xdp_redirect_cpu, but forget to say what
