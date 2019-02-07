@@ -90,13 +90,6 @@ Keeping DMA mapping in XDP return API.
 
 * GROUP: CPU-map redirect things
 
-** CPUMAP: Impl. OoO mechanism
-
-Ref slides: http://people.netfilter.org/hawk/presentations/NetConf2017_Seoul/XDP_devel_update_NetConf2017_Seoul.pdf
-
-Idea on slide 29 + 30:  Implement in BPF-code an Out-of-Order safe way
-to use cpumap-redirect to dynamically load-balance IP-flows.
-
 * samples/bpf upstream napi_monitor
 
 Missing an ifindex to match on in tracepoint

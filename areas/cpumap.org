@@ -71,6 +71,24 @@ forget to say what interface this is loaded on.  Solve by simply outputting
 the interface in the output. Even better would be outputting driver name
 from corresponding ifindex.
 
+** TODO cpumap: implement dynamic load-balancer that is OoO safe
+
+This is a project to test the limits of eBPF programming.
+
+The kernels existing facilities, that =cpumap= is "competing" against, RSS
+(Receive Side Scaling) and Receive Packet Steering (RPS) have mechanisms
+that makes sure that Out-of-Order (OoO) packets does not occur when the
+config change runtime. For =cpumap= this is left up to the eBPF programmer
+to hand if he needs to do dynamic config changes.
+
+The question is how difficult is this to implement in eBPF, and do we need
+some helpers or extra state exposed to eBPF, e.g. in-flight-packets, for
+this to be possible to implement in eBPF.
+
+Idea from [[http://people.netfilter.org/hawk/presentations/NetConf2017_Seoul/XDP_devel_update_NetConf2017_Seoul.pdf][slide 29 + 30]]:
+Implement in BPF-code an Out-of-Order safe way to use cpumap-redirect to
+dynamically load-balance IP-flows.
+
 ** TODO Create BPF helper for skb_set_queue_mapping
 
 When doing CPUMAP redirect, then the SKB created have no =skb->queue_mapping=
