@@ -81,10 +81,6 @@ This will allow:
 
 Keeping DMA mapping in XDP return API.
 
-* Add samples/bpf/ using raw-tracepoints
-
-* Convert xdp_monitor to use raw-tracepoints
-
 * Convert samples/bpf/ to use libbpf as elf-loader
 
 * sample/bpf output XDP-mode (as QA forget to report)
@@ -93,47 +89,6 @@ Keeping DMA mapping in XDP return API.
 
 
 * GROUP: CPU-map redirect things
-
-** CPUMAP: Impl. OoO mechanism
-
-Ref slides: http://people.netfilter.org/hawk/presentations/NetConf2017_Seoul/XDP_devel_update_NetConf2017_Seoul.pdf
-
-Idea on slide 29 + 30:  Implement in BPF-code an Out-of-Order safe way
-to use cpumap-redirect to dynamically load-balance IP-flows.
-
-** BUG: CPUMAP not working for generic-xdp
-
-** DONE Implement CPUMAP redirect with connection hashing over CPUs
-
- c4c202175424 ("Merge branch 'bpf-sample-cpumap-lb'")
- 1bca4e6b1863 ("samples/bpf: xdp_redirect_cpu load balance like Suricata")
- 11395686586b ("samples/bpf: add Paul Hsieh's (LGPL 2.1) hash function SuperFastHash")
-
-** Feature: CPU map could use netif_receive_skb_list()
-
-** cpumap: Implement GRO handling
-
-** xdp_redirect_cpu sample output interface-name and ifindex
-
-QA is giving my output from xdp_redirect_cpu, but forget to say what
-interface this is loaded on.  Solve by simply outputting the interface
-in the output.
-
-** TODO Create BPF helper for skb_set_queue_mapping
-
-When doing CPUMAP redirect, then the SKB created have no =skb->queue_mapping=
-configured. This could be set by e.g. using TC filter/action =skbedit= (see man
-[[https://www.linux.org/docs/man8/tc-skbedit.html][tc-skbedit(8)]]), but we also want to allow this from TC cls_bpf. Reading
-=queue_mapping= from TC cls_bpf is already possible.
-
-This is needed as part of a larger IP-forwarding use-case, where CPUMAP redirect
-can be used for solving a TC root-qdisc locking problem, where
-customers/services needed to be bandwidth rate-limited (and global rate-limit of
-NIC is indifferent). This can be solved by using qdisc =MQ= and attaching a
-qdisc =HTB= on each leaf of =MQ=, and via an eBPF prog make sure the
-customers/services grouping is maintained and hit the same CPU+MQ TXq.
-
-* samples/bpf redirect example include net_device TX stats
 
 * samples/bpf upstream napi_monitor
 
@@ -145,8 +100,6 @@ Missing an ifindex to match on in tracepoint
 * Generic-xdp how-to assure NAPI protect?
 
 * Make bulk work for generic xdp with devmap
-
-* Rx+tx ifconfig count update for xdp
 
 * Meta data implement missing for many drivers
 
@@ -180,7 +133,6 @@ Old list of stuff I need to work-on/fix for XDP/bpf project:
  * Bulking API for ndo_xdp_xmit
  * Address massive XDP regression due to CONFIG_RETPOLINE
  * Introduce bulking for generic-XDP (PoC test show +30% perf!!!)
- * Fix CPUMAP to work with generic-XDP
  * Implement ndo_xdp_xmit for macvlan (fast guest delivery)
  * Improve BPF doc
  * Improve XDP doc
@@ -193,14 +145,11 @@ Old list of stuff I need to work-on/fix for XDP/bpf project:
  * Help (Ahern) get XDP route/FIB lookup helper integrated
  * Work on bridge FIB table lookup helper
  * XDP get more info transferred to CPUMAP skb creation time
- * cpumap: GRO support
  * cpumap: RX hash support
  * cpumap: HW csum offload/info
- * Generalize CPUMAP skb creation, move SKB alloc out of driver code
  * Improve XDP cpumap redirect example: flow hashing (fix NIC HW hash)
  * Help get AF_XDP API and performance aligned
  * Help get AF_XDP zero-copy integrated via XDP return API
- * xdp_monitor: improve to show error codes (to easier troubleshoot)
  * convert tracepoint to use ifindex instead of names (strcpy overhead)
  * XDP_REDIRECT: Detect buggy-drivers forgetting to clear per-CPU map
  * Streamline eBPF map-create return codes on errors

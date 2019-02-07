@@ -1,0 +1,134 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Project management for CPUMAP
+#+CATEGORY: CPUMAP
+#+OPTIONS: ^:nil
+
+This document contains *org-mode tasks* and TODOs for [[https://github.com/torvalds/linux/blob/master/kernel/bpf/cpumap.c][cpumap]].
+
+This BPF map type CPUMAP (=BPF_MAP_TYPE_CPUMAP=) is used by XDP to
+=XDP_REDIRECT= into via BPF helper =bpf_redirect_map()=. This map type
+redirects raw XDP frames to another CPU. The remote CPU will do
+SKB-allocation and call the normal network stack.
+
+This is a scalability and isolation mechanism, that allow separating the
+early driver network XDP layer, from the rest of the netstack, and assigning
+dedicated CPUs for this stage. This basically allows for 10G wirespeed
+pre-filtering via bpf, on the serving end-host running Linux.
+
+* Allocate SKB outside driver code
+
+The revolutionary and controversial idea with cpumap redirect is to remove
+the SKB allocation inside the drivers RX-path. Instead an =xdp_frame= is
+created that contains enough info to allocated the SKB later outside the
+driver code, in cpumap's case on a remote CPU, but the idea is to take this
+even further.
+
+*The future plans* are working towards creating Ethernet drivers that have
+no SKB allocations. Instead they will send these =xdp_frame= packets (in a
+bulk) to the network stack, that will handle creation of the SKBs and
+populate the appropriate SKB-fields. This work is currently stalled on a
+generic way to transfer info needed for the SKB-fields, this related to XDP
+*metadata* and *BTF* working areas.
+
+* TODO Project cpumap
+
+Tasks related to =cpumap= are filed under this section.
+
+** TODO BUG: cpumap not working for generic-XDP
+
+The =cpumap= does not handle redirect for generic-XDP.  This have already
+confused people.  For completeness this should be fixed, but there is also
+an opportunity for performance improvements.
+
+** TODO Feature: cpumap bulk alloc SKBs
+
+It would be fairly trivial to bulk alloc SKBs via =kmem_cache_alloc_bulk()=
+API, when dequeuing in kthread (=cpu_map_kthread_run=).  One point is that
+when dequeuing xdp_frames from ptr_ring, a cacheline between two CPUs are
+touched, and we should reduce the time window as much as possible.  Then
+there is of-cause also the performance improvement of bulk alloc.
+
+** TODO Feature: cpumap could use netif_receive_skb_list()
+
+** TODO Feature: cpumap implement GRO handling
+
+** DONE Implement CPUMAP redirect with connection hashing over CPUs
+CLOSED: [2018-08-10 Fri]
+
+The xdp_redirect_cpu code should default distribute packets via IP-flow
+hashing to avoid creating Out-of-Order packets, if someone just runs this
+out-of-the box.
+
+Upstream in commits:
+- [[https://git.kernel.org/torvalds/c/c4c202175424][c4c202175424]] ("Merge branch 'bpf-sample-cpumap-lb'")
+- [[https://git.kernel.org/torvalds/c/1bca4e6b1863][1bca4e6b1863]] ("samples/bpf: xdp_redirect_cpu load balance like Suricata")
+- [[https://git.kernel.org/torvalds/c/11395686586b][11395686586b]] ("samples/bpf: add Paul Hsieh's (LGPL 2.1) hash function SuperFastHash")
+
+** TODO sample xdp_redirect_cpu should output interface-name and ifindex
+
+This is a minor improvement. QA is giving output from xdp_redirect_cpu, but
+forget to say what interface this is loaded on.  Solve by simply outputting
+the interface in the output. Even better would be outputting driver name
+from corresponding ifindex.
+
+** TODO cpumap: implement dynamic load-balancer that is OoO safe
+
+This is a project to test the limits of eBPF programming.
+
+The kernels existing facilities, that =cpumap= is "competing" against, RSS
+(Receive Side Scaling) and Receive Packet Steering (RPS) have mechanisms
+that makes sure that Out-of-Order (OoO) packets does not occur when the
+config change runtime. For =cpumap= this is left up to the eBPF programmer
+to hand if he needs to do dynamic config changes.
+
+The question is how difficult is this to implement in eBPF, and do we need
+some helpers or extra state exposed to eBPF, e.g. in-flight-packets, for
+this to be possible to implement in eBPF.
+
+Idea from [[http://people.netfilter.org/hawk/presentations/NetConf2017_Seoul/XDP_devel_update_NetConf2017_Seoul.pdf][slide 29 + 30]]:
+Implement in BPF-code an Out-of-Order safe way to use cpumap-redirect to
+dynamically load-balance IP-flows.
+
+
+* TODO Use-case cpumap: Solving qdisc TX lock congestion for BW shaping
+
+This is a project that verifies and demonstrate how =cpumap= can be used for
+more complex use-cases like IP-forwarding and bandwidth shaping, while
+working in concert with other parts of the network stack, like qdisc and
+other eBPF hooks.
+
+The use-case is when a service provider (ISP or cloud provider) want to
+bandwidth rate-limited outgoing traffic for each service e.g. via HTB qdisc,
+but don't need global NIC rate-limiting. Where the service that need
+individual rate-limiting can be a broad variety, e.g. ISP end-user customers
+buying bandwidth, daemon services using network traffic, a container, etc.
+As long as this can be matched via a BPF hook or TC filter, and that the NIC
+link-rate is higher than the sold rate.
+
+The *problem*: With a default HTB setup, such a service will not scale with
+the number of CPU and NIC hardware RX+TX queues. The reason is that every
+transmitted packet have to be serialised through the qdisc root-lock on the
+HTB root qdisc.  This cause many CPUs to cause congestion on this lock.
+
+This project demonstrates how this can be solved by using the =MQ= qdisc and
+attaching a qdisc =HTB= on each leaf of =MQ=, and via an eBPF prog make sure
+the customers/services grouping is maintained and hit the same CPU+MQ TXq.
+
+** DONE cpumap: Create script MQ-HTB silo setup
+CLOSED: [2019-02-06 Wed]
+https://github.com/netoptimizer/network-testing/blob/master/tc/tc_mq_htb_setup.sh
+
+** NEXT cpumap: Test cpumap redirect works with MQ-HTB silo setup
+
+** TODO Create BPF helper for skb_set_queue_mapping
+
+When doing CPUMAP redirect, then the SKB created have no =skb->queue_mapping=
+configured. This could be set by e.g. using TC filter/action =skbedit= (see man
+[[https://www.linux.org/docs/man8/tc-skbedit.html][tc-skbedit(8)]]), but we also want to allow this from TC cls_bpf. Reading
+=queue_mapping= from TC cls_bpf is already possible.
+
+** TODO cpumap: quantify effect of cpumap (currently) don't transfer RX-csum info
+
+Verify csum is recalculated on IP-forward TX path for cpumap redirected
+packets.  Try to asses/measure overhead this cause.
+
