@@ -30,3 +30,7 @@ populate the appropriate SKB-fields. This work is currently stalled on a
 generic way to transfer info needed for the SKB-fields, this related to XDP
 *metadata* and *BTF* working areas.
 
+* TODO Project cpumap
+
+Tasks related to =cpumap= are filed under this section.
+
