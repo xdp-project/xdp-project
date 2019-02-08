@@ -85,6 +85,9 @@ struct bpf_prog *prog,
  }
 #+end_src
 
+WARNING: Realised above code is subject to speculative execution
+side-channel leaking.
+
 And measure if the performance concerns are real or not. Ilias or Jesper can
 measure this on a slow ARM64 platform (espressobin), as only testing this on
 Intel might lead to the wrong conclusion.
