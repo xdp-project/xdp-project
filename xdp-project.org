@@ -92,6 +92,14 @@ And measure if the performance concerns are real or not. Ilias or Jesper can
 measure this on a slow ARM64 platform (espressobin), as only testing this on
 Intel might lead to the wrong conclusion.
 
+*** TODO Exporting XDP-actions counter to userspace
+
+Collecting XDP-actions counter is only the first step.  We need to figure
+out the best solution for exporting this to userspace.
+
+One option is to piggyback on ethtool stats, which the drivers already use,
+and it would also standardise the driver related XDP ethool stats.
+
 
 * TODO Expanding XDP_REDIRECT support to more drivers
 
