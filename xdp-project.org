@@ -16,10 +16,16 @@ pickup these tasks, make sure to [[http://doc.norang.ca/org-mode.html#AgendaSetu
 this directory and =areas/= directory.
 
 
-* TODO Missing update of ifconfig counters
+* TODO Consistency for statistics with XDP
+
+The short of it is that we need consistency in the counters across NIC
+drivers and virtual devices. Right now stats are specific to a driver with
+no clear accounting for the packets and bytes handled in XDP.
 
 Progress: @dsahern (David Ahern) have started an email thread on the
 subject: [[https://www.spinics.net/lists/netdev/msg535239.html][consistency for statistics with XDP mode]]
+
+** TODO Missing update of ifconfig counters
 
 Some drivers are not updating the "ifconfig" stats counters,
 when in XDP mode.  This makes receive or send via XDP invisible to
