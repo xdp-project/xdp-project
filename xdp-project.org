@@ -218,9 +218,20 @@ Subject: [Indico] Abstract Acceptance notification (#48)
 DEADLINE: <2019-03-20 Wed>
 [2019-02-04 Mon 12:33]
 [[notmuch:id:43977d45-857f-87ef-07d5-553868882008@mojatatu.com][Email from Jamal Hadi Salim: XDP tutorial]]
+
 ** NEXT NetDev-conf: add abstract under XDP-project
 ** NEXT NetDev-conf: create overall plan for tutorial
 ** TODO Create github repo for NetDev-conf XDP-tutorial
 We need a github repo that are easier to build than [[https://github.com/netoptimizer/prototype-kernel][prototype-kernel]] github
 repo, as it requires the kernel source tree to build. The hands-on tutorial
 need to have an easier and more confined build-environment.
+
+Related: How do we ensure participants can successfully run XDP at the event?
+
+** NEXT Needs document of best practices
+E.g.:
+
+- Use metadata field for carrying per-packet data
+- Don't replicate kernel state
+
+
