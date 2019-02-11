@@ -187,4 +187,17 @@ On client/PC start iperf client::
 With iperf multicast the server joins the mcast stream and starts
 receiving packets.
 
+** TCP traffic
+Both scp and iperf seem to trigger skb_try_coalesce()
 
+On espressobin start iperf server:
+#+BEGIN_EXAMPLE
+ ifconfig eth0 192.168.200.1
+ iperf -s
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+ iperf -c 192.168.200.1
+#+END_EXAMPLE
+
+or from a host send a file to espressobin via scp
