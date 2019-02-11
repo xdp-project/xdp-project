@@ -1,5 +1,6 @@
-# -*- fill-column: 79; -*-
+# -*- fill-column: 76; -*-
 #+Title: Implementing page_pool return-hook via SKB
+#+OPTIONS: ^:nil
 
 This document is the development notes, while implementing page_pool
 return-hook via SKB (See section "Return-hook: via SKB" in
@@ -114,6 +115,48 @@ Look into code solutions, in prioritized order:
 
 *** Case: skb_gro_receive()
 
+
+
+* Patchset: DMA addr in struct page
+
+** Cover-letter
+
+Subject: Fix page_pool API and dma address storage
+
+As pointed out by David Miller in [1] the current page_pool implementation
+stores dma_addr_t in page->private. This won't work on 32-bit platforms with
+64-bit DMA addresses since the page->private is an unsigned long and the
+dma_addr_t a u64.
+
+Since no driver is yet using the DMA mapping capabilities of the API let's
+fix this by storing the information in 'struct page' and use that to store
+and retrieve DMA addresses from network drivers.
+
+As long as the addresses returned from dma_map_page() are aligned the first
+bit, used by the compound pages code should not be set.
+
+Ilias tested this on Espressobin driver mvneta, for which we have patches
+for using the DMA API of page_pool.
+
+[1]: https://lore.kernel.org/netdev/20181207.230655.1261252486319967024.davem@davemloft.net/
+
+Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
+Signed-off-by: Ilias Apalodimas <ilias.apalodimas@linaro.org>
+
+---
+Question: Who of the maintainers MM or netdev will take these changes?
+
+** Stgit mail command
+
+#+begin_example
+stg mail --prefix=net-next --edit-cover  --cc meup \
+ --to netdev --to linux-mm@kvack.org \
+ --cc willy@infradead.org --cc davem \
+ --cc mgorman@techsingularity.net --cc akpm \
+ --cc toke --cc ilias \
+ --cc tariq --cc saeed \
+ mm-dma_addr_to-struct-page..net-page_pool-use
+#+end_example
 
 
 * Testing procedures
