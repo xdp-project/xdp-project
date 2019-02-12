@@ -211,6 +211,10 @@ little tricky to spot. Unless XPS via =get_xps_queue= overrides by finding a
 "new_index", then =skb_tx_hash= will be asked to determine the queue_index.
 (And for IP-forwarding there is not =sk= socket).
 
+** TODO TC-skbedit: possible issue with TC action skbedit
+
+The man page for tc-skbedit(8) does not mention that the queue_mapping in
+1-indexed, but my code analysis says so, report and perhaps test before.
 
 ** TODO cpumap: quantify effect of cpumap (currently) don't transfer RX-csum info
 
