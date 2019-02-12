@@ -149,14 +149,30 @@ Question: Who of the maintainers MM or netdev will take these changes?
 ** Stgit mail command
 
 #+begin_example
-stg mail --prefix=net-next --edit-cover  --cc meup \
+stg mail --prefix=net-next --version="V2" --edit-cover  --cc meup \
  --to netdev --to linux-mm@kvack.org \
  --cc willy@infradead.org --cc davem \
  --cc mgorman@techsingularity.net --cc akpm \
  --cc toke --cc ilias \
  --cc tariq --cc saeed \
- mm-dma_addr_to-struct-page..net-page_pool-use
+ --cc alex \
+ mm-dma_addr_to-struct-page..dma_attr
 #+end_example
+
+
+** Using DMA_ATTR_SKIP_CPU_SYNC
+
+page_pool: use DMA_ATTR_SKIP_CPU_SYNC for DMA mappings
+
+As pointed out by Alexander Duyck, the DMA mapping done in page_pool needs
+to use the DMA attribute DMA_ATTR_SKIP_CPU_SYNC.
+
+As the principle behind page_pool keeping the pages mapped is that the
+driver takes over the DMA-sync steps.
+
+
+
+
 
 
 * Testing procedures
