@@ -16,10 +16,16 @@ pickup these tasks, make sure to [[http://doc.norang.ca/org-mode.html#AgendaSetu
 this directory and =areas/= directory.
 
 
-* TODO Missing update of ifconfig counters
+* TODO Consistency for statistics with XDP
+
+The short of it is that we need consistency in the counters across NIC
+drivers and virtual devices. Right now stats are specific to a driver with
+no clear accounting for the packets and bytes handled in XDP.
 
 Progress: @dsahern (David Ahern) have started an email thread on the
 subject: [[https://www.spinics.net/lists/netdev/msg535239.html][consistency for statistics with XDP mode]]
+
+** TODO Missing update of ifconfig counters
 
 Some drivers are not updating the "ifconfig" stats counters,
 when in XDP mode.  This makes receive or send via XDP invisible to
@@ -40,6 +46,59 @@ Closer look at other drivers.
 ** NEXT Figure out the counter semantics upstream
 Need to have an upstream discussion, on what is the semantic.  IHMO
 the regular RX/TX counters must be updated even for XDP frames.
+
+** TODO Statistics per XDP-action
+
+Accounting per XDP-action is also inconsistent across drivers. Some driver
+account nothing, while others have elaborate counters exposed as ethtool
+stats.
+
+The common pattern is that XDP programs do their own accounting of action as
+they see fit, and export this as BPF maps to their associated userspace
+application, which a very per application specific approach.
+
+David Ahern (@dsahern) argues that sysadm's need something more generic and
+consistent, as they need a way to diagnose the system, regardless of the XDP
+program that some developer asked to get installed. This argument that a 3rd
+person should be able to diagnose a running XDP program was generally
+accepted upstream.
+
+There were a lot of performance concerns around introducing XDP-action
+counters. Generally upstream voices wanted this to be opt-in, e.g. something
+that the sysadm explicitly enable when needed, and not default on.
+
+*** NEXT Implement simple XDP-actions counter and measure
+
+As Saeed suggested do something really simple and central like:
+
+#+begin_src diff
++++ b/include/linux/filter.h
+@@ -651,7 +651,9 @@ static __always_inline u32 bpf_prog_run_xdp(const
+struct bpf_prog *prog,
+         * already takes rcu_read_lock() when fetching the program, so
+         * it's not necessary here anymore.
+         */
+-       return BPF_PROG_RUN(prog, xdp);
++       u32 ret = BPF_PROG_RUN(prog, xdp);
++       xdp->xdp_rxq_info.stats[ret]++
++       return ret;
+ }
+#+end_src
+
+WARNING: Realised above code is subject to speculative execution
+side-channel leaking.
+
+And measure if the performance concerns are real or not. Ilias or Jesper can
+measure this on a slow ARM64 platform (espressobin), as only testing this on
+Intel might lead to the wrong conclusion.
+
+*** TODO Exporting XDP-actions counter to userspace
+
+Collecting XDP-actions counter is only the first step.  We need to figure
+out the best solution for exporting this to userspace.
+
+One option is to piggyback on ethtool stats, which the drivers already use,
+and it would also standardise the driver related XDP ethool stats.
 
 
 * TODO Expanding XDP_REDIRECT support to more drivers
