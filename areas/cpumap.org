@@ -127,6 +127,91 @@ configured. This could be set by e.g. using TC filter/action =skbedit= (see man
 [[https://www.linux.org/docs/man8/tc-skbedit.html][tc-skbedit(8)]]), but we also want to allow this from TC cls_bpf. Reading
 =queue_mapping= from TC cls_bpf is already possible.
 
+*** DONE Code analysis before BPF helper for skb_set_queue_mapping
+CLOSED: [2019-02-12 Tue 20:59]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-02-12 Tue 20:59]
+:END:
+
+Following the kernel code is a little tricky, so adding some notes here.
+Invoking skb_set_queue_mapping() *directly* set =skb->queue_mapping= to the
+value provided.
+
+#+begin_src C
+static inline void skb_set_queue_mapping(struct sk_buff *skb, u16 queue_mapping)
+{
+	skb->queue_mapping = queue_mapping;
+}
+#+end_src
+
+The confusing part is the value zero, is used for signalling that no queue
+number is "recorded". So, when helper functions record or extract the
+queue_mapping, they adjust with +/-1. The naming of the helper function are
+also a bit confusing, as they are called =skb_xxx_rx_queue()=. One could say
+that the queue_mapping is 1-indexed, when using skb_set_queue_mapping() to
+set it directly.
+
+#+begin_src C
+static inline void skb_record_rx_queue(struct sk_buff *skb, u16 rx_queue)
+{
+	skb->queue_mapping = rx_queue + 1;
+}
+
+static inline u16 skb_get_rx_queue(const struct sk_buff *skb)
+{
+	return skb->queue_mapping - 1;
+}
+
+static inline bool skb_rx_queue_recorded(const struct sk_buff *skb)
+{
+	return skb->queue_mapping != 0;
+}
+#+end_src
+
+When =skbedit= record the =queue_mapping= it also does a direct store of the
+value, without taking this adjustment into account (looked through kernel
+code =net/sched/act_skbedit.c= and iproute2 code =tc/m_skbedit.c=).
+
+When kernel extract the =skb->queue_mapping= in =skb_tx_hash()= the helpers
+=skb_rx_queue_recorded()= and =skb_get_rx_queue()=  are used.
+
+#+begin_src C
+/*
+ * Returns a Tx hash based on the given packet descriptor a Tx queues' number
+ * to be used as a distribution range.
+ */
+static u16 skb_tx_hash(const struct net_device *dev,
+		       const struct net_device *sb_dev,
+		       struct sk_buff *skb)
+{
+	u32 hash;
+	u16 qoffset = 0;
+	u16 qcount = dev->real_num_tx_queues;
+
+	if (dev->num_tc) {
+		u8 tc = netdev_get_prio_tc_map(dev, skb->priority);
+
+		qoffset = sb_dev->tc_to_txq[tc].offset;
+		qcount = sb_dev->tc_to_txq[tc].count;
+	}
+
+	if (skb_rx_queue_recorded(skb)) { // Test if set here
+		hash = skb_get_rx_queue(skb); // Extract here
+		while (unlikely(hash >= qcount))
+			hash -= qcount;
+		return hash + qoffset; // RETURN here
+	}
+
+	return (u16) reciprocal_scale(skb_get_hash(skb), qcount) + qoffset;
+}
+#+end_src
+
+Details: How =skb_tx_hash= connected to =__netdev_pick_tx()= can also be a
+little tricky to spot. Unless XPS via =get_xps_queue= overrides by finding a
+"new_index", then =skb_tx_hash= will be asked to determine the queue_index.
+(And for IP-forwarding there is not =sk= socket).
+
+
 ** TODO cpumap: quantify effect of cpumap (currently) don't transfer RX-csum info
 
 Verify csum is recalculated on IP-forward TX path for cpumap redirected
