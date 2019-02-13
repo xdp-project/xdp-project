@@ -71,6 +71,12 @@ forget to say what interface this is loaded on.  Solve by simply outputting
 the interface in the output. Even better would be outputting driver name
 from corresponding ifindex.
 
+** NEXT investigate sample xdp_redirect_cpu counters
+
+Playing with xdp_redirect_cpu, and the enqueue and kthread counters are not
+getting updated, something in stats reporting looks wrong.  Maybe latest
+upstream changes to libbpf broke something?
+
 ** TODO cpumap: implement dynamic load-balancer that is OoO safe
 
 This is a project to test the limits of eBPF programming.
