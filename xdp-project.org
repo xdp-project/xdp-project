@@ -128,18 +128,26 @@ This can quickly lead to exhausting HW resources, like IRQs lines or
 NIC TX HW queues, given it is assumed a TX queue is alloc/dedicated
 for each CPU core.
 
-The main idea for fixing this is to tie resource allocation to interface
-insertion into interface maps (kernel/bpf/devmap.c). As the =devmap= already
-have the needed synchronisation mechanisms and steps for safely adding and
-removing =net_devices= (e.g. stopping RX side, flushing remaining frames,
-waiting RCU period before freeing objects, etc.)
-
 ** NEXT Change non-map xdp_redirect helper to use a hidden map
 
 To be able to tie resource allocation to the interface maps (=devmap=), we
 first need to change the non-map redirect variant so it uses a map under the
 hood. Since xdp_redirect_map() is also significantly faster than the non-map
 variant, this change should be a win in itself.
+
+** TODO Ethtool interface for enabling TX resources
+Turns out the initial idea of using insertion into devmap as a trigger for
+resource allocation doesn't work because of generic XDP. So we'll need an
+ethtool interface; look into the existing channel configuration interface on
+the kernel side and figure out how to express XDP resource allocation in a
+good way.
+
+** TODO Add automatic TX resource allocation to libbpf
+Because we can't tie resource allocation to map insertion on the kernel
+side, we need to solve the UI interface in userspace. So add a hook/wrapper
+to libbpf that will automatically allocate TX resources when inserting into
+a map.
+
 
 * TODO Usability of programs in samples/bpf
 
