@@ -15,7 +15,7 @@ NIC drivers and corresponding ARM64 boards:
 
 (mvneta) Board#1: *ClearFog*
  - (ARMADA 38x SoC) from Marvell
- - single or dual core ARMv7 (Cortex A9) @ up to 1.6 GHz with 1MB L2 cache
+ - single or dual core ARMv7 (Cortex A9) @ up to 1.6 GHz with 1MB L2 cache (32bit)
  - https://www.solid-run.com/marvell-armada-family/clearfog/
  - https://blog.hypriot.com/post/introducing-the-clearfog-pro-router-board/
  - https://blog.hypriot.com/post/clearfog-pro-part-2-lets-run-docker/
@@ -29,8 +29,15 @@ NIC drivers and corresponding ARM64 boards:
  - http://wtarreau.blogspot.com/2013/12/line-rate-http-server-on-openblocks-ax3.html
 
 (mvneta) Board#4: *Turris Omnia*
+ - Marvell Armada 385 (32bit)
  - https://omnia.turris.cz/en/
 
+(mvneta) Board#5: *Linksys WRT1200AC/WRT1900ACS/WRT3200ACS*
+ - Marvell Armada 385
+ - ARM v7 / Cortexa9 (32bit)
+ - Well supported with OpenWrt
+ - https://openwrt.org/toh/hwdata/linksys/linksys_wrt1200ac
+ - https://www.marvell.com/documents/egrkpyqzpoebxblyeept/
 * Driver: mvpp2
 
 (mvpp2) Board: 2x10G MACCHIATObin (Quad 1.6GHz ARMADA A8040)
