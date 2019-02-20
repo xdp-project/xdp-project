@@ -1,0 +1,47 @@
+# -*- fill-column: 76; -*-
+#+Title: Brainstorming around XDP-accelerated flowcache
+
+This document contains background and rationale for a proposal to create XDP accelerated kernel based forwarding, but also by doing this standardised hooks can be created that hardware packet forwarding accelerating can be controlled via (the XDP/BPF forwarding path does the same as the hardware incarnation.
+
+* This section contains background and describes current state of affairs
+
+** Background
+
+Today Linux kernel is often used in the residential router space. This device typically has several wired ports plus wireless interfaces. It's used to connect a home to the ISP (Internet Service Provider). Lots of SoCs are manufactured by companies such as Qualcomm, Broadcom, Marvell, Intel and others, boxes are made by ODMs (Original Device Manufacturers) who typically takes SDKs from the SoC vendors, create software images for the ISPs who buy these devices and place them at residential customers as part of their service offering.
+  
+In order to get good packet forwarding speeds on these kinds of devices, often they have hardware packet forwarding accelerators. These accelerators are controlled by code that is inserted into the Linux kernel by these SoC vendors. This typically means performing lots of changes to the kernel that are never upstreamed. This results in infrequent kernel updates, often a kernel is modified and shipped to customers 1-2 years after its initial release and then this process is performed once every 2-3 years due to the invasive nature of these modifications (lots of work).
+
+There are some SoCs that provide high-performance CPUs that do not need HW packet accelerators, but instead use the regular Linux kernel forwarding path. Examples of these are Marvell Armada 385 and 8040. These however are not used to their full potential because the Linux kernel forwarding path is a lot slower compared to userspace networking, for instance FD.IO/VPP, Snabbswitch and other implementations based on similar approach (DPDK).
+
+There has been work in the Linux kernel to speed up Linux forwarding speed by indroducing a flowoffload packet path:
+
+https://www.kernel.org/doc/Documentation/networking/nf_flowtable.txt
+
+** Recent events
+
+There has been work in Linux Foundation subsidiary PRPL Foundation to standardise APIs into hardware, so that less work has to be done be the individual SoC vendors to integrate their hardware into the kernel, ie less invasive changes and thus less work per Linux kernel version supported. This has been focused on WIFI and hasn't yet reached the area of HW packet accelerators.
+
+Testing on different hardware has indicated that userspace networking (DPDK) has a ~5 times higher performance compared to Kernel based forwarding. This means companies are focusing on their hardware performing well for this use-case (often in the VNF (Virtual Network Function) space) and not focusing on using the Linux kernel itself to do the forwarding.  Currently a Linux device being a host (itself terminating TCP sessions for instance) has much higher performance than if it is a router (forwarding packets between NICs).
+
+* High level proposal
+This document proposes two high level work items that will improve both Linux kernel forwarding performance
+and also create hooks for the hardware packet accelerators.
+
+** XDP/BPF accelerated forwarding
+
+If the above mentioned bf_flowtable fastpath bypass could be BPF/XDP accelerated, then performance would most likely be improved significantly on platforms without hardware packet forwarding accelerators. By exposing the necessary data (flow table, ARP/ND entries etc) to BPF, then lookups could be performed by BPF and forwarding could be done using XDP/BPF and would never have to touch regular Linux kernel for already established flows.
+
+** API for use by HW packet forwarding accelerators
+
+The XDP/BPF based of forwarding would have to expose the same information to BPF that a HW packet forwarding accelerator would need to do its job. By doing this work and creating standardised way of exposing needed information the HW vendors could all use these APIs, negating all the work currently being done to hook their accelerators into the Linux kernel forwarding path.
+
+* Todos
+
+** Investigate feasibility of approach
+** Implement POC (Proof of Concept)
+** Test performance on POC
+** Interact with current vendors regarding if proposed solution is enough to solve their problems
+** 
+   
+
+
