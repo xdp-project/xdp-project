@@ -37,11 +37,19 @@ The XDP/BPF based of forwarding would have to expose the same information to BPF
 
 * Todos
 
-** Investigate feasibility of approach
-** Implement POC (Proof of Concept)
-** Test performance on POC
-** Interact with current vendors regarding if proposed solution is enough to solve their problems
-** 
+** TODO Investigate feasibility of approach
+   Basic investigation on feasibility and make first draft on what needs to
+   be done to enable creation of PoC.
+** TODO Implement POC (Proof of Concept)
+   For instance implement forwarding of TCP or UDP flows using XDP
+   forwarding based on the flowcache to check if the approach makes sense. 
+** TODO Test performance on POC
+   Test forwarding performance using XDP approach compared to classic style
+   forwarding and flowoffload approach.
+** TODO Interact with current vendors regarding if proposed solution is enough to solve their problems
+   Bring work to PRPL Foundation working groups to get feedback and interest
+   from vendors on the approach and if the proposed design/APIs is enough.
+ 
    
 
 
