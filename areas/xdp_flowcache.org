@@ -1,5 +1,6 @@
 # -*- fill-column: 76; -*-
 #+Title: Brainstorming around XDP-accelerated flowcache
+#+CATEGORY: FLOWCACHE
 
 This document contains background and rationale for a proposal to create XDP
 accelerated kernel based forwarding, but also by doing this standardised
@@ -81,7 +82,7 @@ doing this work and creating standardised way of exposing needed information
 the HW vendors could all use these APIs, negating all the work currently
 being done to hook their accelerators into the Linux kernel forwarding path.
 
-* Todos
+* TODO XDP flowcache project
 
 ** TODO Investigate feasibility of approach
    Basic investigation on feasibility and make first draft on what needs to
@@ -95,7 +96,3 @@ being done to hook their accelerators into the Linux kernel forwarding path.
 ** TODO Interact with current vendors regarding if proposed solution is enough to solve their problems
    Bring work to PRPL Foundation working groups to get feedback and interest
    from vendors on the approach and if the proposed design/APIs is enough.
- 
-   
-
-
