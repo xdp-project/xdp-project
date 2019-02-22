@@ -135,8 +135,8 @@ and retrieve DMA addresses from network drivers.
 As long as the addresses returned from dma_map_page() are aligned the first
 bit, used by the compound pages code should not be set.
 
-Ilias tested this on Espressobin driver mvneta, for which we have patches
-for using the DMA API of page_pool.
+Ilias tested the first two patches on Espressobin driver mvneta, for which
+we have patches for using the DMA API of page_pool.
 
 [1]: https://lore.kernel.org/netdev/20181207.230655.1261252486319967024.davem@davemloft.net/
 
@@ -149,7 +149,7 @@ Question: Who of the maintainers MM or netdev will take these changes?
 ** Stgit mail command
 
 #+begin_example
-stg mail --prefix=net-next --version="V2" --edit-cover  --cc meup \
+stg mail --prefix=net-next --version="V3" --edit-cover  --cc meup \
  --to netdev --to linux-mm@kvack.org \
  --cc willy@infradead.org --cc davem \
  --cc mgorman@techsingularity.net --cc akpm \
