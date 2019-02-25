@@ -1,0 +1,10 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Conferences
+#+OPTIONS: ^:nil
+
+This directory contains sub-directories for each XDP-related conference.
+
+Conference project management *tasks* via org-mode =TODO=, =NEXT= and =DONE=
+tags are maintained in parent-directory document [[file:../conference.org][../conference.org]]
+(for org-agenda to pickup).
+
