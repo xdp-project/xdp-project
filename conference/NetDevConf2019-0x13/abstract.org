@@ -1,0 +1,30 @@
+# -*- fill-column: 76; -*-
+#+TITLE: XDP Hands-On Tutorial
+#+OPTIONS: ^:nil
+
+* Conference: NetDevConf 0x13
+
+https://www.netdevconf.org/0x13/session.html?tutorial-XDP-hands-on
+
+* Title: XDP Hands-On Tutorial
+
+** Instructors
+
+Jesper Brouer and Toke Høiland-Jørgensen
+
+** Session Type
+
+Tutorial
+
+* Description
+
+** From webpage
+
+XDP is an increasingly popular topic and technology. XDP builds on top of eBPF.
+
+This hands-on tutorial will provide guidance on getting started using XDP+eBPF
+technology with intention to let attendees later leverage the knowledge gained
+for their specific use-case(s).
+
+More details to be posted later.
+
