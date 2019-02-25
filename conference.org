@@ -1,0 +1,12 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Conference planning document
+#+CATEGORY: XDP-conf
+#+OPTIONS: ^:nil
+
+This document is use for /Conference/ *project management*, and contains *tasks*
+via org-mode =TODO=, =NEXT= and =DONE= tags. (This file is placed at this level
+for our org-mode setup to pick it up). Each conference have a top-level =TODO=,
+causing our [[file:org-setup.el][org-mode setup]] =org-agenda= view to pickup these tasks as
+[[http://doc.norang.ca/org-mode.html#TodoKeywordProjectTaskStates][Projects and Stuck Projects]].
+
+
