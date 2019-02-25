@@ -21,3 +21,12 @@ Two talks
 2) Main LPC-track:
    [[https://linuxplumbersconf.org/event/2/contributions/71/][A practical introduction to XDP]]
 
+* DONE FOSDEM Feb-2019
+CLOSED: [2019-02-02 Sat]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-02-02 Sat]
+:END:
+
+Link to talk:
+[[https://fosdem.org/2019/schedule/event/xdp_overview_and_update/][XDP (eXpress Data Path) as a building block for other FOSS projects]]
+
