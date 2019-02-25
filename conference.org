@@ -1,0 +1,72 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Conference planning document
+#+CATEGORY: XDP-conf
+#+OPTIONS: ^:nil
+
+This document is use for /Conference/ *project management*, and contains *tasks*
+via org-mode =TODO=, =NEXT= and =DONE= tags. (This file is placed at this level
+for our org-mode setup to pick it up). Each conference have a top-level =TODO=,
+causing our [[file:org-setup.el][org-mode setup]] =org-agenda= view to pickup these tasks as
+[[http://doc.norang.ca/org-mode.html#TodoKeywordProjectTaskStates][Projects and Stuck Projects]].
+
+* DONE LinuxPlumbers Nov-2018
+CLOSED: [2018-11-14 Wed]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2018-11-14 Wed]
+:END:
+
+Two talks
+1) Networking subtrack:
+   [[http://vger.kernel.org/lpc-networking2018.html#session-19][XDP - Challenges and future work]]
+2) Main LPC-track:
+   [[https://linuxplumbersconf.org/event/2/contributions/71/][A practical introduction to XDP]]
+
+* DONE FOSDEM Feb-2019
+CLOSED: [2019-02-02 Sat]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-02-02 Sat]
+:END:
+
+Link to talk:
+[[https://fosdem.org/2019/schedule/event/xdp_overview_and_update/][XDP (eXpress Data Path) as a building block for other FOSS projects]]
+
+* TODO XDP tutorial at Netdev 0x13
+
+XDP is an increasingly popular topic and technology.
+XDP builds on top of eBPF.
+
+This hands-on tutorial will provide guidance on
+getting started using XDP+eBPF technology with
+intention to let attendees for later
+leveraging it for your specific use-case.
+
+More details to be posted later.
+
+** DONE NetDev-conf presentation/Tutorial got accepted
+CLOSED: [2019-01-28 Mon 13:00]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-01-28 Mon 13:00]
+:END:
+Title: "XDP hands-on tutorial"
+Subject: [Indico] Abstract Acceptance notification (#48)
+** NEXT Prepare materials for XDP tutorial
+DEADLINE: <2019-03-20 Wed>
+[2019-02-04 Mon 12:33]
+[[notmuch:id:43977d45-857f-87ef-07d5-553868882008@mojatatu.com][Email from Jamal Hadi Salim: XDP tutorial]]
+
+** NEXT NetDev-conf: add abstract under XDP-project
+** NEXT NetDev-conf: create overall plan for tutorial
+** TODO Create github repo for NetDev-conf XDP-tutorial
+We need a github repo that are easier to build than [[https://github.com/netoptimizer/prototype-kernel][prototype-kernel]] github
+repo, as it requires the kernel source tree to build. The hands-on tutorial
+need to have an easier and more confined build-environment.
+
+Related: How do we ensure participants can successfully run XDP at the event?
+
+** NEXT Needs document of best practices
+E.g.:
+
+- Use metadata field for carrying per-packet data
+- Don't replicate kernel state
+
+
