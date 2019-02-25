@@ -129,11 +129,18 @@ NIC TX HW queues, given it is assumed a TX queue is alloc/dedicated
 for each CPU core.
 
 ** NEXT Change non-map xdp_redirect helper to use a hidden map
+:LOGBOOK:
+- State "NEXT"       from "WAIT"       [2019-02-25 Mon 15:09]
+- State "WAIT"       from "NEXT"       [2019-02-21 Thu 13:00] \\
+  Patch submitted, waiting for feedback
+:END:
 
 To be able to tie resource allocation to the interface maps (=devmap=), we
 first need to change the non-map redirect variant so it uses a map under the
 hood. Since xdp_redirect_map() is also significantly faster than the non-map
 variant, this change should be a win in itself.
+
+v1 comments and discussion: [[https://patchwork.ozlabs.org/patch/1046099/][Patch 1]] [[https://patchwork.ozlabs.org/patch/1046100/][Patch 2]]
 
 ** TODO Ethtool interface for enabling TX resources
 Turns out the initial idea of using insertion into devmap as a trigger for
