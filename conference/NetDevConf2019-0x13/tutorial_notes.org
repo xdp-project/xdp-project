@@ -5,3 +5,11 @@
 Create GitHub repo:
  https://github.com/xdp-project/xdp-tutorial
 
+Add libbpf as git submodule
+
+Command used:
+#+begin_example
+git submodule add https://github.com/libbpf/libbpf/ libbpf
+#+end_example
+
+
