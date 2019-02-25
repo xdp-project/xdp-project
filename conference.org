@@ -9,4 +9,15 @@ for our org-mode setup to pick it up). Each conference have a top-level =TODO=,
 causing our [[file:org-setup.el][org-mode setup]] =org-agenda= view to pickup these tasks as
 [[http://doc.norang.ca/org-mode.html#TodoKeywordProjectTaskStates][Projects and Stuck Projects]].
 
+* DONE LinuxPlumbers Nov-2018
+CLOSED: [2018-11-14 Wed]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2018-11-14 Wed]
+:END:
+
+Two talks
+1) Networking subtrack:
+   [[http://vger.kernel.org/lpc-networking2018.html#session-19][XDP - Challenges and future work]]
+2) Main LPC-track:
+   [[https://linuxplumbersconf.org/event/2/contributions/71/][A practical introduction to XDP]]
 
