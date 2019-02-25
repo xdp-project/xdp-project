@@ -54,7 +54,11 @@ DEADLINE: <2019-03-20 Wed>
 [2019-02-04 Mon 12:33]
 [[notmuch:id:43977d45-857f-87ef-07d5-553868882008@mojatatu.com][Email from Jamal Hadi Salim: XDP tutorial]]
 
-** NEXT NetDev-conf: add abstract under XDP-project
+** DONE NetDev-conf: add abstract under XDP-project
+CLOSED: [2019-02-25 Mon 13:41]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-02-25 Mon 13:41]
+:END:
 ** NEXT NetDev-conf: create overall plan for tutorial
 ** TODO Create github repo for NetDev-conf XDP-tutorial
 We need a github repo that are easier to build than [[https://github.com/netoptimizer/prototype-kernel][prototype-kernel]] github
