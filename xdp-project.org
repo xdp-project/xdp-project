@@ -246,6 +246,13 @@ Many people aren't aware of the BPF_PROG_TEST_RUN command. It's really neat
 being able to test your XDP programs "offline". The selftests use this a
 lot. Docs: https://t.co/GDd7SfNYng and examples in tools/testing/selftests/bpf/.
 
+
+* TODO Adding AF_XDP support to relevant userspace programs
+
+There are several high-profile userspace programs that might benefit from
+AF_XDP support. Adding this (or coordinating it with the program authors)
+could be a way to show the benefits of XDP.
+
 * WAIT BTF-based metadata for XDP                                   :WAITING:
 
 Waiting for tracing people to work out the details of BTF.
