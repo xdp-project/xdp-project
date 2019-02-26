@@ -101,20 +101,6 @@ One option is to piggyback on ethtool stats, which the drivers already use,
 and it would also standardise the driver related XDP ethool stats.
 
 
-* TODO Expanding XDP_REDIRECT support to more drivers
-
-Very few drivers support XDP_REDIRECT.
-
-HW drivers: ixgbe, i40e, mlx5
-
-SW drivers: veth, tun (tuntap), virtio_net
-
-** NEXT Map out redirect support in drivers and make a plan
-
-It would be useful with a complete list drivers that are missing some or all
-parts of REDIRECT support. Based on this we can make a plan for what to do about
-each of these.
-
 * TODO Better ndo_xdp_xmit resource management
 :PROPERTIES:
 :OWNER:    tohojo

@@ -1,0 +1,26 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Project management for XDP driver support
+#+CATEGORY: DRIVERS
+#+OPTIONS: ^:nil
+
+
+* TODO Expanding XDP_REDIRECT support to more drivers
+
+Very few drivers support XDP_REDIRECT.
+
+HW drivers: ixgbe, i40e, mlx5
+
+SW drivers: veth, tun (tuntap), virtio_net
+
+** NEXT Map out redirect support in drivers and make a plan
+
+It would be useful with a complete list drivers that are missing some or all
+parts of REDIRECT support. Based on this we can make a plan for what to do about
+each of these.
+
+* TODO Driver support for sfc driver
+
+** NEXT Sync with Edward Cree et al
+
+* TODO Driver support for Marvell mvpp2
+
