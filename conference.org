@@ -60,10 +60,16 @@ CLOSED: [2019-02-25 Mon 13:41]
 - State "DONE"       from "NEXT"       [2019-02-25 Mon 13:41]
 :END:
 ** NEXT NetDev-conf: create overall plan for tutorial
-** TODO Create github repo for NetDev-conf XDP-tutorial
+** DONE Create github repo for NetDev-conf XDP-tutorial
+CLOSED: [2019-02-25 Mon 18:26]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-02-25 Mon 18:26]
+:END:
 We need a github repo that are easier to build than [[https://github.com/netoptimizer/prototype-kernel][prototype-kernel]] github
 repo, as it requires the kernel source tree to build. The hands-on tutorial
 need to have an easier and more confined build-environment.
+
+Started repo here: https://github.com/xdp-project/xdp-tutorial/
 
 Related: How do we ensure participants can successfully run XDP at the event?
 
