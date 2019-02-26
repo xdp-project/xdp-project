@@ -13,3 +13,11 @@ git submodule add https://github.com/libbpf/libbpf/ libbpf
 #+end_example
 
 
+* Discuss dependency to package kernel-headers
+
+When building XDP-tutorial, there is also a dependency to package
+=kernel-headers=.
+
+E.g. All the include <linux/XXX> files. It would be too much work to maintain
+that in the repo...
+
