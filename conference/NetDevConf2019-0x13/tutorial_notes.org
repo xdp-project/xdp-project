@@ -16,6 +16,21 @@ Command used:
 git submodule add https://github.com/libbpf/libbpf/ libbpf
 #+end_example
 
+
+* Loading XDP progs on veth
+
+XDP heavily depend on native driver level support, especially for
+performance reasons. For our XDP *hands-on* tutorial we cannot provide
+hardware for participants.
+
+The virtual driver =veth= got native XDP support in kernel v4.20.  The plan
+for the tutorial is to use =veth= for teaching XDP.
+
+There are several uncertainties we need to test and evaluate, if this is
+viable, and howto create a test setup based on veth.
+
+TODO: Look at Jespers kernel selftests for VLANs+veth
+
 * Tutorial contents via directory layout
 
 Idea: The directory layout in git-repo is part of the tutorial.
@@ -35,7 +50,7 @@ Instructors purpose:
 Instructor uncertainly:
 - This very simple XDP_PASS prog could be loaded with the iproute2 'ip'
   command.  Should we also introduce this possibility?
-- Inspection of loaded XDP programs can also
+- Loading on veth? In this step?
 
 What participant will learn:
 - See first basic XDP program.
