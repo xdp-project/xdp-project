@@ -2,6 +2,8 @@
 #+TITLE: Notes for XDP Hands-On Tutorial
 #+OPTIONS: ^:nil
 
+* git repo for tutorial
+
 Create GitHub repo:
  https://github.com/xdp-project/xdp-tutorial
 
