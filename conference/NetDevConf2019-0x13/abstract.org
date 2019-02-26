@@ -1,0 +1,49 @@
+# -*- fill-column: 76; -*-
+#+TITLE: XDP Hands-On Tutorial
+#+OPTIONS: ^:nil
+
+* Conference: NetDevConf 0x13
+
+https://www.netdevconf.org/0x13/session.html?tutorial-XDP-hands-on
+
+* Title: XDP Hands-On Tutorial
+
+** Instructors
+
+Jesper Brouer and Toke Høiland-Jørgensen
+
+** Session Type
+
+Tutorial
+
+* Description
+
+** From [[https://www.netdevconf.org/0x13/session.html?tutorial-XDP-hands-on][webpage]]
+
+XDP is an increasingly popular topic and technology. XDP builds on top of eBPF.
+
+This hands-on tutorial will provide guidance on getting started using XDP+eBPF
+technology with intention to let attendees later leverage the knowledge gained
+for their specific use-case(s).
+
+More details to be posted later.
+
+** Call-for-papers version
+
+XDP is an increasingly popular topic and technology.
+
+This hands-on tutorial is about how do you get starting using this
+XDP+eBPF technology, for later leveraging it for your specific
+use-case.
+
+XDP (and eBPF) is all about giving users/developers flexible
+*programmable* filters at different kernel hook-points in a
+*sand-boxed environment* (with restricted access to kernel state).
+For security reasons this sand-boxed environment is very restricted,
+and we will not lie, it does limit your programmable expressiveness in
+practice. Users/developer have to change their mindset when working in
+this sand-box.
+
+For anybody wanting to leverage these [[http://www.brendangregg.com/blog/2016-03-05/linux-bpf-superpowers.html][eBPF Superpowers]] they
+likely need some guidance on how to program for this restricted eBPF
+environment, which this tutorial hopefully provides.

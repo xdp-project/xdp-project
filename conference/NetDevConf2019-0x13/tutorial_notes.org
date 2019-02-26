@@ -1,0 +1,92 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Notes for XDP Hands-On Tutorial
+#+OPTIONS: ^:nil
+
+* git repo for tutorial
+
+** Creation of git-repo
+
+Create GitHub repo:
+ https://github.com/xdp-project/xdp-tutorial
+
+Add libbpf as git submodule
+
+Command used:
+#+begin_example
+git submodule add https://github.com/libbpf/libbpf/ libbpf
+#+end_example
+
+* Tutorial contents via directory layout
+
+Idea: The directory layout in git-repo is part of the tutorial.
+
+Each directory contains an assignment.
+
+** basic01: simple XDP_PASS program
+
+Alternative dirnames:
+- basic01-xdp-pass
+- basic01-begin-here
+
+Instructors purpose:
+- Make sure this compiles on participants laptop/setup
+- Introduction to libbpf
+
+Instructor uncertainly:
+- This very simple XDP_PASS prog could be loaded with the iproute2 'ip'
+  command.  Should we also introduce this possibility?
+- Inspection of loaded XDP programs can also
+
+What participant will learn:
+- See first basic XDP program.
+- Understand split between kernel and userspace side.
+- Load XDP program on an interface.
+- Learn to use bpftool to inspect what is running.
+- Also learn that iproute2 'ip link show' shows XDP info
+
+** basic02: implement counter via BPF-map
+
+Alternative dirnames:
+- basic02-map-counter
+- basic02-next-step
+
+Instructors purpose:
+- Introduce maps
+- Explain what libbpf does behind the scenes
+- Explain maps are FD (File Descriptors), but accessed through bpf-syscall
+
+Provided
+- XDP pass program that uses a map for counting packets
+
+Assignment
+- Convert program to use a PER-CPU maps for counters and avoid an atomic
+  operation in fast-path.
+
+What participant will learn:
+- Introduction to BPF maps
+- learn how to *read* from map from userspace.
+- Learn how to interact with PER-CPU maps from userspace
+
+** basicXX: reading xdp_rxq_info
+
+Idea: like sample/bpf/xdp_rxq_info make participants read out stats per RXQ.
+
+Issue: Will this work with =veth= driver???
+
+What participant will learn:
+- That info about RXQ in avail to XDP prog
+
+** basicXX: next-topics idea
+
+
+
+
+
+* Discuss dependency to package kernel-headers
+
+When building XDP-tutorial, there is also a dependency to package
+=kernel-headers=.
+
+E.g. All the include <linux/XXX> files. It would be too much work to maintain
+that in the repo...
+
