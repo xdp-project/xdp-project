@@ -69,6 +69,23 @@ What participant will learn:
 - learn how to *read* from map from userspace.
 - Learn how to interact with PER-CPU maps from userspace
 
+** basic03: pinning maps
+
+Instructors purpose:
+- Demonstrate that maps can be pinned, which means exported to a BPF-fs
+  mount point.
+
+Provided
+- Solution to basic02
+
+Assignment:
+- Extend basic02, with exporting the counter-map via BPF-map pinning
+- Write a userspace program that open pinned/exported map, and report on
+  counter-stats.
+- Advanced users: Privilege-separation via change ownership of exported
+  map-file (unix chown file-permissions), allowing normal user to run stats
+  program.
+
 ** basic03: reading xdp_rxq_info
 
 Dirname:
