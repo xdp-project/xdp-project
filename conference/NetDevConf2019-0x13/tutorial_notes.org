@@ -136,7 +136,7 @@ Purpose:
 - Show header pop/push
 
 Provided:
-- Packet parsing program from basic04
+- Packet parsing program from packet01
 
 Assignments:
 - Modify packet data to increment source IP number by 1
