@@ -88,11 +88,49 @@ rx-0  rx-1  rx-2  rx-3	tx-0  tx-1  tx-2  tx-3
 What participant will learn:
 - That info about RXQ in avail to XDP prog
 
-** basicXX: next-topics idea
+** basic04: packet parsing
+
+Dirname:
+- basic04-packet-parsing
+
+Purpose:
+- Introduce direct packet access and show an example of simple packet
+  parsing
+- Emphasise bounds checking and explain how the verifier deals with this
+
+Provided:
+- Sample program that parses ethernet and IP headers
+
+Idea: Maybe the sample program should have a bounds checking bug that needs
+to be fixed?
+
+Assignment:
+- Fix the bounds checking bug
+- Modify program to parse and react to L4 header (TCP/UDP); e.g., drop all
+  packets on a certain port.
 
 
+** basic05: packet rewriting
 
+Dirname:
+- basic05-packet-rewriting
 
+Purpose:
+- Show how packet data can be rewritten with direct packet access
+- Show header pop/push
+
+Provided:
+- Packet parsing program from basic04
+
+Assignments:
+- Modify packet data to increment source IP number by 1
+- Add VLAN tag (and a vlan interface on top of veth), and push a VLAN header
+  from XDP to see it show up on the VLAN interface.
+
+** advanced01: Metadata space and interaction with TC
+
+Idea: An assignment where XDP programs store data in the metadata space, and
+a TC filter program later reads it.
 
 * Discuss dependency to package kernel-headers
 
