@@ -86,10 +86,10 @@ Assignment:
   map-file (unix chown file-permissions), allowing normal user to run stats
   program.
 
-** basic03: reading xdp_rxq_info
+** basic04: reading xdp_rxq_info
 
 Dirname:
-- basic03-rxq-info
+- basic04-rxq-info
 
 Idea: like sample/bpf/xdp_rxq_info make participants read out stats per RXQ.
 
@@ -105,10 +105,10 @@ rx-0  rx-1  rx-2  rx-3	tx-0  tx-1  tx-2  tx-3
 What participant will learn:
 - That info about RXQ in avail to XDP prog
 
-** basic04: packet parsing
+** packet01: packet parsing
 
 Dirname:
-- basic04-packet-parsing
+- packet01-packet-parsing
 
 Purpose:
 - Introduce direct packet access and show an example of simple packet
@@ -126,11 +126,10 @@ Assignment:
 - Modify program to parse and react to L4 header (TCP/UDP); e.g., drop all
   packets on a certain port.
 
-
-** basic05: packet rewriting
+** packet02: packet rewriting
 
 Dirname:
-- basic05-packet-rewriting
+- packet02-packet-rewriting
 
 Purpose:
 - Show how packet data can be rewritten with direct packet access
@@ -143,6 +142,7 @@ Assignments:
 - Modify packet data to increment source IP number by 1
 - Add VLAN tag (and a vlan interface on top of veth), and push a VLAN header
   from XDP to see it show up on the VLAN interface.
+
 
 ** advanced01: Metadata space and interaction with TC
 
