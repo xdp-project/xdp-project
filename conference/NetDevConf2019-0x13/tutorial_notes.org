@@ -24,9 +24,8 @@ Each directory contains an assignment.
 
 ** basic01: simple XDP_PASS program
 
-Alternative dirnames:
+Dirname:
 - basic01-xdp-pass
-- basic01-begin-here
 
 Instructors purpose:
 - Make sure this compiles on participants laptop/setup
@@ -34,7 +33,7 @@ Instructors purpose:
 
 Instructor uncertainly:
 - This very simple XDP_PASS prog could be loaded with the iproute2 'ip'
-  command.  Should we also introduce this possibility?
+  command.  We should also introduce this possibility.
 - Inspection of loaded XDP programs can also
 
 What participant will learn:
@@ -44,11 +43,14 @@ What participant will learn:
 - Learn to use bpftool to inspect what is running.
 - Also learn that iproute2 'ip link show' shows XDP info
 
+Assignment:
+Convert program to XDP_DROP to see packets disappearing (make sure it's not
+run on SSH interface).
+
 ** basic02: implement counter via BPF-map
 
-Alternative dirnames:
+Dirname:
 - basic02-map-counter
-- basic02-next-step
 
 Instructors purpose:
 - Introduce maps
@@ -67,11 +69,21 @@ What participant will learn:
 - learn how to *read* from map from userspace.
 - Learn how to interact with PER-CPU maps from userspace
 
-** basicXX: reading xdp_rxq_info
+** basic03: reading xdp_rxq_info
+
+Dirname:
+- basic03-rxq-info
 
 Idea: like sample/bpf/xdp_rxq_info make participants read out stats per RXQ.
 
-Issue: Will this work with =veth= driver???
+This should be doable by setting the number of TX/RX queues when creating
+the veth device:
+
+#+begin_src sh
+$ sudo ip link add test numtxqueues 4 numrxqueues 4 type veth
+$ ls /sys/class/net/test/queues/
+rx-0  rx-1  rx-2  rx-3	tx-0  tx-1  tx-2  tx-3
+#+end_src
 
 What participant will learn:
 - That info about RXQ in avail to XDP prog
