@@ -62,6 +62,14 @@ What participant will learn:
 - Learn about SEC names and function names
   * Libbpf bpf_object__find_program_by_title() is the SEC name
   * Learn a little about libbpf bpf_program__
+- Learn that XDP_ABORTED can be traced
+
+Assignment:
+- Implement XDP_ABORTED and use it
+- Use tracepoint xdp:xdp_exception to see XDP_ABORTED
+- Implement returning an invalid XDP action code
+- See the WARN_ONCE (bpf_warn_invalid_xdp_action) and observe
+  xdp:xdp_exception also catch these
 
 ** basic03: implement counter via BPF-map
 
