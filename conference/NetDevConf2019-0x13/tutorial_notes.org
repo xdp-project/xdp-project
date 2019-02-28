@@ -71,6 +71,9 @@ What participant will learn:
 
 ** basic03: pinning maps
 
+Dirname:
+- basic03-pinning-maps
+
 Instructors purpose:
 - Demonstrate that maps can be pinned, which means exported to a BPF-fs
   mount point.
