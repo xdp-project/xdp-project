@@ -44,13 +44,29 @@ What participant will learn:
 - Also learn that iproute2 'ip link show' shows XDP info
 
 Assignment:
-Convert program to XDP_DROP to see packets disappearing (make sure it's not
-run on SSH interface).
+- Convert program to XDP_DROP to see packets disappearing (make sure it's not
+  run on SSH interface).
 
-** basic02: implement counter via BPF-map
+** basic02: more programs per XDP source file
 
 Dirname:
-- basic02-map-counter
+- basic02-prog-by-name
+
+Instructors purpose:
+- Show several XDP program sections can co-exist in BPF-ELF file
+- Code shows how to select among them
+- Point out the confusion with bpftool list function names not SEC names
+
+What participant will learn:
+- Learn about libbpf (struct) bpf_object
+- Learn about SEC names and function names
+  * Libbpf bpf_object__find_program_by_title() is the SEC name
+  * Learn a little about libbpf bpf_program__
+
+** basic03: implement counter via BPF-map
+
+Dirname:
+- basic03-map-counter
 
 Instructors purpose:
 - Introduce maps
@@ -69,30 +85,30 @@ What participant will learn:
 - learn how to *read* from map from userspace.
 - Learn how to interact with PER-CPU maps from userspace
 
-** basic03: pinning maps
+** basic04: pinning maps
 
 Dirname:
-- basic03-pinning-maps
+- basic04-pinning-maps
 
 Instructors purpose:
 - Demonstrate that maps can be pinned, which means exported to a BPF-fs
   mount point.
 
 Provided
-- Solution to basic02
+- Solution to basic03
 
 Assignment:
-- Extend basic02, with exporting the counter-map via BPF-map pinning
+- Extend basic03, with exporting the counter-map via BPF-map pinning
 - Write a userspace program that open pinned/exported map, and report on
   counter-stats.
 - Advanced users: Privilege-separation via change ownership of exported
   map-file (unix chown file-permissions), allowing normal user to run stats
   program.
 
-** basic04: reading xdp_rxq_info
+** basic05: reading xdp_rxq_info
 
 Dirname:
-- basic04-rxq-info
+- basic05-rxq-info
 
 Idea: like sample/bpf/xdp_rxq_info make participants read out stats per RXQ.
 
