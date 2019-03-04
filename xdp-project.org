@@ -128,6 +128,8 @@ variant, this change should be a win in itself.
 
 v1 comments and discussion: [[https://patchwork.ozlabs.org/patch/1046099/][Patch 1]] [[https://patchwork.ozlabs.org/patch/1046100/][Patch 2]]
 
+[[https://patchwork.ozlabs.org/cover/1050219/][v3 patchwork link]]
+
 ** TODO Ethtool interface for enabling TX resources
 Turns out the initial idea of using insertion into devmap as a trigger for
 resource allocation doesn't work because of generic XDP. So we'll need an
