@@ -255,6 +255,15 @@ The biggest surprise for users is likely that XPS will overwrite their
 choice (and XPS seems to be default enabled). Users must first disable XPS
 via mask=00, before their changes via =skbedit= takes any effect.
 
+** DONE cpumap: create git project xdp-cpumap-tc
+CLOSED: [2019-02-13 Wed]
+
+Create git project xdp-cpumap-tc, that demonstrate how XDP cpumap redirect
+can be used together with Linux TC (Traffic Control) for solving the Qdisc
+locking problem.
+
+** TODO xdp-cpumap-tc: add some documentation
+** TODO xdp-cpumap-tc: public release of code/repo
 ** TODO cpumap: quantify effect of cpumap (currently) don't transfer RX-csum info
 
 Verify csum is recalculated on IP-forward TX path for cpumap redirected
