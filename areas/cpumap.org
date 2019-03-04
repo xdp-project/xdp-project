@@ -126,7 +126,16 @@ https://github.com/netoptimizer/network-testing/blob/master/tc/tc_mq_htb_setup.s
 
 ** NEXT cpumap: Test cpumap redirect works with MQ-HTB silo setup
 
-** TODO Create BPF helper for skb_set_queue_mapping
+** DONE Allow BPF clsact write access to skb->queue_mapping
+CLOSED: [2019-02-19 Tue]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-03-04 Mon]
+:END:
+
+Summary: Choose NOT to create BPF helper for skb_set_queue_mapping, instead
+we allow BPF TC hook (clsact/cls bpf) write access to =skb->queue_mapping=.
+
+Fixed in BPF-NEXT commit: https://git.kernel.org/bpf/bpf-next/c/74e31ca850c1
 
 When doing CPUMAP redirect, then the SKB created have no =skb->queue_mapping=
 configured. This could be set by e.g. using TC filter/action =skbedit= (see man
