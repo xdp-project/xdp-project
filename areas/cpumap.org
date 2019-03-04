@@ -240,10 +240,20 @@ little tricky to spot. Unless XPS via =get_xps_queue= overrides by finding a
 "new_index", then =skb_tx_hash= will be asked to determine the queue_index.
 (And for IP-forwarding there is not =sk= socket).
 
-** TODO TC-skbedit: possible issue with TC action skbedit
+** DONE TC-skbedit: possible issue with TC action skbedit
+CLOSED: [2019-03-04 Mon 15:49]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-03-04 Mon 15:49]
+:END:
 
-The man page for tc-skbedit(8) does not mention that the queue_mapping in
+The man page for tc-skbedit(8) does not mention that the queue_mapping is
 1-indexed, but my code analysis says so, report and perhaps test before.
+This is true, but it might not be an issue for users of skbedit, because TC
+MQ-indexing classids also start at "1".
+
+The biggest surprise for users is likely that XPS will overwrite their
+choice (and XPS seems to be default enabled). Users must first disable XPS
+via mask=00, before their changes via =skbedit= takes any effect.
 
 ** TODO cpumap: quantify effect of cpumap (currently) don't transfer RX-csum info
 
