@@ -59,7 +59,14 @@ CLOSED: [2019-02-25 Mon 13:41]
 :LOGBOOK:
 - State "DONE"       from "NEXT"       [2019-02-25 Mon 13:41]
 :END:
-** NEXT NetDev-conf: create overall plan for tutorial
+** DONE NetDev-conf: create overall plan for tutorial
+CLOSED: [2019-03-04 Mon 16:52]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-03-04 Mon 16:52]
+:END:
+
+Overall plan in [[file:conference/NetDevConf2019-0x13/tutorial_notes.org]]
+
 ** DONE Create github repo for NetDev-conf XDP-tutorial
 CLOSED: [2019-02-25 Mon 18:26]
 :LOGBOOK:
