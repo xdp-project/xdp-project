@@ -171,6 +171,19 @@ Assignments:
 - Add VLAN tag (and a vlan interface on top of veth), and push a VLAN header
   from XDP to see it show up on the VLAN interface.
 
+** packet03: Packet redirect
+
+Dirname:
+- packet03-redirect
+
+Purpose:
+- Show how we can redirect packets between interfaces
+- Show use of redirect maps
+
+Idea:
+Create two testenvs (show how to do this), create a program that can
+redirect packets from one to another, then get ping to work between the two
+environments.
 
 ** advanced01: Metadata space and interaction with TC
 
