@@ -85,6 +85,7 @@ Provided
 - XDP pass program that uses a map for counting packets
 
 Assignment
+- Add bytes counter.
 - Convert program to use a PER-CPU maps for counters and avoid an atomic
   operation in fast-path.
 

@@ -87,4 +87,34 @@ E.g.:
 - Don't replicate kernel state
 - How to handle multiple programs on one interface
 
+** DONE XDP-tutorial: Do a real presentation or not?
+CLOSED: [2019-03-13 Wed 11:34]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-03-13 Wed 11:34]
+:END:
+
+Question is if we need a real presentation for the XDP-tutorial, or if the
+GitHub READMEs are enough?
+
+Summary after meeting (with Toke):
+Yes we will need a presentation: But mostly as a 10 minute intro.
+
+Afterwards the presenters laptop can open the README files, as this will
+show what is the current exercise. And we want people to open these
+README.org files themselves, either via GitHub-webpage or in emacs.
+
+The presentation will be placed in: [[https://github.com/xdp-project/xdp-project/tree/master/conference/NetDevConf2019-0x13][xdp-project git-repo]].
+
+The reason behind *not* placing it in: [[https://github.com/xdp-project/xdp-tutorial][xdp-tutorial git-repo]],
+is that we want to evolve the xdp-tutorial without tying it to a specific
+conference. We will create a git-tag (or branch) that correspond to the
+conference presentation, to allow people link the two.
+
+Brainstorm over topics in presentation:
+- Initial slides.
+- Reference to vikings
+- Cover global readme
+- About the veth-testlab setup
+  * required kernel version
+- Offer to help people with their own use-cases
 
