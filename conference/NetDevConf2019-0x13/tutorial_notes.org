@@ -183,7 +183,12 @@ Purpose:
 Idea:
 Create two testenvs (show how to do this), create a program that can
 redirect packets from one to another, then get ping to work between the two
-environments.
+environments. Basically, build a router.
+
+This could involve the first couple of exercises going through all the steps
+needed to do "manual" redirect, i.e., adding interfaces to maps, manual
+lookup/hardcoding of nexthop macaddr, rewriting, etc. Then, after all that
+is done, show how to use the FIB lookup helper to simplify everything...
 
 ** advanced01: Metadata space and interaction with TC
 
