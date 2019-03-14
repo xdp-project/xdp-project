@@ -144,7 +144,7 @@ Read the README.org file in each directory to get started.
 The =testenv= directory contains a helper script to setup a test environment.
 
 - Uses network namespaces and virtual network devices to simulate a real setup
-- Requires kernel version *4.18 or higher*
+- Requires kernel version *4.19 or higher*
 - See README in the testenv directory for instructions
 - Easy alias: =eval $(./testenv alias)=, then =t setup=
 
