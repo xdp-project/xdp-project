@@ -49,10 +49,15 @@ CLOSED: [2019-01-28 Mon 13:00]
 :END:
 Title: "XDP hands-on tutorial"
 Subject: [Indico] Abstract Acceptance notification (#48)
-** NEXT Prepare materials for XDP tutorial
-DEADLINE: <2019-03-20 Wed>
+** DONE Prepare materials for XDP tutorial
+CLOSED: [2019-03-18 Mon 21:12] DEADLINE: <2019-03-20 Wed>
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-03-18 Mon 21:12]
+:END:
 [2019-02-04 Mon 12:33]
 [[notmuch:id:43977d45-857f-87ef-07d5-553868882008@mojatatu.com][Email from Jamal Hadi Salim: XDP tutorial]]
+https://lists.netdevconf.org/pipermail/people/20190318/000275.html
+https://github.com/xdp-project/xdp-tutorial/releases/tag/2019-03-18-netdev0x13
 
 ** DONE NetDev-conf: add abstract under XDP-project
 CLOSED: [2019-02-25 Mon 13:41]
