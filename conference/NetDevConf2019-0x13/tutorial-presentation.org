@@ -164,7 +164,7 @@ Here are some suggestions for extra tasks:
 - Implement your own use case and test it (we'll help!)
 - Write a blog post about your experience with XDP
 
-* Slide: Geting started                                              :export:
+* Slide: Getting started                                             :export:
 #+begin_src sh
 git clone https://github.com/xdp-project/xdp-tutorial
 cd xdp-tutorial
