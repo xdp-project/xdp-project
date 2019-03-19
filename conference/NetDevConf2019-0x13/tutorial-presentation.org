@@ -88,21 +88,18 @@ Means: Competing at the same “layer” as DPDK / netmap
  - Via eBPF: makes early network stack *run-time programmable*
  - Cooperates with the kernel stack
 
-** Slide: Who are we?                                          :export:
+** Slide: We are the "network vikings" (apparently)                 :export:
 
-From the announcement:
+#+ATTR_html: :width 75%
+[[file:reveal.js/images/vikinger_top.jpg]]
 
-#+begin_quote
-Two(not just one) networking Vikings will be giving a hands-on tutorial on XDP.
-#+end_quote
+Mostly, we work on XDP upstream: https://github.com/xdp-project/xdp-project
 
-So we are the vikings...
-
-Also, we work on XDP development upstream
-
-https://github.com/xdp-project/xdp-project
-
-*** TODO Insert picture of vikings here?                    :noexport:
+*** DONE Insert picture of vikings here?                         :noexport:
+CLOSED: [2019-03-19 Tue 11:30]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-03-19 Tue 11:30]
+:END:
 
 * Slide: About this tutorial                                    :export:
 This tutorial is meant as a living document, developed on Github:
@@ -111,7 +108,7 @@ This tutorial is meant as a living document, developed on Github:
 
 This session is the *beta test* of the live version.
 
-Please send feedback; or even better, pull requests!
+- Please send feedback; or even better, pull requests!
 
 ** Slide: Plan for today's session                             :export:
 
@@ -122,11 +119,10 @@ Please send feedback; or even better, pull requests!
 
 ** Slide: Structure of the tutorial                            :export:
 
-Comprised of XX topical *lessons*, corresponding to the directories in the git
-repo. Each lesson contains some initial code, and a number of /*assignments*/
-for you to complete.
+Comprised of seven topical *lessons*, in the numbered directories in the git
+repo.
 
- We recommend you complete them in this order:
+We recommend you complete them in this order:
 
 - basic01-xdp-pass
 - basic02-prog-by-name
@@ -136,9 +132,13 @@ for you to complete.
 - packet02-rewriting
 - packet03-redirecting
 
-Read the README.org file in each directory to get started.
+Read the /README.org/ file in each directory to get started.
 
-*** TODO Fix up this list                                   :noexport:
+*** DONE Fix up this list                                        :noexport:
+CLOSED: [2019-03-19 Tue 11:35]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-03-19 Tue 11:35]
+:END:
 
 ** Slide: The test environment helper script                        :export:
 The =testenv= directory contains a helper script to setup a test environment.
@@ -147,12 +147,27 @@ The =testenv= directory contains a helper script to setup a test environment.
 - Requires kernel version *4.19 or higher*
   * Due to =veth= driver getting native-XDP support (incl. fixes)
   * Preferred kernel is *4.20* as =veth= got ethtool statistics
-- See README in the testenv directory for instructions
+- See README.org in the testenv directory for instructions
 - Easy alias: =eval $(./testenv alias)=, then =t setup=
 
 ** Slide: Namespaces and virtual ethernet devices              :export:
 
-<diagram of veth setup>
+- The testenv script uses /network namespaces/ and *virtual ethernet devices*
+  to simulate a real environment.
+
+#+begin_example
++-----------------------------+                          +-----------------------------+
+| Root namespace              |                          | Testenv namespace 'test01'  |
+|                             |      From 'test01'       |                             |
+|                    +--------+ TX->                RX-> +--------+                    |
+|                    | test01 +--------------------------+  veth0 |                    |
+|                    +--------+ <-RX                <-TX +--------+                    |
+|                             |       From 'veth0'       |                             |
++-----------------------------+                          +-----------------------------+
+#+end_example
+
+- XDP programs are installed on the *test01* interface in root namespace
+- Generate traffic from /inside/ the namespace
 
 * Slide: Bonus tasks                                            :export:
 As we said, this is a *beta test*. So some of you may /finish all tasks/ before
@@ -165,12 +180,14 @@ Here are some suggestions for extra tasks:
 - Write a blog post about your experience with XDP
 
 * Slide: Getting started                                             :export:
-#+begin_src sh
-git clone https://github.com/xdp-project/xdp-tutorial
-cd xdp-tutorial
-git submodule update --init
-less README.org
-#+end_src
+
+
+#+begin_example
+$ git clone https://github.com/xdp-project/xdp-tutorial
+$ cd xdp-tutorial
+$ git submodule update --init
+$ less README.org
+#+end_example
 
 * Notes
 
