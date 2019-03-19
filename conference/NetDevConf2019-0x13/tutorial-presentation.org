@@ -54,7 +54,7 @@ the 'node' command.
 This is the command needed on Arch - size is set to get slide text to fit on
 the page. -p 100 makes it go faster.
 
-$ decktape -s 1600x900 -p 100 --chrome-arg=--no-sandbox presentation-lpc2018-xdp-future.html presentation-lpc2018-xdp-future.pdf
+$ decktape -s 1600x900 -p 100 --chrome-arg=--no-sandbox tutorial-presentation.html tutorial-presentation.pdf
 
 
 * Slide: Outline                                                     :export:
