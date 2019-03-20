@@ -255,6 +255,75 @@ There are several high-profile userspace programs that might benefit from
 AF_XDP support. Adding this (or coordinating it with the program authors)
 could be a way to show the benefits of XDP.
 
+* TODO Busy-poll support for AF_XDP
+
+Adding BUSY_POLL support to AF_XDP sockets was presented at the Linux
+Plumbers Conference 2018 in Vancouver, BC. With this feature, the NAPI
+context of the driver is executed from the process context by the
+application calling the poll() syscall, instead of being driven by the
+softirq mechanism. This has a number of benefits, for example,
+being able to efficiently use a single core for application, driver
+and other kernel infra that the application might need. With softirq,
+we would need two cores to maintain any performance. Another benefit
+is that the cachelines containing the descriptors do not have to
+bounce between two caches, since this is now a core local operation as
+the driver and the application is on the same core. The drawback is
+that we now have to use a syscall (poll) in the data path and this
+will slow things down.
+
+There is already a busy_poll mechanisms in the kernel:
+/proc/sys/net/core/busy_poll. When writing a non zero value in this
+file, the busy poll support will be enabled for ALL sockets in the
+system. There are a number of issues with this existing code when
+applied to AF_XDP sockets.
+
+ - The batch size is hardcoded to 8, a value that is too small for the
+fast processing of XDP.
+
+ - The semantics of poll() in busy_poll mode is that if you provide more
+than one file descriptor, it will drive the napi context of the first
+one supplied and if it has a packet, then it will NOT drive any of the
+other. In other words, it will quit once it has found an fd with a
+packet. This will not work for us, since we need all fd's napis to be
+called since it is very likely that a packet will be found in each of
+them. One could argue that this can be solved in user-space by
+manipulating the array of fds supplied to poll() before every singel
+call, but this would really complicate multi socket handling in
+user-space.
+
+ - The option is global across all sockets. Enough said.
+
+My suggestion for addressing these issues is to introduce a new
+busy_poll option that is only for AF_XDP called
+XDP_BUSY_POLL_BATCH_SIZE (or something like it). This is a setsockopt
+that can be supplied to individual AF_XDP sockets and the batch size
+can thus also be set individually by suppling a value > 0. The
+semantics of this mode is that both Rx and Tx have to be driven by
+calling poll(). There is no guarantee that your packets will arrive or
+be sent unless you call poll() (a sendto() will still work for the Tx
+case, though, but it is not necessary). In this first patch set, we
+can still get interrupts and processing from NAPI in this mode, but we
+have some ideas on how to disable this so that NAPI is only driven
+from poll(). But that is for a later patch set. Note that the sematics
+would not change when we introduce this as we already today say that
+you must call poll(), since there is no guarantee otherwise that you
+will receive or send packets.
+
+When suppling multiple busy_poll AF_XDP sockets to poll() all of them
+will get theire napi contexts executed, so it is guaranteed that all of
+them will be driven. It is also possible to mix regular sockets,
+global busy_poll sockets and the new AF_XDP sockets in the same poll()
+call. The semantics for each type will be maintained, as expected.
+
+From an implementation point of view, I believe this can be
+implemented with minimal changes to the net and fs code. We can get
+this new behavior by using the standar fd (non-busy poll path) and
+then drive the napi from the xsk specific poll callback. We do need to
+change one internal interface in order to be able to have a variable
+batch size. And Jesper's xdp_rxq_info struct need to be enlarged with a
+napi_id field that the drivers need to populate. This can then be used
+by the xsk poll code to drive the correct NAPI.
+
 * WAIT BTF-based metadata for XDP                                   :WAITING:
 
 Waiting for tracing people to work out the details of BTF.
@@ -271,4 +340,3 @@ investigated.
 Maybe write a tuning doc as well?
 
 WAIT status as this is low priority for now.
-
