@@ -1,0 +1,540 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Hunting bug in CPUMAP
+#+CATEGORY: CPUMAP
+#+OPTIONS: ^:nil
+
+This is notes for hunting down a bug in cpumap redirect when creating SKBs
+from xdp_frame.
+
+**Update: Solved**. Below notes are kept in this document, as the OOPSes and
+other notes on how the data-layout is might be useful for others to debug
+similar issues.
+
+* Solved: upstream patch
+
+This was solved, and patch send upstream.
+- https://patchwork.ozlabs.org/patch/1069357/
+
+** Patch desc
+
+xdp: fix cpumap redirect SKB creation bug
+
+We want to avoid leaking pointer info from xdp_frame (that is placed in
+top of frame) like commit 6dfb970d3dbd ("xdp: avoid leaking info stored in
+frame data on page reuse"), and followup commit 97e19cce05e5 ("bpf:
+reserve xdp_frame size in xdp headroom") that reserve this headroom.
+
+These changes also affected how cpumap constructed SKBs, as xdpf->headroom
+size changed, the skb data starting point were in-effect shifted with 32
+bytes (sizeof xdp_frame). This was still okay, as the cpumap frame_size
+calculation also included xdpf->headroom which were reduced by same amount.
+
+A bug was introduced in commit 77ea5f4cbe20 ("bpf/cpumap: make sure
+frame_size for build_skb is aligned if headroom isn't"), where the
+xdpf->headroom became part of the SKB_DATA_ALIGN rounding up. This
+round-up to find the frame_size is in principle still correct as it does
+not exceed the 2048 bytes frame_size (which is max for ixgbe and i40e),
+but the 32 bytes offset of pkt_data_start puts this over the 2048 bytes
+limit. This cause skb_shared_info to spill into next frame. It is a little
+hard to trigger, as the SKB need to use above 15 skb_shinfo->frags[] as
+far as I calculate. This does happen in practise for TCP streams when
+skb_try_coalesce() kicks in.
+
+KASAN can be used to detect these wrong memory accesses, I've seen:
+ BUG: KASAN: use-after-free in skb_try_coalesce+0x3cb/0x760
+ BUG: KASAN: wild-memory-access in skb_release_data+0xe2/0x250
+
+Driver veth also construct a SKB from xdp_frame in this way, but is not
+affected, as it doesn't reserve/deduct the room (used by xdp_frame) from
+the SKB headroom. Instead is clears the pointers via xdp_scrub_frame(),
+and allows SKB to use this area.
+
+The fix in this patch is to do like veth and instead allow SKB to (re)use
+the area occupied by xdp_frame, by clearing via xdp_scrub_frame(). (This
+does kill the idea of the SKB being able to access (mem) info from this
+area, but I guess it was a bad idea anyhow, and it was already killed by
+the veth changes.)
+
+Fixes: 77ea5f4cbe20 ("bpf/cpumap: make sure frame_size for build_skb is aligned if headroom isn't")
+
+This patch is stable material for v5.0 see:
+  $ git describe --contains 77ea5f4cbe20
+  v5.0-rc1~129^2~15^2~1
+
+** stg mail patch
+
+#+begin_example
+stg mail --version="bpf" --cc meup \
+ --to netdev --to alexei --to daniel --cc ilias --cc toke --cc makita.toshiaki@lab.ntt.co.jp \
+  -E xdp-fix-cpumap-redirect-skb
+#+end_example
+
+
+* Bug in i40e frame_size for XDP
+
+Getting strange bugs using CPUMAP redirect on i40e. It work with single
+packets, but TCP stream testing can fail and crash. Update: the ixgbe driver
+have same bug. Thus, this must be in common code.
+
+Experience tell me that this is likely related to the conversion of
+xdp_frame to SKB in the cpumap code. As this code is challenged, due to
+missing information on the exact frame size, which needs to be deducted.
+This 'frame_size' is something that xdp_frame should be extended with.
+
+Comment from cpu_map_build_skb:
+#+begin_src C
+	/* build_skb need to place skb_shared_info after SKB end, and
+	 * also want to know the memory "truesize".  Thus, need to
+	 * know the memory frame size backing xdp_buff.
+	 *
+	 * XDP was designed to have PAGE_SIZE frames, but this
+	 * assumption is not longer true with ixgbe and i40e.  It
+	 * would be preferred to set frame_size to 2048 or 4096
+	 * depending on the driver.
+	 *   frame_size = 2048;
+	 *   frame_len  = frame_size - sizeof(*xdp_frame);
+	 *
+	 * Instead, with info avail, skb_shared_info in placed after
+	 * packet len.  This, unfortunately fakes the truesize.
+	 * Another disadvantage of this approach, the skb_shared_info
+	 * is not at a fixed memory location, with mixed length
+	 * packets, which is bad for cache-line hotness.
+	 */
+	frame_size = SKB_DATA_ALIGN(xdpf->len + xdpf->headroom) +
+		SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
+#+end_src
+
+** i40e headroom calc is complicated
+
+The headroom for i40e is determined via:
+
+#+begin_src C
+static inline unsigned int i40e_rx_offset(struct i40e_ring *rx_ring)
+{
+	return ring_uses_build_skb(rx_ring) ? I40E_SKB_PAD : 0;
+}
+#+end_src
+
+The define I40E_SKB_PAD is actually several inline functions.
+
+#+begin_src C
+#if (PAGE_SIZE < 8192)
+#define I40E_2K_TOO_SMALL_WITH_PADDING \
+((NET_SKB_PAD + I40E_RXBUFFER_1536) > SKB_WITH_OVERHEAD(I40E_RXBUFFER_2048))
+
+static inline int i40e_compute_pad(int rx_buf_len)
+{
+	int page_size, pad_size;
+
+	page_size = ALIGN(rx_buf_len, PAGE_SIZE / 2);
+	pad_size = SKB_WITH_OVERHEAD(page_size) - rx_buf_len;
+
+	return pad_size;
+}
+
+static inline int i40e_skb_pad(void)
+{
+	int rx_buf_len;
+
+	/* If a 2K buffer cannot handle a standard Ethernet frame then
+	 * optimize padding for a 3K buffer instead of a 1.5K buffer.
+	 *
+	 * For a 3K buffer we need to add enough padding to allow for
+	 * tailroom due to NET_IP_ALIGN possibly shifting us out of
+	 * cache-line alignment.
+	 */
+	if (I40E_2K_TOO_SMALL_WITH_PADDING)
+		rx_buf_len = I40E_RXBUFFER_3072 + SKB_DATA_ALIGN(NET_IP_ALIGN);
+	else
+		rx_buf_len = I40E_RXBUFFER_1536;
+
+	/* if needed make room for NET_IP_ALIGN */
+	rx_buf_len -= NET_IP_ALIGN;
+
+	return i40e_compute_pad(rx_buf_len);
+}
+
+#define I40E_SKB_PAD i40e_skb_pad()
+#else
+#define I40E_2K_TOO_SMALL_WITH_PADDING false
+#define I40E_SKB_PAD (NET_SKB_PAD + NET_IP_ALIGN)
+#endif
+#+end_src
+
+For our PAGE_SIZE (4K) and use-case it seems that i40e_rx_offset() which
+return I40E_SKB_PAD is giving us 192 bytes headroom.
+
+* Record OOPSes
+
+Bug also in upstream net-next.
+
+Record the KASAN oopses.
+** kasan01 - wild-memory-access
+
+#+begin_example
+[  623.436951] perf: interrupt took too long (15417 > 15411), lowering kernel.perf_event_max_sample_rate to 12000
+[ 1075.579891] ixgbe 0000:01:00.1: removed PHC on ixgbe2
+[ 1075.649619] ixgbe 0000:01:00.1: Multiqueue Enabled: Rx Queue count = 6, Tx Queue count = 6 XDP Queue count = 6
+[ 1075.704128] ixgbe 0000:01:00.1: registered PHC device on ixgbe2
+[ 1075.874213] ixgbe 0000:01:00.1 ixgbe2: detected SFP+: 4
+[ 1076.228844] ixgbe 0000:01:00.1 ixgbe2: NIC Link is Up 10 Gbps, Flow Control: RX/TX
+[ 1081.274035] ==================================================================
+[ 1081.281333] BUG: KASAN: wild-memory-access in skb_release_data+0xe2/0x250
+[ 1081.288190] Write of size 4 at addr 00450008829abb54 by task netserver/1733
+[ 1081.295216] 
+[ 1081.296769] CPU: 1 PID: 1733 Comm: netserver Not tainted 5.1.0-rc2-net-next-bisect+ #508
+[ 1081.304927] Hardware name: Supermicro Super Server/X10SRi-F, BIOS 2.0a 08/01/2016
+[ 1081.312474] Call Trace:
+[ 1081.314991]  dump_stack+0x5b/0x8b
+[ 1081.318368]  ? skb_release_data+0xe2/0x250
+[ 1081.322528]  ? skb_release_data+0xe2/0x250
+[ 1081.326695]  kasan_report+0x158/0x16f
+[ 1081.330424]  ? skb_release_data+0xe2/0x250
+[ 1081.334584]  skb_release_data+0xe2/0x250
+[ 1081.338573]  __kfree_skb+0xe/0x20
+[ 1081.341953]  tcp_close+0x114/0x6a0
+[ 1081.345693]  inet_release+0x6d/0xb0
+[ 1081.349525]  __sock_release+0x68/0x120
+[ 1081.353614]  sock_close+0x11/0x20
+[ 1081.357272]  __fput+0x119/0x330
+[ 1081.360756]  task_work_run+0xa7/0xc0
+[ 1081.364677]  do_exit+0x555/0x1330
+[ 1081.368329]  ? mm_update_next_owner+0x350/0x350
+[ 1081.373197]  ? alarm_setitimer+0xa3/0x100
+[ 1081.377544]  ? handle_mm_fault+0x1a2/0x370
+[ 1081.381980]  do_group_exit+0x79/0x120
+[ 1081.385980]  __x64_sys_exit_group+0x28/0x30
+[ 1081.390516]  do_syscall_64+0x5d/0x140
+[ 1081.394514]  entry_SYSCALL_64_after_hwframe+0x44/0xa9
+[ 1081.399905] RIP: 0033:0x7fa0597cb948
+[ 1081.403822] Code: Bad RIP value.
+[ 1081.407389] RSP: 002b:00007ffe9495f798 EFLAGS: 00000246 ORIG_RAX: 00000000000000e7
+[ 1081.415562] RAX: ffffffffffffffda RBX: 00000000ffffffff RCX: 00007fa0597cb948
+[ 1081.423031] RDX: ffffffffffffffff RSI: 000000000000003c RDI: ffffffffffffffff
+[ 1081.430499] RBP: 00007fa059ab4898 R08: 00000000000000e7 R09: ffffffffffffff80
+[ 1081.437969] R10: 00007fa059253ba0 R11: 0000000000000246 R12: 00007fa059ab4898
+[ 1081.445439] R13: 00007fa059ab9d60 R14: 0000000000000000 R15: 0000000000000000
+[ 1081.452928] ==================================================================
+[ 1081.460771] Disabling lock debugging due to kernel taint
+[ 1081.466483] general protection fault: 0000 [#1] PREEMPT SMP KASAN PTI
+[ 1081.473274] CPU: 1 PID: 1733 Comm: netserver Tainted: G    B             5.1.0-rc2-net-next-bisect+ #508
+[ 1081.483354] Hardware name: Supermicro Super Server/X10SRi-F, BIOS 2.0a 08/01/2016
+[ 1081.491436] RIP: 0010:skb_release_data+0xe2/0x250
+[ 1081.496474] Code: ff 4c 8b 3b 49 8d 7f 08 e8 0b e1 80 ff 49 8b 57 08 be 04 00 00 00 48 8d 4a ff 83 e2 01 4c 0f 45 f9 49 8d 7f 34 e8 2e c3 80 ff <f0> 41 ff 4f 34 75 08 4c 89 ff e8 2f c0 77 ff 4c 89 f7 41 83 c4 01
+[ 1081.516116] RSP: 0018:ffff8887251cfc10 EFLAGS: 00010286
+[ 1081.521677] RAX: ffff888802651740 RBX: ffff88871ab3f800 RCX: ffffffff81dcfa82
+[ 1081.529159] RDX: 1ffffffff071d7d0 RSI: 0000000000000282 RDI: ffffffff838ebe80
+[ 1081.536619] RBP: ffff88871ab3f6e0 R08: ffffed110288bc87 R09: ffffed110288bc87
+[ 1081.544082] R10: 0000000000000001 R11: ffffed110288bc86 R12: 000000000000000f
+[ 1081.551546] R13: ffff888737e18780 R14: ffff88871ab3f6e2 R15: 00450008829abb20
+[ 1081.559008] FS:  00007fa05a215740(0000) GS:ffff888814440000(0000) knlGS:0000000000000000
+[ 1081.567693] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 1081.573771] CR2: 00007fa0597cb91e CR3: 0000000002a12001 CR4: 00000000003606e0
+[ 1081.581248] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 1081.588714] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
+[ 1081.596178] Call Trace:
+[ 1081.598951]  __kfree_skb+0xe/0x20
+[ 1081.602594]  tcp_close+0x114/0x6a0
+[ 1081.606344]  inet_release+0x6d/0xb0
+[ 1081.610159]  __sock_release+0x68/0x120
+[ 1081.614234]  sock_close+0x11/0x20
+[ 1081.617882]  __fput+0x119/0x330
+[ 1081.621372]  task_work_run+0xa7/0xc0
+[ 1081.625290]  do_exit+0x555/0x1330
+[ 1081.628947]  ? mm_update_next_owner+0x350/0x350
+[ 1081.633808]  ? alarm_setitimer+0xa3/0x100
+[ 1081.638148]  ? handle_mm_fault+0x1a2/0x370
+[ 1081.642574]  do_group_exit+0x79/0x120
+[ 1081.646569]  __x64_sys_exit_group+0x28/0x30
+[ 1081.651086]  do_syscall_64+0x5d/0x140
+[ 1081.655081]  entry_SYSCALL_64_after_hwframe+0x44/0xa9
+[ 1081.660464] RIP: 0033:0x7fa0597cb948
+[ 1081.664370] Code: Bad RIP value.
+[ 1081.667931] RSP: 002b:00007ffe9495f798 EFLAGS: 00000246 ORIG_RAX: 00000000000000e7
+[ 1081.676093] RAX: ffffffffffffffda RBX: 00000000ffffffff RCX: 00007fa0597cb948
+[ 1081.683557] RDX: ffffffffffffffff RSI: 000000000000003c RDI: ffffffffffffffff
+[ 1081.691020] RBP: 00007fa059ab4898 R08: 00000000000000e7 R09: ffffffffffffff80
+[ 1081.698483] R10: 00007fa059253ba0 R11: 0000000000000246 R12: 00007fa059ab4898
+[ 1081.705952] R13: 00007fa059ab9d60 R14: 0000000000000000 R15: 0000000000000000
+[ 1081.713430] Modules linked in: ip6table_filter ip6_tables iptable_filter ip_tables x_tables tun nfnetlink bridge stp llc nf_defrag_ipv6 nf_defrag_ipv4 bpfilter sunrpc coretemp kvm_intel kvm irqbypass intel_cstate intel_uncore intel_rapl_perf pcspkr i2c_i801 wmi ipmi_si ipmi_devintf ipmi_msghandler acpi_pad pcc_cpufreq sch_fq_codel sd_mod nfp mlx5_core ixgbe i40e igb mdio mlxfw ptp i2c_algo_bit i2c_core pps_core hid_generic [last unloaded: x_tables]
+[ 1081.755247] ---[ end trace c1fbd43dda7e8e5a ]---
+[ 1081.765537] RIP: 0010:skb_release_data+0xe2/0x250
+[ 1081.770573] Code: ff 4c 8b 3b 49 8d 7f 08 e8 0b e1 80 ff 49 8b 57 08 be 04 00 00 00 48 8d 4a ff 83 e2 01 4c 0f 45 f9 49 8d 7f 34 e8 2e c3 80 ff <f0> 41 ff 4f 34 75 08 4c 89 ff e8 2f c0 77 ff 4c 89 f7 41 83 c4 01
+[ 1081.790240] RSP: 0018:ffff8887251cfc10 EFLAGS: 00010286
+[ 1081.795803] RAX: ffff888802651740 RBX: ffff88871ab3f800 RCX: ffffffff81dcfa82
+[ 1081.803290] RDX: 1ffffffff071d7d0 RSI: 0000000000000282 RDI: ffffffff838ebe80
+[ 1081.810754] RBP: ffff88871ab3f6e0 R08: ffffed110288bc87 R09: ffffed110288bc87
+[ 1081.818260] R10: 0000000000000001 R11: ffffed110288bc86 R12: 000000000000000f
+[ 1081.825733] R13: ffff888737e18780 R14: ffff88871ab3f6e2 R15: 00450008829abb20
+[ 1081.833247] FS:  00007fa05a215740(0000) GS:ffff888814440000(0000) knlGS:0000000000000000
+[ 1081.841955] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 1081.848053] CR2: 00007fa0597cb91e CR3: 0000000002a12001 CR4: 00000000003606e0
+[ 1081.855534] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 1081.863016] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
+[ 1081.870503] Fixing recursive fault but reboot is needed!
+[ 1091.552791] ixgbe 0000:01:00.1: removed PHC on ixgbe2
+[ 1091.629112] ixgbe 0000:01:00.1: Multiqueue Enabled: Rx Queue count = 6, Tx Queue count = 6 XDP Queue count = 0
+[ 1091.671624] ixgbe 0000:01:00.1: registered PHC device on ixgbe2
+[ 1091.850192] ixgbe 0000:01:00.1 ixgbe2: detected SFP+: 4
+[ 1092.030802] ixgbe 0000:01:00.1 ixgbe2: NIC Link is Up 10 Gbps, Flow Control: RX/TX
+#+end_example
+
+#+begin_example
+$ ./scripts/faddr2line vmlinux skb_release_data+0xe2
+skb_release_data+0xe2/0x250:
+arch_atomic_dec_and_test at arch/x86/include/asm/atomic.h:125 (discriminator 3)
+(inlined by) atomic_dec_and_test at include/asm-generic/atomic-instrumented.h:748 (discriminator 3)
+(inlined by) page_ref_dec_and_test at include/linux/page_ref.h:139 (discriminator 3)
+(inlined by) put_page_testzero at include/linux/mm.h:548 (discriminator 3)
+(inlined by) put_page at include/linux/mm.h:993 (discriminator 3)
+(inlined by) __skb_frag_unref at include/linux/skbuff.h:2891 (discriminator 3)
+(inlined by) skb_release_data at net/core/skbuff.c:573 (discriminator 3)
+#+end_example
+
+** kasan02 - use after free
+
+#+begin_example
+[  184.201858] ==================================================================
+[  184.209158] BUG: KASAN: use-after-free in skb_try_coalesce+0x3cb/0x760
+[  184.215754] Write of size 8 at addr ffff88871aa21000 by task cpumap/5/map:1/1618
+[  184.223215] 
+[  184.224775] CPU: 5 PID: 1618 Comm: cpumap/5/map:1 Not tainted 5.1.0-rc2-net-next-bisect+ #508
+[  184.233360] Hardware name: Supermicro Super Server/X10SRi-F, BIOS 2.0a 08/01/2016
+[  184.240907] Call Trace:
+[  184.243423]  dump_stack+0x5b/0x8b
+[  184.246800]  ? skb_try_coalesce+0x3cb/0x760
+[  184.251052]  print_address_description+0x73/0x280
+[  184.255815]  ? skb_try_coalesce+0x3cb/0x760
+[  184.260061]  ? skb_try_coalesce+0x3cb/0x760
+[  184.264307]  kasan_report+0x12a/0x16f
+[  184.268034]  ? skb_try_coalesce+0x3cb/0x760
+[  184.272553]  skb_try_coalesce+0x3cb/0x760
+[  184.276897]  tcp_add_backlog+0x585/0x970
+[  184.281150]  ? tcp_v4_inbound_md5_hash+0x2b0/0x2b0
+[  184.286273]  ? unwind_next_frame+0x1bc/0x9d0
+[  184.290887]  ? __rcu_read_unlock+0x1f/0x80
+[  184.295321]  ? sk_filter_trim_cap+0x1d9/0x3c0
+[  184.300006]  ? tcp_v4_inbound_md5_hash+0xb3/0x2b0
+[  184.305045]  ? _raw_spin_lock+0x78/0xc0
+[  184.309211]  ? _raw_read_lock_irq+0x40/0x40
+[  184.313727]  tcp_v4_rcv+0x1168/0x11e0
+[  184.317721]  ? __inet_lookup_established+0x259/0x310
+[  184.323017]  ? tcp_v4_early_demux+0x2d0/0x2d0
+[  184.327709]  ? ip_tables_net_init+0x10/0x10 [ip_tables]
+[  184.333261]  ? inet_lhash2_lookup+0x1c0/0x1e0
+[  184.337950]  ? __kasan_kmalloc.constprop.8+0xa0/0xd0
+[  184.343260]  ip_protocol_deliver_rcu+0x31/0x2c0
+[  184.348126]  ip_local_deliver_finish+0xb3/0xd0
+[  184.352900]  ip_local_deliver+0x1a0/0x1b0
+[  184.357242]  ? ip_local_deliver_finish+0xd0/0xd0
+[  184.362191]  ? ip_rcv_finish_core.isra.14+0x15c/0x750
+[  184.367573]  ? ip_protocol_deliver_rcu+0x2c0/0x2c0
+[  184.372695]  ? ip_local_deliver+0x1b0/0x1b0
+[  184.377209]  ? ip_local_deliver+0x1b0/0x1b0
+[  184.381738]  ip_rcv+0x9f/0x160
+[  184.385120]  ? ip_local_deliver+0x1b0/0x1b0
+[  184.389635]  ? ip_rcv_finish_core.isra.14+0x750/0x750
+[  184.395014]  ? cpu_map_kthread_run+0x602/0x6a0
+[  184.399787]  __netif_receive_skb_one_core+0xb6/0xe0
+[  184.404996]  ? __netif_receive_skb_core+0x13a0/0x13a0
+[  184.410378]  ? memset+0x1f/0x40
+[  184.413848]  ? __build_skb+0x137/0x160
+[  184.417926]  netif_receive_skb_core+0x18/0x30
+[  184.422613]  cpu_map_kthread_run+0x472/0x6a0
+[  184.427216]  ? cpu_map_alloc+0x220/0x220
+[  184.431471]  ? _raw_spin_lock_irqsave+0x7e/0xd0
+[  184.436334]  ? _raw_write_unlock_bh+0x30/0x30
+[  184.441022]  ? firmware_map_remove+0xe3/0xe3
+[  184.445625]  ? __wake_up_common+0x9c/0x230
+[  184.450054]  ? __kthread_parkme+0x77/0x90
+[  184.454395]  ? cpu_map_alloc+0x220/0x220
+[  184.458648]  kthread+0x1ac/0x1d0
+[  184.462202]  ? kthread_park+0xb0/0xb0
+[  184.466189]  ret_from_fork+0x1f/0x30
+[  184.470090] 
+[  184.471914] Allocated by task 695:
+[  184.475645]  __kasan_kmalloc.constprop.8+0xa0/0xd0
+[  184.480771]  kmem_cache_alloc+0xb1/0x1c0
+[  184.485025]  vm_area_dup+0x1b/0x80
+[  184.488758]  copy_process.part.50+0x2e39/0x3760
+[  184.493621]  _do_fork+0x12c/0x4f0
+[  184.497268]  do_syscall_64+0x5d/0x140
+[  184.501263]  entry_SYSCALL_64_after_hwframe+0x44/0xa9
+[  184.506640] 
+[  184.508459] Freed by task 1369:
+[  184.511932]  __kasan_slab_free+0x12e/0x180
+[  184.516362]  kmem_cache_free+0x7a/0x200
+[  184.520532]  remove_vma+0x8a/0xa0
+[  184.524178]  exit_mmap+0x1cf/0x240
+[  184.527903]  mmput+0x7f/0x1e0
+[  184.531199]  flush_old_exec+0x53d/0xc20
+[  184.535367]  load_elf_binary+0x4b8/0x1917
+[  184.539702]  search_binary_handler+0xb5/0x330
+[  184.544389]  __do_execve_file.isra.36+0xd38/0xfe0
+[  184.549427]  __x64_sys_execve+0x54/0x60
+[  184.553594]  do_syscall_64+0x5d/0x140
+[  184.557590]  entry_SYSCALL_64_after_hwframe+0x44/0xa9
+[  184.562971] 
+[  184.564794] The buggy address belongs to the object at ffff88871aa21000
+[  184.564794]  which belongs to the cache vm_area_struct of size 192
+[  184.578174] The buggy address is located 0 bytes inside of
+[  184.578174]  192-byte region [ffff88871aa21000, ffff88871aa210c0)
+[  184.590337] The buggy address belongs to the page:
+[  184.595457] page:ffffea001c6a8840 count:1 mapcount:0 mapping:ffff888814198fc0 index:0x0
+[  184.604061] flags: 0x2fffff80000200(slab)
+[  184.608405] raw: 002fffff80000200 dead000000000100 dead000000000200 ffff888814198fc0
+[  184.616748] raw: 0000000000000000 0000000000100010 00000001ffffffff 0000000000000000
+[  184.625085] page dumped because: kasan: bad access detected
+[  184.630982] 
+[  184.632802] Memory state around the buggy address:
+[  184.637923]  ffff88871aa20f00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[  184.645745]  ffff88871aa20f80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[  184.653562] >ffff88871aa21000: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+[  184.661379]                    ^
+[  184.664936]  ffff88871aa21080: fb fb fb fb fb fb fb fb fc fc fc fc fc fc fc fc
+[  184.672750]  ffff88871aa21100: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+[  184.680567] ==================================================================
+[  184.688386] Disabling lock debugging due to kernel taint
+[  184.694515] general protection fault: 0000 [#1] PREEMPT SMP KASAN PTI
+[  184.701292] CPU: 1 PID: 1619 Comm: netserver Tainted: G    B             5.1.0-rc2-net-next-bisect+ #508
+[  184.711380] Hardware name: Supermicro Super Server/X10SRi-F, BIOS 2.0a 08/01/2016
+[  184.719474] RIP: 0010:skb_release_data+0xe2/0x250
+[  184.724520] Code: ff 4c 8b 3b 49 8d 7f 08 e8 0b e1 80 ff 49 8b 57 08 be 04 00 00 00 48 8d 4a ff 83 e2 01 4c 0f 45 f9 49 8d 7f 34 e8 2e c3 80 ff <f0> 41 ff 4f 34 75 08 4c 89 ff e8 2f c0 77 ff 4c 89 f7 41 83 c4 01
+[  184.744181] RSP: 0018:ffff88870f997c10 EFLAGS: 00010286
+[  184.749747] RAX: 0000000000000001 RBX: ffff88871a138800 RCX: ffffffff81b27852
+[  184.757210] RDX: 0000000000000001 RSI: 0000000000000004 RDI: 00450008efc8ca60
+[  184.764686] RBP: ffff88871a1386e0 R08: fffff940038d2a8f R09: fffff940038d2a8f
+[  184.772150] R10: 0000000000000001 R11: fffff940038d2a8e R12: 000000000000000f
+[  184.779628] R13: ffff888739ef7400 R14: ffff88871a1386e2 R15: 00450008efc8ca2c
+[  184.787093] FS:  0000000000000000(0000) GS:ffff888814440000(0000) knlGS:0000000000000000
+[  184.795807] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  184.801897] CR2: 00007f54e393b6c4 CR3: 0000000002a12003 CR4: 00000000003606e0
+[  184.809372] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  184.816851] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
+[  184.824329] Call Trace:
+[  184.827109]  __kfree_skb+0xe/0x20
+[  184.830772]  tcp_close+0x114/0x6a0
+[  184.834519]  inet_release+0x6d/0xb0
+[  184.838360]  __sock_release+0x68/0x120
+[  184.842456]  sock_close+0x11/0x20
+[  184.846100]  __fput+0x119/0x330
+[  184.849605]  task_work_run+0xa7/0xc0
+[  184.853526]  do_exit+0x555/0x1330
+[  184.857174]  ? mm_update_next_owner+0x350/0x350
+[  184.862042]  ? alarm_setitimer+0xa3/0x100
+[  184.866394]  ? handle_mm_fault+0x1a2/0x370
+[  184.870832]  do_group_exit+0x79/0x120
+[  184.874836]  __x64_sys_exit_group+0x28/0x30
+[  184.879358]  do_syscall_64+0x5d/0x140
+[  184.883363]  entry_SYSCALL_64_after_hwframe+0x44/0xa9
+[  184.888754] RIP: 0033:0x7f54e3e4e948
+[  184.892672] Code: Bad RIP value.
+[  184.896226] RSP: 002b:00007fffff53a948 EFLAGS: 00000246 ORIG_RAX: 00000000000000e7
+[  184.904411] RAX: ffffffffffffffda RBX: 00000000ffffffff RCX: 00007f54e3e4e948
+[  184.911891] RDX: ffffffffffffffff RSI: 000000000000003c RDI: ffffffffffffffff
+[  184.919370] RBP: 00007f54e4137898 R08: 00000000000000e7 R09: ffffffffffffff80
+[  184.926850] R10: 00007f54e38d6ba0 R11: 0000000000000246 R12: 00007f54e4137898
+[  184.934328] R13: 00007f54e413cd60 R14: 0000000000000000 R15: 0000000000000000
+[  184.941813] Modules linked in: ip6table_filter ip6_tables iptable_filter ip_tables x_tables tun nfnetlink bridge stp llc nf_defrag_ipv6 nf_defrag_ipv4 bpfilter sunrpc coretemp kvm_intel kvm irqbypass intel_cstate intel_uncore intel_rapl_perf pcspkr i2c_i801 wmi ipmi_si ipmi_devintf ipmi_msghandler acpi_pad pcc_cpufreq sch_fq_codel sd_mod mlx5_core ixgbe i40e igb mlxfw mdio nfp i2c_algo_bit ptp i2c_core pps_core hid_generic [last unloaded: x_tables]
+[  184.983279] ---[ end trace ac09d56b2b5fad94 ]---
+[  184.993684] RIP: 0010:skb_release_data+0xe2/0x250
+[  184.998720] Code: ff 4c 8b 3b 49 8d 7f 08 e8 0b e1 80 ff 49 8b 57 08 be 04 00 00 00 48 8d 4a ff 83 e2 01 4c 0f 45 f9 49 8d 7f 34 e8 2e c3 80 ff <f0> 41 ff 4f 34 75 08 4c 89 ff e8 2f c0 77 ff 4c 89 f7 41 83 c4 01
+[  185.018402] RSP: 0018:ffff88870f997c10 EFLAGS: 00010286
+[  185.023966] RAX: 0000000000000001 RBX: ffff88871a138800 RCX: ffffffff81b27852
+[  185.031448] RDX: 0000000000000001 RSI: 0000000000000004 RDI: 00450008efc8ca60
+[  185.038925] RBP: ffff88871a1386e0 R08: fffff940038d2a8f R09: fffff940038d2a8f
+[  185.046407] R10: 0000000000000001 R11: fffff940038d2a8e R12: 000000000000000f
+[  185.053891] R13: ffff888739ef7400 R14: ffff88871a1386e2 R15: 00450008efc8ca2c
+[  185.061375] FS:  00007f54e4898740(0000) GS:ffff888814440000(0000) knlGS:0000000000000000
+[  185.070091] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  185.076169] CR2: 00007f54e3e4e91e CR3: 0000000002a12003 CR4: 00000000003606e0
+[  185.083673] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  185.091146] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
+[  185.098646] Fixing recursive fault but reboot is needed!
+#+end_example
+
+#+begin_example
+$ ./scripts/faddr2line vmlinux skb_try_coalesce+0x3cb
+skb_try_coalesce+0x3cb/0x760:
+__skb_fill_page_desc at include/linux/skbuff.h:2069
+(inlined by) skb_fill_page_desc at include/linux/skbuff.h:2095
+(inlined by) skb_try_coalesce at net/core/skbuff.c:4869
+#+end_example
+
+* Deducting issue in code
+
+cpu_map_build_skb calc use:
+
+#+begin_src
+  frame_size = SKB_DATA_ALIGN(xdpf->len + xdpf->headroom) +
+		SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
+#+end_src
+
+But xdpf->headroom was reduced with sizeof(*xdp_frame):
+ - convert_to_xdp_frame() use
+ - xdp_frame->headroom = headroom - sizeof(*xdp_frame);
+ - sizeof(*xdp_frame) = 32 bytes
+
+This trick is to avoid SKB access (extending headers into) area used by
+xdp_frame, but this is problematic as the above align can roundup
+xdpf->headroom (which were just reduced by 32 bytes).
+
+But the non-rounded-up xdpf->headroom, is used for the =pkt_data_start=
+point calculation, via minus xdpf->headroom, to keep SKB from accessing this
+area.
+
+#+begin_src
+ pkt_data_start = xdpf->data - xdpf->headroom;
+ skb = build_skb(pkt_data_start, frame_size);
+#+end_src
+
+The frame_size rounded up by:
+- SKB_DATA_ALIGN(xdpf->len + xdpf->headroom)
+
+For ixgbe+i40e, the max MTU frame_size is 1536 bytes:
+- have 192 bytes headroom
+- skb_shared_info is 320 bytes
+- 192 + 320 = 512
+- 192 + 320 + 1536 = 2048
+
+If frame length is 1508 bytes + 160 (192-32) = 1668 bytes but the
+SKB_DATA_ALIGN() roundup to 1728 bytes, plus the skb_shared_info 320 bytes
+this equal (1728 + 320 =) 2048 bytes. Thus, deducting the max frame size is
+correct.
+
+But when calling build_skb(), the =pkt_data_start= have been moved by 32
+bytes, which result in =skb_shinfo(skb)= or =skb_shared_info= to have access
+to 2048 + 32 (2080) bytes.
+
+Layout of skb_shared_info:
+#+begin_src C
+$ pahole -C skb_shared_info vmlinux
+struct skb_shared_info {
+	__u8                       __unused;             /*     0     1 */
+	__u8                       meta_len;             /*     1     1 */
+	__u8                       nr_frags;             /*     2     1 */
+	__u8                       tx_flags;             /*     3     1 */
+	short unsigned int         gso_size;             /*     4     2 */
+	short unsigned int         gso_segs;             /*     6     2 */
+	struct sk_buff *           frag_list;            /*     8     8 */
+	struct skb_shared_hwtstamps hwtstamps;           /*    16     8 */
+	unsigned int               gso_type;             /*    24     4 */
+	u32                        tskey;                /*    28     4 */
+	atomic_t                   dataref;              /*    32     4 */
+
+	/* XXX 4 bytes hole, try to pack */
+
+	void *                     destructor_arg;       /*    40     8 */
+	skb_frag_t                 frags[17];            /*    48   272 */
+	/* --- cacheline 5 boundary (320 bytes) --- */
+
+	/* size: 320, cachelines: 5, members: 13 */
+	/* sum members: 316, holes: 1, sum holes: 4 */
+#+end_src
+
+The skb_shinfo(skb) area can thus expand the last 32 bytes into the next
+frame. This last area is not initialised / cleared. Thus, the bug is only
+triggered when someone uses =frags[]= area last two elements.
+
+Size of skb_frag_t must be 16 bytes, as 272/17 = 16 bytes.
+
