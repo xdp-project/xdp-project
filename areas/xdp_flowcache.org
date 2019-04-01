@@ -20,7 +20,7 @@ others, boxes are made by ODMs (Original Device Manufacturers) who typically
 takes SDKs from the SoC vendors, create software images for the ISPs who buy
 these devices and place them at residential customers as part of their
 service offering.
-  
+
 In order to get good packet forwarding speeds on these kinds of devices,
 often they have hardware packet forwarding accelerators. These accelerators
 are controlled by code that is inserted into the Linux kernel by these SoC
@@ -67,7 +67,7 @@ packet accelerators.
 
 ** XDP/BPF accelerated forwarding
 
-If the above mentioned bf_flowtable fastpath bypass could be BPF/XDP
+If the above mentioned nf_flowtable fastpath bypass could be BPF/XDP
 accelerated, then performance would most likely be improved significantly on
 platforms without hardware packet forwarding accelerators. By exposing the
 necessary data (flow table, ARP/ND entries etc) to BPF, then lookups could
@@ -85,14 +85,17 @@ being done to hook their accelerators into the Linux kernel forwarding path.
 * TODO XDP flowcache project
 
 ** TODO Investigate feasibility of approach
-   Basic investigation on feasibility and make first draft on what needs to
-   be done to enable creation of PoC.
+Basic investigation on feasibility and make first draft on what needs to
+be done to enable creation of PoC.
+
 ** TODO Implement POC (Proof of Concept)
-   For instance implement forwarding of TCP or UDP flows using XDP
-   forwarding based on the flowcache to check if the approach makes sense.
+For instance implement forwarding of TCP or UDP flows using XDP
+forwarding based on the flowcache to check if the approach makes sense.
+
 ** TODO Test performance on POC
-   Test forwarding performance using XDP approach compared to classic style
-   forwarding and flowoffload approach.
+Test forwarding performance using XDP approach compared to classic style
+forwarding and flowoffload approach.
+
 ** TODO Interact with current vendors regarding if proposed solution is enough to solve their problems
-   Bring work to PRPL Foundation working groups to get feedback and interest
-   from vendors on the approach and if the proposed design/APIs is enough.
+Bring work to PRPL Foundation working groups to get feedback and interest
+from vendors on the approach and if the proposed design/APIs is enough.
