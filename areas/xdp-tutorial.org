@@ -2,11 +2,21 @@
 #+TITLE: Project management for XDP-tutorial
 #+OPTIONS: ^:nil
 
-
 * TODO XDP-tutorial ideas for assignments/examples
 
 ** TODO xdp-tutorial: Add AF_XDP tutorial example
 Initial step PR: https://github.com/xdp-project/xdp-tutorial/pull/35
 
-** TODO xdp-tutorial: rebase libbpf to get AF_XDP headers
+** NEXT xdp-tutorial: rebase libbpf to get AF_XDP headers
 
+* TODO XDP-tutorial diverse assignments
+
+** TODO XDP-tutorial: Code xdp_stats to use/follow XDP bpf-id to maps
+
+Update basic04 xdp_stats via XDP-id
+
+** TODO XDP-tutorial: drawing and desc of veth-testlab
+
+** TODO XDP-tutorial: diagnose via tracepoints
+
+Issue libbpf don't have any helpers for attaching to tracepoints.
