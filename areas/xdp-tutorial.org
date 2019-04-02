@@ -1,0 +1,12 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Project management for XDP-tutorial
+#+OPTIONS: ^:nil
+
+
+* TODO XDP-tutorial ideas for assignments/examples
+
+** TODO xdp-tutorial: Add AF_XDP tutorial example
+Initial step PR: https://github.com/xdp-project/xdp-tutorial/pull/35
+
+** TODO xdp-tutorial: rebase libbpf to get AF_XDP headers
+
