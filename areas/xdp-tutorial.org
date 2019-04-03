@@ -1,0 +1,68 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Project management for XDP-tutorial
+#+OPTIONS: ^:nil
+
+This document contains *org-mode tasks* and TODOs for [[: https://github.com/xdp-project/xdp-tutorial/][XDP-tutorial]].
+It is recommended to use emacs when viewing and editing these =.org= files,
+as the github rendering view removes the =TODO= and =DONE= marking on the
+tasks.
+
+The XDP-tutorial is more than a tutorial. We want to evolve this to become a
+resource for XDP/BPF developer to learn good programming practices. This
+also means aspiring to high code quality, and show good practise for error
+handling, and show how code are placed into common/ directory files/objects.
+
+* TODO XDP-tutorial ideas for assignments/examples
+
+** NEXT xdp-tutorial: rebase libbpf to get AF_XDP headers
+
+** TODO xdp-tutorial: Add AF_XDP tutorial example
+Initial step PR: https://github.com/xdp-project/xdp-tutorial/pull/35
+
+* TODO xdp-tutorial for tracepoints project
+
+Tutorial sub-project for teaching people about using tracepoints.
+
+The XDP angle is that infra depend on some tracepoints for stats, debugging
+and troubleshooting XDP. E.g. see the kernel/samples/bpf program xdp_monitor
+([[https://github.com/torvalds/linux/blob/master/samples/bpf/xdp_monitor_kern.c][xdp_monitor_kern.c]] and [[https://github.com/torvalds/linux/blob/master/samples/bpf/xdp_monitor_user.c][xdp_monitor_user.c]]). But the issue is that
+xdp_monitor (and other trace samples) use another ELF loader than libbpf
+(the samples local [[https://github.com/torvalds/linux/blob/master/samples/bpf/bpf_load.c][bpf_load.c]]), which we want to move people way from.
+
+** TODO xdp-tutorial: add tracepoint examples for reading XDP tracepoints
+
+Tutorial already covers load BPF programs, but attaching to tracepoints need
+to be covered by tutorial. Attaching to tracepoints is a multi-step process,
+that involves reading an id from debugfs, using sys_perf_event_open, and
+calling some =ioctl()= events.
+
+Ultimately we should consider adding to libbpf, tracepoint attach helper
+functions, to hide these multi-step attach steps. For the purpose of the
+tutorial we can demonstrate the steps, and have several tracing0x
+assignments that abstract and generalise this.  Notice functions that we
+consider upstreaming to libbpf are placed in [[https://github.com/xdp-project/xdp-tutorial/blob/master/common/common_libbpf.c][common/common_libbpf.c]].
+
+Another consideration: We should promote using raw_tracepoints for BPF as it
+have much less overhead for getting info that BPF need.
+
+** TODO xdp-tutorial: relate tracing to other assignments
+
+When building up tracing assignments relate this to other parts of tutorial.
+
+We can already relate this to other assignments. The assignment [[https://github.com/xdp-project/xdp-tutorial/tree/master/basic02-prog-by-name#assignment-2-add-xdp_abort-program][basic02]] show
+how to use perf record + script with tracepoint event =xdp:xdp_exception=.
+And basic04 program have a "xdp_abort" section program, that can trigger
+this tracepoint.
+
+
+* TODO XDP-tutorial diverse assignments
+
+** TODO XDP-tutorial: Code xdp_stats to use/follow XDP bpf-id to maps
+
+Update basic04 xdp_stats via XDP-id
+
+** TODO XDP-tutorial: drawing and desc of veth-testlab
+
+** TODO XDP-tutorial: diagnose via tracepoints
+
+Issue libbpf don't have any helpers for attaching to tracepoints.
