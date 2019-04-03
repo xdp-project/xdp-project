@@ -63,6 +63,3 @@ Update basic04 xdp_stats via XDP-id
 
 ** TODO XDP-tutorial: drawing and desc of veth-testlab
 
-** TODO XDP-tutorial: diagnose via tracepoints
-
-Issue libbpf don't have any helpers for attaching to tracepoints.
