@@ -35,6 +35,15 @@ consider upstreaming to libbpf are placed in [[https://github.com/xdp-project/xd
 Another consideration: We should promote using raw_tracepoints for BPF as it
 have much less overhead for getting info that BPF need.
 
+** TODO xdp-tutorial: relate tracing to other assignments
+
+When building up tracing assignments relate this to other parts of tutorial.
+
+We can already relate this to other assignments. The assignment [[https://github.com/xdp-project/xdp-tutorial/tree/master/basic02-prog-by-name#assignment-2-add-xdp_abort-program][basic02]] show
+how to use perf record + script with tracepoint event =xdp:xdp_exception=.
+And basic04 program have a "xdp_abort" section program, that can trigger
+this tracepoint.
+
 
 * TODO XDP-tutorial diverse assignments
 
