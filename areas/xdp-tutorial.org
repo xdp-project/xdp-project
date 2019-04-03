@@ -54,6 +54,10 @@ how to use perf record + script with tracepoint event =xdp:xdp_exception=.
 And basic04 program have a "xdp_abort" section program, that can trigger
 this tracepoint.
 
+* TODO xdp-tutorial: selftests project
+
+We would like to have a system that (integrated with Makefile) that can run
+a selftest per assignment directory.
 
 * TODO XDP-tutorial diverse assignments
 
