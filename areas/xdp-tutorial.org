@@ -2,6 +2,16 @@
 #+TITLE: Project management for XDP-tutorial
 #+OPTIONS: ^:nil
 
+This document contains *org-mode tasks* and TODOs for [[: https://github.com/xdp-project/xdp-tutorial/][XDP-tutorial]].
+It is recommended to use emacs when viewing and editing these =.org= files,
+as the github rendering view removes the =TODO= and =DONE= marking on the
+tasks.
+
+The XDP-tutorial is more than a tutorial. We want to evolve this to become a
+resource for XDP/BPF developer to learn good programming practices. This
+also means aspiring to high code quality, and show good practise for error
+handling, and show how code are placed into common/ directory files/objects.
+
 * TODO XDP-tutorial ideas for assignments/examples
 
 ** NEXT xdp-tutorial: rebase libbpf to get AF_XDP headers
