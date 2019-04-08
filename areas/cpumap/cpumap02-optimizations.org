@@ -462,3 +462,84 @@ The memset is in two functions
  -  1,28%   memset      (71/100*1.28 = 0.9088 ns)
  - 11.14% = 7.9094 ns
 
+** test: remove kmem_cache_free_bulk
+
+Isolate the effect of using =kmem_cache_free_bulk()=. The change the bulk
+variant of =kfree_skb_list=, to revert back to use =kfree_skb()=, which
+makes it not use bulking. Notice, that =kfree_skb_list= still get the
+effect/improvement for the I-cache optimization.
+
+Code change:
+#+begin_src diff
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index f1391379177f..1851c9c622af 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -707,6 +707,10 @@ void kfree_skb_list(struct sk_buff *segs)
+                        continue;
+                }
+ 
++               kfree_skb(segs);
++               continue;
++
++#if 0
+                if (!skb_unref(segs))
+                        continue;
+ 
+@@ -722,6 +726,7 @@ void kfree_skb_list(struct sk_buff *segs)
+ 
+                kmem_cache_free_bulk(skbuff_head_cache, n_skbs, skbs);
+                n_skbs = 0;
++#endif
+        }
+#+end_src
+
+Performance change:
+- before: 14,068,307 pps
+- after:  13,362,498 pps
+- diff-pps: -705,809 pps
+- diff-ns:  (1/13362498-1/14068307)*10^9 = 3.754548 ns
+
+#+begin_example
+sudo ./xdp_redirect_cpu --dev i40e1 --qsize 128 --cpu 4 --prog xdp_cpu_map0
+[...]
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          3       19,370,256     0           0          
+XDP-RX          total   19,370,256     0          
+cpumap-enqueue    3:4   19,370,259     6,007,762   8.00       bulk-average
+cpumap-enqueue  sum:4   19,370,259     6,007,762   8.00       bulk-average
+cpumap_kthread  4       13,362,498     0           0          
+cpumap_kthread  total   13,362,498     0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+Below is it clear that the cost of =kmem_cache_free= increased. (We know the
+call =kmem_cache_free= is hitting the fast-path of the SLUB allocator, due
+to this limited micro-benchmark, which makes the improvement impressive. The
+=kmem_cache_free_bulk= for SLUB will have a larger performance advantage
+over =kmem_cache_free= once we move out-of this fast-path area).
+
+#+begin_example
+Samples: 120K of event 'cycles:ppp', Event count (approx.): 113422085196
+  Overhead  CPU  Command         Shared Object     Symbol
++   27,50%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] cpu_map_kthread_run
++   17,03%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] build_skb_around
++    9,95%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] memset_erms
++    7,08%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] kmem_cache_free
++    5,26%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] kmem_cache_alloc_bulk
++    5,24%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] eth_type_trans
++    3,45%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] skb_release_data
++    3,15%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] kfree_skb
++    3,09%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] skb_release_head_state
++    2,57%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] page_frag_free
++    2,23%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] kfree_skb_list
++    1,66%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] skb_release_all
++    1,45%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] bpf_prog_e7b6a25b0d20485e
++    1,27%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] trace_call_bpf
++    1,25%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] perf_trace_xdp_cpumap_kthread
++    1,24%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] memset
++    1,00%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] kfree_skbmem
++    0,95%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] __list_add_valid
+#+end_example
