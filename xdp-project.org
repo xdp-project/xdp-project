@@ -324,6 +324,16 @@ batch size. And Jesper's xdp_rxq_info struct need to be enlarged with a
 napi_id field that the drivers need to populate. This can then be used
 by the xsk poll code to drive the correct NAPI.
 
+* TODO XDP feature flags
+
+We are probably going to need feature flags for XDP after all. There are use
+cases (e.g. Surricata, VM migration) that will want to know what to expect
+from the system before committing to loading an XDP program.
+
+** NEXT Propose a driver API to communicate feature flags
+
+** TODO Add a userspace API to query features
+
 * WAIT BTF-based metadata for XDP                                   :WAITING:
 
 Waiting for tracing people to work out the details of BTF.
