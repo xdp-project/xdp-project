@@ -225,6 +225,69 @@ cacheline on 64-bit archs. After reducing the BH-disable section further
 then we can consider changing this, while still thinking about L1 cacheline
 size being active.
 
+*** benchmarks on this patch
+**** redirect: UdpNoPorts: 2,817,054
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          5       13,967,785     0           0          
+XDP-RX          total   13,967,785     0          
+cpumap-enqueue    5:4   13,967,766     11,150,711  8.00       bulk-average
+cpumap-enqueue  sum:4   13,967,766     11,150,711  8.00       bulk-average
+cpumap_kthread  4       2,817,054      0           0          
+cpumap_kthread  total   2,817,054      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    2829056            0.0
+IpInDelivers                    2829057            0.0
+IpOutRequests                   1                  0.0
+IcmpOutMsgs                     1                  0.0
+IcmpOutDestUnreachs             1                  0.0
+IcmpMsgOutType3                 1                  0.0
+UdpNoPorts                      2829061            0.0
+IpExtInOctets                   130137312          0.0
+IpExtOutOctets                  74                 0.0
+IpExtInNoECTPkts                2829076            0.0
+#+end_example
+
+**** redirect: iptables-raw drop: 6,328,978
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          5       18,458,183     0           0          
+XDP-RX          total   18,458,183     0          
+cpumap-enqueue    5:4   18,458,184     12,129,207  8.00       bulk-average
+cpumap-enqueue  sum:4   18,458,184     12,129,207  8.00       bulk-average
+cpumap_kthread  4       6,328,978      0           0          
+cpumap_kthread  total   6,328,978      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    6358270            0.0
+IpInDelivers                    1                  0.0
+IpOutRequests                   1                  0.0
+TcpInSegs                       1                  0.0
+TcpOutSegs                      1                  0.0
+TcpExtTCPHPAcks                 1                  0.0
+TcpExtTCPOrigDataSent           1                  0.0
+TcpExtTCPDelivered              1                  0.0
+IpExtInOctets                   292478632          0.0
+IpExtOutOctets                  680                0.0
+IpExtInNoECTPkts                6358232            0.0
+#+end_example
+
+
 ** Patch: bpf: cpumap send a SKB-list towards network stack.
 
 Reduce BH-disable period further by moving cpu_map_build_skb()
@@ -236,6 +299,68 @@ function named netif_receive_skb_core(), in-order to skip generic-XDP.
 For this reason create an equivalent list version named
 netif_receive_skb_list_core().
 
+*** benchmarks on this patch
+
+**** redirect: UdpNoPorts: 2,846,583
+
+#+begin_example
+sudo ./xdp_redirect_cpu --dev i40e1 --qsize 128 --cpu 4 --prog xdp_cpu_map0 --sec 3
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          0       14,810,855     0           0          
+XDP-RX          total   14,810,855     0          
+cpumap-enqueue    0:4   14,810,875     11,964,289  8.00       bulk-average
+cpumap-enqueue  sum:4   14,810,875     11,964,289  8.00       bulk-average
+cpumap_kthread  4       2,846,583      0           0          
+cpumap_kthread  total   2,846,583      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+**** redirect: iptables-raw drop: 5,535,958
+
+Strange performance drop.
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          0       18,252,989     0           0          
+XDP-RX          total   18,252,989     0          
+cpumap-enqueue    0:4   18,252,986     12,717,028  8.00       bulk-average
+cpumap-enqueue  sum:4   18,252,986     12,717,028  8.00       bulk-average
+cpumap_kthread  4       5,535,958      0           0          
+cpumap_kthread  total   5,535,958      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+**** iptables-raw drop: 5,378,828 pps (GRO-enabled)
+
+Command used to drop packets:
+- iptables -t raw -I PREROUTING -p udp --dport 9 -j DROP
+
+Using standard Linux kernel and NAPI-RX iptables-raw drop. It doesn't make
+sense that performance is reduced. As the patch only change/add
+netif_receive_skb_list_core to net/core/dev.c.
+
+With (default) GRO enabled:
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    5378828            0.0
+IpExtInOctets                   247426732          0.0
+IpExtInNoECTPkts                5378842            0.0
+#+end_example
+
+GRO-disable:
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    6269627            0.0
+IpExtInOctets                   288405556          0.0
+IpExtInNoECTPkts                6269686            0.0
+#+end_example
+
 ** Patch: net: core: introduce build_skb_around
 
 The function build_skb() also have the responsibility to allocate and clear
@@ -244,6 +369,47 @@ the responsibility of allocation and clearing to the caller. This allows
 caller to use kmem_cache (slab/slub) bulk allocation API.
 
 Next patch use this function combined with kmem_cache_alloc_bulk.
+
+*** benchmarks on this patch
+**** redirect: UdpNoPorts: 2,832,411
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          5       14,951,827     0           0          
+XDP-RX          total   14,951,827     0          
+cpumap-enqueue    5:4   14,951,808     12,119,396  8.00       bulk-average
+cpumap-enqueue  sum:4   14,951,808     12,119,396  8.00       bulk-average
+cpumap_kthread  4       2,832,411      0           0          
+cpumap_kthread  total   2,832,411      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+**** redirect: iptables-raw drop: 5,522,555
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          5       18,495,707     0           0          
+XDP-RX          total   18,495,707     0          
+cpumap-enqueue    5:4   18,495,706     12,973,151  8.00       bulk-average
+cpumap-enqueue  sum:4   18,495,706     12,973,151  8.00       bulk-average
+cpumap_kthread  4       5,522,555      0           0          
+cpumap_kthread  total   5,522,555      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+**** iptables-raw drop: 5,396,717
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    5396717            0.0
+IpExtInOctets                   248249120          0.0
+IpExtInNoECTPkts                5396720            0.0
+#+end_example
 
 ** Patch: bpf: cpumap do bulk allocation of SKBs
 
@@ -259,6 +425,67 @@ cacheline aligned area is cleared for the SKBs. (For SLUB allocator, there
 is a future optimization potential, because SKBs will with high probability
 originate from same page. If we can find/identify continuous memory areas
 then the Intel CPU memset rep stos will have a real performance gain.)
+
+*** benchmarks on this patch
+**** redirect: UdpNoPorts: 2,943,928
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          4       13,650,238     0           0          
+XDP-RX          total   13,650,238     0          
+cpumap-enqueue    4:5   13,650,246     10,706,320  8.00       bulk-average
+cpumap-enqueue  sum:5   13,650,246     10,706,320  8.00       bulk-average
+cpumap_kthread  5       2,943,928      0           0          
+cpumap_kthread  total   2,943,928      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+**** redirect: iptables-raw drop: 5,908,032
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          4       18,256,284     0           0          
+XDP-RX          total   18,256,284     0          
+cpumap-enqueue    4:5   18,256,282     12,348,249  8.00       bulk-average
+cpumap-enqueue  sum:5   18,256,282     12,348,249  8.00       bulk-average
+cpumap_kthread  5       5,908,032      0           0          
+cpumap_kthread  total   5,908,032      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+#+begin_example
+$ perf stat -C5 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -e L1-icache-load-misses -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 5' (4 runs):
+
+     3.803.541.867      cycles                                                        ( +-  0,00% )
+     7.181.656.680      instructions              #    1,89  insn per cycle           ( +-  0,03% )
+        38.215.645      cache-references                                              ( +-  0,13% )
+               956      cache-misses              #    0,003 % of all cache refs      ( +- 68,12% )
+     1.359.526.208      branches:k                                                    ( +-  0,03% )
+         2.127.934      branch-misses:k           #    0,16% of all branches          ( +-  0,83% )
+            94.326      l2_rqsts.all_code_rd                                          ( +-  1,60% )
+            74.614      l2_rqsts.code_rd_hit                                          ( +-  1,67% )
+            19.709      l2_rqsts.code_rd_miss                                         ( +-  2,45% )
+            36.783      L1-icache-load-misses                                         ( +-  1,31% )
+#+end_example
+
+#+begin_example
+$ perf stat -C5 -e cycles -e  instructions -e l1d.replacement -e l1d_pend_miss.fb_full -e l1d_pend_miss.pending -e l1d_pend_miss.pending_cycles  -r3 sleep 1
+
+ Performance counter stats for 'CPU(s) 5' (3 runs):
+
+     3.795.165.763      cycles                                                        ( +-  0,00% )  (33,27%)
+     7.164.568.267      instructions              #    1,89  insn per cycle           ( +-  0,04% )  (49,95%)
+        53.336.896      l1d.replacement                                               ( +-  0,68% )  (66,63%)
+               549      l1d_pend_miss.fb_full                                         ( +- 96,09% )  (83,32%)
+     1.345.207.553      l1d_pend_miss.pending                                         ( +-  0,25% )  (83,38%)
+       806.293.783      l1d_pend_miss.pending_cycles                                     ( +-  0,29% )  (16,62%)
+#+end_example
 
 ** Prefetchw struct page
 
@@ -278,6 +505,36 @@ second it helps us to avoid the non-temporal prefetch HW optimizations and
 bring this into all cache-levels. It might be worth investigating if
 prefetch into L2 will have the same benefit.
 
+*** benchmarks on this patch
+**** redirect: UdpNoPorts: 3,270,640
+
+#+begin_example
+unning XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          1       14,773,250     0           0          
+XDP-RX          total   14,773,250     0          
+cpumap-enqueue    1:5   14,773,260     11,502,619  8.00       bulk-average
+cpumap-enqueue  sum:5   14,773,260     11,502,619  8.00       bulk-average
+cpumap_kthread  5       3,270,640      0           0          
+cpumap_kthread  total   3,270,640      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+**** redirect: iptables-raw drop: 6,882,973
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          1       19,235,746     0           0          
+XDP-RX          total   19,235,746     0          
+cpumap-enqueue    1:5   19,235,747     12,352,773  8.00       bulk-average
+cpumap-enqueue  sum:5   19,235,747     12,352,773  8.00       bulk-average
+cpumap_kthread  5       6,882,973      0           0          
+cpumap_kthread  total   6,882,973      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
 
 * notes
 
