@@ -32,6 +32,184 @@ stg mail --version=bpf-next --edit-cover --cc meup \
 
 https://patchwork.ozlabs.org/project/netdev/list/?series=101964&state=%2a
 
+** baseline
+
+*** NIC: i40e1 - Kernel: 5.1.0-rc2-bpf-next-cpumap-baseline+
+
+Below tests done on top of bpf-next on base commit dd399ac9e343c.
+
+The processing and (deliberate) packet drops happens on same CPU as packet
+was RX-ed on, which have many cache advantages.
+
+#+begin_example
+$ uname -a
+Linux broadwell 5.1.0-rc2-bpf-next-cpumap-baseline+ #113 SMP PREEMPT Wed Apr 10 16:24:18 CEST 2019 x86_64 x86_64 x86_64 GNU/Linux
+#+end_example
+
+NIC: i40e1
+#+begin_example
+$ ethtool -i i40e1
+driver: i40e
+version: 2.8.10-k
+firmware-version: 5.05 0x80002924 1.1313.0
+expansion-rom-version: 
+bus-info: 0000:04:00.0
+supports-statistics: yes
+supports-test: yes
+supports-eeprom-access: yes
+supports-register-dump: yes
+supports-priv-flags: yes
+#+end_example
+
+**** baseline: UdpNoPorts: 3,326,983 pps
+
+Unloaded all netfilter/iptables modules.
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    3326983            0.0
+IpInDelivers                    3326984            0.0
+IpOutRequests                   1                  0.0
+IcmpOutMsgs                     1                  0.0
+IcmpOutDestUnreachs             1                  0.0
+IcmpMsgOutType3                 1                  0.0
+UdpNoPorts                      3326982            0.0
+IpExtInOctets                   153042460          0.0
+IpExtOutOctets                  74                 0.0
+IpExtInNoECTPkts                3327010            0.0
+#+end_example
+
+**** baseline: iptables-raw drop: 5,705,245 pps (GRO-enabled)
+
+Command used to drop packets:
+- iptables -t raw -I PREROUTING -p udp --dport 9 -j DROP
+
+With (default) GRO enabled:
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    5705245            0.0
+IpExtInOctets                   262445778          0.0
+IpExtInNoECTPkts                5705343            0.0
+#+end_example
+
+**** baseline: iptables-raw drop: 6,701,692 pps (GRO-disabled)
+
+Command to disable GRO:
+- ethtool -K i40e1 gro off tso off
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    6701692            0.0
+IpExtInOctets                   308276958          0.0
+IpExtInNoECTPkts                6701673            0.0
+#+end_example
+
+*** NIC: i40e1 - UDP socket baseline
+
+Testing with UDP socket sink program:
+- https://github.com/netoptimizer/network-testing/blob/master/src/udp_sink.c
+
+In these situations where the system is overloaded with packets, it is NOT
+an advantage to run the UDP socket program on the same CPU as the NAPI
+RX-CPU. The reason is that softirq takes up too many resources. (We/kernel
+community have solved this to give 50% CPU to each, but still softirq-side
+spend all its time dropping packet on the full-socket-queue, that is it
+stealing CPU-time-slices from).
+
+**** udp_sink: same CPU as RX = 718,135 pps
+
+#+begin_example
+[jbrouer@broadwell src]$ sudo taskset -c 1 ./udp_sink --port 9 --recvmsg --repeat 1000 --reuse
+          	run      count   	ns/pkt	pps		cycles	payload
+recvmsg   	run:  0	 1000000	1435.21	696761.84	5166	18	 demux:1
+recvmsg   	run:  1	 1000000	1392.46	718153.22	5012	18	 demux:1
+recvmsg   	run:  2	 1000000	1392.50	718135.42	5013	18	 demux:1
+recvmsg   	run:  3	 1000000	1395.57	716553.74	5024	18	 demux:1
+recvmsg   	run:  4	 1000000	1390.34	719249.54	5005	18	 demux:1
+recvmsg   	run:  5	 1000000	1400.70	713930.03	5042	18	 demux:1
+recvmsg   	run:  6	 1000000	1387.11	720924.95	4993	18	 demux:1
+recvmsg   	run:  7	 1000000	1398.32	715144.81	5033	18	 demux:1
+recvmsg   	run:  8	 1000000	1392.27	718250.94	5012	18	 demux:1
+#+end_example
+
+**** udp_sink: another CPU than RX = 2,311,585 pps
+
+#+begin_example
+[jbrouer@broadwell src]$ sudo taskset -c 3 ./udp_sink --port 9 --recvmsg --repeat 1000 --reuse
+          	run      count   	ns/pkt	pps		cycles	payload
+recvmsg   	run:  0	 1000000	441.01	2267502.40	1587	18	 demux:1
+recvmsg   	run:  1	 1000000	432.89	2310074.13	1558	18	 demux:1
+recvmsg   	run:  2	 1000000	432.60	2311585.12	1557	18	 demux:1
+recvmsg   	run:  3	 1000000	432.48	2312230.99	1556	18	 demux:1
+recvmsg   	run:  4	 1000000	433.49	2306867.38	1560	18	 demux:1
+recvmsg   	run:  5	 1000000	432.44	2312474.25	1556	18	 demux:1
+recvmsg   	run:  6	 1000000	432.46	2312345.45	1556	18	 demux:1
+recvmsg   	run:  7	 1000000	432.39	2312702.92	1556	18	 demux:1
+recvmsg   	run:  8	 1000000	432.54	2311903.29	1557	18	 demux:1
+recvmsg   	run:  9	 1000000	432.62	2311479.47	1557	18	 demux:1
+#+end_example
+
+*** NIC: i40e1 - baseline cpumap redirect
+
+What is the baseline CPUMAP redirect performance.
+
+**** baseline-redirect: UdpNoPorts: 2,727,840 pps
+#+begin_example
+sudo ./xdp_redirect_cpu --dev i40e1 --qsize 128 --cpu 4 --prog xdp_cpu_map0
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          1       15,198,085     0           0          
+XDP-RX          total   15,198,085     0          
+cpumap-enqueue    1:4   15,198,122     12,470,287  8.00       bulk-average
+cpumap-enqueue  sum:4   15,198,122     12,470,287  8.00       bulk-average
+cpumap_kthread  4       2,727,840      0           0          
+cpumap_kthread  total   2,727,840      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    2701784            0.0
+IpInDelivers                    2701783            0.0
+IpOutRequests                   1                  0.0
+IcmpOutMsgs                     1                  0.0
+IcmpOutDestUnreachs             1                  0.0
+IcmpMsgOutType3                 1                  0.0
+UdpNoPorts                      2701775            0.0
+IpExtInOctets                   124283720          0.0
+IpExtOutOctets                  74                 0.0
+IpExtInNoECTPkts                2701820            0.0
+#+end_example
+
+**** baseline-redirect: iptables-raw drop: 6,166,709 pps
+
+#+begin_example
+sudo ./xdp_redirect_cpu --dev i40e1 --qsize 128 --cpu 4 --prog xdp_cpu_map0
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          1       18,850,942     0           0          
+XDP-RX          total   18,850,942     0          
+cpumap-enqueue    1:4   18,850,947     12,684,239  8.00       bulk-average
+cpumap-enqueue  sum:4   18,850,947     12,684,239  8.00       bulk-average
+cpumap_kthread  4       6,166,709      0           0          
+cpumap_kthread  total   6,166,709      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    6167205            0.0
+IpExtInOctets                   283689544          0.0
+IpExtInNoECTPkts                6167164            0.0
+#+end_example
+
 ** Patch: bpf: cpumap use ptr_ring_consume_batched
 
 Move ptr_ring dequeue outside loop, that allocate SKBs and calls network
