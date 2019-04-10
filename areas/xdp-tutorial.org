@@ -59,11 +59,12 @@ this tracepoint.
 We would like to have a system that (integrated with Makefile) that can run
 a selftest per assignment directory.
 
-* TODO XDP-tutorial diverse assignments
+* TODO XDP-tutorial misc assignments
 
 ** TODO XDP-tutorial: Code xdp_stats to use/follow XDP bpf-id to maps
 
 Update basic04 xdp_stats via XDP-id
 
 ** TODO XDP-tutorial: drawing and desc of veth-testlab
+** TODO Best practices for using multiple programs on the same interface
 
