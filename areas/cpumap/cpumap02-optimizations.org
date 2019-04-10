@@ -7,11 +7,98 @@
 
 * patch descriptions / notes
 
-** prefetchw struct page
+** Cover letter
 
-bpf: cpumap memory prefetch optimizations
+Bulk optimization for XDP cpumap redirect
+
+This patchset utilize a number of different kernel bulk APIs for optimizing
+the performance for the XDP cpumap redirect feature.
+
+Patch-1: ptr_ring batch consume
+Patch-2: Send SKB-lists to network stack
+Patch-3: Introduce SKB helper to alloc SKB outside net-core
+Patch-4: kmem_cache bulk alloc of SKBs
+Patch-5: Prefetch struct page to solve CPU stall
+
+*** stg mail V1
+
+#+begin_example
+stg mail --version=bpf-next --edit-cover --cc meup \
+ --to netdev --cc bpf@vger.kernel.org \
+ --to daniel --to alexei --to davem \
+ --cc toke --cc ilias \
+ use--ptr_ring_consume_batched..optimizations
+#+end_example
+
+https://patchwork.ozlabs.org/project/netdev/list/?series=101964&state=%2a
+
+** Patch: bpf: cpumap use ptr_ring_consume_batched
+
+Move ptr_ring dequeue outside loop, that allocate SKBs and calls network
+stack, as these operations that can take some time. The ptr_ring is a
+communication channel between CPUs, where we want to reduce/limit any
+cacheline bouncing.
+
+Do a concentrated bulk dequeue via ptr_ring_consume_batched, to shorten the
+period and times the remote cacheline in ptr_ring is read
+
+Batch size 8 is both to (1) limit BH-disable period, and (2) consume one
+cacheline on 64-bit archs. After reducing the BH-disable section further
+then we can consider changing this, while still thinking about L1 cacheline
+size being active.
+
+** Patch: bpf: cpumap send a SKB-list towards network stack.
+
+Reduce BH-disable period further by moving cpu_map_build_skb()
+outside/before invoking the network stack. And build up a skb_list that is
+used for netif_receive_skb_list. This is also an I-cache optimization.
+
+When injecting packets into the network stack, cpumap used a special
+function named netif_receive_skb_core(), in-order to skip generic-XDP.
+For this reason create an equivalent list version named
+netif_receive_skb_list_core().
+
+** Patch: net: core: introduce build_skb_around
+
+The function build_skb() also have the responsibility to allocate and clear
+the SKB structure. Introduce a new function build_skb_around(), that moves
+the responsibility of allocation and clearing to the caller. This allows
+caller to use kmem_cache (slab/slub) bulk allocation API.
+
+Next patch use this function combined with kmem_cache_alloc_bulk.
+
+** Patch: bpf: cpumap do bulk allocation of SKBs
+
+As cpumap now batch consume xdp_frame's from the ptr_ring, it knows how many
+SKBs it need to allocate. Thus, lets bulk allocate these SKBs via
+kmem_cache_alloc_bulk() API, and use the previously introduced function
+build_skb_around().
+
+Notice that the flag __GFP_ZERO asks the slab/slub allocator to clear the
+memory for us. This does clear a larger area than needed, but my micro
+benchmarks on Intel CPUs show that this is slightly faster due to being a
+cacheline aligned area is cleared for the SKBs. (For SLUB allocator, there
+is a future optimization potential, because SKBs will with high probability
+originate from same page. If we can find/identify continuous memory areas
+then the Intel CPU memset rep stos will have a real performance gain.)
+
+** Prefetchw struct page
+
+bpf: cpumap memory prefetchw optimizations for struct page
 
 A lot of the performance gain comes from this patch.
+
+While analysing performance overhead it was found that the largest CPU
+stalls were caused when touching the struct page area. It is first read with
+a READ_ONCE from build_skb_around via page_is_pfmemalloc(), and when freed
+written by page_frag_free() call.
+
+Measurements show that the prefetchw (W) variant operation is needed to
+achieve the performance gain. We believe this optimization it two fold,
+first the W-variant saves one step in the cache-coherency protocol, and
+second it helps us to avoid the non-temporal prefetch HW optimizations and
+bring this into all cache-levels. It might be worth investigating if
+prefetch into L2 will have the same benefit.
 
 
 * notes
@@ -21,6 +108,8 @@ A lot of the performance gain comes from this patch.
 -e l1d.replacement -e l1d_pend_miss.fb_full -e l1d_pend_miss.pending -e l1d_pend_miss.pending_cycles -e l1d_pend_miss.pending_cycles_any
 
 * Evaluating effect of page-prefetchw
+
+(Below tests done on top of base commit dd399ac9e343c)
 
 Conclusion: based on below, the prefetchw on struct-page is important.
 
