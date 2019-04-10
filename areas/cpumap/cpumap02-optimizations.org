@@ -299,7 +299,7 @@ function named netif_receive_skb_core(), in-order to skip generic-XDP.
 For this reason create an equivalent list version named
 netif_receive_skb_list_core().
 
-*** benchmarks on this patch
+*** benchmark01 on this patch
 
 **** redirect: UdpNoPorts: 2,846,583
 
@@ -360,6 +360,59 @@ IpInReceives                    6269627            0.0
 IpExtInOctets                   288405556          0.0
 IpExtInNoECTPkts                6269686            0.0
 #+end_example
+
+*** benchmark02 on this patch
+
+Re-organize code in net/core/dev.c.
+
+**** redirect: UdpNoPorts: 2,829,666
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          4       14,996,383     0           0          
+XDP-RX          total   14,996,383     0          
+cpumap-enqueue    4:5   14,996,387     12,166,725  8.00       bulk-average
+cpumap-enqueue  sum:5   14,996,387     12,166,725  8.00       bulk-average
+cpumap_kthread  5       2,829,666      0           0          
+cpumap_kthread  total   2,829,666      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+**** redirect: iptables-raw drop: 5,529,818
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          4       18,256,809     0           0          
+XDP-RX          total   18,256,809     0          
+cpumap-enqueue    4:5   18,256,806     12,726,988  8.00       bulk-average
+cpumap-enqueue  sum:5   18,256,806     12,726,988  8.00       bulk-average
+cpumap_kthread  5       5,529,818      0           0          
+cpumap_kthread  total   5,529,818      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+**** iptables-raw drop: 5,420,909
+
+Using standard Linux kernel and NAPI-RX iptables-raw drop.
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    5420909            0.0
+IpExtInOctets                   249361032          0.0
+IpExtInNoECTPkts                5420892            0.0
+#+end_example
+
+*** benchmark03 more reorg
+
+Re-organize code in net/core/dev.c.
+
+redirect: UdpNoPorts: 2,866,070
+redirect: iptables-raw drop: 5,516,606
+
 
 ** Patch: net: core: introduce build_skb_around
 
@@ -487,9 +540,7 @@ $ perf stat -C5 -e cycles -e  instructions -e l1d.replacement -e l1d_pend_miss.f
        806.293.783      l1d_pend_miss.pending_cycles                                     ( +-  0,29% )  (16,62%)
 #+end_example
 
-** Prefetchw struct page
-
-bpf: cpumap memory prefetchw optimizations for struct page
+** Patch: bpf: cpumap memory prefetchw optimizations for struct page
 
 A lot of the performance gain comes from this patch.
 
@@ -536,6 +587,92 @@ redirect_err    total   0              0
 xdp_exception   total   0              0          
 #+end_example
 
+** test reorg
+
+*** benchmarks on experimental patch
+
+Re-organize code in net/core/dev.c. Results look like the performance
+problem was solved. The only explaination is that this is caused by I-cache
+misses due to unfortunate layout of the code in dev.c.
+
+**** redirect: UdpNoPorts: 3,060,774
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          0       14,265,023     0           0          
+XDP-RX          total   14,265,023     0          
+cpumap-enqueue    0:5   14,265,033     11,204,255  8.00       bulk-average
+cpumap-enqueue  sum:5   14,265,033     11,204,255  8.00       bulk-average
+cpumap_kthread  5       3,060,774      0           0          
+cpumap_kthread  total   3,060,774      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+**** redirect: iptables-raw drop: 7,035,517
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          0       18,710,012     0           0          
+XDP-RX          total   18,710,012     0          
+cpumap-enqueue    0:5   18,710,010     11,674,495  8.00       bulk-average
+cpumap-enqueue  sum:5   18,710,010     11,674,495  8.00       bulk-average
+cpumap_kthread  5       7,035,517      0           0          
+cpumap_kthread  total   7,035,517      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+Perf stats results:
+#+begin_example
+$ perf stat -C5 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -e L1-icache-load-misses -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 5' (4 runs):
+
+     3.803.441.397      cycles                                                        ( +-  0,00% )
+     8.631.964.172      instructions              #    2,27  insn per cycle           ( +-  0,09% )
+        38.712.388      cache-references                                              ( +-  0,24% )
+               828      cache-misses              #    0,002 % of all cache refs      ( +- 27,03% )
+     1.628.030.913      branches:k                                                    ( +-  0,09% )
+         2.471.318      branch-misses:k           #    0,15% of all branches          ( +-  0,40% )
+            64.688      l2_rqsts.all_code_rd                                          ( +-  1,19% )
+            56.469      l2_rqsts.code_rd_hit                                          ( +-  1,23% )
+             8.179      l2_rqsts.code_rd_miss                                         ( +-  1,49% )
+            17.866      L1-icache-load-misses                                         ( +-  0,90% )
+#+end_example
+
+#+begin_example
+$ perf stat -C5 -e cycles -e  instructions -e l1d.replacement -e l1d_pend_miss.fb_full -e l1d_pend_miss.pending -e l1d_pend_miss.pending_cycles  -r3 sleep 1
+
+ Performance counter stats for 'CPU(s) 5' (3 runs):
+
+     3.795.335.615      cycles                                                        ( +-  0,00% )  (33,27%)
+     8.599.169.329      instructions              #    2,27  insn per cycle           ( +-  0,16% )  (49,95%)
+        58.903.910      l1d.replacement                                               ( +-  0,71% )  (66,63%)
+            93.303      l1d_pend_miss.fb_full                                         ( +-  4,39% )  (83,32%)
+       804.495.333      l1d_pend_miss.pending                                         ( +-  0,32% )  (83,35%)
+       639.584.616      l1d_pend_miss.pending_cycles                                     ( +-  0,57% )  (16,65%)
+
+        1,00107125 +- 0,00000745 seconds time elapsed  ( +-  0,00% )
+#+end_example
+
+**** iptables-raw drop: 5,412,097 (GRO-enabled)
+
+Command used to drop packets:
+- iptables -t raw -I PREROUTING -p udp --dport 9 -j DROP
+
+Using standard Linux kernel and NAPI-RX iptables-raw drop.
+#+begin_example
+nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    5412097            0.0
+IpExtInOctets                   248955956          0.0
+IpExtInNoECTPkts                5412085            0.0
+#+end_example
+
+*
 * notes
 
 -e l2_lines_in.all -e l2_lines_in.e -e l2_lines_in.i -e l2_lines_in.s
@@ -1066,4 +1203,88 @@ Samples: 120K of event 'cycles:ppp', Event count (approx.): 113422085196
 +    1,24%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] memset
 +    1,00%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] kfree_skbmem
 +    0,95%  004  cpumap/4/map:1  [kernel.vmlinux]  [k] __list_add_valid
+#+end_example
+
+
+* notes
+
+** Experiments
+
+#+begin_example
+955.571564128                MUX:                                                14.29 +-     0.00 %       
+956.520987559 BE             Backend_Bound:                                      36.61 +-     0.00 % Slots 
+956.520987559 BE/Mem         Backend_Bound.Memory_Bound:                         15.48 +-     0.00 % Slots 
+956.520987559 BE/Core        Backend_Bound.Core_Bound:                           21.13 +-     0.00 % Slots 
+956.520987559 BE/Mem         Backend_Bound.Memory_Bound.L1_Bound:                13.63 +-     0.00 % Stalls
+956.520987559 BE/Mem         Backend_Bound.Memory_Bound.L3_Bound:                 8.42 +-     0.00 % Stalls
+956.520987559 BE/Core        Backend_Bound.Core_Bound.Ports_Utilization:         33.17 +-     0.00 % Clocks <==
+956.520987559                MUX:                                                14.29 +-     0.00 %       
+Sampling:
+perf record -g -e cycles:pp,cpu/event=0xd1,umask=0x4,name=L3_Bound_MEM_LOAD_UOPS_RETIRED_L3_HIT,period=50021/pp,cpu/event=0xd1,umask=0x1,name=L1_Bound_MEM_LOAD_UOPS_RETIRED_L1_HIT,period=2000003/pp,cpu/event=0xd1,umask=0x40,name=L1_Bound_MEM_LOAD_UOPS_RETIRED_HIT_LFB,period=100003/pp -o perf.data --cpu 4 -a
+[jbrouer@broadwell pmu-tools]$ perf record -g -e cycles:pp,cpu/event=0xd1,umask=0x4,name=L3_Bound_MEM_LOAD_UOPS_RETIRED_L3_HIT,period=50021/pp,cpu/event=0xd1,umask=0x1,name=L1_Bound_MEM_LOAD_UOPS_RETIRED_L1_HIT,period=2000003/pp,cpu/event=0xd1,umask=0x40,name=L1_Bound_MEM_LOAD_UOPS_RETIRED_HIT_LFB,period=100003/pp -o perf.data --cpu 4 -a
+#+end_example
+
+** Experiment: cut-out netfilter-code-path
+
+Ugly hack cut-out nf_nook invocation, and drop all SKBs directly in NF_HOOK_LIST.
+
+#+begin_src diff
+diff --git a/include/linux/netfilter.h b/include/linux/netfilter.h
+index 72cb19c3db6a..edcd49c11ba3 100644
+--- a/include/linux/netfilter.h
++++ b/include/linux/netfilter.h
+@@ -301,8 +301,9 @@ NF_HOOK_LIST(uint8_t pf, unsigned int hook, struct net *net, struct sock *sk,
+        INIT_LIST_HEAD(&sublist);
+        list_for_each_entry_safe(skb, next, head, list) {
+                list_del(&skb->list);
+-               if (nf_hook(pf, hook, net, sk, skb, in, out, okfn) == 1)
+-                       list_add_tail(&skb->list, &sublist);
++               kfree_skb(skb); // XXX hack partition code-path test
++               //if (nf_hook(pf, hook, net, sk, skb, in, out, okfn) == 1)
++               //      list_add_tail(&skb->list, &sublist);
+        }
+        /* Put passed packets back on main list */
+        list_splice(&sublist, head);
+#+end_src
+
+On-top of: "Patch: bpf: cpumap use netif_receive_skb_list" and batch=16
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          1       19,193,940     0           0          
+XDP-RX          total   19,193,940     0          
+cpumap-enqueue    1:4   19,193,949     12,275,618  8.00       bulk-average
+cpumap-enqueue  sum:4   19,193,949     12,275,618  8.00       bulk-average
+cpumap_kthread  4       6,918,329      0           0          
+cpumap_kthread  total   6,918,329      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+Batch=64 (On-top of: "Patch: bpf: cpumap use netif_receive_skb_list")
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          4       18,643,859     0           0          
+XDP-RX          total   18,643,859     0          
+cpumap-enqueue    4:5   18,643,866     11,638,701  8.00       bulk-average
+cpumap-enqueue  sum:5   18,643,866     11,638,701  8.00       bulk-average
+cpumap_kthread  5       7,005,145      0           0          
+cpumap_kthread  total   7,005,145      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+Batch=8 (On-top of: "bpf: cpumap memory prefetchw optimizations for struct page")
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          1       19,182,669     0           0          
+XDP-RX          total   19,182,669     0          
+cpumap-enqueue    1:5   19,182,679     10,166,330  8.00       bulk-average
+cpumap-enqueue  sum:5   19,182,679     10,166,330  8.00       bulk-average
+cpumap_kthread  5       9,016,347      0           0          
+cpumap_kthread  total   9,016,347      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
 #+end_example
