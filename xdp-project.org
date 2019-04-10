@@ -334,6 +334,21 @@ from the system before committing to loading an XDP program.
 
 ** TODO Add a userspace API to query features
 
+* TODO Exposing more kernel data structures through helpers
+
+We already have routing, but we will need more helpers.
+
+** NEXT Layer-2 bridging helper
+
+The obvious next step is a l2 bridging helper that mirrors the l3 routing
+one. Should be fairly straight forward to implement.
+
+** TODO Connection/flow tracking
+
+Exposing either full conntrack, or the more light-weight flow tracking
+support would make things like stateful firewalls easier to implement.
+Probably need a concrete use case for this first, though.
+
 * WAIT BTF-based metadata for XDP                                   :WAITING:
 
 Waiting for tracing people to work out the details of BTF.
