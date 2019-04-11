@@ -19,6 +19,13 @@ there is no rules inserted, the tables are empty).
 This unfortunately invalidates a lot of the test results, as I don't know if
 the result recored with or without iptables filter loaded.
 
+* Testlab machine
+
+The testlab machine:
+- Intel CPU E5-1650 v4 @ 3.60GHz
+- Disabled HT (HyperThreading)
+- Fedora 27
+
 * patch descriptions / notes
 
 ** Cover letter
