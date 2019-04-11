@@ -3,7 +3,21 @@
 #+CATEGORY: CPUMAP
 #+OPTIONS: ^:nil
 
+* WARNING: F27 issue
 
+A lot of the test-results have to be redone, because Fedora release 27 (F27)
+have been loading iptables-filter behind my back...
+
+When testing I've been unloading all the iptables/netfilter modules, as they
+have a fairly high base-cost, even when no rules are present.
+
+I found that F27 periodically or on some event (I have yet to figure out)
+will reload the modules ip6table_filter and iptable_filter (and
+ip_tables+x_tables) which activate the iptables filter hooks. (Strangely
+there is no rules inserted, the tables are empty).
+
+This unfortunately invalidates a lot of the test results, as I don't know if
+the result recored with or without iptables filter loaded.
 
 * patch descriptions / notes
 
@@ -592,8 +606,9 @@ xdp_exception   total   0              0
 *** benchmarks on experimental patch
 
 Re-organize code in net/core/dev.c. Results look like the performance
-problem was solved. The only explaination is that this is caused by I-cache
-misses due to unfortunate layout of the code in dev.c.
+problem was solved.  UPDATE: This could be cause by F27 reloading iptables
+filter chains and kernel modules.  For the iptrables-raw it shouldn't be as
+effected by iptables-filter being loaded or not.
 
 **** redirect: UdpNoPorts: 3,060,774
 
