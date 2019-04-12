@@ -16,7 +16,10 @@ The firewalld service was periodically invoking iptables-restore, due to an
 interface not being part of a group.
 
 Disable command:
-- sudo systemctl disable firewalld
+- sudo systemctl disable firewalld.service
+
+Stop command:
+- sudo systemctl stop firewalld
 
 Error message/situation:
 #+begin_example
@@ -344,5 +347,94 @@ redirect_err    total   0              0
 #+end_example
 
 ** Patch: bpf: cpumap do bulk allocation of SKBs
+*** description
+As cpumap now batch consume xdp_frame's from the ptr_ring, it knows how many
+SKBs it need to allocate. Thus, lets bulk allocate these SKBs via
+kmem_cache_alloc_bulk() API, and use the previously introduced function
+build_skb_around().
+
+Notice that the flag __GFP_ZERO asks the slab/slub allocator to clear the
+memory for us. This does clear a larger area than needed, but my micro
+benchmarks on Intel CPUs show that this is slightly faster due to being a
+cacheline aligned area is cleared for the SKBs. (For SLUB allocator, there
+is a future optimization potential, because SKBs will with high probability
+originate from same page. If we can find/identify continuous memory areas
+then the Intel CPU memset rep stos will have a real performance gain.)
+
+*** redirect: UdpNoPorts: 3,290,563
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          1       14,678,204     0           0          
+XDP-RX          total   14,678,204     0          
+cpumap-enqueue    1:4   14,678,198     11,387,635  8.00       bulk-average
+cpumap-enqueue  sum:4   14,678,198     11,387,635  8.00       bulk-average
+cpumap_kthread  4       3,290,563      0           0          
+cpumap_kthread  total   3,290,563      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+*** redirect: iptables-raw drop: 6,650,112
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          1       19,186,197     0           0          
+XDP-RX          total   19,186,197     0          
+cpumap-enqueue    1:4   19,186,198     12,536,088  8.00       bulk-average
+cpumap-enqueue  sum:4   19,186,198     12,536,088  8.00       bulk-average
+cpumap_kthread  4       6,650,112      0           0          
+cpumap_kthread  total   6,650,112      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+#+begin_example
+$ perf stat -C4 -e cycles -e  instructions -e l1d.replacement -e l1d_pend_miss.fb_full -e l1d_pend_miss.pending -e l1d_pend_miss.pending_cycles  -r3 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (3 runs):
+
+     3.795.280.015      cycles                                                        ( +-  0,00% )  (33,27%)
+     6.833.543.253      instructions              #    1,80  insn per cycle           ( +-  0,22% )  (49,96%)
+        41.746.692      l1d.replacement                                               ( +-  0,24% )  (66,64%)
+                21      l1d_pend_miss.fb_full                                         ( +- 30,77% )  (83,32%)
+     1.294.274.573      l1d_pend_miss.pending                                         ( +-  0,23% )  (83,35%)
+     1.016.396.285      l1d_pend_miss.pending_cycles                                  ( +-  0,10% )  (16,65%)
+#+end_example
+
+#+begin_example
+$ perf stat -C4 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -e L1-icache-load-misses -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (4 runs):
+
+     3.803.640.301      cycles                                                        ( +-  0,00% )
+     6.847.240.631      instructions              #    1,80  insn per cycle           ( +-  0,05% )
+        40.850.074      cache-references                                              ( +-  0,15% )
+               744      cache-misses              #    0,002 % of all cache refs      ( +- 27,03% )
+     1.193.685.279      branches:k                                                    ( +-  0,05% )
+         1.569.066      branch-misses:k           #    0,13% of all branches          ( +-  2,14% )
+            72.894      l2_rqsts.all_code_rd                                          ( +-  0,29% )
+            57.784      l2_rqsts.code_rd_hit                                          ( +-  0,22% )
+            15.083      l2_rqsts.code_rd_miss                                         ( +-  0,64% )
+            27.017      L1-icache-load-misses
+#+end_example
+
+pmu-tools toplev
+#+begin_example
+32.007888520 FE         Frontend_Bound.Frontend_Latency.MS_Switches:    2.06 +-     0.00 % Clocks
+32.007888520 RET        Retiring.Microcode_Sequencer:                   5.21 +-     0.00 % Slots  <==
+32.007888520 BE         Backend_Bound:                                 38.44 +-     0.00 % Slots 
+32.007888520 RET        Retiring:                                      49.87 +-     0.00 % Slots 
+32.007888520 BE/Mem     Backend_Bound.Memory_Bound:                    17.78 +-     0.00 % Slots 
+32.007888520 BE/Core    Backend_Bound.Core_Bound:                      20.66 +-     0.00 % Slots 
+32.007888520 BE/Mem     Backend_Bound.Memory_Bound.L3_Bound:           13.36 +-     0.00 % Stalls
+32.007888520 BE/Core    Backend_Bound.Core_Bound.Ports_Utilization:    33.19 +-     0.00 % Clocks
+32.007888520            MUX:                                           14.28 +-     0.00 %       
+Sampling:
+perf record -g -e cycles:pp,cpu/event=0xd1,umask=0x4,name=L3_Bound_MEM_LOAD_UOPS_RETIRED_L3_HIT,period=50021/pp,cpu/event=0x79,umask=0x30,name=Microcode_Sequencer_IDQ_MS_UOPS,period=2000003/,cpu/event=0x79,umask=0x30,edge=1,cmask=1,name=MS_Switches_IDQ_MS_SWITCHES,period=2000003/ -o perf.data --cpu 4 -a
+#+end_example
+
 ** Patch: bpf: cpumap memory prefetchw optimizations for struct page
 ** Patch: bpf: cpumap use netif_receive_skb_list
