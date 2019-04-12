@@ -437,4 +437,98 @@ perf record -g -e cycles:pp,cpu/event=0xd1,umask=0x4,name=L3_Bound_MEM_LOAD_UOPS
 #+end_example
 
 ** Patch: bpf: cpumap memory prefetchw optimizations for struct page
+*** description
+A lot of the performance gain comes from this patch.
+
+While analysing performance overhead it was found that the largest CPU
+stalls were caused when touching the struct page area. It is first read with
+a READ_ONCE from build_skb_around via page_is_pfmemalloc(), and when freed
+written by page_frag_free() call.
+
+Measurements show that the prefetchw (W) variant operation is needed to
+achieve the performance gain. We believe this optimization it two fold,
+first the W-variant saves one step in the cache-coherency protocol, and
+second it helps us to avoid the non-temporal prefetch HW optimizations and
+bring this into all cache-levels. It might be worth investigating if
+prefetch into L2 will have the same benefit
+
+*** redirect: UdpNoPorts: 3,520,250
+
+(1/3290563-1/3520250)*10^9 = 19.82862950544 ns
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          3       14,687,070     0           0          
+XDP-RX          total   14,687,070     0          
+cpumap-enqueue    3:4   14,687,070     11,166,819  8.00       bulk-average
+cpumap-enqueue  sum:4   14,687,070     11,166,819  8.00       bulk-average
+cpumap_kthread  4       3,520,250      0           0          
+cpumap_kthread  total   3,520,250      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+*** redirect: iptables-raw drop: 7,649,604
+
+(1/6650112-1/7649604)*10^9 = 19.647686018 ns
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          3       19,399,374     0           0          
+XDP-RX          total   19,399,374     0          
+cpumap-enqueue    3:4   19,399,376     11,749,769  8.00       bulk-average
+cpumap-enqueue  sum:4   19,399,376     11,749,769  8.00       bulk-average
+cpumap_kthread  4       7,649,604      0           0          
+cpumap_kthread  total   7,649,604      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+#+begin_example
+$ perf stat -C4 -e cycles -e  instructions -e l1d.replacement -e l1d_pend_miss.fb_full -e l1d_pend_miss.pending -e l1d_pend_miss.pending_cycles  -r3 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (3 runs):
+
+     3.795.781.928      cycles                                                        ( +-  0,01% )  (33,28%)
+     8.125.207.353      instructions              #    2,14  insn per cycle           ( +-  0,11% )  (49,96%)
+        42.081.798      l1d.replacement                                               ( +-  0,06% )  (66,64%)
+           960.077      l1d_pend_miss.fb_full                                         ( +-  1,43% )  (83,32%)
+       744.930.797      l1d_pend_miss.pending                                         ( +-  0,24% )  (83,35%)
+       744.729.920      l1d_pend_miss.pending_cycles                                  ( +-  0,19% )  (16,65%)
+#+end_example
+
+#+begin_example
+$ perf stat -C4 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -e L1-icache-load-misses -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (4 runs):
+
+     3.803.838.336      cycles                                                        ( +-  0,00% )
+     8.061.661.857      instructions              #    2,12  insn per cycle           ( +-  0,46% )
+        40.099.492      cache-references                                              ( +-  0,35% )
+             1.144      cache-misses              #    0,003 % of all cache refs      ( +- 42,88% )
+     1.401.105.834      branches:k                                                    ( +-  0,46% )
+         1.790.412      branch-misses:k           #    0,13% of all branches          ( +-  5,50% )
+            90.620      l2_rqsts.all_code_rd                                          ( +-  1,10% )
+            68.910      l2_rqsts.code_rd_hit                                          ( +-  1,41% )
+            21.692      l2_rqsts.code_rd_miss                                         ( +-  0,35% )
+            28.116      L1-icache-load-misses   
+#+end_example
+
+#+begin_example
+26.014865714                MUX:                                                 14.28 +-     0.00 %       
+26.054928619 FE             Frontend_Bound.Frontend_Latency.MS_Switches:          2.36 +-     0.00 % Clocks
+26.054928619 RET            Retiring.Microcode_Sequencer:                         6.04 +-     0.00 % Slots  <==
+26.054928619 BE             Backend_Bound:                                       27.13 +-     0.00 % Slots 
+26.054928619 RET            Retiring:                                            58.60 +-     0.00 % Slots 
+26.054928619 BE/Mem         Backend_Bound.Memory_Bound:                          10.73 +-     0.00 % Slots 
+26.054928619 BE/Core        Backend_Bound.Core_Bound:                            16.40 +-     0.00 % Slots 
+26.054928619 BE/Mem         Backend_Bound.Memory_Bound.L3_Bound:                  8.73 +-     0.00 % Stalls
+26.054928619 BE/Core        Backend_Bound.Core_Bound.Ports_Utilization:          33.68 +-     0.00 % Clocks
+26.054928619                MUX:                                                 14.29 +-     0.00 %       
+Sampling:
+perf record -g -e cycles:pp,cpu/event=0xd1,umask=0x4,name=L3_Bound_MEM_LOAD_UOPS_RETIRED_L3_HIT,period=50021/pp,cpu/event=0x79,umask=0x30,name=Microcode_Sequencer_IDQ_MS_UOPS,period=2000003/,cpu/event=0x79,umask=0x30,edge=1,cmask=1,name=MS_Switches_IDQ_MS_SWITCHES,period=2000003/ -o perf.data --cpu 4 -a
+#+end_example
+
 ** Patch: bpf: cpumap use netif_receive_skb_list
