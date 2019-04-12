@@ -29,6 +29,55 @@
     - [[#redirect-udpnoports-3303269][redirect: UdpNoPorts: 3,303,269]]
     - [[#redirect-iptables-raw-drop-7160297][redirect: iptables-raw drop: 7,160,297]]
 
+* Cover-letter                                                     :noexport:
+
+Bulk optimization for XDP cpumap redirect
+
+This patchset utilize a number of different kernel bulk APIs for optimizing
+the performance for the XDP cpumap redirect feature.
+
+Benchmark details are available here:
+ https://github.com/xdp-project/xdp-project/blob/master/areas/cpumap/cpumap03-optimizations.org
+
+Performance measurements can be considered micro benchmarks, as they measure
+dropping packets at different stages in the network stack.
+Summary based on above:
+
+Baseline benchmarks
+- baseline-redirect: UdpNoPorts: 3,180,074
+- baseline-redirect: iptables-raw drop: 6,193,534
+
+Patch1: bpf: cpumap use ptr_ring_consume_batched
+- redirect: UdpNoPorts: 3,327,729
+- redirect: iptables-raw drop: 6,321,540
+
+Patch2: net: core: introduce build_skb_around
+- redirect: UdpNoPorts: 3,221,303
+- redirect: iptables-raw drop: 6,320,066
+
+Patch3: bpf: cpumap do bulk allocation of SKBs
+- redirect: UdpNoPorts: 3,290,563
+- redirect: iptables-raw drop: 6,650,112
+
+Patch4: bpf: cpumap memory prefetchw optimizations for struct page
+- redirect: UdpNoPorts: 3,520,250
+- redirect: iptables-raw drop: 7,649,604
+
+In this V2 submission I have chosen drop the SKB-list patch using
+netif_receive_skb_list() as it was not showing a performance improvement for
+these micro benchmarks.
+
+** stg mail V2
+
+#+begin_example
+stg mail --version="bpf-next V2" --edit-cover --cc meup \
+ --to netdev --cc bpf@vger.kernel.org \
+ --to daniel --to alexei --to davem \
+ --cc toke --cc ilias \
+ --cc ecree@solarflare.com --cc songliubraving@fb.com \
+ use--ptr_ring_consume_batched..bpf-cpumap-memory-prefetchw
+#+end_example
+
 * Testlab machine                                                  :noexport:
 
 The testlab machine:
@@ -65,6 +114,7 @@ Apr 12 13:58:17 broadwell firewalld[644]: WARNING: '/usr/sbin/iptables-restore -
 Apr 12 13:58:17 broadwell firewalld[644]: WARNING: '/usr/sbin/ip6tables-restore --wait=2 -n' failed:
 Apr 12 13:58:17 broadwell firewalld[644]: ERROR: COMMAND_FAILED
 #+end_example
+
 
 * Baseline benchmarks
 
