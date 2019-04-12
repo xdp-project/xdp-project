@@ -531,4 +531,118 @@ Sampling:
 perf record -g -e cycles:pp,cpu/event=0xd1,umask=0x4,name=L3_Bound_MEM_LOAD_UOPS_RETIRED_L3_HIT,period=50021/pp,cpu/event=0x79,umask=0x30,name=Microcode_Sequencer_IDQ_MS_UOPS,period=2000003/,cpu/event=0x79,umask=0x30,edge=1,cmask=1,name=MS_Switches_IDQ_MS_SWITCHES,period=2000003/ -o perf.data --cpu 4 -a
 #+end_example
 
+
 ** Patch: bpf: cpumap use netif_receive_skb_list
+
+*** description
+Reduce BH-disable period further by moving cpu_map_build_skb()
+outside/before invoking the network stack. And build up a skb_list that is
+used for netif_receive_skb_list. This is also an I-cache optimization.
+
+When injecting packets into the network stack, cpumap used a special
+function named netif_receive_skb_core(), in-order to skip generic-XDP.
+For this reason create an equivalent list version named
+netif_receive_skb_list_core().
+
+*** redirect: UdpNoPorts: 3,303,269
+
+(1/3520250-1/3303269)*10^9 = -18.65968283 ns
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          3       14,434,038     0           0          
+XDP-RX          total   14,434,039     0          
+cpumap-enqueue    3:4   14,434,012     11,130,740  8.00       bulk-average
+cpumap-enqueue  sum:4   14,434,013     11,130,741  8.00       bulk-average
+cpumap_kthread  4       3,303,269      0           0          
+cpumap_kthread  total   3,303,269      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+*** redirect: iptables-raw drop: 7,160,297
+
+(1/7649604-1/7160297)*10^9 = -8.93329012 ns
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          3       19,479,183     0           0          
+XDP-RX          total   19,479,183     0          
+cpumap-enqueue    3:4   19,479,179     12,318,887  8.00       bulk-average
+cpumap-enqueue  sum:4   19,479,179     12,318,887  8.00       bulk-average
+cpumap_kthread  4       7,160,297      0           0          
+cpumap_kthread  total   7,160,297      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+#+begin_example
+$ perf stat -C4 -e cycles -e  instructions -e l1d.replacement -e l1d_pend_miss.fb_full -e l1d_pend_miss.pending -e l1d_pend_miss.pending_cycles  -r3 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (3 runs):
+
+     3.795.318.031      cycles                                                        ( +-  0,01% )  (33,27%)
+     8.592.913.132      instructions              #    2,26  insn per cycle           ( +-  0,25% )  (49,96%)
+        60.552.238      l1d.replacement                                               ( +-  0,86% )  (66,64%)
+           174.051      l1d_pend_miss.fb_full                                         ( +-  4,80% )  (83,32%)
+       806.460.573      l1d_pend_miss.pending                                         ( +-  1,13% )  (83,36%)
+       660.923.976      l1d_pend_miss.pending_cycles                                  ( +-  1,22% )  (16,64%)
+#+end_example
+
+#+begin_example
+$ perf stat -C4 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -e L1-icache-load-misses -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (4 runs):
+
+     3.803.792.337      cycles                                                        ( +-  0,00% )
+     8.630.825.056      instructions              #    2,27  insn per cycle           ( +-  0,06% )
+        39.594.698      cache-references                                              ( +-  0,24% )
+             1.123      cache-misses              #    0,003 % of all cache refs      ( +- 20,00% )
+     1.614.122.541      branches:k                                                    ( +-  0,06% )
+         2.431.951      branch-misses:k           #    0,15% of all branches          ( +-  0,51% )
+           135.333      l2_rqsts.all_code_rd                                          ( +-  1,05% )
+           114.754      l2_rqsts.code_rd_hit                                          ( +-  1,11% )
+            20.546      l2_rqsts.code_rd_miss                                         ( +-  1,04% )
+            41.940      L1-icache-load-misses                                         ( +-  0,73% )
+#+end_example
+
+Toplev:
+#+begin_example
+34.155505980 FE             Frontend_Bound:                                      20.25 +-     0.00 % Slots     
+34.155505980 BE             Backend_Bound:                                       18.06 +-     0.00 % Slots     
+34.155505980 RET            Retiring:                                            60.23 +-     0.00 % Slots     
+34.155505980 FE             Frontend_Bound.Frontend_Latency.MS_Switches:          2.33 +-     0.00 % Clocks    
+34.155505980 RET            Retiring.Microcode_Sequencer:                         5.60 +-     0.00 % Slots      <==
+34.155505980 FE             Frontend_Bound.Frontend_Bandwidth:                   13.77 +-     0.00 % Slots     
+34.155505980 BE/Core        Backend_Bound.Core_Bound:                            11.55 +-     0.00 % Slots     
+34.155505980 FE             Frontend_Bound.Frontend_Bandwidth.MITE:              26.26 +-     0.00 % CoreClocks
+34.155505980 BE/Core        Backend_Bound.Core_Bound.Ports_Utilization:          33.14 +-     0.00 % Clocks    
+34.155505980                MUX:                                                 14.28 +-     0.00 %           
+Sampling:
+perf record -g -e cycles:pp,cpu/event=0x79,umask=0x30,name=Microcode_Sequencer_IDQ_MS_UOPS,period=2000003/,cpu/event=0x79,umask=0x30,edge=1,cmask=1,name=MS_Switches_IDQ_MS_SWITCHES,period=2000003/ -o perf.data --cpu 4 -a
+#+end_example
+
+Toplev help:
+
+- Frontend_Bound.Frontend_Latency.MS_Switches:
+	This metric estimates the fraction of cycles when the CPU
+	was stalled due to switches of uop delivery to the Microcode
+	Sequencer (MS)...
+	Sampling events:  idq.ms_switches
+
+- Retiring.Microcode_Sequencer:
+	This metric represents fraction of slots the CPU was
+	retiring uops fetched by the Microcode Sequencer (MS) unit...
+	Sampling events:  idq.ms_uops
+
+- Frontend_Bound.Frontend_Bandwidth.MITE:
+	This metric represents Core fraction of cycles in which CPU
+	was likely limited due to the MITE pipeline (Legacy Decode
+	Pipeline)...
+
+- Backend_Bound.Core_Bound.Ports_Utilization:
+	This metric estimates fraction of cycles the CPU performance
+	was potentially limited due to Core computation issues (non
+	divider-related)...
