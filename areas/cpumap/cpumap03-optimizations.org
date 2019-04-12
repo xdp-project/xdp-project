@@ -306,6 +306,43 @@ $ perf stat -C4 -e cycles -e  instructions -e cache-references -e cache-misses -
 #+end_example
 
 ** Patch: net: core: introduce build_skb_around
+*** description
+The function build_skb() also have the responsibility to allocate and clear
+the SKB structure. Introduce a new function build_skb_around(), that moves
+the responsibility of allocation and clearing to the caller. This allows
+caller to use kmem_cache (slab/slub) bulk allocation API.
+
+Next patch use this function combined with kmem_cache_alloc_bulk.
+
+*** redirect: UdpNoPorts: 3,221,303
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          1       14,667,249     0           0          
+XDP-RX          total   14,667,249     0          
+cpumap-enqueue    1:4   14,667,245     11,445,944  8.00       bulk-average
+cpumap-enqueue  sum:4   14,667,245     11,445,944  8.00       bulk-average
+cpumap_kthread  4       3,221,303      0           0          
+cpumap_kthread  total   3,221,303      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+*** redirect: iptables-raw drop: 6,320,066
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          1       19,210,396     0           0          
+XDP-RX          total   19,210,396     0          
+cpumap-enqueue    1:4   19,210,396     12,890,329  8.00       bulk-average
+cpumap-enqueue  sum:4   19,210,396     12,890,329  8.00       bulk-average
+cpumap_kthread  4       6,320,066      0           0          
+cpumap_kthread  total   6,320,066      0           0          
+redirect_err    total   0              0          
+#+end_example
+
 ** Patch: bpf: cpumap do bulk allocation of SKBs
 ** Patch: bpf: cpumap memory prefetchw optimizations for struct page
 ** Patch: bpf: cpumap use netif_receive_skb_list
