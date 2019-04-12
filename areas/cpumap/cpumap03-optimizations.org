@@ -28,6 +28,8 @@
   - [[#patch5-bpf-cpumap-use-netif_receive_skb_list][Patch5: bpf: cpumap use netif_receive_skb_list]]
     - [[#redirect-udpnoports-3303269][redirect: UdpNoPorts: 3,303,269]]
     - [[#redirect-iptables-raw-drop-7160297][redirect: iptables-raw drop: 7,160,297]]
+    - [[#cpumap-qsize64-redirect-udpnoports-4089778][cpumap-qsize:64: redirect: UdpNoPorts: 4,089,778]]
+    - [[#cpumap-qsize64-redirect-iptables-raw-drop-6869895][cpumap-qsize:64: redirect: iptables-raw drop: 6,869,895]]
 
 * Cover-letter                                                     :noexport:
 
@@ -77,6 +79,8 @@ stg mail --version="bpf-next V2" --edit-cover --cc meup \
  --cc ecree@solarflare.com --cc songliubraving@fb.com \
  use--ptr_ring_consume_batched..bpf-cpumap-memory-prefetchw
 #+end_example
+
+Patchwork link: http://patchwork.ozlabs.org/project/netdev/list/?series=102480&state=%2a
 
 * Testlab machine                                                  :noexport:
 
@@ -721,3 +725,56 @@ Toplev help:
 	This metric estimates fraction of cycles the CPU performance
 	was potentially limited due to Core computation issues (non
 	divider-related)...
+
+*** cpumap-qsize:64: redirect: UdpNoPorts: 4,089,778
+
+The performance is a lot better with smaller qsize (64) in the CPUMAP
+(ptr_ring).  Looking at qsize=128 perf-report I see =free_pcppages_bulk=
+which indicate i40e recycling scheme is failing.
+
+#+begin_example
+sudo ./xdp_redirect_cpu --dev i40e1 --qsize 64 --cpu 4 --prog xdp_cpu_map0 --sec 3
+Add-new CPU:4 as idx:0 queue_size:64 (total cpus_count:1)
+[...]
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          3       19,168,764     0           0          
+XDP-RX          total   19,168,764     0          
+cpumap-enqueue    3:4   19,168,764     15,078,984  8.00       bulk-average
+cpumap-enqueue  sum:4   19,168,764     15,078,984  8.00       bulk-average
+cpumap_kthread  4       4,089,778      0           0          
+cpumap_kthread  total   4,089,778      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+*** cpumap-qsize:64: redirect: iptables-raw drop: 6,869,895
+
+Strangely reducing qsize=64 didn't help iptables-raw drop case. This is
+rather strange.
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          3       19,084,817     0           0          
+XDP-RX          total   19,084,817     0          
+cpumap-enqueue    3:4   19,084,815     12,214,918  8.00       bulk-average
+cpumap-enqueue  sum:4   19,084,815     12,214,918  8.00       bulk-average
+cpumap_kthread  4       6,869,895      0           0          
+cpumap_kthread  total   6,869,895      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+toplev:
+#+begin_example
+14.867717540 FE             Frontend_Bound.Frontend_Latency.MS_Switches:          2.24 +-     0.00 % Clocks
+14.867717540 RET            Retiring.Microcode_Sequencer:                         5.38 +-     0.00 % Slots  <==
+14.867717540 BE             Backend_Bound:                                       20.82 +-     0.00 % Slots 
+14.867717540 RET            Retiring:                                            57.96 +-     0.00 % Slots 
+14.867717540 BE/Core        Backend_Bound.Core_Bound:                            12.29 +-     0.00 % Slots 
+14.867717540 BE/Core        Backend_Bound.Core_Bound.Ports_Utilization:          33.42 +-     0.00 % Clocks
+14.867717540                MUX:                                                 14.28 +-     0.00 %       
+Sampling:
+perf record -g -e cycles:pp,cpu/event=0x79,umask=0x30,name=Microcode_Sequencer_IDQ_MS_UOPS,period=2000003/,cpu/event=0x79,umask=0x30,edge=1,cmask=1,name=MS_Switches_IDQ_MS_SWITCHES,period=2000003/ -o perf.data --cpu 4 -a
+#+end_example
