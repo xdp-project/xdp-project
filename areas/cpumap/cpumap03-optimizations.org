@@ -1,0 +1,12 @@
+# -*- fill-column: 76; -*-
+#+TITLE: CPUMAP optimizations patchset-V2
+#+CATEGORY: CPUMAP
+#+OPTIONS: ^:nil
+
+* Testlab machine
+
+The testlab machine:
+- Intel CPU E5-1650 v4 @ 3.60GHz
+- Disabled HT (HyperThreading)
+- Fedora 27
+

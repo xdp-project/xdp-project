@@ -1,7 +1,9 @@
 # -*- fill-column: 76; -*-
-#+TITLE: CPUMAP optimizations
+#+TITLE: CPUMAP optimizations patchset-V1
 #+CATEGORY: CPUMAP
 #+OPTIONS: ^:nil
+
+Next benchmark iteration in [[file:cpumap03-optimizations.org]].
 
 * WARNING: F27 issue
 
