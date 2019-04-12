@@ -10,3 +10,237 @@ The testlab machine:
 - Disabled HT (HyperThreading)
 - Fedora 27
 
+** Disabled firewalld
+
+The firewalld service was periodically invoking iptables-restore, due to an
+interface not being part of a group.
+
+Disable command:
+- sudo systemctl disable firewalld
+
+Error message/situation:
+#+begin_example
+$ sudo systemctl status firewalld
+● firewalld.service - firewalld - dynamic firewall daemon
+   Loaded: loaded (/usr/lib/systemd/system/firewalld.service; enabled; vendor preset: enabled)
+   Active: active (running) since Fri 2019-04-12 13:56:45 CEST; 1min 35s ago
+     Docs: man:firewalld(1)
+ Main PID: 644 (firewalld)
+    Tasks: 2 (limit: 4915)
+   CGroup: /system.slice/firewalld.service
+           └─644 /usr/bin/python3 -Es /usr/sbin/firewalld --nofork --nopid
+
+Apr 12 13:56:44 broadwell systemd[1]: Starting firewalld - dynamic firewall daemon...
+Apr 12 13:56:45 broadwell systemd[1]: Started firewalld - dynamic firewall daemon.
+Apr 12 13:58:17 broadwell firewalld[644]: WARNING: '/usr/sbin/iptables-restore --wait=2 -n' failed:
+Apr 12 13:58:17 broadwell firewalld[644]: WARNING: '/usr/sbin/ip6tables-restore --wait=2 -n' failed:
+Apr 12 13:58:17 broadwell firewalld[644]: ERROR: COMMAND_FAILED
+#+end_example
+
+* Baseline benchmarks
+
+Rebased patchset on: 8af9f7291e22 ("Merge branch 'sctp-skb-list'").
+
+Kernel: 5.1.0-rc4-bpf-next-cpumap-baseline+
+#+begin_example
+Linux broadwell 5.1.0-rc4-bpf-next-cpumap-baseline+ #134 SMP PREEMPT Fri Apr 12 13:53:43 CEST 2019 x86_64 x86_64 x86_64 GNU/Linux
+#+end_example
+
+** NIC: i40e1
+
+#+begin_example
+$ ethtool -i i40e1
+driver: i40e
+version: 2.8.10-k
+firmware-version: 5.05 0x80002924 1.1313.0
+expansion-rom-version: 
+bus-info: 0000:04:00.0
+supports-statistics: yes
+supports-test: yes
+supports-eeprom-access: yes
+supports-register-dump: yes
+supports-priv-flags: yes
+#+end_example
+
+** Baseline: RX-NAPI CPU handle (driver: i40e)
+
+The processing and (deliberate) packet drops happens on same CPU as packet
+was RX-ed on, which have many cache advantages.
+
+*** baseline: UdpNoPorts: 3,380,531
+
+No listing UDP service.
+No iptables.
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    3380531            0.0
+IpInDelivers                    3380530            0.0
+IpOutRequests                   1                  0.0
+IcmpOutMsgs                     1                  0.0
+IcmpOutDestUnreachs             1                  0.0
+IcmpMsgOutType3                 1                  0.0
+UdpNoPorts                      3380530            0.0
+IpExtInOctets                   155507600          0.0
+IpExtOutOctets                  74                 0.0
+IpExtInNoECTPkts                3380600            0.0
+#+end_example
+
+*** baseline: iptables-raw drop: 5,775,937 pps (GRO-enabled)
+
+Command used to drop packets:
+- iptables -t raw -I PREROUTING -p udp --dport 9 -j DROP
+
+With (default) GRO enabled:
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    5775937            0.0
+IpExtInOctets                   265696138          0.0
+IpExtInNoECTPkts                5776001            0.0
+#+end_example
+
+*** baseline: iptables-raw drop: 6,783,904 pps (GRO-disabled)
+
+Command to disable GRO:
+- ethtool -K i40e1 gro off tso off
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    6783904            0.0
+IpExtInOctets                   312055214          0.0
+IpExtInNoECTPkts                6783810            0.0
+#+end_example
+
+** Baseline: cpumap redirect
+
+What is the baseline CPUMAP redirect performance. This is what we are
+optimizing against. The RX-NAPI CPU numbers is not our performance target,
+as the purpose of cpumap is to free-up resources on RX-CPU of a XDP DDoS
+mitigation program and for doing load-balancing of RX traffic to several
+CPUs.
+
+*** baseline-redirect: UdpNoPorts: 3,180,074
+
+#+begin_example
+sudo ./xdp_redirect_cpu --dev i40e1 --qsize 128 --cpu 4 --prog xdp_cpu_map0 --sec 3
+[...]
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          3       14,732,711     0           0          
+XDP-RX          total   14,732,712     0          
+cpumap-enqueue    3:4   14,732,686     11,552,609  8.00       bulk-average
+cpumap-enqueue  sum:4   14,732,686     11,552,609  8.00       bulk-average
+cpumap_kthread  4       3,180,074      0           0          
+cpumap_kthread  total   3,180,074      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+Perf stats info:
+#+begin_example
+$ perf stat -C4 -e cycles -e  instructions -e l1d.replacement -e l1d_pend_miss.fb_full -e l1d_pend_miss.pending -e l1d_pend_miss.pending_cycles  -r3 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (3 runs):
+
+     3.794.115.355      cycles                                                ( +-  0,00% )  (33,27%)
+     7.398.522.650      instructions              #    1,95  insn per cycle   ( +-  0,15% )  (49,95%)
+        32.326.517      l1d.replacement                                       ( +-  0,32% )  (66,63%)
+                79      l1d_pend_miss.fb_full                                 ( +- 15,72% )  (83,32%)
+       842.775.161      l1d_pend_miss.pending                                 ( +-  0,35% )  (83,38%)
+       697.387.031      l1d_pend_miss.pending_cycles                          ( +-  0,24% )  (16,62%)
+#+end_example
+
+Perf stats info:
+#+begin_example
+$ perf stat -C4 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -e L1-icache-load-misses -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (4 runs):
+
+     3.803.840.466      cycles                                                        ( +-  0,00% )
+     7.431.273.060      instructions              #    1,95  insn per cycle           ( +-  0,05% )
+        22.735.593      cache-references                                              ( +-  0,31% )
+             1.106      cache-misses              #    0,005 % of all cache refs      ( +- 54,85% )
+     1.300.998.977      branches:k                                                    ( +-  0,05% )
+         1.456.511      branch-misses:k           #    0,11% of all branches          ( +-  1,22% )
+           231.879      l2_rqsts.all_code_rd                                          ( +-  0,73% )
+           167.866      l2_rqsts.code_rd_hit                                          ( +-  0,86% )
+            63.979      l2_rqsts.code_rd_miss                                         ( +-  1,07% )
+            99.834      L1-icache-load-misses                                         ( +-  0,70% )
+#+end_example
+
+*** baseline-redirect: iptables-raw drop: 6,193,534
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          3       19,397,368     0           0          
+XDP-RX          total   19,397,368     0          
+cpumap-enqueue    3:4   19,397,368     13,203,837  8.00       bulk-average
+cpumap-enqueue  sum:4   19,397,368     13,203,837  8.00       bulk-average
+cpumap_kthread  4       6,193,534      0           0          
+cpumap_kthread  total   6,193,534      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+Perf stat info
+#+begin_example
+$ perf stat -C4 -e cycles -e  instructions -e l1d.replacement -e l1d_pend_miss.fb_full -e l1d_pend_miss.pending -e l1d_pend_miss.pending_cycles  -r3 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (3 runs):
+
+     3.795.333.805      cycles                                               ( +-  0,00% )  (33,27%)
+     6.676.371.780      instructions              #    1,76  insn per cycle  ( +-  0,11% )  (49,95%)
+        38.414.598      l1d.replacement                                      ( +-  0,15% )  (66,63%)
+               353      l1d_pend_miss.fb_full                                ( +- 95,32% )  (83,32%)
+     1.373.812.555      l1d_pend_miss.pending                                ( +-  0,24% )  (83,36%)
+     1.086.284.803      l1d_pend_miss.pending_cycles                         ( +-  0,25% )  (16,64%)
+#+end_example
+
+Perf stat info
+#+begin_example
+$ perf stat -C4 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -e L1-icache-load-misses -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (4 runs):
+
+     3.803.809.131      cycles                                                        ( +-  0,00% )
+     6.704.833.741      instructions              #    1,76  insn per cycle           ( +-  0,12% )
+        38.235.727      cache-references                                              ( +-  0,40% )
+             1.168      cache-misses              #    0,003 % of all cache refs      ( +- 50,17% )
+     1.146.814.488      branches:k                                                    ( +-  0,11% )
+           834.706      branch-misses:k           #    0,07% of all branches          ( +-  0,11% )
+           205.940      l2_rqsts.all_code_rd                                          ( +-  0,70% )
+           180.336      l2_rqsts.code_rd_hit                                          ( +-  0,50% )
+            25.580      l2_rqsts.code_rd_miss                                         ( +-  2,20% )
+            57.482      L1-icache-load-misses                                         ( +-  0,82% )
+#+end_example
+
+* Patch descriptions + benchmarks
+
+5.1.0-rc4-bpf-next-cpumap-SKB-bulk+
+
+** Patch: bpf: cpumap use ptr_ring_consume_batched
+*** description
+
+Move ptr_ring dequeue outside loop, that allocate SKBs and calls network
+stack, as these operations that can take some time. The ptr_ring is a
+communication channel between CPUs, where we want to reduce/limit any
+cacheline bouncing.
+
+Do a concentrated bulk dequeue via ptr_ring_consume_batched, to shorten the
+period and times the remote cacheline in ptr_ring is read
+
+Batch size 8 is both to (1) limit BH-disable period, and (2) consume one
+cacheline on 64-bit archs. After reducing the BH-disable section further
+then we can consider changing this, while still thinking about L1 cacheline
+size being active.
+
+*** 
+
+** Patch: net: core: introduce build_skb_around
+** Patch: bpf: cpumap do bulk allocation of SKBs
+** Patch: bpf: cpumap memory prefetchw optimizations for struct page
+** Patch: bpf: cpumap use netif_receive_skb_list
