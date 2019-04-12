@@ -3,7 +3,38 @@
 #+CATEGORY: CPUMAP
 #+OPTIONS: ^:nil
 
-* Testlab machine
+* TOC                                                                   :toc_3:
+- [[#baseline-benchmarks][Baseline benchmarks]]
+  - [[#baseline-rx-napi-cpu-handle-driver-i40e][Baseline: RX-NAPI CPU handle (driver: i40e)]]
+    - [[#baseline-udpnoports-3380531][baseline: UdpNoPorts: 3,380,531]]
+    - [[#baseline-iptables-raw-drop-5775937-pps-gro-enabled][baseline: iptables-raw drop: 5,775,937 pps (GRO-enabled)]]
+    - [[#baseline-iptables-raw-drop-6783904-pps-gro-disabled][baseline: iptables-raw drop: 6,783,904 pps (GRO-disabled)]]
+  - [[#baseline-cpumap-redirect][Baseline: cpumap redirect]]
+    - [[#baseline-redirect-udpnoports-3180074][baseline-redirect: UdpNoPorts: 3,180,074]]
+    - [[#baseline-redirect-iptables-raw-drop-6193534][baseline-redirect: iptables-raw drop: 6,193,534]]
+- [[#patch-descriptions--benchmarks][Patch descriptions + benchmarks]]
+  - [[#patch-bpf-cpumap-use-ptr_ring_consume_batched][Patch: bpf: cpumap use ptr_ring_consume_batched]]
+    - [[#description][description]]
+    - [[#redirect-udpnoports-3327729][redirect: UdpNoPorts: 3,327,729]]
+    - [[#redirect-iptables-raw-drop-6321540][redirect: iptables-raw drop: 6,321,540]]
+  - [[#patch-net-core-introduce-build_skb_around][Patch: net: core: introduce build_skb_around]]
+    - [[#description-1][description]]
+    - [[#redirect-udpnoports-3221303][redirect: UdpNoPorts: 3,221,303]]
+    - [[#redirect-iptables-raw-drop-6320066][redirect: iptables-raw drop: 6,320,066]]
+  - [[#patch-bpf-cpumap-do-bulk-allocation-of-skbs][Patch: bpf: cpumap do bulk allocation of SKBs]]
+    - [[#description-2][description]]
+    - [[#redirect-udpnoports-3290563][redirect: UdpNoPorts: 3,290,563]]
+    - [[#redirect-iptables-raw-drop-6650112][redirect: iptables-raw drop: 6,650,112]]
+  - [[#patch-bpf-cpumap-memory-prefetchw-optimizations-for-struct-page][Patch: bpf: cpumap memory prefetchw optimizations for struct page]]
+    - [[#description-3][description]]
+    - [[#redirect-udpnoports-3520250][redirect: UdpNoPorts: 3,520,250]]
+    - [[#redirect-iptables-raw-drop-7649604][redirect: iptables-raw drop: 7,649,604]]
+  - [[#patch-bpf-cpumap-use-netif_receive_skb_list][Patch: bpf: cpumap use netif_receive_skb_list]]
+    - [[#description-4][description]]
+    - [[#redirect-udpnoports-3303269][redirect: UdpNoPorts: 3,303,269]]
+    - [[#redirect-iptables-raw-drop-7160297][redirect: iptables-raw drop: 7,160,297]]
+
+* Testlab machine                                                  :noexport:
 
 The testlab machine:
 - Intel CPU E5-1650 v4 @ 3.60GHz
@@ -49,7 +80,7 @@ Kernel: 5.1.0-rc4-bpf-next-cpumap-baseline+
 Linux broadwell 5.1.0-rc4-bpf-next-cpumap-baseline+ #134 SMP PREEMPT Fri Apr 12 13:53:43 CEST 2019 x86_64 x86_64 x86_64 GNU/Linux
 #+end_example
 
-** NIC: i40e1
+** NIC: i40e1                                                     :noexport:
 
 #+begin_example
 $ ethtool -i i40e1
