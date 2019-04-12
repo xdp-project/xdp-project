@@ -238,7 +238,72 @@ cacheline on 64-bit archs. After reducing the BH-disable section further
 then we can consider changing this, while still thinking about L1 cacheline
 size being active.
 
-*** 
+*** redirect: UdpNoPorts: 3,327,729
+
+#+begin_example
+sudo ./xdp_redirect_cpu --dev i40e1 --qsize 128 --cpu 4 --prog xdp_cpu_map0 --sec 3
+Add-new CPU:4 as idx:0 queue_size:128 (total cpus_count:1)
+[...]
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          0       14,197,444     0           0          
+XDP-RX          total   14,197,444     0          
+cpumap-enqueue    0:4   14,197,447     10,869,720  8.00       bulk-average
+cpumap-enqueue  sum:4   14,197,447     10,869,720  8.00       bulk-average
+cpumap_kthread  4       3,327,729      0           0          
+cpumap_kthread  total   3,327,729      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+*** redirect: iptables-raw drop: 6,321,540
+
+#+begin_example
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          0       18,487,939     0           0          
+XDP-RX          total   18,487,939     0          
+cpumap-enqueue    0:4   18,487,939     12,166,397  8.00       bulk-average
+cpumap-enqueue  sum:4   18,487,939     12,166,397  8.00       bulk-average
+cpumap_kthread  4       6,321,540      0           0          
+cpumap_kthread  total   6,321,540      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+Perf stat info:
+#+begin_example
+perf stat -C4 -e cycles -e  instructions -e l1d.replacement -e l1d_pend_miss.fb_full -e l1d_pend_miss.pending -e l1d_pend_miss.pending_cycles  -r3 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (3 runs):
+
+     3.794.926.426      cycles                                                        ( +-  0,01% )  (33,27%)
+     6.912.342.694      instructions              #    1,82  insn per cycle           ( +-  0,11% )  (49,95%)
+        49.196.067      l1d.replacement                                               ( +-  0,43% )  (66,63%)
+                17      l1d_pend_miss.fb_full                                         ( +- 28,21% )  (83,32%)
+     1.328.618.636      l1d_pend_miss.pending                                         ( +-  0,14% )  (83,36%)
+     1.026.107.329      l1d_pend_miss.pending_cycles                                  ( +-  0,10% )  (16,64%)
+#+end_example
+
+Perf stat info:
+#+begin_example
+$ perf stat -C4 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -e L1-icache-load-misses -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (4 runs):
+
+     3.803.226.476      cycles                                                        ( +-  0,01% )
+     6.924.719.264      instructions              #    1,82  insn per cycle           ( +-  0,09% )
+        39.040.218      cache-references                                              ( +-  0,13% )
+             1.393      cache-misses              #    0,004 % of all cache refs      ( +- 37,33% )
+     1.190.290.376      branches:k                                                    ( +-  0,09% )
+         1.359.252      branch-misses:k           #    0,11% of all branches          ( +-  1,22% )
+           145.858      l2_rqsts.all_code_rd                                          ( +-  8,09% )
+           124.648      l2_rqsts.code_rd_hit                                          ( +-  8,99% )
+            21.198      l2_rqsts.code_rd_miss                                         ( +-  3,56% )
+            35.002      L1-icache-load-misses                                         ( +-  1,28% )
+
+        1,00105277 +- 0,00000961 seconds time elapsed  ( +-  0,00% )
+#+end_example
 
 ** Patch: net: core: introduce build_skb_around
 ** Patch: bpf: cpumap do bulk allocation of SKBs
