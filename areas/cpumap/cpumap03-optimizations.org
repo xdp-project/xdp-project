@@ -25,6 +25,8 @@
   - [[#patch4-bpf-cpumap-memory-prefetchw-optimizations-for-struct-page][Patch4: bpf: cpumap memory prefetchw optimizations for struct page]]
     - [[#redirect-udpnoports-3520250][redirect: UdpNoPorts: 3,520,250]]
     - [[#redirect-iptables-raw-drop-7649604][redirect: iptables-raw drop: 7,649,604]]
+    - [[#cpumap-qsize64-redirect-udpnoports-3930379][cpumap-qsize:64: redirect: UdpNoPorts: 3,930,379]]
+    - [[#cpumap-qsize64-redirect-iptables-raw-drop-7329574][cpumap-qsize:64: redirect: iptables-raw drop: 7,329,574]]
   - [[#patch5-bpf-cpumap-use-netif_receive_skb_list][Patch5: bpf: cpumap use netif_receive_skb_list]]
     - [[#redirect-udpnoports-3303269][redirect: UdpNoPorts: 3,303,269]]
     - [[#redirect-iptables-raw-drop-7160297][redirect: iptables-raw drop: 7,160,297]]
@@ -611,6 +613,41 @@ Sampling:
 perf record -g -e cycles:pp,cpu/event=0xd1,umask=0x4,name=L3_Bound_MEM_LOAD_UOPS_RETIRED_L3_HIT,period=50021/pp,cpu/event=0x79,umask=0x30,name=Microcode_Sequencer_IDQ_MS_UOPS,period=2000003/,cpu/event=0x79,umask=0x30,edge=1,cmask=1,name=MS_Switches_IDQ_MS_SWITCHES,period=2000003/ -o perf.data --cpu 4 -a
 #+end_example
 
+*** cpumap-qsize:64: redirect: UdpNoPorts: 3,930,379
+
+#+begin_example
+$ sudo ./xdp_redirect_cpu --dev i40e1 --qsize $((64)) --cpu 4 --prog xdp_cpu_map0 --sec 3
+Add-new CPU:4 as idx:0 queue_size:64 (total cpus_count:1)
+[...]
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          5       18,232,861     0           0          
+XDP-RX          total   18,232,861     0          
+cpumap-enqueue    5:4   18,232,853     14,302,473  8.00       bulk-average
+cpumap-enqueue  sum:4   18,232,853     14,302,473  8.00       bulk-average
+cpumap_kthread  4       3,930,379      0           0          
+cpumap_kthread  total   3,930,379      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+*** cpumap-qsize:64: redirect: iptables-raw drop: 7,329,574
+
+#+begin_example
+sudo ./xdp_redirect_cpu --dev i40e1 --qsize $((64)) --cpu 4 --prog xdp_cpu_map0 --sec 3
+Add-new CPU:4 as idx:0 queue_size:64 (total cpus_count:1)
+[...]
+Running XDP/eBPF prog_num:0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          5       18,374,651     0           0          
+XDP-RX          total   18,374,651     0          
+cpumap-enqueue    5:4   18,374,647     11,045,071  8.00       bulk-average
+cpumap-enqueue  sum:4   18,374,647     11,045,071  8.00       bulk-average
+cpumap_kthread  4       7,329,574      0           0          
+cpumap_kthread  total   7,329,574      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
 
 ** Patch5: bpf: cpumap use netif_receive_skb_list
 *** description                                                  :noexport:
