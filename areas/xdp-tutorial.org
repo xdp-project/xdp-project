@@ -19,6 +19,8 @@ handling, and show how code are placed into common/ directory files/objects.
 ** TODO xdp-tutorial: Add AF_XDP tutorial example
 Initial step PR: https://github.com/xdp-project/xdp-tutorial/pull/35
 
+** TODO Example of how to use tail calls
+
 * TODO xdp-tutorial for tracepoints project
 
 Tutorial sub-project for teaching people about using tracepoints.
