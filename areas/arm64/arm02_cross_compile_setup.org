@@ -1,4 +1,4 @@
-# -*- fill-column: 79; -*-
+# -*- fill-column: 76; -*-
 #+Title: Setup ARM cross compiler on build server
 
 Notes on howto get cross compiler working for ARM64.
