@@ -272,49 +272,6 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 [[file:images/af_xdp_v2.png]]
 
 
-* Performance                                                        :export:
-:PROPERTIES:
-:reveal_extra_attr: class="mid-slide"
-:END:
-
-
-** Slide: Experimental Methodology                                  :export:
-
- - Broadwell E5-2660 @ 2.7GHz (with DDIO = L3 payload delivery)
- - Linux kernel 4.20
- - Spectre and Meltdown *mitigations on*
- - 2 i40e 40GBit/s NICs, 2 AF_XDP sockets
- - Ixia load generator blasting at full 40 Gbit/s per NIC
-
-
-** Slide: Performance Linux 4.20                                    :export:
-
-[[file:images/results_4.20.png]]
-
-*/Huge/* /improvement/ compared to AF_PACKET, more optimizations in pipeline
-
-** Slide: Performance with Optimization Patches                     :export:
-
-[[file:images/results_opt.png]]
-
-Details see LPC2018 talk: [[http://vger.kernel.org/lpc-networking2018.html#session-11][The Path to DPDK speeds for AF_XDP]]
-# - Primarily about avoiding Spectre Retpoline calls
-
-** Slide: Two ways of running an AF_XDP application                 :export:
-
-[[file:images/two_vs_one_core_v2.png]]
-
-
-** Slide: Poll() Syscall Results                                    :export:
-
-[[file:images/results_poll.png]]
-
-
-** Slide: Comparison with DPDK                                      :export:
-
-[[file:images/results_dpdk.png]]
-
-
 * Integration with AF_XDP                                            :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
@@ -358,7 +315,7 @@ A native AF_XDP driver would be more efficient
   * E.g. NAPI is not doing busy-polling 100%, more latency variance
 
 
-** Slide: Ongoing work                                              :export:
+* Slide: Ongoing work                                                :export:
 
  - Upstreaming performance optimizations
  - XDP programs per queue
