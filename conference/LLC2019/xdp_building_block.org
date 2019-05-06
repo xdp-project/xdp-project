@@ -1,6 +1,6 @@
 # -*- fill-column: 79; -*-
 #+TITLE: XDP (eXpress Data Path) as a building block for other FOSS projects
-#+AUTHOR: Jesper Dangaard Brouer and Magnus Karlsson
+#+AUTHOR: Jesper Dangaard Brouer
 #+EMAIL: brouer@redhat.com
 #+REVEAL_THEME: redhat
 #+REVEAL_TRANS: linear
@@ -11,13 +11,12 @@
 #+OPTIONS: reveal_width:1600 reveal_height:900
 #+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
 
-* For conference: FOSDEM 2019
+* For conference: Lund Linux Con 2019
 
-This presentation will be given at [[https://fosdem.org/2019/][FOSDEM 2019]].
+This presentation will be given at [[https://lundlinuxcon.org/][LLC 2019] the
+Lund Linux Con.
 
-Titled: [[https://fosdem.org/2019/schedule/event/xdp_overview_and_update/][XDP (eXpress Data Path) as a building block for other FOSS projects]]
-
-More info in [[file:abstract.org]]
+Titled: XDP As a building block for other FOSS projects
 
 * Export/generate presentation
 
