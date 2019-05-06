@@ -112,7 +112,7 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
  - Force NIC driver to register their /memory model/
    - when enabling XDP *driver MUST switch to supported memory model*
 
-** Slide: What is AF_XDP?
+** Slide: What is AF_XDP?                                           :export:
 
 XDP is /in-kernel/ processing.
 
@@ -129,13 +129,13 @@ AF_XDP: Copy vs. Zero-Copy mode
 
 ** Slide: Why is XDP needed?                                        :export:
 
-This is about *the Kernel networking stack staying relevant*
+This is about: *Kernel networking stack staying relevant*
  - For emerging use-cases and areas
 
 Linux networking stack optimized for layers L4-L7
  - Missing something to address L2-L3 use-cases
 
-XDP operate at layers L2-L3
+/XDP operate at layers L2-L3/
 
 
 @@html:<br/><small>@@
@@ -299,7 +299,7 @@ XDP is /in-kernel processing/
 
 Userspace AF_XDP socket pre-register user memory
 
-** Slide: AF_XDP Basics                              :export:
+** Slide: AF_XDP Basics                                             :export:
 
 [[file:images/af_xdp_v2.png]]
 
@@ -358,7 +358,7 @@ A native AF_XDP driver would be more efficient
  - Packet clone for XDP
 
 
-* Explaining AF_XDP performance                         :export:
+* Explaining AF_XDP performance                                      :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
