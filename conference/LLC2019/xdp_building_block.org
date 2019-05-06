@@ -292,7 +292,7 @@ How can *kernel-bypass* solutions use AF_XDP as a /building block/?
 ** Slide: AF_XDP integration with DPDK                              :export:
 
 *AF_XDP poll-mode driver for DPDK*
- - DPDK [[https://twitter.com/tmonjalo/status/1114302130108739587][v19.05-rc1]] integrates [[http://doc.dpdk.org/guides/nics/af_xdp.html][AF_XDP Poll-Mode-Driver]]
+ - DPDK [[https://twitter.com/tmonjalo/status/1114302130108739587][v19.05-rc1]] integrates [[http://doc.dpdk.org/guides/nics/af_xdp.html][AF_XDP Poll-Mode-Driver
  - ~1% overhead
 
 Advantages:
@@ -336,12 +336,15 @@ A native AF_XDP driver would be more efficient
 
  - /XDP/ = Linux /kernel/ fast path
  - *AF_XDP* = packets to *user space* from /XDP/
- - DPDK speeds
+ - Similar speeds as DPDK
  - A /building block/ for a solution. Not a ready solution in itself.
  - Many upcoming use cases,
    - e.g., OVS, XDP-offload netstack, DPDK PMD
  - Come join the fun!
-   - [[https://github.com/xdp-project/xdp-project]]
+   - [[https://github.com/xdp-project/]]
+ - XDP-tutorial at:
+   - [[https://github.com/xdp-project/xdp-tutorial/]]
+
 
 
 * Backup Slides                                                      :export:
