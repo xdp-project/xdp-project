@@ -1,0 +1,424 @@
+# -*- fill-column: 79; -*-
+#+TITLE: XDP (eXpress Data Path) as a building block for other FOSS projects
+#+AUTHOR: Jesper Dangaard Brouer
+#+EMAIL: brouer@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: './reveal.js/js/custom-llc2019.js'}
+#+REVEAL_EXTRA_CSS: ./reveal.js/css/custom-adjust-logo.css
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: Lund Linux Con 2019
+
+This presentation will be given at [[https://lundlinuxcon.org/][LLC 2019] the
+Lund Linux Con.
+
+Titled: XDP As a building block for other FOSS projects
+
+* Export/generate presentation
+
+This presentation is written in org-mode and exported to reveal.js HTML format.
+The org-mode :export: tag determines what headlines/section are turned into
+slides for the presentation.
+
+** Setup for org-mode export to reveal.js
+First, install the ox-reveal emacs package.
+
+Package: ox-reveal git-repo and install instructions:
+https://github.com/yjwen/org-reveal
+
+** Export to HTML reveal.js
+
+After installing ox-reveal emacs package, export to HTML reveal.js format via
+keyboard shortcut: =C-c C-e R R=
+
+The variables at document end ("Local Variables") will set up the title slide
+and filter the "Slide:" prefix from headings; Emacs will ask for permission to
+load them, as they will execute code.
+
+** Export to PDF
+
+The presentations can be converted to PDF format.  Usually the reveal.js when
+run as a webserver under nodejs, have a printer option for exporting to PDF via
+print to file, but we choose not run this builtin webserver.
+
+Alternatively we found a tool called 'decktape', for exporting HTML pages to
+PDF: https://github.com/astefanutti/decktape
+
+The 'npm install' command:
+
+ $ npm install decktape
+
+After this the =decktape= command should be avail. If the npm install failed,
+then it's possible to run the decktape.js file direct from the git-repo via the
+=node= command:
+
+#+begin_src bash
+$ node ~/git/decktape/decktape.js \
+    -s 1600x900 -p 100 --chrome-arg=--no-sandbox \
+     xdp_building_block.html \
+     xdp_building_block.pdf
+#+end_src
+
+The size is set to get slide text to fit on the page. And -p 100 makes it go
+faster.
+
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation.
+
+Colors are choosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+
+* Slide: Framing XDP                                               :noexport:
+
+XDP: new /in-kernel programmable/ (eBPF) *layer before netstack*
+ - Similar speeds as DPDK
+XDP ensures that *Linux networking stays relevant*
+ - Operates at L2-L3, netstack is L4-L7
+XDP is not first mover, but we believe XDP is /different and better/
+ - /Killer feature/: Integration with Linux kernel
+ - Flexible sharing of NIC resources
+
+* Slide: What will you learn?
+
+@@html:<small>@@
+Contents of this talk
+@@html:</small>@@
+
+/Framing XDP/
+- Why it is needed? (and how is is different and better)
+- How it is a /building block/? (evolving and use-cases I hope to see)
+Framing AF_XDP
+- Explain: /What is AF_XDP/?
+- How XDP (redirect) is building block for AF_XDP
+- Explaining where AF_XDP performance comes from.
+
+** Slide: What is XDP?                                              :export:
+
+XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
+ - /New programmable layer in-front/ of traditional network stack
+ - Already accepted part of upstream kernels (and RHEL8)
+ - Operate at the same level and speeds as DPDK
+ - For L2-L3 use-cases: seeing x10 performance improvements!
+ - Can accelerate *in-kernel* L2-L3 use-cases (e.g. forwarding)
+ - Force NIC driver to register their /memory model/
+   - when enabling XDP *driver MUST switch to supported memory model*
+
+** Slide: What is AF_XDP?
+
+XDP is /in-kernel/ processing.
+
+What is /AF_XDP/? (the Address Family XDP socket)
+ - Hybrid *kernel-bypass* facility, move selective frames out of kernel
+ - One user of the */XDP_REDIRECT/* feature
+   - XDP/eBPF prog filters packets using REDIRECT into AF_XDP socket
+ - Delivers raw L2 frames into userspace
+
+AF_XDP: Copy vs. Zero-Copy mode
+ - Drivers with XDP_REDIRECT have 1-copy into userspace memory
+ - ZC: Drivers need *zero-copy memory model* (and XDP_SETUP_XSK_UMEM)
+   - Allow: use userspace memory directly in NIC DMA ring
+
+** Slide: Why is XDP needed?                                        :export:
+
+This is about *the Kernel networking stack staying relevant*
+ - For emerging use-cases and areas
+
+Linux networking stack optimized for layers L4-L7
+ - Missing something to address L2-L3 use-cases
+
+XDP operate at layers L2-L3
+
+
+@@html:<br/><small>@@
+
+If you forgot OSI model:
+ - L2=Ethernet
+ - L3=IPv4/IPv6
+ - L4=TCP/UDP
+ - L7=Applications
+
+@@html:</small>@@
+
+** Slide: Existing solutions: Not first mover                       :export:
+
+XDP is not first mover in this area
+ - But we believe /XDP is different and better/
+
+Existing *kernel bypass* solutions:
+ - netmap (FreeBSD), DPDK (Intel/LF), PF_ring (ntop)
+ - maglev (Google), Onload (SolarFlare), Snabb
+
+Commercial solutions /similar to XDP/:
+ - ndiv by HAproxy, product [[https://www.haproxy.com/products/aloha-hardware-appliance/][ALOHA]]
+
+** Slide: What makes XDP different and better?                      :export:
+
+*Not bypass*, but /in-kernel fast-path/
+
+The killer feature of XDP is integration with Linux kernel,
+ - Leverages /existing kernel drivers/ and infrastructure
+ - Programmable flexibility via eBPF sandboxing (kernel infra)
+ - Flexible sharing of NIC resources between Linux and XDP
+ - Cooperation with netstack via eBPF-helpers and fallback-handling
+ - No need to reinject packets (unlike bypass solutions)
+
+/AF_XDP/ for /flexible/ *kernel bypass*
+ - Cooperate with use-cases needing fast raw frame access in userspace
+ - While leveraging existing kernel NIC drivers
+
+* Slide: XDP is a building block                                     :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Fundamental to understand that XDP is a building block
+
+** Slide: XDP is a building block                                   :export:
+
+@@html:<small>@@
+It is fundamental to understand
+@@html:</small>@@
+
+/XDP is a component/; a core facility provided by the kernel
+ - Put it together with other components to solve a task
+
+eBPF (incl XDP) is *not a product in itself*
+ - Existing (and new) Open Source projects will use these eBPF components
+
+/Full potential/ comes when
+ - Combining XDP-eBPF with other eBPF-hooks and facilities
+ - To construct a *"networking pipeline"* via kernel components
+ - The [[https://cilium.io/][Cilium]] project is a good example (container L4-L7 policy)
+
+* Slide: XDP use-cases                                               :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Areas and use-cases where XDP is /already being used/
+
+Touch upon *new potential* and opportunities
+- e.g. for Virtual Machines (VM) and Containers
+
+** Use-case: Anti-DDoS                                              :export:
+
+The most obvious use case for XDP is *anti-DDoS*
+
+Companies already deployed XDP in production for anti-DDoS
+ - /Facebook/, every packet goes through XDP for [[http://vger.kernel.org/lpc-networking2018.html#session-10][1.5 years]]
+ - /CloudFlare/ [[https://blog.cloudflare.com/l4drop-xdp-ebpf-based-ddos-mitigations/][switched to XDP]] (changed NIC vendor due to XDP support!)
+
+*New potential*: Protecting Containers and VMs
+ - /Containers/: Protect Kubernetes/OpenShift cluster with XDP
+ - /VM/: Host-OS protect Guest-OS'es via XDP
+   - Work-in-progress: allow vhost/virtio_net; upload XDP to Host-OS
+
+** Use-case: L4 Load-balancer                                       :export:
+
+/Facebook/ was using the kernel Load-balancer IPVS
+ - Switched to using XDP instead: Reported /x10 performance improvement/
+ - Open Sourced their [[https://code.fb.com/open-source/open-sourcing-katran-a-scalable-network-load-balancer/][XDP load-balancer]] called [[https://github.com/facebookincubator/katran][katran]]
+
+*New potential*: Host OS load-balancing to VMs and Containers
+ - /VM/: Phy-NIC can XDP_REDIRECT into Guest-NIC
+   - driver tuntap queues XDP-raw frames to virtio_net; *skip SKB in Host-OS*
+ - /Container/: Phy-NIC can XDP_REDIRECT into *veth* (kernel v4.20)
+   - driver veth allocs+builds SKB outside driver-code; speedup *skip some code*
+   - veth can /RE-redirect/, allow *building interesting proxy-solutions*
+
+
+* Slide: Evolving XDP via leveraging existing solutions              :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+@@html:<small>@@
+XDP can (easily) be misused in the same way as kernel bypass solutions
+@@html:</small>@@
+
+Being smart about how XDP is integrated into existing Open Source solutions
+ - Leverage existing eco-systems e.g. for control plane setup
+
+** Slide: Evolving XDP via BPF-helpers                               :export:
+
+@@html:<small>@@
+*We should encourage adding helpers instead of duplicating data in BPF maps*
+@@html:</small>@@
+
+Think of XDP as a /software offload layer for the kernel netstack/
+ - Simply setup and use the Linux netstack, but accelerate parts of it with XDP
+
+IP routing good example: /Access routing table from XDP via BPF helpers/ (v4.18)
+ - Let Linux handle routing (daemons) and neighbour lookups
+ - Talk at LPC-2018 (David Ahern): [[http://vger.kernel.org/lpc-networking2018.html#session-1][Leveraging Kernel Tables with XDP]]
+
+Obvious *next target*: /Bridge lookup helper/
+ - Like IP routing: transparent XDP acceleration of bridge forwarding
+   - Fallback for ARP lookups, flooding etc.
+ - Huge potential *performance boost for Linux bridge* use cases!
+
+
+** Slide: Transfer info between XDP and netstack                     :export:
+
+Ways to transfer /info between XDP and netstack/
+ - XDP can *modify packet headers* before netstack
+   - Pop/push headers influence RX-handler in netstack
+   - CloudFlare modifies MAC-src on sampled dropped packets
+ - XDP have 32 bytes *metadata* in front of payload
+   - TC eBPF (cls_bpf) can read this, and update SKB fields
+   - E.g. save XDP lookup and use in TC eBPF hook
+   - *AF_XDP* raw frames have this /metadata avail in front of payload/
+
+* Slide: XDP integration with OVS                                    :export:
+
+XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
+ - VMware (William Tu) presented different options at LPC 2018:
+   - [[http://vger.kernel.org/lpc-networking2018.html#session-7][Bringing the Power of eBPF to Open vSwitch]]
+ - *TC eBPF*, (re)implemented OVS in eBPF (performance limited)
+ - *Offloading subset to XDP* (issue: missing some BPF helpers)
+ - *AF_XDP*, huge performance gain
+
+* Slide: AF_XDP - moving frames into userspace                       :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+XDP is /in-kernel processing/
+
+*AF_XDP is hybrid kernel-bypass* facility
+- XDP filter and redirect raw frames into userspace
+
+Userspace AF_XDP socket pre-register user memory
+
+** Slide: AF_XDP Basics                              :export:
+
+[[file:images/af_xdp_v2.png]]
+
+XDP program filters packets
+- for AF_XDP socket redirect (fast-path packets)
+- or normal processing by Linux network stack
+
+* Integration with AF_XDP                                            :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+How can *kernel-bypass* solutions use AF_XDP as a /building block/?
+
+
+** Slide: AF_XDP integration with DPDK                              :export:
+
+*AF_XDP poll-mode driver for DPDK*
+ - DPDK [[https://twitter.com/tmonjalo/status/1114302130108739587][v19.05-rc1]] integrates [[http://doc.dpdk.org/guides/nics/af_xdp.html][AF_XDP Poll-Mode-Driver]]
+ - ~1% overhead
+
+Advantages:
+ - Don't monopolize entire NIC
+ - Split traffic to kernel with XDP filter program
+ - HW independent application binary
+ - Isolation and robustness
+ - Cloud-native support
+ - Fewer setup restrictions
+
+
+** Slide: AF_XDP integration with VPP                               :export:
+
+VPP (FD.io) *could* integrate via AF_XDP DPDK PMD
+ - But VPP uses only user-mode driver of DPDK
+ - VPP has a lot of native functionality
+A native AF_XDP driver would be more efficient
+ - Less code and easier setup without DPDK
+
+
+** Slide: AF_XDP integration with Snabb Switch                      :export:
+
+[[https://github.com/snabbco/snabb/blob/master/README.md][Snabb Switch]]
+- Implement an *AF_XDP driver?*
+- Allow leveraging kernel drivers that implement XDP
+  * Kernel community takes care of maintaining driver code
+- Any *performance loss/gap* to native Snabb driver *?*
+  * E.g. NAPI "only" bulk up-to 64 packets
+  * E.g. NAPI is not doing busy-polling 100%, more latency variance
+
+
+* Slide: Ongoing work                                              :noexport:
+
+ - Upstreaming performance optimizations
+ - XDP programs per queue
+ - Libbpf: facilitating adoption
+ - Packet clone for XDP
+
+
+* Explaining AF_XDP performance                         :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+
+** Slide: Where does AF_XDP performance come from?                  :export:
+
+/Lock-free [[https://lwn.net/Articles/169961/][channel]] directly from driver RX-queue into AF_XDP socket/
+- Single-Producer/Single-Consumer (SPSC) descriptor ring queues
+- *Single*-/Producer/ (SP) via bind to specific RX-*/queue id/*
+  * NAPI-softirq assures only 1-CPU process 1-RX-queue id (per sched)
+- *Single*-/Consumer/ (SC) via 1-Application
+- *Bounded* buffer pool (UMEM) allocated by userspace (register with kernel)
+  * Descriptor(s) in ring(s) point into UMEM
+  * /No memory allocation/, but return frames to UMEM in timely manner
+- [[http://www.lemis.com/grog/Documentation/vj/lca06vj.pdf][Transport signature]] Van Jacobson talked about
+  * Replaced by XDP/eBPF program choosing to XDP_REDIRECT
+
+** Slide: Details: Actually *four* SPSC ring queues                 :export:
+
+AF_XDP /socket/: Has /two rings/: *RX* and *TX*
+ - Descriptor(s) in ring points into UMEM
+/UMEM/ consists of a number of equally sized chunks
+ - Has /two rings/: *FILL* ring and *COMPLETION* ring
+ - FILL ring: application gives kernel area to RX fill
+ - COMPLETION ring: kernel tells app TX is done for area (can be reused)
+
+** Slide: Gotcha by RX-queue id binding                             :export:
+
+AF_XDP bound to */single RX-queue id/* (for SPSC performance reasons)
+- NIC by default spreads flows with RSS-hashing over RX-queues
+  * Traffic likely not hitting queue you expect
+- You *MUST* configure NIC *HW filters* to /steer to RX-queue id/
+  * Out of scope for XDP setup
+  * Use ethtool or TC HW offloading for filter setup
+- *Alternative* work-around
+  * /Create as many AF_XDP sockets as RXQs/
+  * Have userspace poll()/select on all sockets
+
+
+
+* Slide: Summary                                                     :export:
+
+ - /XDP/ = Linux /kernel/ fast path
+ - *AF_XDP* = packets to *userspace* from /XDP/
+ - Similar speeds as DPDK
+ - A /building block/ for a solution. Not a ready solution in itself.
+ - Many upcoming use cases,
+   - e.g., OVS, XDP-offload netstack, DPDK PMD
+ - Come join the fun!
+   - [[https://github.com/xdp-project/]]
+ - XDP-tutorial at:
+   - [[https://github.com/xdp-project/xdp-tutorial/]]
+
+
+* Emacs tricks
+
+# Local Variables:
+# org-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# <h2 class=\"author\">Jesper Dangaard Brouer (Red Hat)<br/></h2>
+# <h3>LLC (Lund Linux Con)<br/>Lund, Sweden, May 2019</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
