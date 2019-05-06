@@ -95,11 +95,23 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
  - Operate at the same level and speeds as DPDK
  - For L2-L3 use-cases: seeing x10 performance improvements!
  - Can accelerate *in-kernel* L2-L3 use-cases (e.g. forwarding)
+ - Force NIC driver to register their /memory model/
+   - when enabling XDP *driver MUST switch to supported memory model*
+
+** Slide: What is AF_XDP?
+
+XDP is /in-kernel/ processing.
 
 What is /AF_XDP/? (the Address Family XDP socket)
  - Hybrid *kernel-bypass* facility, move selective frames out of kernel
- - XDP/eBPF prog filters packets using REDIRECT into AF_XDP socket
+ - One user of the XDP_REDIRECT feature
+   - XDP/eBPF prog filters packets using REDIRECT into AF_XDP socket
  - Delivers raw L2 frames into userspace
+
+AF_XDP: Copy vs. Zero-Copy mode
+ - Drivers with XDP_REDIRECT have 1-copy into userspace memory
+ - ZC: Drivers need *zero-copy memory model* (and XDP_SETUP_XSK_UMEM)
+   - Allow: use userspace memory directly in NIC DMA ring
 
 ** Slide: Why is XDP needed?                                        :export:
 
@@ -377,7 +389,7 @@ AF_XDP bound to */single RX-queue id/* (for SPSC performance reasons)
 * Slide: Summary                                                     :export:
 
  - /XDP/ = Linux /kernel/ fast path
- - *AF_XDP* = packets to *user space* from /XDP/
+ - *AF_XDP* = packets to *userspace* from /XDP/
  - Similar speeds as DPDK
  - A /building block/ for a solution. Not a ready solution in itself.
  - Many upcoming use cases,
