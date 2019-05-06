@@ -76,7 +76,8 @@ Colors are choosen via org-mode italic/bold high-lighting:
  - *bold*   = *yellow*
  - */italic-bold/* = red
 
-* Slide: Framing XDP                                                 :export:
+
+* Slide: Framing XDP                                               :noexport:
 
 XDP: new /in-kernel programmable/ (eBPF) *layer before netstack*
  - Similar speeds as DPDK
@@ -86,6 +87,19 @@ XDP is not first mover, but we believe XDP is /different and better/
  - /Killer feature/: Integration with Linux kernel
  - Flexible sharing of NIC resources
 
+* Slide: What will you learn?
+
+@@html:<small>@@
+Contents of this talk
+@@html:</small>@@
+
+/Framing XDP/
+- Why it is needed? (and how is is different and better)
+- How it is a /building block/? (evolving and use-cases I hope to see)
+Framing AF_XDP
+- Explain: /What is AF_XDP/?
+- How XDP (redirect) is building block for AF_XDP
+- Explaining where AF_XDP performance comes from.
 
 ** Slide: What is XDP?                                              :export:
 
