@@ -332,25 +332,11 @@ A native AF_XDP driver would be more efficient
  - Packet clone for XDP
 
 
-* Slide: Summary                                                     :export:
-
- - /XDP/ = Linux /kernel/ fast path
- - *AF_XDP* = packets to *user space* from /XDP/
- - Similar speeds as DPDK
- - A /building block/ for a solution. Not a ready solution in itself.
- - Many upcoming use cases,
-   - e.g., OVS, XDP-offload netstack, DPDK PMD
- - Come join the fun!
-   - [[https://github.com/xdp-project/]]
- - XDP-tutorial at:
-   - [[https://github.com/xdp-project/xdp-tutorial/]]
-
-
-
-* Backup Slides                                                      :export:
+* Explaining AF_XDP performance                         :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
+
 
 ** Slide: Where does AF_XDP performance come from?                  :export:
 
@@ -385,6 +371,21 @@ AF_XDP bound to */single RX-queue id/* (for SPSC performance reasons)
 - *Alternative* work-around
   * /Create as many AF_XDP sockets as RXQs/
   * Have userspace poll()/select on all sockets
+
+
+
+* Slide: Summary                                                     :export:
+
+ - /XDP/ = Linux /kernel/ fast path
+ - *AF_XDP* = packets to *user space* from /XDP/
+ - Similar speeds as DPDK
+ - A /building block/ for a solution. Not a ready solution in itself.
+ - Many upcoming use cases,
+   - e.g., OVS, XDP-offload netstack, DPDK PMD
+ - Come join the fun!
+   - [[https://github.com/xdp-project/]]
+ - XDP-tutorial at:
+   - [[https://github.com/xdp-project/xdp-tutorial/]]
 
 
 * Emacs tricks
