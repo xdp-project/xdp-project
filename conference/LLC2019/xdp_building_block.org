@@ -324,7 +324,7 @@ A native AF_XDP driver would be more efficient
   * E.g. NAPI is not doing busy-polling 100%, more latency variance
 
 
-* Slide: Ongoing work                                                :export:
+* Slide: Ongoing work                                              :noexport:
 
  - Upstreaming performance optimizations
  - XDP programs per queue
