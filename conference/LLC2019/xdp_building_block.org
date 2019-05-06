@@ -292,7 +292,7 @@ How can *kernel-bypass* solutions use AF_XDP as a /building block/?
 ** Slide: AF_XDP integration with DPDK                              :export:
 
 *AF_XDP poll-mode driver for DPDK*
- - [[https://patches.dpdk.org/project/dpdk/list/?series=1000&state=%2a][RFC patchset]] for AF_XDP PMD-driver sent on DPDK-mailing list by Intel
+ - DPDK [[https://twitter.com/tmonjalo/status/1114302130108739587][v19.05-rc1]] integrates [[http://doc.dpdk.org/guides/nics/af_xdp.html][AF_XDP Poll-Mode-Driver]]
  - ~1% overhead
 
 Advantages:
