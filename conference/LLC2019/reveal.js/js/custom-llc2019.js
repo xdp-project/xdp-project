@@ -2,9 +2,6 @@ var titleFooter = 'XDP as a building block for other FOSS projects'
 var authorName = 'Jesper Dangaard Brouer';
 var authorEmail = 'brouer@redhat.com';
 
-var authorName2 = 'Magnus Karlsson';
-var authorEmail2 = "magnus.karlsson@intel.com";
-
 var authorHTML = [
     '<img src="./reveal.js/images/RedHat.svg" />',
     '<span class="footer">',
@@ -18,11 +15,8 @@ var authorHTML = [
     '</span>',
     '<span class="authors">&nbsp;&nbsp; - &nbsp;&nbsp;',
     authorName,
-    '&nbsp;', '&amp;&nbsp;',
-    authorName2,
+    '&nbsp;',
     '</span>',
-    '&nbsp;&nbsp;&nbsp;',
-    '<img src="./reveal.js/images/intel-logo-vector-01.png" />',
 ].join('');
 
 function addAuthor(selector) {
