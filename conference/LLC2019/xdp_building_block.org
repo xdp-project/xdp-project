@@ -139,7 +139,7 @@ Commercial solutions /similar to XDP/:
 *Not bypass*, but /in-kernel fast-path/
 
 The killer feature of XDP is integration with Linux kernel,
- - Leverages existing kernel infrastructure, eco-system and market position
+ - Leverages /existing kernel drivers/ and infrastructure
  - Programmable flexibility via eBPF sandboxing (kernel infra)
  - Flexible sharing of NIC resources between Linux and XDP
  - Cooperation with netstack via eBPF-helpers and fallback-handling
