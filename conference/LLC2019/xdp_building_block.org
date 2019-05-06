@@ -104,7 +104,7 @@ XDP is /in-kernel/ processing.
 
 What is /AF_XDP/? (the Address Family XDP socket)
  - Hybrid *kernel-bypass* facility, move selective frames out of kernel
- - One user of the XDP_REDIRECT feature
+ - One user of the */XDP_REDIRECT/* feature
    - XDP/eBPF prog filters packets using REDIRECT into AF_XDP socket
  - Delivers raw L2 frames into userspace
 
