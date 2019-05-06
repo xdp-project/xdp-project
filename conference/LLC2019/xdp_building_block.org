@@ -114,13 +114,15 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 
 ** Slide: What is AF_XDP?                                           :export:
 
-XDP is /in-kernel/ processing.
+@@html:<small>@@
+XDP is /in-kernel/ processing... how to get frames into userspace?
+@@html:</small>@@
 
 What is /AF_XDP/? (the Address Family XDP socket)
  - Hybrid *kernel-bypass* facility, move selective frames out of kernel
  - One user of the */XDP_REDIRECT/* feature
    - XDP/eBPF prog filters packets using REDIRECT into AF_XDP socket
- - Delivers raw L2 frames into userspace
+ - Delivers raw /L2 frames into userspace/
 
 AF_XDP: Copy vs. Zero-Copy mode
  - Drivers with XDP_REDIRECT have 1-copy into userspace memory
