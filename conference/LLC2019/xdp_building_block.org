@@ -261,16 +261,25 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
  - *Offloading subset to XDP* (issue: missing some BPF helpers)
  - *AF_XDP*, huge performance gain
 
-* Slide: AF_XDP                                                      :export:
+* Slide: AF_XDP - moving frames into userspace                       :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
 
+XDP is /in-kernel processing/
+
+*AF_XDP is hybrid kernel-bypass* facility
+- XDP filter and redirect raw frames into userspace
+
+Userspace AF_XDP socket pre-register user memory
 
 ** Slide: AF_XDP Basics                              :export:
 
 [[file:images/af_xdp_v2.png]]
 
+XDP program filters packets
+- for AF_XDP socket redirect (fast-path packets)
+- or normal processing by Linux network stack
 
 * Integration with AF_XDP                                            :export:
 :PROPERTIES:
