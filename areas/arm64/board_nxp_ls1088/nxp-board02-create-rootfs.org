@@ -6,6 +6,17 @@ Board LS1088ARDB-PB.
 
 Instructions on how to create rootfs for booting board.
 
+Notice that the official documentation for this and other boards is the
+"Layerscape Software Development Kit User Guide" link to specific version
+[[https://www.nxp.com/docs/en/user-guide/LSDKUG_Rev19.03.pdf][LSDK v19.03]] User Guide.
+This document will reference section in this document.
+
+For this board LS1088ARDB-PB look at section:
+ - "4.1.7 LSDK Quick Start Guide for LS1088ARDB"
+
+This document is basically a cheat-sheet, with steps that I performed to
+bring-up the board.
+
 * Download flexbuild
 
 First step is downloading and extracting the flexbuild tool:
