@@ -1,0 +1,336 @@
+# -*- fill-column: 76; -*-
+#+Title: NXP LS1088A - NIC setup
+#+OPTIONS: ^:nil
+
+Board LS1088ARDB-PB.
+
+The default config DPL (Data Path Layout) enables only one network interface on
+DPAA2, which shows up as =eth0=. This document describe howto configure the
+hardware to create the network interfaces.
+
+* Add/setup DPPA2 network interfaces
+
+The default config DPL (Data Path Layout) enables only one network interface
+on DPAA2, which shows up as =eth0=.
+
+As described in: "4.1.7.4 Bringing up DPPA2 network interfaces".
+
+To configure/create more interfaces from Linux the tool 'restool' can be
+used.  The doc says it was part of the Ubuntu install, this was not the case
+for me, so I git-cloned and compiled it on the board:
+ - https://source.codeaurora.org/external/qoriq/qoriq-components/restool/
+ - https://lsdk.github.io/components.html
+
+Example output for default config:
+#+begin_example
+root@localhost:~/git/restool# ls-listmac 
+dprc.1/dpmac.10 
+dprc.1/dpmac.9 
+dprc.1/dpmac.8 
+dprc.1/dpmac.7 
+dprc.1/dpmac.6 
+dprc.1/dpmac.5 (end point: dpni.0)
+dprc.1/dpmac.4 
+dprc.1/dpmac.3 
+dprc.1/dpmac.2 
+dprc.1/dpmac.1 
+
+root@localhost:~/git/restool# ls-listni  
+dprc.1/dpni.0 (interface: eth0, end point: dpmac.5)
+#+end_example
+
+** Manual setup
+
+Create interface:
+#+begin_example
+ls-addni dpmac.9
+Created interface: eth1 (object:dpni.1, endpoint: dpmac.9)
+#+end_example
+
+Info for interface:
+#+begin_example
+# restool dpni info dpni.1
+dpni version: 7.9
+dpni id: 1
+plugged state: plugged
+endpoint state: 0
+endpoint: dpmac.9, link is down
+link status: 0 - down
+mac address: ca:b3:a4:6a:c6:53
+dpni_attr.options value is: 0
+num_queues: 8
+num_cgs: 1
+num_rx_tcs: 1
+num_tx_tcs: 1
+mac_entries: 16
+vlan_entries: 0
+qos_entries: 0
+fs_entries: 64
+qos_key_size: 0
+fs_key_size: 56
+ingress_all_frames: 0
+ingress_all_bytes: 0
+ingress_multicast_frames: 0
+ingress_multicast_bytes: 0
+ingress_broadcast_frames: 0
+ingress_broadcast_bytes: 0
+egress_all_frames: 0
+egress_all_bytes: 0
+egress_multicast_frames: 0
+egress_multicast_bytes: 0
+egress_broadcast_frames: 0
+egress_broadcast_bytes: 0
+ingress_filtered_frames: 0
+ingress_discarded_frames: 0
+ingress_nobuffer_discards: 0
+egress_discarded_frames: 0
+egress_confirmed_frames: 0
+#+end_example
+
+** DPL (Data Path Layout) file
+
+The configuration can also be saved into a DPL file, as described in:
+"4.1.7.4.4 Save configuration to a custom DPL file (Optional)"
+
+I got a new DPL file from NXP.
+- dpl-ls1088-2x10-2x1.dts - a Data Path Layout (DPL) file which describes
+  the configuration of the hardware (this should be compiled into a dtb)
+
+Install the compile tool software package:
+- Fedora: "dtc" (Device Tree Compiler)
+- Ubuntu: device-tree-compiler
+
+*** Compiling DPL/DTS to DTB
+
+Compiling the file:
+
+#+begin_example
+dtc -I dts -O dtb dpl-ls1088-2x10-2x1.dts -o dpl-ls1088-2x10-2x1.dtb
+#+end_example
+
+Warnings:
+#+begin_example
+$ dtc -I dts -O dtb dpl-ls1088-2x10-2x1.dts -o dpl-ls1088-2x10-2x1.dtb
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /containers/dprc@1: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /containers/dprc@1/objects/obj_set@dpbp: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /containers/dprc@1/objects/obj_set@dpcon: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /containers/dprc@1/objects/obj_set@dpio: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /containers/dprc@1/objects/obj_set@dpmac: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /containers/dprc@1/objects/obj_set@dpmcp: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /containers/dprc@1/objects/obj_set@dpni: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpbp@0: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpbp@1: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpbp@2: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpbp@3: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpbp@4: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpbp@5: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpbp@6: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpbp@7: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpbp@8: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpbp@9: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpbp@10: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpbp@11: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpbp@12: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpbp@13: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@0: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@1: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@2: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@3: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@4: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@5: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@6: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@7: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@8: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@9: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@10: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@11: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@12: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@13: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@14: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@15: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@16: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@17: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@18: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@19: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@20: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@21: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@22: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@23: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@24: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@25: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@26: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@27: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@28: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@29: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@30: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@31: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@32: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@33: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@34: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@35: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@36: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@37: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@38: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@39: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@40: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@41: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@42: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@43: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@44: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@45: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@46: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@47: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@48: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@49: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@50: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@51: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@52: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@53: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@54: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@55: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@56: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@57: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@58: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@59: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@60: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@61: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@62: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@63: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@64: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@65: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@66: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@67: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@68: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@69: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@70: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@71: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@72: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@73: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@74: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@75: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@76: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@77: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@78: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@79: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@80: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpcon@81: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpio@0: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpio@1: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpio@2: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpio@3: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpio@4: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpio@5: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpio@6: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpio@7: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmac@1: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmac@2: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmac@3: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmac@4: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmac@5: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmac@6: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmac@7: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmac@8: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@1: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@2: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@3: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@4: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@5: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@6: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@7: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@8: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@9: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@10: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@11: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@12: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@13: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@14: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@15: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@16: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@17: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@18: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@19: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@20: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@21: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@22: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@23: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@24: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@25: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@26: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@27: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@28: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@29: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@30: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@31: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpmcp@32: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpni@0: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpni@1: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpni@2: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /objects/dpni@3: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /connections/connection@1: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /connections/connection@2: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /connections/connection@3: node has a unit name, but no reg property
+dpl-ls1088-2x10-2x1.dtb: Warning (unit_address_vs_reg): /connections/connection@4: node has a unit name, but no reg property
+#+end_example
+
+*** Loading DPL
+
+The DPL file can be flashed onto the board and used to boot to Linux.
+
+Reset board and "break" in U-Boot.
+
+Copied these files over to board /boot/ partition (but I don't know howto
+access and load these files during U-boot). The contents of the SD-card MMC
+device can be listed via command: =ext4ls mmc 0:2=.
+
+Setup network:
+#+begin_example
+setenv serverip 192.168.42.3
+setenv ipaddr 192.168.42.10
+setenv netmask 255.255.255.0
+saveenv
+#+end_example
+
+Setup on TFTP server on 192.168.42.3 in /var/lib/tftpboot.
+
+Start service:
+#+begin_example
+sudo systemctl start tftp.service
+#+end_example
+
+Loading via TFTP fails:
+#+begin_example
+printenv ethact
+ethact=DPMAC1@xgmii
+setenv serverip 192.168.42.3
+tftp 0x80010000 dpl-ls1088-2x10-2x1.dtb
+Using DPMAC1@xgmii device
+TFTP from server 192.168.42.3; our IP address is 192.168.42.10
+Filename 'hello.txt'.
+Load address: 0x80010000
+Loading: *
+ARP Retry count exceeded; starting again
+#+end_example
+
+The port chosen for the connection to the TFTP server dictates the value of
+the 'ethact' u-boot variable. For example, if using the MAC1, the ethact is
+DPMAC1@xgmii. If wanting to use MAC5 the port is DPMAC5@qsgmii.
+
+Loading via TFTP fails:
+#+begin_example
+setenv ethact DPMAC5@qsgmii
+setenv serverip 192.168.42.3
+tftp 0x80010000 dpl-ls1088-2x10-2x1.dtb
+#+end_example
+
+After loading use the NXP/freescale command 'fsl_mc' to apply the data path
+layout (DPL):
+#+begin_example
+=> fsl_mc apply dpl 0x80010000
+fsl-mc: Deploying data path layout ... SUCCESS
+#+end_example
+
+*** Issue: DPL setup gone after reboot
+
+When I reboot/power-cycle the board the DPL setup is gone.
+
+
