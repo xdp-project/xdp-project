@@ -2,7 +2,7 @@
  * Solarized Dark theme for reveal.js.
  * Author: Achim Staebler
  */
-@import url(../../lib/font/overpass/overpass.css);
+@import url(../../lib/font/redhat/redhat.css);
 @import url(../../lib/font/cc-icons/css/cc-icons.css);
 /**
  * Solarized colors by Ethan Schoonover
@@ -19,7 +19,7 @@ body {
   background-color: #003a4b; }
 
 .reveal {
-  font-family: "overpass", sans-serif;
+  font-family: "RedHatText", sans-serif;
   font-size: 40px;
   font-weight: normal;
   color: #93a1a1; }
@@ -52,6 +52,8 @@ body {
   left: 28px;
   line-height: 20px;
   vertical-align: bottom;
+  color: white;
+  opacity: .7;
 }
 
 .reveal .slides .authorbox a {
@@ -63,10 +65,11 @@ body {
 }
 
 .reveal .slides .authorbox img {
-    height: 75px;
+    height: 42px;
     position: relative;
-    top: 30px;
+    top: 12px;
     margin: 0px;
+    margin-right: 10px;
     border: 0px;
     background: none;
     box-shadow: none;
@@ -94,10 +97,6 @@ body {
   color: #eee8d5;
 }
 
-.reveal .slides > section > section.mid-slide .authorbox {
-  opacity: .5;
-}
-
 .reveal .title {
   margin-bottom: 1.5em;
 }
@@ -121,9 +120,6 @@ body {
 #sec-title-slide .authorbox .authors {
   display: none;
 }
-#sec-title-slide .authorbox .footer {
-  display: none;
-}
 
 .reveal .authorbox i {
   color: inherit;
@@ -141,7 +137,7 @@ body {
 .reveal h6 {
   margin: 0 0 20px 0;
   color: #eee8d5;
-  font-family: "overpass", sans-serif;
+  font-family: "RedHatDisplay", sans-serif;
   font-weight: bold;
   line-height: 1.2;
   letter-spacing: normal;

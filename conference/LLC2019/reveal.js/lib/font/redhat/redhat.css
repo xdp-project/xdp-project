@@ -1,0 +1,145 @@
+@font-face {
+  font-family: 'RedHatDisplay';
+  src: url('RedHatDisplay-Regular.eot');
+  src: url('RedHatDisplay-Regular.eot?#iefix') format('embedded-opentype'),
+       url('RedHatDisplay-Regular.woff2') format('woff2'),
+       url('RedHatDisplay-Regular.woff') format('woff'),
+       url('RedHatDisplay-Regular.ttf') format('truetype');
+       font-weight: 500;
+       font-style: normal;
+}
+
+@font-face {
+  font-family: 'RedHatDisplay';
+  src: url('RedHatDisplay-Italic.eot');
+  src: url('RedHatDisplay-Italic.eot?#iefix') format('embedded-opentype'),
+       url('RedHatDisplay-Italic.woff2') format('woff2'),
+       url('RedHatDisplay-Italic.woff') format('woff'),
+       url('RedHatDisplay-Italic.ttf')  format('truetype');
+       font-weight: 500;
+       font-style: Italic;
+}
+
+
+
+
+@font-face {
+  font-family: 'RedHatDisplay';
+  src: url('RedHatDisplay-Medium.eot');
+  src: url('RedHatDisplay-Medium.eot?#iefix') format('embedded-opentype'),
+       url('RedHatDisplay-Medium.woff2') format('woff2'),
+       url('RedHatDisplay-Medium.woff') format('woff'),
+       url('RedHatDisplay-Medium.ttf')  format('truetype');
+       font-weight: 600;
+       font-style: normal;
+}
+
+@font-face {
+  font-family: 'RedHatDisplay';
+  src: url('RedHatDisplay-MediumItalic.eot');
+  src: url('RedHatDisplay-MediumItalic.eot?#iefix') format('embedded-opentype'),
+       url('RedHatDisplay-MediumItalic.woff2') format('woff2'),
+       url('RedHatDisplay-MediumItalic.woff') format('woff'),
+       url('RedHatDisplay-MediumItalic.ttf')  format('truetype');
+       font-weight: 600;
+       font-style: Italic;
+}
+
+
+
+
+@font-face {
+  font-family: 'RedHatDisplay';
+  src: url('RedHatDisplay-Bold.eot');
+  src: url('RedHatDisplay-Bold.eot?#iefix') format('embedded-opentype'),
+       url('RedHatDisplay-Bold.woff2') format('woff2'),
+       url('RedHatDisplay-Bold.woff') format('woff'),
+       url('RedHatDisplay-Bold.ttf')  format('truetype');
+       font-weight: 700;
+       font-style: normal;
+}
+
+@font-face {
+  font-family: 'RedHatDisplay';
+  src: url('RedHatDisplay-BoldItalic.eot');
+  src: url('RedHatDisplay-BoldItalic.eot?#iefix') format('embedded-opentype'),
+       url('RedHatDisplay-BoldItalic.woff2') format('woff2'),
+       url('RedHatDisplay-BoldItalic.woff') format('woff'),
+       url('RedHatDisplay-BoldItalic.ttf')  format('truetype');
+       font-weight: 700;
+       font-style: Italic;
+}
+
+
+@font-face {
+  font-family: 'RedHatText';
+  src: url('RedHatText-Regular.eot');
+  src: url('RedHatText-Regular.eot?#iefix') format('embedded-opentype'),
+       url('RedHatText-Regular.woff2') format('woff2'),
+       url('RedHatText-Regular.woff') format('woff'),
+       url('RedHatText-Regular.ttf') format('truetype');
+       font-weight: 500;
+       font-style: normal;
+}
+
+@font-face {
+  font-family: 'RedHatText';
+  src: url('RedHatText-Italic.eot');
+  src: url('RedHatText-Italic.eot?#iefix') format('embedded-opentype'),
+       url('RedHatText-Italic.woff2') format('woff2'),
+       url('RedHatText-Italic.woff') format('woff'),
+       url('RedHatText-Italic.ttf')  format('truetype');
+       font-weight: 500;
+       font-style: Italic;
+}
+
+
+
+
+@font-face {
+  font-family: 'RedHatText';
+  src: url('RedHatText-Medium.eot');
+  src: url('RedHatText-Medium.eot?#iefix') format('embedded-opentype'),
+       url('RedHatText-Medium.woff2') format('woff2'),
+       url('RedHatText-Medium.woff') format('woff'),
+       url('RedHatText-Medium.ttf')  format('truetype');
+       font-weight: 600;
+       font-style: normal;
+}
+
+@font-face {
+  font-family: 'RedHatText';
+  src: url('RedHatText-MediumItalic.eot');
+  src: url('RedHatText-MediumItalic.eot?#iefix') format('embedded-opentype'),
+       url('RedHatText-MediumItalic.woff2') format('woff2'),
+       url('RedHatText-MediumItalic.woff') format('woff'),
+       url('RedHatText-MediumItalic.ttf')  format('truetype');
+       font-weight: 600;
+       font-style: Italic;
+}
+
+
+
+
+@font-face {
+  font-family: 'RedHatText';
+  src: url('RedHatText-Bold.eot');
+  src: url('RedHatText-Bold.eot?#iefix') format('embedded-opentype'),
+       url('RedHatText-Bold.woff2') format('woff2'),
+       url('RedHatText-Bold.woff') format('woff'),
+       url('RedHatText-Bold.ttf')  format('truetype');
+       font-weight: 700;
+       font-style: normal;
+}
+
+@font-face {
+  font-family: 'RedHatText';
+  src: url('RedHatText-BoldItalic.eot');
+  src: url('RedHatText-BoldItalic.eot?#iefix') format('embedded-opentype'),
+       url('RedHatText-BoldItalic.woff2') format('woff2'),
+       url('RedHatText-BoldItalic.woff') format('woff'),
+       url('RedHatText-BoldItalic.ttf')  format('truetype');
+       font-weight: 700;
+       font-style: Italic;
+}
+

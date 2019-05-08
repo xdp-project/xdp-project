@@ -2,8 +2,10 @@ var titleFooter = 'XDP as a building block for other FOSS projects'
 var authorName = 'Jesper Dangaard Brouer';
 var authorEmail = 'brouer@redhat.com';
 
+var logoWhite = '<img src="./reveal.js/images/Logo-RedHat-A-White-RGB.svg" />';
+var logoHat = '<img src="./reveal.js/images/Logo-RedHat-Hat-White-RGB.svg" />';
+var logoRed = '<img src="./reveal.js/images/Logo-RedHat-A-Reverse-RGB.svg" />';
 var authorHTML = [
-    '<img src="./reveal.js/images/RedHat.svg" />',
     '<span class="footer">',
     '&nbsp;&nbsp;&nbsp;',
     '&nbsp;&nbsp;&nbsp;',
@@ -19,13 +21,13 @@ var authorHTML = [
     '</span>',
 ].join('');
 
-function addAuthor(selector) {
+function addAuthor(selector, logo) {
     return function() {
         var elems = document.querySelectorAll(selector);
         elems.forEach(function (e) {
             var author = document.createElement('div');
             author.className = 'authorbox';
-            author.innerHTML = authorHTML;
+            author.innerHTML = logo + authorHTML;
             e.appendChild(author);
         });
     }
@@ -41,5 +43,5 @@ function addHighlightKeywords() {
 window.addEventListener('load', addHighlightKeywords);
 */
 
-window.addEventListener('load', addAuthor('.reveal .slides > section > section'));
-window.addEventListener('load', addAuthor('#sec-title-slide'));
+window.addEventListener('load', addAuthor('.reveal .slides > section > section', logoHat));
+window.addEventListener('load', addAuthor('#sec-title-slide', logoWhite));
