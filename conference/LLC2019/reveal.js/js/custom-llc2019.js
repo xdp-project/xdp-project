@@ -43,5 +43,5 @@ function addHighlightKeywords() {
 window.addEventListener('load', addHighlightKeywords);
 */
 
-window.addEventListener('load', addAuthor('.reveal .slides > section > section', logoHat));
+window.addEventListener('load', addAuthor('.reveal .slides > section > section', logoRed));
 window.addEventListener('load', addAuthor('#sec-title-slide', logoWhite));
