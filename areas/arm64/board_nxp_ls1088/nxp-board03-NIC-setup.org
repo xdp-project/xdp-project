@@ -130,11 +130,11 @@ Copied these files over to board /boot/ partition (but I don't know howto
 access and load these files during U-boot). The contents of the SD-card MMC
 device can be listed via command: =ext4ls mmc 0:2=.
 
-Setup network:
+U-Boot setup network with static IP (for dynamic-IP use cmd =dhcp=):
 #+begin_example
-setenv serverip 192.168.42.3
 setenv ipaddr 192.168.42.10
 setenv netmask 255.255.255.0
+setenv serverip 192.168.42.3
 saveenv
 #+end_example
 
@@ -145,15 +145,13 @@ Start service:
 sudo systemctl start tftp.service
 #+end_example
 
-Loading via TFTP fails:
+Loading via TFTP failed as wrong port was used (see "Using DPMAC1@xgmii
+device"):
 #+begin_example
-printenv ethact
-ethact=DPMAC1@xgmii
-setenv serverip 192.168.42.3
-tftp 0x80010000 dpl-ls1088-2x10-2x1.dtb
+=> tftp 0x80010000 dpl-ls1088-2x10-2x1.dtb
 Using DPMAC1@xgmii device
 TFTP from server 192.168.42.3; our IP address is 192.168.42.10
-Filename 'hello.txt'.
+Filename 'dpl-ls1088-2x10-2x1.dtb'.
 Load address: 0x80010000
 Loading: *
 ARP Retry count exceeded; starting again
@@ -163,7 +161,7 @@ The port chosen for the connection to the TFTP server dictates the value of
 the 'ethact' u-boot variable. For example, if using the MAC1, the ethact is
 DPMAC1@xgmii. If wanting to use MAC5 the port is DPMAC5@qsgmii.
 
-Loading via TFTP fails:
+Loading via TFTP:
 #+begin_example
 setenv ethact DPMAC5@qsgmii
 setenv serverip 192.168.42.3
@@ -177,8 +175,29 @@ layout (DPL):
 fsl-mc: Deploying data path layout ... SUCCESS
 #+end_example
 
-*** Issue: DPL setup gone after reboot
+*** Saving DPL in SD-card (mmc)
 
-When I reboot/power-cycle the board the DPL setup is gone.
+You can load via tftp and apply via =fsl_mc= as desc above, but it only
+works for a single boot. After reboot/power-cycle the board the DPL setup is
+gone.
 
+For storing the DPL on the SD-card/mmc media, reference Chapter "4.4 LSDK
+Memory Layout" to identify the location. The DPL file should be put starting
+with block # 0x06800 onto the SD card.
+
+To do this, you can use the following u-boot commands. The first step is to
+tftp the DPL into the 0x80010000 RAM address and them write from it to the
+SD card.
+
+Step-1: tftp load into memory as above:
+#+begin_example
+setenv ethact DPMAC5@qsgmii
+tftp 0x80010000 dpl-ls1088-2x10-2x1.dtb
+#+end_example
+
+Step-2: store into SD-card/mmc device. The 0x800 is the size, in blocks of
+512 bytes, reserved for the DPL image in the SD memory layout:
+#+begin_example
+mmc write 0x80010000 0x06800 0x800
+#+end_example
 
