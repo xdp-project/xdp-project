@@ -33,7 +33,7 @@
 </section>
 <section>
 <section id="slide-sec-">
-<h2 id="org46c7227">What will you learn?</h2>
+<h2 id="orge4a5a4a">What will you learn?</h2>
 <p>
 <small>
 Contents of this talk
@@ -60,7 +60,7 @@ Framing AF_XDP
 
 </section>
 <section id="slide-sec-">
-<h3 id="orgebbb13c">What is XDP?</h3>
+<h3 id="org9d4595e">What is XDP?</h3>
 <p>
 XDP (eXpress Data Path) is a Linux <b>in-kernel</b> fast-path
 </p>
@@ -80,7 +80,7 @@ XDP (eXpress Data Path) is a Linux <b>in-kernel</b> fast-path
 
 </section>
 <section id="slide-sec-">
-<h3 id="orga6f1de8">What is AF_XDP?</h3>
+<h3 id="org70623a0">What is AF_XDP?</h3>
 <p>
 <small>
 XDP is <i>in-kernel</i> processing&#x2026; how to get frames into userspace?
@@ -116,7 +116,7 @@ AF_XDP: Copy vs. Zero-Copy mode
 
 </section>
 <section id="slide-sec-">
-<h3 id="org8cb582c">Why is XDP needed?</h3>
+<h3 id="orgce888f7">Why is XDP needed?</h3>
 <p>
 This is about: <b>Kernel networking stack staying relevant</b>
 </p>
@@ -159,7 +159,7 @@ If you forgot OSI model:
 
 </section>
 <section id="slide-sec-">
-<h3 id="org4a196c4">Existing solutions: Not first mover</h3>
+<h3 id="org2046e4a">Existing solutions: Not first mover</h3>
 <p>
 XDP is not first mover in this area
 </p>
@@ -187,7 +187,7 @@ Commercial solutions <i>similar to XDP</i>:
 
 </section>
 <section id="slide-sec-">
-<h3 id="orge126e43">What makes XDP different and better?</h3>
+<h3 id="org7f49fba">What makes XDP different and better?</h3>
 <p>
 <b>Not bypass</b>, but <i>in-kernel fast-path</i>
 </p>
@@ -217,14 +217,14 @@ The killer feature of XDP is integration with Linux kernel,
 </section>
 <section>
 <section id="slide-sec-" class="mid-slide">
-<h2 id="org92877ca">XDP is a building block</h2>
+<h2 id="orge974ad6">XDP is a building block</h2>
 <p>
 Fundamental to understand that XDP is a building block
 </p>
 
 </section>
 <section id="slide-sec-">
-<h3 id="org343abd5">XDP is a building block</h3>
+<h3 id="org72f8ddb">XDP is a building block</h3>
 <p>
 <small>
 It is fundamental to understand
@@ -261,7 +261,7 @@ eBPF (incl XDP) is <b>not a product in itself</b>
 </section>
 <section>
 <section id="slide-sec-" class="mid-slide">
-<h2 id="orga6bd872">XDP use-cases</h2>
+<h2 id="org5a1f3a6">XDP use-cases</h2>
 <p>
 Areas and use-cases where XDP is <i>already being used</i>
 </p>
@@ -276,7 +276,7 @@ Touch upon <b>new potential</b> and opportunities
 
 </section>
 <section id="slide-sec-">
-<h3 id="org83c5582">Use-case: Anti-DDoS</h3>
+<h3 id="orgd9a3616">Use-case: Anti-DDoS</h3>
 <p>
 The most obvious use case for XDP is <b>anti-DDoS</b>
 </p>
@@ -305,7 +305,7 @@ Companies already deployed XDP in production for anti-DDoS
 
 </section>
 <section id="slide-sec-">
-<h3 id="org5bd1038">Use-case: L4 Load-balancer</h3>
+<h3 id="org67d3747">Use-case: L4 Load-balancer</h3>
 <p>
 <i>Facebook</i> was using the kernel Load-balancer IPVS
 </p>
@@ -338,7 +338,7 @@ Companies already deployed XDP in production for anti-DDoS
 </section>
 <section>
 <section id="slide-sec-" class="mid-slide">
-<h2 id="orgab3ba87">Evolving XDP via leveraging existing solutions</h2>
+<h2 id="org410faf7">Evolving XDP via leveraging existing solutions</h2>
 <p>
 <small>
 XDP can (easily) be misused in the same way as kernel bypass solutions
@@ -355,7 +355,7 @@ Being smart about how XDP is integrated into existing Open Source solutions
 
 </section>
 <section id="slide-sec-">
-<h3 id="org6228f68">Evolving XDP via BPF-helpers</h3>
+<h3 id="org0790c1a">Evolving XDP via BPF-helpers</h3>
 <p>
 <small>
 <b>We should encourage adding helpers instead of duplicating data in BPF maps</b>
@@ -395,7 +395,7 @@ Obvious <b>next target</b>: <i>Bridge lookup helper</i>
 
 </section>
 <section id="slide-sec-">
-<h3 id="org2c32758">Transfer info between XDP and netstack</h3>
+<h3 id="orgdbfbab1">Transfer info between XDP and netstack</h3>
 <p>
 Ways to transfer <i>info between XDP and netstack</i>
 </p>
@@ -420,7 +420,7 @@ Ways to transfer <i>info between XDP and netstack</i>
 </section>
 <section>
 <section id="slide-sec-">
-<h2 id="orgf221c3b">XDP integration with OVS</h2>
+<h2 id="org2a3a1fd">XDP integration with OVS</h2>
 <p>
 XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 </p>
@@ -440,7 +440,7 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 </section>
 <section>
 <section id="slide-sec-" class="mid-slide">
-<h2 id="org132e4f1">AF_XDP - moving frames into userspace</h2>
+<h2 id="org4b753bf">AF_XDP - moving frames into userspace</h2>
 <p>
 XDP is <i>in-kernel processing</i>
 </p>
@@ -459,7 +459,7 @@ Userspace AF_XDP socket pre-register user memory
 
 </section>
 <section id="slide-sec-">
-<h3 id="orgae2663b">AF_XDP Basics</h3>
+<h3 id="org34faf96">AF_XDP Basics</h3>
 
 <div class="figure">
 <p><img src="images/af_xdp_v2.png" alt="af_xdp_v2.png" />
@@ -479,7 +479,7 @@ XDP program filters packets
 </section>
 <section>
 <section id="slide-sec-" class="mid-slide">
-<h2 id="orgfcd0e15">Integration with AF_XDP</h2>
+<h2 id="org5b2e8dc">Integration with AF_XDP</h2>
 <p>
 How can <b>kernel-bypass</b> solutions use AF_XDP as a <i>building block</i>?
 </p>
@@ -487,7 +487,7 @@ How can <b>kernel-bypass</b> solutions use AF_XDP as a <i>building block</i>?
 
 </section>
 <section id="slide-sec-">
-<h3 id="org8254d56">AF_XDP integration with DPDK</h3>
+<h3 id="org82b0238">AF_XDP integration with DPDK</h3>
 <p>
 <b>AF_XDP poll-mode driver for DPDK</b>
 </p>
@@ -513,7 +513,7 @@ Advantages:
 
 </section>
 <section id="slide-sec-">
-<h3 id="org3c84cb2">AF_XDP integration with VPP</h3>
+<h3 id="orgbfe93f7">AF_XDP integration with VPP</h3>
 <p>
 VPP (FD.io) <b>could</b> integrate via AF_XDP DPDK PMD
 </p>
@@ -533,7 +533,7 @@ A native AF_XDP driver would be more efficient
 
 </section>
 <section id="slide-sec-">
-<h3 id="orge4f85be">AF_XDP integration with Snabb Switch</h3>
+<h3 id="orgf3e934a">AF_XDP integration with Snabb Switch</h3>
 <p>
 <a href="https://github.com/snabbco/snabb/blob/master/README.md">Snabb Switch</a>
 </p>
@@ -558,10 +558,10 @@ A native AF_XDP driver would be more efficient
 </section>
 <section>
 <section id="slide-sec-" class="mid-slide">
-<h2 id="orgb4bb3ee">Explaining AF_XDP performance</h2>
+<h2 id="org69119db">Explaining AF_XDP performance</h2>
 </section>
 <section id="slide-sec-">
-<h3 id="orgc2a65ae">Where does AF_XDP performance come from?</h3>
+<h3 id="org02b1c12">Where does AF_XDP performance come from?</h3>
 <p>
 <i>Lock-free <a href="https://lwn.net/Articles/169961/">channel</a> directly from driver RX-queue into AF_XDP socket</i>
 </p>
@@ -589,7 +589,7 @@ A native AF_XDP driver would be more efficient
 
 </section>
 <section id="slide-sec-">
-<h3 id="org05dd5a5">Details: Actually <b>four</b> SPSC ring queues</h3>
+<h3 id="orgce25fe5">Details: Actually <b>four</b> SPSC ring queues</h3>
 <p>
 AF_XDP <i>socket</i>: Has <i>two rings</i>: <b>RX</b> and <b>TX</b>
 </p>
@@ -609,7 +609,7 @@ AF_XDP <i>socket</i>: Has <i>two rings</i>: <b>RX</b> and <b>TX</b>
 
 </section>
 <section id="slide-sec-">
-<h3 id="orgf563c0d">Gotcha by RX-queue id binding</h3>
+<h3 id="org224be34">Gotcha by RX-queue id binding</h3>
 <p>
 AF_XDP bound to <b><i>single RX-queue id</i></b> (for SPSC performance reasons)
 </p>
@@ -640,7 +640,7 @@ AF_XDP bound to <b><i>single RX-queue id</i></b> (for SPSC performance reasons)
 </section>
 <section>
 <section id="slide-sec-">
-<h2 id="org30fabc9">Summary</h2>
+<h2 id="org800b8b9">Summary</h2>
 <ul>
 <li><i>XDP</i> = Linux <i>kernel</i> fast path</li>
 <li><b>AF_XDP</b> = packets to <b>userspace</b> from <i>XDP</i></li>
