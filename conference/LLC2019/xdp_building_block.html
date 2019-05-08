@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>XDP (eXpress Data Path) as a building block for other FOSS projects</title>
+<meta name="author" content="(Jesper Dangaard Brouer)"/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="./reveal.js/css/reveal.css"/>
+
+<link rel="stylesheet" href="./reveal.js/css/theme/redhat.css" id="theme"/>
+
+<link rel="stylesheet" href="./reveal.js/css/custom-adjust-logo.css"/>
+
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = './reveal.js/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+</script>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide"><h1 class="title">XDP (eXpress Data Path) as a building block for other FOSS projects</h1>
+<h2 class="author">Jesper Dangaard Brouer (Red Hat)<br/></h2>
+<h3>LLC (Lund Linux Con)<br/>Lund, Sweden, May 2019</h3>
+</section>
+<section>
+<section id="slide-sec-">
+<h2 id="org46c7227">What will you learn?</h2>
+<p>
+<small>
+Contents of this talk
+</small>
+</p>
+
+<p>
+<i>Framing XDP</i>
+</p>
+<ul>
+<li>Why it is needed? (and how is is different and better)</li>
+<li>How it is a <i>building block</i>? (evolving and use-cases I hope to see)</li>
+
+</ul>
+<p>
+Framing AF_XDP
+</p>
+<ul>
+<li>Explain: <i>What is AF_XDP</i>?</li>
+<li>How XDP (redirect) is building block for AF_XDP</li>
+<li>Explaining where AF_XDP performance comes from.</li>
+
+</ul>
+
+</section>
+<section id="slide-sec-">
+<h3 id="orgebbb13c">What is XDP?</h3>
+<p>
+XDP (eXpress Data Path) is a Linux <b>in-kernel</b> fast-path
+</p>
+<ul>
+<li><i>New programmable layer in-front</i> of traditional network stack</li>
+<li>Already accepted part of upstream kernels (and RHEL8)</li>
+<li>Operate at the same level and speeds as DPDK</li>
+<li>For L2-L3 use-cases: seeing x10 performance improvements!</li>
+<li>Can accelerate <b>in-kernel</b> L2-L3 use-cases (e.g. forwarding)</li>
+<li>Force NIC driver to register their <i>memory model</i>
+<ul>
+<li>when enabling XDP <b>driver MUST switch to supported memory model</b></li>
+
+</ul></li>
+
+</ul>
+
+</section>
+<section id="slide-sec-">
+<h3 id="orga6f1de8">What is AF_XDP?</h3>
+<p>
+<small>
+XDP is <i>in-kernel</i> processing&#x2026; how to get frames into userspace?
+</small>
+</p>
+
+<p>
+What is <i>AF_XDP</i>? (the Address Family XDP socket)
+</p>
+<ul>
+<li>Hybrid <b>kernel-bypass</b> facility, move selective frames out of kernel</li>
+<li>One user of the <b><i>XDP_REDIRECT</i></b> feature
+<ul>
+<li>XDP/eBPF prog filters packets using REDIRECT into AF_XDP socket</li>
+
+</ul></li>
+<li>Delivers raw <i>L2 frames into userspace</i></li>
+
+</ul>
+
+<p>
+AF_XDP: Copy vs. Zero-Copy mode
+</p>
+<ul>
+<li>Drivers with XDP_REDIRECT have 1-copy into userspace memory</li>
+<li>ZC: Drivers need <b>zero-copy memory model</b> (and XDP_SETUP_XSK_UMEM)
+<ul>
+<li>Allow: use userspace memory directly in NIC DMA ring</li>
+
+</ul></li>
+
+</ul>
+
+</section>
+<section id="slide-sec-">
+<h3 id="org8cb582c">Why is XDP needed?</h3>
+<p>
+This is about: <b>Kernel networking stack staying relevant</b>
+</p>
+<ul>
+<li>For emerging use-cases and areas</li>
+
+</ul>
+
+<p>
+Linux networking stack optimized for layers L4-L7
+</p>
+<ul>
+<li>Missing something to address L2-L3 use-cases</li>
+
+</ul>
+
+<p>
+<i>XDP operate at layers L2-L3</i>
+</p>
+
+
+<p>
+<br/><small>
+</p>
+
+<p>
+If you forgot OSI model:
+</p>
+<ul>
+<li>L2=Ethernet</li>
+<li>L3=IPv4/IPv6</li>
+<li>L4=TCP/UDP</li>
+<li>L7=Applications</li>
+
+</ul>
+
+<p>
+</small>
+</p>
+
+</section>
+<section id="slide-sec-">
+<h3 id="org4a196c4">Existing solutions: Not first mover</h3>
+<p>
+XDP is not first mover in this area
+</p>
+<ul>
+<li>But we believe <i>XDP is different and better</i></li>
+
+</ul>
+
+<p>
+Existing <b>kernel bypass</b> solutions:
+</p>
+<ul>
+<li>netmap (FreeBSD), DPDK (Intel/LF), PF_ring (ntop)</li>
+<li>maglev (Google), Onload (SolarFlare), Snabb</li>
+
+</ul>
+
+<p>
+Commercial solutions <i>similar to XDP</i>:
+</p>
+<ul>
+<li>ndiv by HAproxy, product <a href="https://www.haproxy.com/products/aloha-hardware-appliance/">ALOHA</a></li>
+
+</ul>
+
+</section>
+<section id="slide-sec-">
+<h3 id="orge126e43">What makes XDP different and better?</h3>
+<p>
+<b>Not bypass</b>, but <i>in-kernel fast-path</i>
+</p>
+
+<p>
+The killer feature of XDP is integration with Linux kernel,
+</p>
+<ul>
+<li>Leverages <i>existing kernel drivers</i> and infrastructure</li>
+<li>Programmable flexibility via eBPF sandboxing (kernel infra)</li>
+<li>Flexible sharing of NIC resources between Linux and XDP</li>
+<li>Cooperation with netstack via eBPF-helpers and fallback-handling</li>
+<li>No need to reinject packets (unlike bypass solutions)</li>
+
+</ul>
+
+<p>
+<i>AF_XDP</i> for <i>flexible</i> <b>kernel bypass</b>
+</p>
+<ul>
+<li>Cooperate with use-cases needing fast raw frame access in userspace</li>
+<li>While leveraging existing kernel NIC drivers</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-sec-" class="mid-slide">
+<h2 id="org92877ca">XDP is a building block</h2>
+<p>
+Fundamental to understand that XDP is a building block
+</p>
+
+</section>
+<section id="slide-sec-">
+<h3 id="org343abd5">XDP is a building block</h3>
+<p>
+<small>
+It is fundamental to understand
+</small>
+</p>
+
+<p>
+<i>XDP is a component</i>; a core facility provided by the kernel
+</p>
+<ul>
+<li>Put it together with other components to solve a task</li>
+
+</ul>
+
+<p>
+eBPF (incl XDP) is <b>not a product in itself</b>
+</p>
+<ul>
+<li>Existing (and new) Open Source projects will use these eBPF components</li>
+
+</ul>
+
+<p>
+<i>Full potential</i> comes when
+</p>
+<ul>
+<li>Combining XDP-eBPF with other eBPF-hooks and facilities</li>
+<li>To construct a <b>&ldquo;networking pipeline&rdquo;</b> via kernel components</li>
+<li>The <a href="https://cilium.io/">Cilium</a> project is a good example (container L4-L7 policy)</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-sec-" class="mid-slide">
+<h2 id="orga6bd872">XDP use-cases</h2>
+<p>
+Areas and use-cases where XDP is <i>already being used</i>
+</p>
+
+<p>
+Touch upon <b>new potential</b> and opportunities
+</p>
+<ul>
+<li>e.g. for Virtual Machines (VM) and Containers</li>
+
+</ul>
+
+</section>
+<section id="slide-sec-">
+<h3 id="org83c5582">Use-case: Anti-DDoS</h3>
+<p>
+The most obvious use case for XDP is <b>anti-DDoS</b>
+</p>
+
+<p>
+Companies already deployed XDP in production for anti-DDoS
+</p>
+<ul>
+<li><i>Facebook</i>, every packet goes through XDP for <a href="http://vger.kernel.org/lpc-networking2018.html#session-10">1.5 years</a></li>
+<li><i>CloudFlare</i> <a href="https://blog.cloudflare.com/l4drop-xdp-ebpf-based-ddos-mitigations/">switched to XDP</a> (changed NIC vendor due to XDP support!)</li>
+
+</ul>
+
+<p>
+<b>New potential</b>: Protecting Containers and VMs
+</p>
+<ul>
+<li><i>Containers</i>: Protect Kubernetes/OpenShift cluster with XDP</li>
+<li><i>VM</i>: Host-OS protect Guest-OS&rsquo;es via XDP
+<ul>
+<li>Work-in-progress: allow vhost/virtio_net; upload XDP to Host-OS</li>
+
+</ul></li>
+
+</ul>
+
+</section>
+<section id="slide-sec-">
+<h3 id="org5bd1038">Use-case: L4 Load-balancer</h3>
+<p>
+<i>Facebook</i> was using the kernel Load-balancer IPVS
+</p>
+<ul>
+<li>Switched to using XDP instead: Reported <i>x10 performance improvement</i></li>
+<li>Open Sourced their <a href="https://code.fb.com/open-source/open-sourcing-katran-a-scalable-network-load-balancer/">XDP load-balancer</a> called <a href="https://github.com/facebookincubator/katran">katran</a></li>
+
+</ul>
+
+<p>
+<b>New potential</b>: Host OS load-balancing to VMs and Containers
+</p>
+<ul>
+<li><i>VM</i>: Phy-NIC can XDP_REDIRECT into Guest-NIC
+<ul>
+<li>driver tuntap queues XDP-raw frames to virtio_net; <b>skip SKB in Host-OS</b></li>
+
+</ul></li>
+<li><i>Container</i>: Phy-NIC can XDP_REDIRECT into <b>veth</b> (kernel v4.20)
+<ul>
+<li>driver veth allocs+builds SKB outside driver-code; speedup <b>skip some code</b></li>
+<li>veth can <i>RE-redirect</i>, allow <b>building interesting proxy-solutions</b></li>
+
+</ul></li>
+
+</ul>
+
+
+</section>
+</section>
+<section>
+<section id="slide-sec-" class="mid-slide">
+<h2 id="orgab3ba87">Evolving XDP via leveraging existing solutions</h2>
+<p>
+<small>
+XDP can (easily) be misused in the same way as kernel bypass solutions
+</small>
+</p>
+
+<p>
+Being smart about how XDP is integrated into existing Open Source solutions
+</p>
+<ul>
+<li>Leverage existing eco-systems e.g. for control plane setup</li>
+
+</ul>
+
+</section>
+<section id="slide-sec-">
+<h3 id="org6228f68">Evolving XDP via BPF-helpers</h3>
+<p>
+<small>
+<b>We should encourage adding helpers instead of duplicating data in BPF maps</b>
+</small>
+</p>
+
+<p>
+Think of XDP as a <i>software offload layer for the kernel netstack</i>
+</p>
+<ul>
+<li>Simply setup and use the Linux netstack, but accelerate parts of it with XDP</li>
+
+</ul>
+
+<p>
+IP routing good example: <i>Access routing table from XDP via BPF helpers</i> (v4.18)
+</p>
+<ul>
+<li>Let Linux handle routing (daemons) and neighbour lookups</li>
+<li>Talk at LPC-2018 (David Ahern): <a href="http://vger.kernel.org/lpc-networking2018.html#session-1">Leveraging Kernel Tables with XDP</a></li>
+
+</ul>
+
+<p>
+Obvious <b>next target</b>: <i>Bridge lookup helper</i>
+</p>
+<ul>
+<li>Like IP routing: transparent XDP acceleration of bridge forwarding
+<ul>
+<li>Fallback for ARP lookups, flooding etc.</li>
+
+</ul></li>
+<li>Huge potential <b>performance boost for Linux bridge</b> use cases!</li>
+
+</ul>
+
+
+</section>
+<section id="slide-sec-">
+<h3 id="org2c32758">Transfer info between XDP and netstack</h3>
+<p>
+Ways to transfer <i>info between XDP and netstack</i>
+</p>
+<ul>
+<li>XDP can <b>modify packet headers</b> before netstack
+<ul>
+<li>Pop/push headers influence RX-handler in netstack</li>
+<li>CloudFlare modifies MAC-src on sampled dropped packets</li>
+
+</ul></li>
+<li>XDP have 32 bytes <b>metadata</b> in front of payload
+<ul>
+<li>TC eBPF (cls_bpf) can read this, and update SKB fields</li>
+<li>E.g. save XDP lookup and use in TC eBPF hook</li>
+<li><b>AF_XDP</b> raw frames have this <i>metadata avail in front of payload</i></li>
+
+</ul></li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-sec-">
+<h2 id="orgf221c3b">XDP integration with OVS</h2>
+<p>
+XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
+</p>
+<ul>
+<li>VMware (William Tu) presented different options at LPC 2018:
+<ul>
+<li><a href="http://vger.kernel.org/lpc-networking2018.html#session-7">Bringing the Power of eBPF to Open vSwitch</a></li>
+
+</ul></li>
+<li><b>TC eBPF</b>, (re)implemented OVS in eBPF (performance limited)</li>
+<li><b>Offloading subset to XDP</b> (issue: missing some BPF helpers)</li>
+<li><b>AF_XDP</b>, huge performance gain</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-sec-" class="mid-slide">
+<h2 id="org132e4f1">AF_XDP - moving frames into userspace</h2>
+<p>
+XDP is <i>in-kernel processing</i>
+</p>
+
+<p>
+<b>AF_XDP is hybrid kernel-bypass</b> facility
+</p>
+<ul>
+<li>XDP filter and redirect raw frames into userspace</li>
+
+</ul>
+
+<p>
+Userspace AF_XDP socket pre-register user memory
+</p>
+
+</section>
+<section id="slide-sec-">
+<h3 id="orgae2663b">AF_XDP Basics</h3>
+
+<div class="figure">
+<p><img src="images/af_xdp_v2.png" alt="af_xdp_v2.png" />
+</p>
+</div>
+
+<p>
+XDP program filters packets
+</p>
+<ul>
+<li>for AF_XDP socket redirect (fast-path packets)</li>
+<li>or normal processing by Linux network stack</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-sec-" class="mid-slide">
+<h2 id="orgfcd0e15">Integration with AF_XDP</h2>
+<p>
+How can <b>kernel-bypass</b> solutions use AF_XDP as a <i>building block</i>?
+</p>
+
+
+</section>
+<section id="slide-sec-">
+<h3 id="org8254d56">AF_XDP integration with DPDK</h3>
+<p>
+<b>AF_XDP poll-mode driver for DPDK</b>
+</p>
+<ul>
+<li>DPDK <a href="https://twitter.com/tmonjalo/status/1114302130108739587">v19.05-rc1</a> integrates <a href="http://doc.dpdk.org/guides/nics/af_xdp.html">AF_XDP Poll-Mode-Driver</a></li>
+<li>~1% overhead</li>
+
+</ul>
+
+<p>
+Advantages:
+</p>
+<ul>
+<li>Don&rsquo;t monopolize entire NIC</li>
+<li>Split traffic to kernel with XDP filter program</li>
+<li>HW independent application binary</li>
+<li>Isolation and robustness</li>
+<li>Cloud-native support</li>
+<li>Fewer setup restrictions</li>
+
+</ul>
+
+
+</section>
+<section id="slide-sec-">
+<h3 id="org3c84cb2">AF_XDP integration with VPP</h3>
+<p>
+VPP (FD.io) <b>could</b> integrate via AF_XDP DPDK PMD
+</p>
+<ul>
+<li>But VPP uses only user-mode driver of DPDK</li>
+<li>VPP has a lot of native functionality</li>
+
+</ul>
+<p>
+A native AF_XDP driver would be more efficient
+</p>
+<ul>
+<li>Less code and easier setup without DPDK</li>
+
+</ul>
+
+
+</section>
+<section id="slide-sec-">
+<h3 id="orge4f85be">AF_XDP integration with Snabb Switch</h3>
+<p>
+<a href="https://github.com/snabbco/snabb/blob/master/README.md">Snabb Switch</a>
+</p>
+<ul>
+<li>Implement an <b>AF_XDP driver?</b></li>
+<li>Allow leveraging kernel drivers that implement XDP
+<ul>
+<li>Kernel community takes care of maintaining driver code</li>
+
+</ul></li>
+<li>Any <b>performance loss/gap</b> to native Snabb driver <b>?</b>
+<ul>
+<li>E.g. NAPI &ldquo;only&rdquo; bulk up-to 64 packets</li>
+<li>E.g. NAPI is not doing busy-polling 100%, more latency variance</li>
+
+</ul></li>
+
+</ul>
+
+
+</section>
+</section>
+<section>
+<section id="slide-sec-" class="mid-slide">
+<h2 id="orgb4bb3ee">Explaining AF_XDP performance</h2>
+</section>
+<section id="slide-sec-">
+<h3 id="orgc2a65ae">Where does AF_XDP performance come from?</h3>
+<p>
+<i>Lock-free <a href="https://lwn.net/Articles/169961/">channel</a> directly from driver RX-queue into AF_XDP socket</i>
+</p>
+<ul>
+<li>Single-Producer/Single-Consumer (SPSC) descriptor ring queues</li>
+<li><b>Single</b>-<i>Producer</i> (SP) via bind to specific RX-<b><i>queue id</i></b>
+<ul>
+<li>NAPI-softirq assures only 1-CPU process 1-RX-queue id (per sched)</li>
+
+</ul></li>
+<li><b>Single</b>-<i>Consumer</i> (SC) via 1-Application</li>
+<li><b>Bounded</b> buffer pool (UMEM) allocated by userspace (register with kernel)
+<ul>
+<li>Descriptor(s) in ring(s) point into UMEM</li>
+<li><i>No memory allocation</i>, but return frames to UMEM in timely manner</li>
+
+</ul></li>
+<li><a href="http://www.lemis.com/grog/Documentation/vj/lca06vj.pdf">Transport signature</a> Van Jacobson talked about
+<ul>
+<li>Replaced by XDP/eBPF program choosing to XDP_REDIRECT</li>
+
+</ul></li>
+
+</ul>
+
+</section>
+<section id="slide-sec-">
+<h3 id="org05dd5a5">Details: Actually <b>four</b> SPSC ring queues</h3>
+<p>
+AF_XDP <i>socket</i>: Has <i>two rings</i>: <b>RX</b> and <b>TX</b>
+</p>
+<ul>
+<li>Descriptor(s) in ring points into UMEM</li>
+
+</ul>
+<p>
+<i>UMEM</i> consists of a number of equally sized chunks
+</p>
+<ul>
+<li>Has <i>two rings</i>: <b>FILL</b> ring and <b>COMPLETION</b> ring</li>
+<li>FILL ring: application gives kernel area to RX fill</li>
+<li>COMPLETION ring: kernel tells app TX is done for area (can be reused)</li>
+
+</ul>
+
+</section>
+<section id="slide-sec-">
+<h3 id="orgf563c0d">Gotcha by RX-queue id binding</h3>
+<p>
+AF_XDP bound to <b><i>single RX-queue id</i></b> (for SPSC performance reasons)
+</p>
+<ul>
+<li>NIC by default spreads flows with RSS-hashing over RX-queues
+<ul>
+<li>Traffic likely not hitting queue you expect</li>
+
+</ul></li>
+<li>You <b>MUST</b> configure NIC <b>HW filters</b> to <i>steer to RX-queue id</i>
+<ul>
+<li>Out of scope for XDP setup</li>
+<li>Use ethtool or TC HW offloading for filter setup</li>
+
+</ul></li>
+<li><b>Alternative</b> work-around
+<ul>
+<li><i>Create as many AF_XDP sockets as RXQs</i></li>
+<li>Have userspace poll()/select on all sockets</li>
+
+</ul></li>
+
+</ul>
+
+
+
+</section>
+</section>
+<section>
+<section id="slide-sec-">
+<h2 id="org30fabc9">Summary</h2>
+<ul>
+<li><i>XDP</i> = Linux <i>kernel</i> fast path</li>
+<li><b>AF_XDP</b> = packets to <b>userspace</b> from <i>XDP</i></li>
+<li>Similar speeds as DPDK</li>
+<li>A <i>building block</i> for a solution. Not a ready solution in itself.</li>
+<li>Many upcoming use cases,
+<ul>
+<li>e.g., OVS, XDP-offload netstack, DPDK PMD</li>
+
+</ul></li>
+<li>Come join the fun!
+<ul>
+<li><a href="https://github.com/xdp-project/">https://github.com/xdp-project/</a></li>
+
+</ul></li>
+<li>XDP-tutorial at:
+<ul>
+<li><a href="https://github.com/xdp-project/xdp-tutorial/">https://github.com/xdp-project/xdp-tutorial/</a></li>
+
+</ul></li>
+
+</ul>
+</section>
+</section>
+</div>
+</div>
+<script src="./reveal.js/lib/js/head.min.js"></script>
+<script src="./reveal.js/js/reveal.js"></script>
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+controls: true,
+progress: true,
+history: false,
+center: false,
+slideNumber: 'c',
+rollingLinks: false,
+keyboard: true,
+overview: true,
+width: 1600,
+height: 900,
+margin: 0.00,
+
+theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+transition: Reveal.getQueryHash().transition || 'linear', // default/cube/page/concave/zoom/linear/fade/none
+transitionSpeed: 'default',
+multiplex: {
+    secret: '', // null if client
+    id: '', // id, obtained from socket.io server
+    url: '' // Location of socket.io server
+},
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+{ src: './reveal.js/js/custom-llc2019.js'},
+ { src: './reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+ { src: './reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: './reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: './reveal.js/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+ { src: './reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }]
+});
+</script>
+</body>
+</html>
