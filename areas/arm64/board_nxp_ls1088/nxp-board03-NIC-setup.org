@@ -201,3 +201,31 @@ Step-2: store into SD-card/mmc device. The 0x800 is the size, in blocks of
 mmc write 0x80010000 0x06800 0x800
 #+end_example
 
+
+* Ubuntu network setup
+
+** Ubuntu netplan setup
+
+From: "4.1.7.4.5 Assign IP addresses to network interfaces".
+
+Static IP addresses can also be assigned using netplan. Create a file called
+=config.yaml= in /etc/netplan. Using atext editor, add the following lines
+to this config file and save it:
+
+File: /etc/netplan/config.yaml
+#+begin_src yaml
+network:
+  version: 2
+  renderer: networkd
+  ethernets: 
+    eth0:
+      addresses:
+        - 192.168.42.10/24
+#+end_src
+
+After saving this file, run the following command to apply this netplan
+configuration and then reboot the board.
+
+#+begin_example
+netplan apply
+#+end_example
