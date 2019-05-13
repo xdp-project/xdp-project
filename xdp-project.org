@@ -137,6 +137,13 @@ ethtool interface; look into the existing channel configuration interface on
 the kernel side and figure out how to express XDP resource allocation in a
 good way.
 
+*** Interface for defining what a TX resource is
+Need to define:
+
+- Number of TX queues
+- Algorithm for picking one on a given redirect (e.g., hash on CPU)
+- Queueing behaviour
+
 ** TODO Add automatic TX resource allocation to libbpf
 Because we can't tie resource allocation to map insertion on the kernel
 side, we need to solve the UI interface in userspace. So add a hook/wrapper
@@ -248,6 +255,7 @@ Many people aren't aware of the BPF_PROG_TEST_RUN command. It's really neat
 being able to test your XDP programs "offline". The selftests use this a
 lot. Docs: https://t.co/GDd7SfNYng and examples in tools/testing/selftests/bpf/.
 
+** NEXT Could this be a "introduction job"?
 
 * TODO Adding AF_XDP support to relevant userspace programs
 
@@ -332,7 +340,17 @@ from the system before committing to loading an XDP program.
 
 ** NEXT Propose a driver API to communicate feature flags
 
+- Daniel: Needs to go through driver BPF ndo
+
+Could we add this as a BTF field?
+
+OK to reject at load time - user's problem to make sure the right feature
+flags are set on the calling program for tail calls.
+
+
 ** TODO Add a userspace API to query features
+
+Netlink? Ethtool?
 
 * TODO Exposing more kernel data structures through helpers
 
@@ -343,6 +361,8 @@ We already have routing, but we will need more helpers.
 The obvious next step is a l2 bridging helper that mirrors the l3 routing
 one. Should be fairly straight forward to implement.
 
+*** TODO What to do about broadcast/multicast?
+
 ** TODO Connection/flow tracking
 
 Exposing either full conntrack, or the more light-weight flow tracking
@@ -350,6 +370,9 @@ support would make things like stateful firewalls easier to implement.
 Probably need a concrete use case for this first, though.
 
 * WAIT BTF-based metadata for XDP                                   :WAITING:
+:PROPERTIES:
+:ID:       25240998-2037-4ebf-befe-c0d0fdacb9c7
+:END:
 
 Waiting for tracing people to work out the details of BTF.
 * WAIT XDP latency jit-vs-no jit, tuning etc                        :WAITING:
@@ -365,3 +388,41 @@ investigated.
 Maybe write a tuning doc as well?
 
 WAIT status as this is low priority for now.
+* TODO Port iproute2 to libbpf
+* TODO Generic XDP
+** TODO Bulking for redirect maps
+** TODO BUG: TCP packets skip (?)
+** TODO Fix CPUMAP
+[[id:8f4953c1-a862-46f2-b456-da187008f355][BUG: cpumap not working for generic-XDP]]
+
+* TODO XDP hook at TX
+
+* TODO Metadata available to programs
+
+** TODO XDP frame length
+- Needed for skb-less drivers
+- Tail-extend (e.g., DNS)
+- False true-size
+
+** TODO Metadata from hardware
+- Checksum
+- Hash value
+
+*** TODO Needs BTF-based metadata
+[[id:25240998-2037-4ebf-befe-c0d0fdacb9c7][BTF-based metadata for XDP]]
+
+* Meta: Prioritisation
+
+FIXME: This should probably be moved somewhere
+
+** "Production ready" features:
+- Statistics
+- XDP_REDIRECT failures
+- Feature bits
+- TX resource allocation
+
+** Dependencies:
+
+- Page pool -> driver support
+- TX resource -> better XDP redirect support
+

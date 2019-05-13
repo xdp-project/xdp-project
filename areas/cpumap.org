@@ -35,6 +35,9 @@ generic way to transfer info needed for the SKB-fields, this related to XDP
 Tasks related to =cpumap= are filed under this section.
 
 ** TODO BUG: cpumap not working for generic-XDP
+:PROPERTIES:
+:ID:       8f4953c1-a862-46f2-b456-da187008f355
+:END:
 
 The =cpumap= does not handle redirect for generic-XDP.  This have already
 confused people.  For completeness this should be fixed, but there is also

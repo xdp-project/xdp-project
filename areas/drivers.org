@@ -18,9 +18,19 @@ It would be useful with a complete list drivers that are missing some or all
 parts of REDIRECT support. Based on this we can make a plan for what to do about
 each of these.
 
-* TODO Driver support for sfc driver
+** TODO What to do about failing REDIRECT
 
-** NEXT Sync with Edward Cree et al
+** TODO Queueing
 
-* TODO Driver support for Marvell mvpp2
+* WAIT Adding XDP support to new drivers
+
+Waiting for page pool work
+
+** TODO Driver support for sfc driver
+
+*** NEXT Sync with Edward Cree et al
+
+** TODO Driver support for Marvell mvpp2
+
+Matteo
 
