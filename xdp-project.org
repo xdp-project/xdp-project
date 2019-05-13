@@ -396,6 +396,16 @@ WAIT status as this is low priority for now.
 
 * TODO XDP hook at TX
 
+* TODO Handling XDP_REDIRECT failures
+:PROPERTIES:
+:ID:       760b03fc-2a8e-499c-a90c-74dbc4716cbc
+:END:
+
+** NEXT Write a proposal for failing redirect
+- Should we execute a new program?
+
+Can't really return a valid error code from the helper.
+
 * TODO Metadata available to programs
 
 ** TODO XDP frame length
