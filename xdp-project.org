@@ -342,11 +342,10 @@ from the system before committing to loading an XDP program.
 
 - Daniel: Needs to go through driver BPF ndo
 
-Could we add this as a BTF field?
-
-OK to reject at load time - user's problem to make sure the right feature
-flags are set on the calling program for tail calls.
-
+Needs to be an API that queries support. We cannot validate on program load
+time because of tail call. Not even with cooperation from the tail-calling
+program, because that may not know what features are used by the programs it
+is tail-calling into.
 
 ** TODO Add a userspace API to query features
 
