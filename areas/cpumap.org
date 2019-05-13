@@ -43,7 +43,12 @@ The =cpumap= does not handle redirect for generic-XDP.  This have already
 confused people.  For completeness this should be fixed, but there is also
 an opportunity for performance improvements.
 
-** TODO Feature: cpumap bulk alloc SKBs
+** DONE Feature: cpumap bulk alloc SKBs
+CLOSED: [2019-05-13 Mon 14:47]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-05-13 Mon 14:47]
+:END:
+Upstream: [[https://git.kernel.org/torvalds/c/8f0504a97e1ba6b70][8f0504a97e1b ("bpf: cpumap do bulk allocation of SKBs")]]
 
 It would be fairly trivial to bulk alloc SKBs via =kmem_cache_alloc_bulk()=
 API, when dequeuing in kthread (=cpu_map_kthread_run=).  One point is that
