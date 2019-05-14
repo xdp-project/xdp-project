@@ -144,6 +144,8 @@ Need to define:
 - Algorithm for picking one on a given redirect (e.g., hash on CPU)
 - Queueing behaviour
 
+How to handle life cycle management?
+
 ** TODO Add automatic TX resource allocation to libbpf
 Because we can't tie resource allocation to map insertion on the kernel
 side, we need to solve the UI interface in userspace. So add a hook/wrapper
@@ -395,16 +397,43 @@ WAIT status as this is low priority for now.
 [[id:8f4953c1-a862-46f2-b456-da187008f355][BUG: cpumap not working for generic-XDP]]
 
 * TODO XDP hook at TX
+:PROPERTIES:
+:ID:       24faae01-542b-4882-9f7a-5ab283e657b0
+:END:
 
 * TODO Handling XDP_REDIRECT failures
 :PROPERTIES:
 :ID:       760b03fc-2a8e-499c-a90c-74dbc4716cbc
 :END:
 
-** NEXT Write a proposal for failing redirect
-- Should we execute a new program?
+** NEXT Allow lookups in devmap/cpumap
 
-Can't really return a valid error code from the helper.
+Return pointer to same ID as we insert, just copy it to a scratch space
+first.
+
+** NEXT Make bpf_redirect_map() check map contents
+
+If we simply make the redirect_map() helper check that something exists in
+that position in the map, we at least catch the case where a map entry is
+empty (where we *know* it is going to fail). If we then later add the
+capability for a map to ensure that TX resources are available on insert, we
+will get this check for free.
+
+What is the right return code for the helper on failure? We already return
+XDP_ABORTED on invalid flags, so we could create a new
+REDIRECT_PASS_ON_INVALID that make non-existent map entries return XDP_PASS.
+This makes it easy to implement "defer to stack on error" type programs,
+*and* it makes it possible to disambiguate between "flag not understood" and
+"flag understood and map is empty".
+
+Mellanox drivers turn a failure in xdp_do_redirect() into an ABORTED action,
+other drivers do not.
+
+** TODO What happens if redirect fails even though TX resources are available?
+
+Even with the above, we can still get failures if, e.g., TX ring runs out of
+space. We can't really handle this by return, so what should we do instead?
+Maybe just defer this to [[id:24faae01-542b-4882-9f7a-5ab283e657b0][XDP hook at TX]].
 
 * TODO Metadata available to programs
 
