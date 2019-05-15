@@ -14,7 +14,14 @@ handling, and show how code are placed into common/ directory files/objects.
 
 * TODO XDP-tutorial ideas for assignments/examples
 
-** NEXT xdp-tutorial: rebase libbpf to get AF_XDP headers
+** DONE xdp-tutorial: rebase libbpf to get AF_XDP headers
+CLOSED: [2019-05-15 Wed 12:06]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-05-15 Wed 12:06]
+:END:
+Updated to the latest github libbpf commit 910c475f09e5 ("sync: latest
+libbpf changes from kernel") details see:
+https://github.com/xdp-project/xdp-tutorial/commit/45963bee3a5a6540
 
 ** TODO xdp-tutorial: Add AF_XDP tutorial example
 Initial step PR: https://github.com/xdp-project/xdp-tutorial/pull/35
