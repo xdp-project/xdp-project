@@ -47,6 +47,18 @@ info from metadata area, and act on parse-info, e.g. show it can read part
 of the packet, without doing parsing. The tricky part of the second XDP-prog
 is how can the verifiers static analysis proof safety.
 
+
+*** TODO xdp-tutorial: Extend to HW-offload: Split packet parsing between two XDP programs
+
+When above assignment is complete. Then extend to HW-offload the first
+XDP-prog that does the parsing and storing in metadata area. It doesn't BPF
+tail-call the second XDP-prog, instead load the second XDP-prog in regular
+XDP driver hook.
+
+This will demonstrate howto HW-offload packet header parse information via
+metadata area.
+
+
 * TODO xdp-tutorial for tracepoints project
 
 Tutorial sub-project for teaching people about using tracepoints.
