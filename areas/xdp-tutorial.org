@@ -35,6 +35,18 @@ The [[https://github.com/xdp-project/xdp-tutorial/tree/master/advanced03-AF_XDP]
 
 ** TODO Example of how to use tail calls
 
+** TODO xdp-tutorial: Split packet parsing between two XDP programs
+
+This exercise/lesson is also meant to show how XDP hardware offloading can
+interact with regular XDP programs (software mode running driver level).
+
+The assignment is to create two XDP programs. The first XDP-prog does packet
+header parsing, and store parse information in metadata area (located just
+before payload) and BPF tail-call second XDP-prog. The second XDP-prog reads
+info from metadata area, and act on parse-info, e.g. show it can read part
+of the packet, without doing parsing. The tricky part of the second XDP-prog
+is how can the verifiers static analysis proof safety.
+
 * TODO xdp-tutorial for tracepoints project
 
 Tutorial sub-project for teaching people about using tracepoints.
