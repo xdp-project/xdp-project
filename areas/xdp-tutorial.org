@@ -73,7 +73,10 @@ and troubleshooting XDP. E.g. see the kernel/samples/bpf program xdp_monitor
 xdp_monitor (and other trace samples) use another ELF loader than libbpf
 (the samples local [[https://github.com/torvalds/linux/blob/master/samples/bpf/bpf_load.c][bpf_load.c]]), which we want to move people way from.
 
-** TODO xdp-tutorial: add tracepoint examples for reading XDP tracepoints
+** NEXT xdp-tutorial: add tracepoint examples for reading XDP tracepoints
+
+Work in progress by Jiri Olsa:
+https://github.com/olsajiri/xdp-tutorial/tree/tracing
 
 Tutorial already covers load BPF programs, but attaching to tracepoints need
 to be covered by tutorial. Attaching to tracepoints is a multi-step process,
