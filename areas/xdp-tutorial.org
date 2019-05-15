@@ -23,7 +23,11 @@ Updated to the latest github libbpf commit 910c475f09e5 ("sync: latest
 libbpf changes from kernel") details see:
 https://github.com/xdp-project/xdp-tutorial/commit/45963bee3a5a6540
 
-** TODO xdp-tutorial: Add AF_XDP tutorial example
+** DONE xdp-tutorial: Add initial AF_XDP tutorial example
+CLOSED: [2019-05-15 Wed 12:14]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-05-15 Wed 12:14]
+:END:
 Initial step PR: https://github.com/xdp-project/xdp-tutorial/pull/35
 
 ** TODO Example of how to use tail calls
