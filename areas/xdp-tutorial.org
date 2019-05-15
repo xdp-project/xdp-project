@@ -30,6 +30,9 @@ CLOSED: [2019-05-15 Wed 12:14]
 :END:
 Initial step PR: https://github.com/xdp-project/xdp-tutorial/pull/35
 
+** TODO xdp-tutorial: Work on AF_XDP tutorial example
+The [[https://github.com/xdp-project/xdp-tutorial/tree/master/advanced03-AF_XDP][advanced03-AF_XDP]] lesson needs more work.
+
 ** TODO Example of how to use tail calls
 
 * TODO xdp-tutorial for tracepoints project
