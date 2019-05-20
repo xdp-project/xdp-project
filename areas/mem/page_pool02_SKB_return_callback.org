@@ -171,8 +171,85 @@ As the principle behind page_pool keeping the pages mapped is that the
 driver takes over the DMA-sync steps.
 
 
+* Issue: lifetime of device + page_pool
 
+There is an issue/challenge when a page_pool object itself is freed, while
+there are still packets in-flight (that need to be returned to the
+page_pool). (The issue is more prone to happen, when SKBs can carry
+page_pool pages).
 
+Today, this is handled by __xdp_return() via RCU lookups (in rhashtable),
+which will simply call put_page() if the page_pool ID isn't in the
+rhashtable. This is only valid/correct if page_pool is NOT used for
+DMA-mapping.
+
+** Solution#1 - kill performance
+
+(*Wrong solution*)
+
+The naive solution, that would kill performance, is to have a refcnt on
+page_pool for each outstanding packet-page. And use this refcnt to know when
+all pages have been returned, and thus when it is safe to free the
+page_pool.
+
+** Solution#2
+
+Create a smaller object that can be put into rhashtable, that only store the
+=struct device= pointer, that is the one used for the DMA-unmap call.
+
+This is not optimal, as we still don't know when this smaller object can be
+freed from the rhashtable. (This both pin-down rhashtable IDs and memory,
+for the lifetime of the kernel)
+
+** Solution#3
+
+Keep counters for packets in-flight, or rather outstanding-pages. This will
+allow us to know when it is safe to free (and remove the page_pool object
+from rhashtable).
+
+This solution can like solution#1, easily kill performance, depending on
+implementation details. E.g. it is bad to have a single in-flight counter
+that is updated on both alloc and free time, because it will cause
+cache-line bouncing (stressing CPU cache coherency protocol).
+
+Properties of page_pool to realise:
+- Alloc happens RX time and is protected by NAPI/softirq, which guarantees
+  no-concurrent access e.g. to page_pool pp_alloc_cache.
+- Free can run concurrently on remote CPUs, and ptr_ring is used for
+  synchronise return of pages (via producer lock).
+- The ptr_ring doesn't account number of objects in the ring.
+
+The proposed solution is having two (unsigned) counters, that can be on
+different cache-lines, and can be used to deduct in-flight packets. This is
+done by mapping the unsigned "sequence" counters onto signed Two's
+complement arithmetic operations. This is e.g. used by kernel's =time_after=
+macros, described in kernel commit [[https://git.kernel.org/torvalds/c/1ba3aab3033b][1ba3aab3033b]] and [[https://git.kernel.org/torvalds/c/5a581b367b5][5a581b367b5]], and also
+explained in this [[https://en.wikipedia.org/wiki/Serial_number_arithmetic#General_Solution][Wikipedia article]] and [[https://tools.ietf.org/html/rfc1982][RFC1982]].
+
+Thus, these two increment counters only need to be read and compared, when
+checking if it's safe to free the page_pool structure. Which will only
+happen when driver have disconnected RX/alloc side. Thus, on a
+non-fast-path.
+
+The counters should track number of "real" page allocation/free operations.
+The pages getting recycled is basically counted as part of in-flight pages.
+This, also reduce the effect on the fast-path recycling code.
+
+On the alloc side the counter can be incremented lockless, as it is updated
+under NAPI/softirq protection.
+
+On the free-side, the operation can happen on remote CPUs. The operation
+that can happen (on remote CPUs) is in-case ptr_ring is full at return/free
+time, which result in the page being returned to page-allocator. Thus, this
+counter need to be updated atomically. The atomic cost could be mitigated
+via using lib/percpu_counter.c.
+
+Number of pages held 'in-flight' by the page_pool, is also relevant for
+drivers not using the DMA mapping, as indicate/include the pages stored in
+the ptr_ring. Later, when/if system comes under memory pressure, we want to
+allow page-allocator to request page_pool to release resources, where this
+count could be used to select among page_pools.  It is also useful for stats
+and debugging.
 
 
 * Testing procedures
