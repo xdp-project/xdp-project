@@ -244,6 +244,14 @@ time, which result in the page being returned to page-allocator. Thus, this
 counter need to be updated atomically. The atomic cost could be mitigated
 via using lib/percpu_counter.c.
 
+Number of pages held 'in-flight' by the page_pool, is also relevant for
+drivers not using the DMA mapping, as indicate/include the pages stored in
+the ptr_ring. Later, when/if system comes under memory pressure, we want to
+allow page-allocator to request page_pool to release resources, where this
+count could be used to select among page_pools.  It is also useful for stats
+and debugging.
+
+
 * Testing procedures
 
 ** Multicast traffic
