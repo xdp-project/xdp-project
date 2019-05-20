@@ -251,6 +251,33 @@ allow page-allocator to request page_pool to release resources, where this
 count could be used to select among page_pools.  It is also useful for stats
 and debugging.
 
+*** Complications with solution#3
+
+Driver take down procedure need to change. Fortunately only one driver
+(mlx5) uses page_pool.
+
+Current procedure is:
+#+begin_src C
+static void mlx5e_free_rq(struct mlx5e_rq *rq)
+{
+	// [...]
+	xdp_rxq_info_unreg(&rq->xdp_rxq);
+	if (rq->page_pool)
+		page_pool_destroy(rq->page_pool);
+
+#+end_src
+
+With handling of in-flight packet-pages, we might have to postpone calling
+=page_pool_destroy()=. We could move this into =xdp_rxq_info_unreg()=, but
+XDP mem model code need to stay allocator agnostic. Thus, we likely need to
+extend =struct xdp_mem_allocator= with destructor call back.
+
+Further more, we likely need to have both a "request-cleanup" and
+"destructor" callback. As we want to release as many memory resources as
+possible as early as possible, and only wait for the packet-pages in-flight.
+
+Extra: We can add a REG_STATE_DYING to XDP (struct xdp_rxq_info), which
+can/might help us catch invalid driver use-cases.
 
 * Testing procedures
 
