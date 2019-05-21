@@ -27,3 +27,11 @@ CLOSED: [2019-01-29 Tue 17:33]
 
 ** TODO Add testing procedures actvating TCP coalesce code
 
+* TODO page_pool handling in-flight frames during shutdown
+See [[file:mem/page_pool03_shutdown_inflight.org]]
+
+** NEXT page_pool inflight: Code solution#3
+
+** TODO Create tracepoints for page_pool
+
+** TODO Create bpftrace scripts monitoring page_pool stats (via tracepoints)
