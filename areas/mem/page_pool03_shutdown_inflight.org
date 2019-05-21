@@ -2,6 +2,8 @@
 #+Title: page_pool handling in-flight frames during shutdown
 #+OPTIONS: ^:nil
 
+
+
 * Issue: lifetime of device + page_pool
 
 There is an issue/challenge when a page_pool object itself is freed, while
@@ -109,4 +111,117 @@ possible as early as possible, and only wait for the packet-pages in-flight.
 
 Extra: We can add a REG_STATE_DYING to XDP (struct xdp_rxq_info), which
 can/might help us catch invalid driver use-cases.
+
+
+* Tests
+** (Established): Test if __xdp_return() can hit no page_pool id issue
+
+First establish if this code can be hit:
+
+#+begin_src diff
+diff --git a/net/core/xdp.c b/net/core/xdp.c
+index 3d53f9f247e5..6114c80393db 100644
+--- a/net/core/xdp.c
++++ b/net/core/xdp.c
+@@ -338,6 +338,8 @@ static void __xdp_return(void *data, struct xdp_mem_info *mem, bool napi_direct,
+                        napi_direct &= !xdp_return_frame_no_direct();
+                        page_pool_put_page(xa->page_pool, page, napi_direct);
+                } else {
++                       pr_warn("%s() XXX issue if page_pool(id:%d) use DMA\n",
++                               __func__, mem->id);
+                        put_page(page);
+                }
+                rcu_read_unlock();
+#+end_src
+
+The driver mlx5 (in =mlx5e_xdp_set=) reset the NIC-ring "channels", when
+changing between XDP and non-XDP mode.
+
+In that case, the mlx5 driver doesn't reuse the page_pool, instead when a XDP
+program is attached it "close" and free all the "channels", where
+=mlx5e_free_rq= calls =xdp_rxq_info_unreg= as shown by this perf-probe stack
+trace:
+
+#+begin_example
+xdp_rxq_info  1745 [001]  1529.547422: probe:xdp_rxq_info_unreg_2: (ffffffff8179caa6)
+        ffffffff8179caa7 xdp_rxq_info_unreg+0x17 (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffffa022d32a mlx5e_free_rq+0x3a ([mlx5_core])
+        ffffffffa022f0b2 mlx5e_close_channel+0x22 ([mlx5_core])
+        ffffffffa0231486 mlx5e_close_channels+0x26 ([mlx5_core])
+        ffffffffa0232ac7 mlx5e_close_locked+0x47 ([mlx5_core])
+        ffffffffa0232d4c mlx5e_xdp+0x19c ([mlx5_core])
+        ffffffff8176a39c dev_xdp_install+0x3c (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffff81788806 do_setlink+0xcd6 (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffff81788a10 rtnl_setlink+0xd0 (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        [...]
+#+end_example
+
+And =xdp_rxq_info_reg= is called by =mlx5e_alloc_rq=, but cannot be seen by
+(below) call stack as it is inlined in =mlx5e_open_rq=.
+
+#+begin_example
+xdp_rxq_info  1806 [000]  1883.326305:     probe:xdp_rxq_info_reg: (ffffffff8179cae0)
+        ffffffff8179cae1 xdp_rxq_info_reg+0x1 (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffffa022e6e3 mlx5e_open_rq+0x153 ([mlx5_core])
+        ffffffffa0231395 mlx5e_open_channels+0xc25 ([mlx5_core])
+        ffffffffa023289a mlx5e_open_locked+0x2a ([mlx5_core])
+        ffffffffa0232d8a mlx5e_xdp+0x1da ([mlx5_core])
+        ffffffff8176a39c dev_xdp_install+0x3c (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffff8177663e dev_change_xdp_fd+0xce (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffff81788806 do_setlink+0xcd6 (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffff81788a10 rtnl_setlink+0xd0 (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffff81786da2 rtnetlink_rcv_msg+0x122 (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffff817d4157 netlink_rcv_skb+0x37 (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffff817d3a49 netlink_unicast+0x169 (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffff817d3d71 netlink_sendmsg+0x291 (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffff817519b0 sock_sendmsg+0x30 (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffff81752eb8 __sys_sendto+0xe8 (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffff81752f04 __x64_sys_sendto+0x24 (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffff81002252 do_syscall_64+0x42 (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+        ffffffff81a0008c entry_SYSCALL_64+0x7c (/boot/vmlinux-5.1.0-bpf-next-page-pool+)
+            7f4d4090e4ed __send+0x1d (/usr/lib64/libc-2.26.so)
+                  402332 main+0x422 (/home/jbrouer/kernel-bpf-samples/xdp_rxq_info)
+#+end_example
+
+For testing, I used XDP redirect map command:
+
+#+begin_example
+sudo ./xdp_redirect_map  $(</sys/class/net/mlx5p1/ifindex) \
+                         $(</sys/class/net/ixgbe1/ifindex)
+#+end_example
+
+It took a couple of tries. *Confirmed*: The =pr_warn()= was triggered, when XDP
+program was stopped, while having a packet generator running. It might have
+increased the chance that the ixgbe adaptor was causing resets:
+
+#+begin_example
+May 21 16:36:14 broadwell kernel: ixgbe 0000:01:00.1 ixgbe2: initiating reset to clear Tx work after link loss
+May 21 16:36:14 broadwell kernel: ixgbe 0000:01:00.1 ixgbe2: Reset adapter
+May 21 16:36:15 broadwell kernel: ixgbe 0000:01:00.1 ixgbe2: detected SFP+: 4
+May 21 16:36:15 broadwell kernel: ixgbe 0000:01:00.1 ixgbe2: initiating reset to clear Tx work after link loss
+May 21 16:36:15 broadwell kernel: XXX mlx5e_free_rq()
+May 21 16:36:15 broadwell kernel: XXX mlx5e_free_rq()
+May 21 16:36:15 broadwell kernel: XXX mlx5e_free_rq()
+May 21 16:36:15 broadwell kernel: XXX mlx5e_free_rq()
+May 21 16:36:15 broadwell kernel: XXX mlx5e_free_rq()
+May 21 16:36:15 broadwell kernel: XXX mlx5e_free_rq()
+May 21 16:36:15 broadwell kernel: mlx5_core 0000:03:00.0 mlx5p1: Link up
+May 21 16:36:15 broadwell kernel: ixgbe 0000:01:00.1 ixgbe2: Reset adapter
+May 21 16:36:15 broadwell kernel: __xdp_return() XXX issue if page_pool(id:207) use DMA
+May 21 16:36:15 broadwell kernel: __xdp_return() XXX issue if page_pool(id:207) use DMA
+May 21 16:36:15 broadwell kernel: __xdp_return() XXX issue if page_pool(id:207) use DMA
+May 21 16:36:15 broadwell kernel: __xdp_return() XXX issue if page_pool(id:207) use DMA
+May 21 16:36:15 broadwell kernel: __xdp_return() XXX issue if page_pool(id:207) use DMA
+May 21 16:36:15 broadwell kernel: __xdp_return() XXX issue if page_pool(id:207) use DMA
+[...]
+May 21 16:36:19 broadwell kernel: __xdp_return() XXX issue if page_pool(id:207) use DMA
+May 21 16:36:19 broadwell kernel: __xdp_return() XXX issue if page_pool(id:207) use DMA
+May 21 16:36:19 broadwell kernel: __xdp_return() XXX issue if page_pool(id:207) use DMA
+May 21 16:36:19 broadwell kernel: ixgbe 0000:01:00.1: removed PHC on ixgbe2
+May 21 16:36:19 broadwell kernel: ixgbe 0000:01:00.1 ixgbe2: detected SFP+: 4
+May 21 16:36:19 broadwell kernel: ixgbe 0000:01:00.1: Multiqueue Enabled: Rx Queue count = 6, Tx Queue count = 6 XDP Queue count = 0
+May 21 16:36:19 broadwell kernel: ixgbe 0000:01:00.1: registered PHC device on ixgbe2
+May 21 16:36:19 broadwell kernel: ixgbe 0000:01:00.1 ixgbe2: detected SFP+: 4
+May 21 16:36:19 broadwell kernel: ixgbe 0000:01:00.1 ixgbe2: NIC Link is Up 10 Gbps, Flow Control: RX/TX
+#+end_example
 
