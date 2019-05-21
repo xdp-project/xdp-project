@@ -37,7 +37,11 @@ CLOSED: [2019-05-21 Tue 16:40]
 :END:
 Confirmed this can happen.
 
-** NEXT xdp_rxq_info_unreg_mem_model take over calling page_pool_destroy
+** DONE xdp_rxq_info_unreg_mem_model take over calling page_pool_destroy
+CLOSED: [2019-05-21 Tue 19:45]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-05-21 Tue 19:45]
+:END:
 
 When delaying freeing the registered XDP memory model, then we cannot have
 drivers calling page_pool_destroy() directly. Figure out a clean code way to do
