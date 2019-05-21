@@ -15,96 +15,10 @@ early driver network XDP layer, from the rest of the netstack, and assigning
 dedicated CPUs for this stage. This basically allows for 10G wirespeed
 pre-filtering via bpf, on the serving end-host running Linux.
 
-* Allocate SKB outside driver code
+Top-level headings indicate category, as explained in [[file:../xdp-project.org]].
 
-The revolutionary and controversial idea with cpumap redirect is to remove
-the SKB allocation inside the drivers RX-path. Instead an =xdp_frame= is
-created that contains enough info to allocated the SKB later outside the
-driver code, in cpumap's case on a remote CPU, but the idea is to take this
-even further.
-
-*The future plans* are working towards creating Ethernet drivers that have
-no SKB allocations. Instead they will send these =xdp_frame= packets (in a
-bulk) to the network stack, that will handle creation of the SKBs and
-populate the appropriate SKB-fields. This work is currently stalled on a
-generic way to transfer info needed for the SKB-fields, this related to XDP
-*metadata* and *BTF* working areas.
-
-* TODO Project cpumap
-
-Tasks related to =cpumap= are filed under this section.
-
-** TODO BUG: cpumap not working for generic-XDP
-:PROPERTIES:
-:ID:       8f4953c1-a862-46f2-b456-da187008f355
-:END:
-
-The =cpumap= does not handle redirect for generic-XDP.  This have already
-confused people.  For completeness this should be fixed, but there is also
-an opportunity for performance improvements.
-
-** DONE Feature: cpumap bulk alloc SKBs
-CLOSED: [2019-05-13 Mon 14:47]
-:LOGBOOK:
-- State "DONE"       from "TODO"       [2019-05-13 Mon 14:47]
-:END:
-Upstream: [[https://git.kernel.org/torvalds/c/8f0504a97e1ba6b70][8f0504a97e1b ("bpf: cpumap do bulk allocation of SKBs")]]
-
-It would be fairly trivial to bulk alloc SKBs via =kmem_cache_alloc_bulk()=
-API, when dequeuing in kthread (=cpu_map_kthread_run=).  One point is that
-when dequeuing xdp_frames from ptr_ring, a cacheline between two CPUs are
-touched, and we should reduce the time window as much as possible.  Then
-there is of-cause also the performance improvement of bulk alloc.
-
-** TODO Feature: cpumap could use netif_receive_skb_list()
-
-** TODO Feature: cpumap implement GRO handling
-
-** DONE Implement CPUMAP redirect with connection hashing over CPUs
-CLOSED: [2018-08-10 Fri]
-
-The xdp_redirect_cpu code should default distribute packets via IP-flow
-hashing to avoid creating Out-of-Order packets, if someone just runs this
-out-of-the box.
-
-Upstream in commits:
-- [[https://git.kernel.org/torvalds/c/c4c202175424][c4c202175424]] ("Merge branch 'bpf-sample-cpumap-lb'")
-- [[https://git.kernel.org/torvalds/c/1bca4e6b1863][1bca4e6b1863]] ("samples/bpf: xdp_redirect_cpu load balance like Suricata")
-- [[https://git.kernel.org/torvalds/c/11395686586b][11395686586b]] ("samples/bpf: add Paul Hsieh's (LGPL 2.1) hash function SuperFastHash")
-
-** TODO sample xdp_redirect_cpu should output interface-name and ifindex
-
-This is a minor improvement. QA is giving output from xdp_redirect_cpu, but
-forget to say what interface this is loaded on.  Solve by simply outputting
-the interface in the output. Even better would be outputting driver name
-from corresponding ifindex.
-
-** NEXT investigate sample xdp_redirect_cpu counters
-
-Playing with xdp_redirect_cpu, and the enqueue and kthread counters are not
-getting updated, something in stats reporting looks wrong.  Maybe latest
-upstream changes to libbpf broke something?
-
-** TODO cpumap: implement dynamic load-balancer that is OoO safe
-
-This is a project to test the limits of eBPF programming.
-
-The kernels existing facilities, that =cpumap= is "competing" against, RSS
-(Receive Side Scaling) and Receive Packet Steering (RPS) have mechanisms
-that makes sure that Out-of-Order (OoO) packets does not occur when the
-config change runtime. For =cpumap= this is left up to the eBPF programmer
-to hand if he needs to do dynamic config changes.
-
-The question is how difficult is this to implement in eBPF, and do we need
-some helpers or extra state exposed to eBPF, e.g. in-flight-packets, for
-this to be possible to implement in eBPF.
-
-Idea from [[http://people.netfilter.org/hawk/presentations/NetConf2017_Seoul/XDP_devel_update_NetConf2017_Seoul.pdf][slide 29 + 30]]:
-Implement in BPF-code an Out-of-Order safe way to use cpumap-redirect to
-dynamically load-balance IP-flows.
-
-
-* TODO Use-case cpumap: Solving qdisc TX lock congestion for BW shaping
+* Important medium-term tasks                                       :@medium:
+** TODO Use-case cpumap: Solving qdisc TX lock congestion for BW shaping
 
 This is a project that verifies and demonstrate how =cpumap= can be used for
 more complex use-cases like IP-forwarding and bandwidth shaping, while
@@ -128,11 +42,11 @@ This project demonstrates how this can be solved by using the =MQ= qdisc and
 attaching a qdisc =HTB= on each leaf of =MQ=, and via an eBPF prog make sure
 the customers/services grouping is maintained and hit the same CPU+MQ TXq.
 
-** DONE cpumap: Create script MQ-HTB silo setup
+*** DONE cpumap: Create script MQ-HTB silo setup
 CLOSED: [2019-02-06 Wed]
 https://github.com/netoptimizer/network-testing/blob/master/tc/tc_mq_htb_setup.sh
 
-** DONE cpumap: Test cpumap redirect works with MQ-HTB silo setup
+*** DONE cpumap: Test cpumap redirect works with MQ-HTB silo setup
 CLOSED: [2019-03-04 Mon 15:45]
 :LOGBOOK:
 - State "DONE"       from "NEXT"       [2019-03-04 Mon 15:45]
@@ -148,7 +62,7 @@ To help people out, here is a script for easier setup of XPS:
 [[https://github.com/netoptimizer/network-testing/blob/master/tc/xps_setup.sh][xps_setup.sh]]
 Run the script with --help.
 
-** DONE Allow BPF clsact write access to skb->queue_mapping
+*** DONE Allow BPF clsact write access to skb->queue_mapping
 CLOSED: [2019-02-19 Tue]
 :LOGBOOK:
 - State "DONE"       from "TODO"       [2019-03-04 Mon]
@@ -164,7 +78,7 @@ configured. This could be set by e.g. using TC filter/action =skbedit= (see man
 [[https://www.linux.org/docs/man8/tc-skbedit.html][tc-skbedit(8)]]), but we also want to allow this from TC cls_bpf. Reading
 =queue_mapping= from TC cls_bpf is already possible.
 
-*** DONE Code analysis before BPF helper for skb_set_queue_mapping
+**** DONE Code analysis before BPF helper for skb_set_queue_mapping
 CLOSED: [2019-02-12 Tue 20:59]
 :LOGBOOK:
 - State "DONE"       from "TODO"       [2019-02-12 Tue 20:59]
@@ -248,7 +162,7 @@ little tricky to spot. Unless XPS via =get_xps_queue= overrides by finding a
 "new_index", then =skb_tx_hash= will be asked to determine the queue_index.
 (And for IP-forwarding there is not =sk= socket).
 
-** DONE TC-skbedit: possible issue with TC action skbedit
+*** DONE TC-skbedit: possible issue with TC action skbedit
 CLOSED: [2019-03-04 Mon 15:49]
 :LOGBOOK:
 - State "DONE"       from "TODO"       [2019-03-04 Mon 15:49]
@@ -263,17 +177,113 @@ The biggest surprise for users is likely that XPS will overwrite their
 choice (and XPS seems to be default enabled). Users must first disable XPS
 via mask=00, before their changes via =skbedit= takes any effect.
 
-** DONE cpumap: create git project xdp-cpumap-tc
+*** DONE cpumap: create git project xdp-cpumap-tc
 CLOSED: [2019-02-13 Wed]
 
 Create git project xdp-cpumap-tc, that demonstrate how XDP cpumap redirect
 can be used together with Linux TC (Traffic Control) for solving the Qdisc
 locking problem.
 
-** TODO xdp-cpumap-tc: add some documentation
-** TODO xdp-cpumap-tc: public release of code/repo
-** TODO cpumap: quantify effect of cpumap (currently) don't transfer RX-csum info
+*** TODO xdp-cpumap-tc: add some documentation
+*** TODO xdp-cpumap-tc: public release of code/repo
+*** TODO cpumap: quantify effect of cpumap (currently) don't transfer RX-csum info
 
 Verify csum is recalculated on IP-forward TX path for cpumap redirected
 packets.  Try to asses/measure overhead this cause.
+
+
+* Longer-term preliminary plans                                       :@long:
+** Allocate SKB outside driver code
+
+The revolutionary and controversial idea with cpumap redirect is to remove
+the SKB allocation inside the drivers RX-path. Instead an =xdp_frame= is
+created that contains enough info to allocated the SKB later outside the
+driver code, in cpumap's case on a remote CPU, but the idea is to take this
+even further.
+
+*The future plans* are working towards creating Ethernet drivers that have
+no SKB allocations. Instead they will send these =xdp_frame= packets (in a
+bulk) to the network stack, that will handle creation of the SKBs and
+populate the appropriate SKB-fields. This work is currently stalled on a
+generic way to transfer info needed for the SKB-fields, this related to XDP
+*metadata* and *BTF* working areas.
+
+
+** TODO Various cpumap features
+
+This section contains various feature ideas related to =cpumap=.
+
+*** TODO BUG: cpumap not working for generic-XDP
+:PROPERTIES:
+:ID:       8f4953c1-a862-46f2-b456-da187008f355
+:END:
+
+The =cpumap= does not handle redirect for generic-XDP.  This have already
+confused people.  For completeness this should be fixed, but there is also
+an opportunity for performance improvements.
+
+*** TODO Feature: cpumap could use netif_receive_skb_list()
+
+*** TODO Feature: cpumap implement GRO handling
+
+*** TODO sample xdp_redirect_cpu should output interface-name and ifindex
+
+This is a minor improvement. QA is giving output from xdp_redirect_cpu, but
+forget to say what interface this is loaded on.  Solve by simply outputting
+the interface in the output. Even better would be outputting driver name
+from corresponding ifindex.
+
+*** NEXT investigate sample xdp_redirect_cpu counters
+
+Playing with xdp_redirect_cpu, and the enqueue and kthread counters are not
+getting updated, something in stats reporting looks wrong.  Maybe latest
+upstream changes to libbpf broke something?
+
+*** TODO cpumap: implement dynamic load-balancer that is OoO safe
+
+This is a project to test the limits of eBPF programming.
+
+The kernels existing facilities, that =cpumap= is "competing" against, RSS
+(Receive Side Scaling) and Receive Packet Steering (RPS) have mechanisms
+that makes sure that Out-of-Order (OoO) packets does not occur when the
+config change runtime. For =cpumap= this is left up to the eBPF programmer
+to hand if he needs to do dynamic config changes.
+
+The question is how difficult is this to implement in eBPF, and do we need
+some helpers or extra state exposed to eBPF, e.g. in-flight-packets, for
+this to be possible to implement in eBPF.
+
+Idea from [[http://people.netfilter.org/hawk/presentations/NetConf2017_Seoul/XDP_devel_update_NetConf2017_Seoul.pdf][slide 29 + 30]]:
+Implement in BPF-code an Out-of-Order safe way to use cpumap-redirect to
+dynamically load-balance IP-flows.
+
+
+
+
+* Completed tasks
+
+** DONE Implement CPUMAP redirect with connection hashing over CPUs
+CLOSED: [2018-08-10 Fri]
+
+The xdp_redirect_cpu code should default distribute packets via IP-flow
+hashing to avoid creating Out-of-Order packets, if someone just runs this
+out-of-the box.
+
+Upstream in commits:
+- [[https://git.kernel.org/torvalds/c/c4c202175424][c4c202175424]] ("Merge branch 'bpf-sample-cpumap-lb'")
+- [[https://git.kernel.org/torvalds/c/1bca4e6b1863][1bca4e6b1863]] ("samples/bpf: xdp_redirect_cpu load balance like Suricata")
+- [[https://git.kernel.org/torvalds/c/11395686586b][11395686586b]] ("samples/bpf: add Paul Hsieh's (LGPL 2.1) hash function SuperFastHash")
+
+** DONE Feature: cpumap bulk alloc SKBs
+CLOSED: [2019-05-13 Mon 14:47]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-05-13 Mon 14:47]
+:END:
+Upstream: [[https://git.kernel.org/torvalds/c/8f0504a97e1ba6b70][8f0504a97e1b ("bpf: cpumap do bulk allocation of SKBs")]]
+
+It would be fairly trivial to bulk alloc SKBs via =kmem_cache_alloc_bulk()=
+API, when dequeuing in kthread (=cpu_map_kthread_run=).  One point is that
+when dequeuing xdp_frames from ptr_ring, a cacheline between two CPUs are
+touched, and we should reduce the time window as much as possible.  Then
+there is of-cause also the performance improvement of bulk alloc.
 
