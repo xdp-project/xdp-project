@@ -15,8 +15,32 @@ automatically detect [[http://doc.norang.ca/org-mode.html#TodoKeywordProjectTask
 pickup these tasks, make sure to [[http://doc.norang.ca/org-mode.html#AgendaSetup][configure]] =org-agenda-files= to include
 this directory and =areas/= directory.
 
+The items in this file are divided into three categories, reflecting the
+urgency and time frame we envision them being completed; although this is
+somewhat of a soft categorisation, as the development is also dependent on
+the priorities of the people and organisations involved. These categories
+are:
 
-* TODO Consistency for statistics with XDP
+- Current high-priority tasks
+- Important medium-term tasks
+- Longer-term preliminary plans
+
+Tasks are filed under the headings corresponding to these categories below,
+and each category contains a description of what it (is supposed to)
+include.
+
+* Current high-priority tasks
+
+These are tasks that are blockers for getting the XDP system ready for
+general consumption, i.e., to a state that might reasonably be considered
+"feature complete". This means that tasks in this category include essential
+pieces of missing functionality, or significant user interface issues that
+need to be resolved for wider adoption.
+
+Tasks in this category should have a fleshed-out problem description, and
+preferably a plan and someone working on them.
+
+** TODO Consistency for statistics with XDP
 
 The short of it is that we need consistency in the counters across NIC
 drivers and virtual devices. Right now stats are specific to a driver with
@@ -25,7 +49,7 @@ no clear accounting for the packets and bytes handled in XDP.
 Progress: @dsahern (David Ahern) have started an email thread on the
 subject: [[https://www.spinics.net/lists/netdev/msg535239.html][consistency for statistics with XDP mode]]
 
-** TODO Missing update of ifconfig counters
+*** TODO Missing update of ifconfig counters
 
 Some drivers are not updating the "ifconfig" stats counters,
 when in XDP mode.  This makes receive or send via XDP invisible to
@@ -43,11 +67,11 @@ Closer look at other drivers.
    of other ethtool stats counters (which are the ones I usually
    monitor when testing).
 
-** NEXT Figure out the counter semantics upstream
+*** NEXT Figure out the counter semantics upstream
 Need to have an upstream discussion, on what is the semantic.  IHMO
 the regular RX/TX counters must be updated even for XDP frames.
 
-** TODO Statistics per XDP-action
+*** TODO Statistics per XDP-action
 
 Accounting per XDP-action is also inconsistent across drivers. Some driver
 account nothing, while others have elaborate counters exposed as ethtool
@@ -67,7 +91,7 @@ There were a lot of performance concerns around introducing XDP-action
 counters. Generally upstream voices wanted this to be opt-in, e.g. something
 that the sysadm explicitly enable when needed, and not default on.
 
-*** NEXT Implement simple XDP-actions counter and measure
+**** NEXT Implement simple XDP-actions counter and measure
 
 As Saeed suggested do something really simple and central like:
 
@@ -92,7 +116,7 @@ And measure if the performance concerns are real or not. Ilias or Jesper can
 measure this on a slow ARM64 platform (espressobin), as only testing this on
 Intel might lead to the wrong conclusion.
 
-*** TODO Exporting XDP-actions counter to userspace
+**** TODO Exporting XDP-actions counter to userspace
 
 Collecting XDP-actions counter is only the first step.  We need to figure
 out the best solution for exporting this to userspace.
@@ -101,9 +125,10 @@ One option is to piggyback on ethtool stats, which the drivers already use,
 and it would also standardise the driver related XDP ethool stats.
 
 
-* TODO Better ndo_xdp_xmit resource management
+** TODO Better ndo_xdp_xmit resource management
 :PROPERTIES:
 :OWNER:    tohojo
+:ID:       dbb66cde-82e6-47ba-be0f-5ebb8baa1cd2
 :END:
 
 Driver resources needed to handle a ndo_xdp_xmit() is currently tied
@@ -114,7 +139,7 @@ This can quickly lead to exhausting HW resources, like IRQs lines or
 NIC TX HW queues, given it is assumed a TX queue is alloc/dedicated
 for each CPU core.
 
-** NEXT Change non-map xdp_redirect helper to use a hidden map
+*** NEXT Change non-map xdp_redirect helper to use a hidden map
 :LOGBOOK:
 - State "NEXT"       from "WAIT"       [2019-02-25 Mon 15:09]
 - State "WAIT"       from "NEXT"       [2019-02-21 Thu 13:00] \\
@@ -130,14 +155,14 @@ v1 comments and discussion: [[https://patchwork.ozlabs.org/patch/1046099/][Patch
 
 [[https://patchwork.ozlabs.org/cover/1050219/][v3 patchwork link]]
 
-** TODO Ethtool interface for enabling TX resources
+*** TODO Ethtool interface for enabling TX resources
 Turns out the initial idea of using insertion into devmap as a trigger for
 resource allocation doesn't work because of generic XDP. So we'll need an
 ethtool interface; look into the existing channel configuration interface on
 the kernel side and figure out how to express XDP resource allocation in a
 good way.
 
-*** Interface for defining what a TX resource is
+**** Interface for defining what a TX resource is
 Need to define:
 
 - Number of TX queues
@@ -146,27 +171,93 @@ Need to define:
 
 How to handle life cycle management?
 
-** TODO Add automatic TX resource allocation to libbpf
+*** TODO Add automatic TX resource allocation to libbpf
 Because we can't tie resource allocation to map insertion on the kernel
 side, we need to solve the UI interface in userspace. So add a hook/wrapper
 to libbpf that will automatically allocate TX resources when inserting into
 a map.
 
 
-* TODO Usability of programs in samples/bpf
+** TODO XDP feature flags
+
+We are probably going to need feature flags for XDP after all. There are use
+cases (e.g. Surricata, VM migration) that will want to know what to expect
+from the system before committing to loading an XDP program.
+
+*** NEXT Propose a driver API to communicate feature flags
+
+- Daniel: Needs to go through driver BPF ndo
+
+Needs to be an API that queries support. We cannot validate on program load
+time because of tail call. Not even with cooperation from the tail-calling
+program, because that may not know what features are used by the programs it
+is tail-calling into.
+
+*** TODO Add a userspace API to query features
+
+Netlink? Ethtool?
+
+
+** TODO Handling XDP_REDIRECT failures
+:PROPERTIES:
+:ID:       760b03fc-2a8e-499c-a90c-74dbc4716cbc
+:END:
+
+Probably depends on [[id:dbb66cde-82e6-47ba-be0f-5ebb8baa1cd2][Better ndo_xdp_xmit resource management]]
+
+*** NEXT Allow lookups in devmap/cpumap
+
+Return pointer to same ID as we insert, just copy it to a scratch space
+first.
+
+*** NEXT Make bpf_redirect_map() check map contents
+
+If we simply make the redirect_map() helper check that something exists in
+that position in the map, we at least catch the case where a map entry is
+empty (where we *know* it is going to fail). If we then later add the
+capability for a map to ensure that TX resources are available on insert, we
+will get this check for free.
+
+What is the right return code for the helper on failure? We already return
+XDP_ABORTED on invalid flags, so we could create a new
+REDIRECT_PASS_ON_INVALID that make non-existent map entries return XDP_PASS.
+This makes it easy to implement "defer to stack on error" type programs,
+*and* it makes it possible to disambiguate between "flag not understood" and
+"flag understood and map is empty".
+
+Mellanox drivers turn a failure in xdp_do_redirect() into an ABORTED action,
+other drivers do not.
+
+*** TODO What happens if redirect fails even though TX resources are available?
+
+Even with the above, we can still get failures if, e.g., TX ring runs out of
+space. We can't really handle this by return, so what should we do instead?
+Maybe just defer this to [[id:24faae01-542b-4882-9f7a-5ab283e657b0][XDP hook at TX]].
+
+* Important medium-term tasks
+
+These are tasks that are important to fix in the medium term, but that are
+not immediate blockers for functionality. This includes things like
+expanding driver support, and adding new features that improve things, but
+which are not essential for the basic usefulness of XDP.
+
+Tasks in this category should at a minimum have a fleshed-out problem
+description.
+
+** TODO Usability of programs in samples/bpf
 
 The samples/bpf programs xdp_redirect + xdp_redirect_map are very user
 unfriendly. #1 they use raw ifindex'es as input + output. #2 the pkt/s
 number count RX packets, not TX'ed packets which can be dropped silently.
 Red Hat QA, got very confused by #2.
 
-** NEXT Change sample programs to accept ifnames as well as indexes
+*** NEXT Change sample programs to accept ifnames as well as indexes
 
-** NEXT Add TX counters to redirect samples/bpf programs
+*** NEXT Add TX counters to redirect samples/bpf programs
 
 Simply include/sample the net_device TX stats.
 
-** TODO Fix unloading wrong XDP on xdp-sample exit
+*** TODO Fix unloading wrong XDP on xdp-sample exit
 
 The XDP sample programs unconditionally unload the current running XDP
 program (via -1) on exit. If users are not careful with the order in-which
@@ -176,7 +267,7 @@ Almost done, but followup to make sure this gets merged upstream:
 Upstream [[https://patchwork.ozlabs.org/project/netdev/list/?series=86597&state=%2a][proposal V1]] (by [[https://patchwork.ozlabs.org/project/netdev/list/?submitter=75761][Maciej Fijalkowski]]) is to check if the BPF-prog-ID
 numbers match, before removing the current XDP-prog.
 
-** TODO Change XDP-samples to enforce native-XDP and report if not avail
+*** TODO Change XDP-samples to enforce native-XDP and report if not avail
 
 The default behaviour when attaching an XDP program on a driver that doesn't
 have native-XDP is to fallback to generic-XDP, without notifying the user of
@@ -190,7 +281,7 @@ Proposal is to change xdp-samples to enforce native-XDP, and report if this
 was not possible, together with help text that display cmdline option for
 enabling generic-XDP/SKB-mode.
 
-** TODO Add xdpsock option to allow XDP_PASS for AF_XDP zero-copy mode
+*** TODO Add xdpsock option to allow XDP_PASS for AF_XDP zero-copy mode
 
 In AF_XDP zero-copy mode, sending frame to the network stack via XDP_PASS
 results in an expense code path, e.g new page_alloc for copy of payload and
@@ -200,18 +291,18 @@ Also consider testing XDP-level redirect out another net_device with
 AF_XDP-ZC enabled. (I think this will just drop the packets due to
 mem_type).
 
-** TODO xdp_monitor: record and show errno
+*** TODO xdp_monitor: record and show errno
 
 It would be a big help diagnosing XDP issues if the xdp_monitor program also
 reported the errno.
 
-** TODO xdp_monitor: convert to use raw-tracepoints
+*** TODO xdp_monitor: convert to use raw-tracepoints
 
 The raw-tracepoints are suppose to be much faster, and XDP monitor want to
 have as little impact on the system as possible. Thus, convert to use
 raw-tracepoints.
 
-* TODO BPF-selftests - top-level TODOs
+** TODO BPF-selftests - top-level TODOs
 
 The kernel git-tree contains a lot of selftests for BPF located in:
 =tools/testing/selftests/bpf/=.
@@ -224,7 +315,7 @@ components (via selftests).
 Since driver =veth= got native-XDP support, we have an opportunity for
 writing selftests that cover both generic-XDP and native-XDP.
 
-** TODO bpf-selftest: improve XDP VLAN selftests
+*** TODO bpf-selftest: improve XDP VLAN selftests
 
 *Assignment* is to improve the selftest shell-script to test both
 generic-XDP and native-XDP (for veth driver).
@@ -240,7 +331,7 @@ generic-XDP code path.
 The ip utility (from iproute2) already support specifying, that an XDP prog
 must use generic XDP when loading an XDP prog (option =xdpgeneric=).
 
-** TODO bpf-selftest: find XDP-selftests affected by veth native-XDP
+*** TODO bpf-selftest: find XDP-selftests affected by veth native-XDP
 
 When driver =veth= got native-XDP support, then the XDP-selftests that were
 based on =veth= changed from testing generic-XDP into testing native-XDP.
@@ -249,7 +340,7 @@ based on =veth= changed from testing generic-XDP into testing native-XDP.
 1. Determine how many and which veth based XDP-selftests are affected
 2. Convert these selftests to test both generic-XDP and native-XDP
 
-** TODO Make more XDP tests using BPF_PROG_TEST_RUN
+*** TODO Make more XDP tests using BPF_PROG_TEST_RUN
 
 [[https://twitter.com/bjorntopel/status/1098563282884014080?s=03][Tweet]] by Björn Töpel (@bjorntopel):
 
@@ -257,15 +348,9 @@ Many people aren't aware of the BPF_PROG_TEST_RUN command. It's really neat
 being able to test your XDP programs "offline". The selftests use this a
 lot. Docs: https://t.co/GDd7SfNYng and examples in tools/testing/selftests/bpf/.
 
-** NEXT Could this be a "introduction job"?
+*** NEXT Could this be a "introduction job"?
 
-* TODO Adding AF_XDP support to relevant userspace programs
-
-There are several high-profile userspace programs that might benefit from
-AF_XDP support. Adding this (or coordinating it with the program authors)
-could be a way to show the benefits of XDP.
-
-* TODO Busy-poll support for AF_XDP
+** TODO Busy-poll support for AF_XDP
 
 Adding BUSY_POLL support to AF_XDP sockets was presented at the Linux
 Plumbers Conference 2018 in Vancouver, BC. With this feature, the NAPI
@@ -334,49 +419,61 @@ batch size. And Jesper's xdp_rxq_info struct need to be enlarged with a
 napi_id field that the drivers need to populate. This can then be used
 by the xsk poll code to drive the correct NAPI.
 
-* TODO XDP feature flags
-
-We are probably going to need feature flags for XDP after all. There are use
-cases (e.g. Surricata, VM migration) that will want to know what to expect
-from the system before committing to loading an XDP program.
-
-** NEXT Propose a driver API to communicate feature flags
-
-- Daniel: Needs to go through driver BPF ndo
-
-Needs to be an API that queries support. We cannot validate on program load
-time because of tail call. Not even with cooperation from the tail-calling
-program, because that may not know what features are used by the programs it
-is tail-calling into.
-
-** TODO Add a userspace API to query features
-
-Netlink? Ethtool?
-
-* TODO Exposing more kernel data structures through helpers
+** TODO Exposing more kernel data structures through helpers
 
 We already have routing, but we will need more helpers.
 
-** NEXT Layer-2 bridging helper
+*** NEXT Layer-2 bridging helper
 
 The obvious next step is a l2 bridging helper that mirrors the l3 routing
 one. Should be fairly straight forward to implement.
 
-*** TODO What to do about broadcast/multicast?
+**** TODO What to do about broadcast/multicast?
 
-** TODO Connection/flow tracking
+*** TODO Connection/flow tracking
 
 Exposing either full conntrack, or the more light-weight flow tracking
 support would make things like stateful firewalls easier to implement.
 Probably need a concrete use case for this first, though.
 
-* WAIT BTF-based metadata for XDP                                   :WAITING:
+** TODO Port iproute2 to libbpf
+** TODO Metadata available to programs
+
+*** TODO XDP frame length
+- Needed for skb-less drivers
+- Tail-extend (e.g., DNS)
+- False true-size
+
+*** TODO Metadata from hardware
+- Checksum
+- Hash value
+
+**** TODO Needs BTF-based metadata
+[[id:25240998-2037-4ebf-befe-c0d0fdacb9c7][BTF-based metadata for XDP]]
+
+* Longer-term preliminary plans
+
+These are longer-term plans or ideas that either fall into the "nice to
+have" category, or which are blocked on other pieces of kernel development;
+as well as ideas for things we may include in the future but which is not a
+high priority at the moment.
+
+Tasks in this category do not require any particular level of description;
+so some of them may simply have a sentence or two describing them.
+
+** TODO Adding AF_XDP support to relevant userspace programs
+
+There are several high-profile userspace programs that might benefit from
+AF_XDP support. Adding this (or coordinating it with the program authors)
+could be a way to show the benefits of XDP.
+
+** WAIT BTF-based metadata for XDP                                 :WAITING:
 :PROPERTIES:
 :ID:       25240998-2037-4ebf-befe-c0d0fdacb9c7
 :END:
 
 Waiting for tracing people to work out the details of BTF.
-* WAIT XDP latency jit-vs-no jit, tuning etc                        :WAITING:
+** WAIT XDP latency jit-vs-no jit, tuning etc                      :WAITING:
 [2019-01-18 Fri 13:55]
 How do we ensure consistently low latency packet processing is possible with
 XDP?
@@ -389,78 +486,15 @@ investigated.
 Maybe write a tuning doc as well?
 
 WAIT status as this is low priority for now.
-* TODO Port iproute2 to libbpf
-* TODO Generic XDP
-** TODO Bulking for redirect maps
-** TODO BUG: TCP packets skip (?)
-** TODO Fix CPUMAP
+** TODO Generic XDP
+*** TODO Bulking for redirect maps
+*** TODO BUG: TCP packets skip (?)
+*** TODO Fix CPUMAP
 [[id:8f4953c1-a862-46f2-b456-da187008f355][BUG: cpumap not working for generic-XDP]]
 
-* TODO XDP hook at TX
+** TODO XDP hook at TX
 :PROPERTIES:
 :ID:       24faae01-542b-4882-9f7a-5ab283e657b0
 :END:
 
-* TODO Handling XDP_REDIRECT failures
-:PROPERTIES:
-:ID:       760b03fc-2a8e-499c-a90c-74dbc4716cbc
-:END:
-
-** NEXT Allow lookups in devmap/cpumap
-
-Return pointer to same ID as we insert, just copy it to a scratch space
-first.
-
-** NEXT Make bpf_redirect_map() check map contents
-
-If we simply make the redirect_map() helper check that something exists in
-that position in the map, we at least catch the case where a map entry is
-empty (where we *know* it is going to fail). If we then later add the
-capability for a map to ensure that TX resources are available on insert, we
-will get this check for free.
-
-What is the right return code for the helper on failure? We already return
-XDP_ABORTED on invalid flags, so we could create a new
-REDIRECT_PASS_ON_INVALID that make non-existent map entries return XDP_PASS.
-This makes it easy to implement "defer to stack on error" type programs,
-*and* it makes it possible to disambiguate between "flag not understood" and
-"flag understood and map is empty".
-
-Mellanox drivers turn a failure in xdp_do_redirect() into an ABORTED action,
-other drivers do not.
-
-** TODO What happens if redirect fails even though TX resources are available?
-
-Even with the above, we can still get failures if, e.g., TX ring runs out of
-space. We can't really handle this by return, so what should we do instead?
-Maybe just defer this to [[id:24faae01-542b-4882-9f7a-5ab283e657b0][XDP hook at TX]].
-
-* TODO Metadata available to programs
-
-** TODO XDP frame length
-- Needed for skb-less drivers
-- Tail-extend (e.g., DNS)
-- False true-size
-
-** TODO Metadata from hardware
-- Checksum
-- Hash value
-
-*** TODO Needs BTF-based metadata
-[[id:25240998-2037-4ebf-befe-c0d0fdacb9c7][BTF-based metadata for XDP]]
-
-* Meta: Prioritisation
-
-FIXME: This should probably be moved somewhere
-
-** "Production ready" features:
-- Statistics
-- XDP_REDIRECT failures
-- Feature bits
-- TX resource allocation
-
-** Dependencies:
-
-- Page pool -> driver support
-- TX resource -> better XDP redirect support
 
