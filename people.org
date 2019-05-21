@@ -38,6 +38,8 @@ Core XDP developers:
 - Jakub Kicinski <jakub.kicinski@netronome.com> (netronome + core work)
 - Quentin Monnet <quentin.monnet@netronome.com> (netronome + core work)
 - David Ahern (fib lookup helper)
+- Jesper Brouer <brouer@redhat.com>
+- Toke Høiland-Jørgensen <toke@redhat.com>
 
 eBPF core developers influencing XDP:
 - Martin KaFai Lau <kafai@fb.com>
