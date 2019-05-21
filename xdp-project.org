@@ -21,15 +21,16 @@ somewhat of a soft categorisation, as the development is also dependent on
 the priorities of the people and organisations involved. These categories
 are:
 
-- Current high-priority tasks
-- Important medium-term tasks
-- Longer-term preliminary plans
+- Current high-priority tasks (=@short= tag)
+- Important medium-term tasks (=@medium= tag)
+- Longer-term preliminary plans (=@long= tag)
 
 Tasks are filed under the headings corresponding to these categories below,
 and each category contains a description of what it (is supposed to)
-include.
+include. We also use the tags mentioned above to designate the status, to
+allow filtering in agenda views.
 
-* Current high-priority tasks
+* Current high-priority tasks                                        :@short:
 
 These are tasks that are blockers for getting the XDP system ready for
 general consumption, i.e., to a state that might reasonably be considered
@@ -237,7 +238,7 @@ Even with the above, we can still get failures if, e.g., TX ring runs out of
 space. We can't really handle this by return, so what should we do instead?
 Maybe just defer this to [[id:24faae01-542b-4882-9f7a-5ab283e657b0][XDP hook at TX]].
 
-* Important medium-term tasks
+* Important medium-term tasks                                       :@medium:
 
 These are tasks that are important to fix in the medium term, but that are
 not immediate blockers for functionality. This includes things like
@@ -479,7 +480,7 @@ in eBPF. These include:
 To express this in a vendor-neutral way, we probably need to depend on the
 [[id:25240998-2037-4ebf-befe-c0d0fdacb9c7][BTF-based metadata for XDP]]
 
-* Longer-term preliminary plans
+* Longer-term preliminary plans                                       :@long:
 
 These are longer-term plans or ideas that either fall into the "nice to
 have" category, or which are blocked on other pieces of kernel development;
