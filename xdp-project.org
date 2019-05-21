@@ -203,7 +203,10 @@ Netlink? Ethtool?
 :ID:       760b03fc-2a8e-499c-a90c-74dbc4716cbc
 :END:
 
-Probably depends on [[id:dbb66cde-82e6-47ba-be0f-5ebb8baa1cd2][Better ndo_xdp_xmit resource management]]
+Presently, an XDP program cannot know if a call to bpf_redirect_map() is
+going to fail. This means that programs end up doing things like using
+duplicate maps for checking if a redirect map entry exists, or to packets
+being silently dropped.
 
 *** NEXT Allow lookups in devmap/cpumap
 
@@ -421,7 +424,10 @@ by the xsk poll code to drive the correct NAPI.
 
 ** TODO Exposing more kernel data structures through helpers
 
-We already have routing, but we will need more helpers.
+One of the strengths of XDP over kernel bypass solutions is the ability to
+re-use existing in-kernel data structures, such as the routing table. This
+happens through kernel helpers. We already have routing, but we will need
+more helpers.
 
 *** NEXT Layer-2 bridging helper
 
@@ -437,18 +443,40 @@ support would make things like stateful firewalls easier to implement.
 Probably need a concrete use case for this first, though.
 
 ** TODO Port iproute2 to libbpf
+
+The iproute2 XDP loader does not use libbpf, because its implementation
+predates the introduction of libbpf as the "official" upstream-blessed
+library. This means that there are compatibility issues between the way
+iproute2 handles maps, and the way libbpf-based loaders do.
+
+The easiest way to fix this is probably just to port iproute2 to use libbpf.
+
 ** TODO Metadata available to programs
 
+The metadata available to XDP programs through the XDP context object could
+be expanded with other useful entries. This section collects lists of which
+items would be useful to have, and explains why for each of them.
+
 *** TODO XDP frame length
-- Needed for skb-less drivers
-- Tail-extend (e.g., DNS)
-- False true-size
+The length of the XDP *frame* (as opposed to the data packet) is needed for
+various things:
+
+- Tail-extend (e.g., DNS); currently packets can only be shrunk at the tail
+- Correctly reporting skb true-size when generated from XDP frame
+- For moving skb allocation out of drivers (long-term)
 
 *** TODO Metadata from hardware
+There are various hardware metadata items that would be useful for XDP
+programs to access, to reduce the amount of processing that needs to happen
+in eBPF. These include:
+
 - Checksum
 - Hash value
+- Flow designator
+- Higher-level protocol header offsets
 
 **** TODO Needs BTF-based metadata
+To express this in a vendor-neutral way, we probably need to depend on the
 [[id:25240998-2037-4ebf-befe-c0d0fdacb9c7][BTF-based metadata for XDP]]
 
 * Longer-term preliminary plans
@@ -487,6 +515,8 @@ Maybe write a tuning doc as well?
 
 WAIT status as this is low priority for now.
 ** TODO Generic XDP
+Various fixes that should be fixed in generic XDP eventually
+
 *** TODO Bulking for redirect maps
 *** TODO BUG: TCP packets skip (?)
 *** TODO Fix CPUMAP
@@ -496,5 +526,32 @@ WAIT status as this is low priority for now.
 :PROPERTIES:
 :ID:       24faae01-542b-4882-9f7a-5ab283e657b0
 :END:
+
+From [[https://www.linuxplumbersconf.org/event/2/contributions/92/attachments/91/103/lpc18-xdp-future.pdf][the LPC 2018 paper]]:
+
+#+begin_quote
+A limitation of the current design of XDP is that programs get no feedback
+if a redirect to another device fails. Instead, the packet is just silently
+dropped, and the only way to see why is by attaching to the right
+tracepoint. This is especially problematic when forwarding packets from a
+fast device to a slower one. And the way =XDP_REDIRECT= is implemented,
+there is no way for the XDP program to gain insight into the state of the
+device being forwarded /to/.
+
+We believe that a possible fix for this is to add another eBPF hook at
+packet egress from a device, i.e., at the latest possible time before a
+packet is put into the device TX ring. At this point, it is possible for the
+driver to supply information about the current state of the TX ring buffer
+(such as free space), which the eBPF program can react appropriately to, for
+example by signaling ingress XDP programs to send traffic another way if the
+TX ring is full, or by implementing AQM-like reactions when TX ring pressure
+increases.
+
+A crazy idea is to allow this egress eBPF hook to perform a new XDP action if it
+sees the TX ring is full, such as redirecting the frame out another interface.
+Allowing the full XDP feature set of modifying and truncating packet length
+would also make is possible to implement a signaling protocol like that
+described in [[http://doi.acm.org/10.1145/3098822.3098825]].
+#+end_quote
 
 
