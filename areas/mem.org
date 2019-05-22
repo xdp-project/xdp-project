@@ -6,24 +6,27 @@ This document contains *org-mode tasks* and TODOs for files under: [[file:mem/][
 It is recommended to use emacs when viewing and editing these =.org= files, as
 the github rendering view removes the =TODO= and =DONE= marking on the tasks.
 
+Top-level headings indicate category, as explained in [[file:../xdp-project.org]].
 
-* TODO Implementing page_pool return-hook via SKB
+
+* Important medium-term tasks                                       :@medium:
+** TODO Implementing page_pool return-hook via SKB
 
 The work is recorded in [[file:mem/page_pool02_SKB_return_callback.org]]
 
-** DONE Post RFC-patchset for page_pool recycle with mvneta use-case
+*** DONE Post RFC-patchset for page_pool recycle with mvneta use-case
 CLOSED: [2018-12-07 Fri]
 
 Org-link to section:
 [[file:mem/page_pool02_SKB_return_callback.org::*RFC-patchset]]
 
-** DONE Prioritize page_pool options for skb_try_coalesce
+*** DONE Prioritize page_pool options for skb_try_coalesce
 CLOSED: [2019-01-29 Tue 17:33]
 :LOGBOOK:
 - State "DONE"       from "NEXT"       [2019-01-29 Tue 17:33]
 :END:
 
-** TODO Doc code where netstack manipulate skb->head page
+*** TODO Doc code where netstack manipulate skb->head page
 
-** TODO Add testing procedures actvating TCP coalesce code
+*** TODO Add testing procedures actvating TCP coalesce code
 

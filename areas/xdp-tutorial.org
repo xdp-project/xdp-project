@@ -12,9 +12,14 @@ resource for XDP/BPF developer to learn good programming practices. This
 also means aspiring to high code quality, and show good practise for error
 handling, and show how code are placed into common/ directory files/objects.
 
-* TODO XDP-tutorial ideas for assignments/examples
+Top-level headings indicate category, as explained in [[file:../xdp-project.org]].
 
-** DONE xdp-tutorial: rebase libbpf to get AF_XDP headers
+
+* Important medium-term tasks                                       :@medium:
+
+** TODO XDP-tutorial ideas for assignments/examples
+
+*** DONE xdp-tutorial: rebase libbpf to get AF_XDP headers
 CLOSED: [2019-05-15 Wed 12:06]
 :LOGBOOK:
 - State "DONE"       from "NEXT"       [2019-05-15 Wed 12:06]
@@ -23,19 +28,19 @@ Updated to the latest github libbpf commit 910c475f09e5 ("sync: latest
 libbpf changes from kernel") details see:
 https://github.com/xdp-project/xdp-tutorial/commit/45963bee3a5a6540
 
-** DONE xdp-tutorial: Add initial AF_XDP tutorial example
+*** DONE xdp-tutorial: Add initial AF_XDP tutorial example
 CLOSED: [2019-05-15 Wed 12:14]
 :LOGBOOK:
 - State "DONE"       from "TODO"       [2019-05-15 Wed 12:14]
 :END:
 Initial step PR: https://github.com/xdp-project/xdp-tutorial/pull/35
 
-** TODO xdp-tutorial: Work on AF_XDP tutorial example
+*** TODO xdp-tutorial: Work on AF_XDP tutorial example
 The [[https://github.com/xdp-project/xdp-tutorial/tree/master/advanced03-AF_XDP][advanced03-AF_XDP]] lesson needs more work.
 
-** TODO Example of how to use tail calls
+*** TODO Example of how to use tail calls
 
-** TODO xdp-tutorial: Split packet parsing between two XDP programs
+*** TODO xdp-tutorial: Split packet parsing between two XDP programs
 
 This exercise/lesson is also meant to show how XDP hardware offloading can
 interact with regular XDP programs (software mode running driver level).
@@ -51,7 +56,7 @@ static analysis and prove the program is safe(?).
 As part of the assignment, it would be relevant to use BTF for giving the
 metadata area structure.
 
-*** TODO xdp-tutorial: Extend to HW-offload: Split packet parsing between two XDP programs
+**** TODO xdp-tutorial: Extend to HW-offload: Split packet parsing between two XDP programs
 
 When above assignment is complete. Then extend to HW-offload the first
 XDP-prog that does the parsing and storing in metadata area. It doesn't BPF
@@ -63,7 +68,7 @@ metadata area.
 
 BTF considerations, how can we transfer BTF info from HW-offloaded XDP-prog?
 
-* TODO xdp-tutorial for tracepoints project
+** TODO xdp-tutorial for tracepoints project
 
 Tutorial sub-project for teaching people about using tracepoints.
 
@@ -73,7 +78,7 @@ and troubleshooting XDP. E.g. see the kernel/samples/bpf program xdp_monitor
 xdp_monitor (and other trace samples) use another ELF loader than libbpf
 (the samples local [[https://github.com/torvalds/linux/blob/master/samples/bpf/bpf_load.c][bpf_load.c]]), which we want to move people way from.
 
-** NEXT xdp-tutorial: add tracepoint examples for reading XDP tracepoints
+*** NEXT xdp-tutorial: add tracepoint examples for reading XDP tracepoints
 
 Work in progress by Jiri Olsa:
 https://github.com/olsajiri/xdp-tutorial/tree/tracing
@@ -92,7 +97,7 @@ consider upstreaming to libbpf are placed in [[https://github.com/xdp-project/xd
 Another consideration: We should promote using raw_tracepoints for BPF as it
 have much less overhead for getting info that BPF need.
 
-** TODO xdp-tutorial: relate tracing to other assignments
+*** TODO xdp-tutorial: relate tracing to other assignments
 
 When building up tracing assignments relate this to other parts of tutorial.
 
@@ -101,17 +106,19 @@ how to use perf record + script with tracepoint event =xdp:xdp_exception=.
 And basic04 program have a "xdp_abort" section program, that can trigger
 this tracepoint.
 
-* TODO xdp-tutorial: selftests project
+** TODO xdp-tutorial: selftests project
 
 We would like to have a system that (integrated with Makefile) that can run
 a selftest per assignment directory.
 
-* TODO XDP-tutorial misc assignments
 
-** TODO XDP-tutorial: Code xdp_stats to use/follow XDP bpf-id to maps
+* Longer-term preliminary plans                                       :@long:
+** TODO XDP-tutorial misc assignments
+
+*** TODO XDP-tutorial: Code xdp_stats to use/follow XDP bpf-id to maps
 
 Update basic04 xdp_stats via XDP-id
 
-** TODO XDP-tutorial: drawing and desc of veth-testlab
-** TODO Best practices for using multiple programs on the same interface
+*** TODO XDP-tutorial: drawing and desc of veth-testlab
+*** TODO Best practices for using multiple programs on the same interface
 

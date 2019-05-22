@@ -3,8 +3,10 @@
 #+CATEGORY: DRIVERS
 #+OPTIONS: ^:nil
 
+Top-level headings indicate category, as explained in [[file:../xdp-project.org]].
 
-* TODO Expanding XDP_REDIRECT support to more drivers
+* Important medium-term tasks                                       :@medium:
+** TODO Expanding XDP_REDIRECT support to more drivers
 
 Very few drivers support XDP_REDIRECT.
 
@@ -12,26 +14,26 @@ HW drivers: ixgbe, i40e, mlx5
 
 SW drivers: veth, tun (tuntap), virtio_net
 
-** NEXT Map out redirect support in drivers and make a plan
+*** NEXT Map out redirect support in drivers and make a plan
 
 It would be useful with a complete list drivers that are missing some or all
 parts of REDIRECT support. Based on this we can make a plan for what to do about
 each of these.
 
-** TODO What to do about failing REDIRECT
+*** TODO What to do about failing REDIRECT
 [[id:760b03fc-2a8e-499c-a90c-74dbc4716cbc][Handling XDP_REDIRECT failures]]
 
-** TODO Queueing
+*** TODO Queueing
 
-* WAIT Adding XDP support to new drivers
+** WAIT Adding XDP support to new drivers
 
 Waiting for page pool work
 
-** TODO Driver support for sfc driver
+*** TODO Driver support for sfc driver
 
-*** NEXT Sync with Edward Cree et al
+**** NEXT Sync with Edward Cree et al
 
-** TODO Driver support for Marvell mvpp2
+*** TODO Driver support for Marvell mvpp2
 
 Matteo
 
