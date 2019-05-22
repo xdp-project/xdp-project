@@ -58,10 +58,24 @@ Should we create a workqueue?
 #include <linux/workqueue.h>
 static struct workqueue_struct *wq;
 wq = alloc_workqueue("xdp_mem_dismantle_wq", 0, 0);
-struct work_struct free_work;
+struct work_struct free_work; // embed in struct xdp_mem_allocator?
 INIT_WORK(&free_work, __unreg_mem_model_schedule);
 queue_work(wq, &free_work);
+queue_delayed_work(wq, struct delayed_work *dwork, delay);
 #+end_src
+
+It might be overkill to create a new workqueue, what about instead using the
+default worker thread 'events/n'.
+
+The function calls used instead of =queue_work= and =queue_delayed_work=.
+#+begin_src C
+schedule_work(wq);
+schedule_delayed_work(wq, delay);
+#+end_src
+
+There is an example in function =amba_deferred_retry_func()= how to reschedule
+the work-queue function from itself via =schedule_delayed_work=.
+
 
 ** NEXT page_pool inflight: Code solution#3
 
