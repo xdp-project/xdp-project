@@ -30,3 +30,58 @@ CLOSED: [2019-01-29 Tue 17:33]
 
 *** TODO Add testing procedures actvating TCP coalesce code
 
+* TODO page_pool handling in-flight frames during shutdown
+See [[file:mem/page_pool03_shutdown_inflight.org]]
+
+** DONE Test if __xdp_return() can hit no page_pool id issue
+CLOSED: [2019-05-21 Tue 16:40]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-05-21 Tue 16:40]
+:END:
+Confirmed this can happen.
+
+** DONE xdp_rxq_info_unreg_mem_model take over calling page_pool_destroy
+CLOSED: [2019-05-21 Tue 19:45]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-05-21 Tue 19:45]
+:END:
+
+When delaying freeing the registered XDP memory model, then we cannot have
+drivers calling page_pool_destroy() directly. Figure out a clean code way to do
+this.
+
+** TODO page_pool inflight: howto delay/postpone work in kernel
+
+What is the best way to delay taking down page_pool object when driver calls
+xdp_rxq_info_unreg_mem_model(), in the case page_pool detect/have in-flight
+frames?
+
+Should we create a workqueue?
+#+begin_src C
+#include <linux/workqueue.h>
+static struct workqueue_struct *wq;
+wq = alloc_workqueue("xdp_mem_dismantle_wq", 0, 0);
+struct work_struct free_work; // embed in struct xdp_mem_allocator?
+INIT_WORK(&free_work, __unreg_mem_model_schedule);
+queue_work(wq, &free_work);
+queue_delayed_work(wq, struct delayed_work *dwork, delay);
+#+end_src
+
+It might be overkill to create a new workqueue, what about instead using the
+default worker thread 'events/n'.
+
+The function calls used instead of =queue_work= and =queue_delayed_work=.
+#+begin_src C
+schedule_work(wq);
+schedule_delayed_work(wq, delay);
+#+end_src
+
+There is an example in function =amba_deferred_retry_func()= how to reschedule
+the work-queue function from itself via =schedule_delayed_work=.
+
+
+** NEXT page_pool inflight: Code solution#3
+
+** TODO Create tracepoints for page_pool
+
+** TODO Create bpftrace scripts monitoring page_pool stats (via tracepoints)
