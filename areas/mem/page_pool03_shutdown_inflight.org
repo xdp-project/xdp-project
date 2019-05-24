@@ -2,7 +2,8 @@
 #+Title: page_pool handling in-flight frames during shutdown
 #+OPTIONS: ^:nil
 
-
+This issue unfortunately is blocking drivers from using the DMA-mapping
+feature of page_pool.
 
 * Issue: lifetime of device + page_pool
 
