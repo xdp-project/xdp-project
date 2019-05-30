@@ -1,4 +1,5 @@
 #+TITLE: XDP driver support status
+#+OPTIONS: ^:nil
 
 * XDP support wanted:
 XDP upstream support for the following drivers is highly desired.
@@ -24,3 +25,9 @@ The following drivers support XDP in upstream kernels.
 - tun
 - veth
 - virtio_net
+
+* Other sources
+
+The IOvisor project is maintaining a details list of [[https://github.com/iovisor/bcc/blob/master/docs/kernel-versions.md][BPF Features by Linux
+Kernel Version]] which also have a section for [[https://github.com/iovisor/bcc/blob/master/docs/kernel-versions.md#xdp][XDP]].
+
