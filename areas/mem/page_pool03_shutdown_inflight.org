@@ -2,7 +2,7 @@
 #+Title: page_pool handling in-flight frames during shutdown
 #+OPTIONS: ^:nil
 
-This issue unfortunately is blocking drivers from using the DMA-mapping
+This issue is (unfortunately) blocking drivers from using the DMA-mapping
 feature of page_pool.
 
 * Issue: lifetime of device + page_pool
@@ -224,5 +224,45 @@ May 21 16:36:19 broadwell kernel: ixgbe 0000:01:00.1: Multiqueue Enabled: Rx Que
 May 21 16:36:19 broadwell kernel: ixgbe 0000:01:00.1: registered PHC device on ixgbe2
 May 21 16:36:19 broadwell kernel: ixgbe 0000:01:00.1 ixgbe2: detected SFP+: 4
 May 21 16:36:19 broadwell kernel: ixgbe 0000:01:00.1 ixgbe2: NIC Link is Up 10 Gbps, Flow Control: RX/TX
+#+end_example
+
+** Test work-in-progress patch
+
+After fixing mlx5 to call =xdp_rxq_info_unreg(&rq->xdp_rxq)= later and let
+the non-recycle path call =page_pool_put_page()=.  The basics work:
+
+#+begin_example
+[ 1290.790220] XXX __mem_id_disconnect() id:184
+[ 1290.797905] XXX mlx5e_free_rq()
+[ 1290.802080] XXX __mem_id_disconnect() id:185
+[ 1290.807158] ixgbe 0000:01:00.1 ixgbe2: detected SFP+: 4
+[ 1290.813819] ixgbe 0000:01:00.1 ixgbe2: initiating reset to clear Tx work after link loss
+[ 1290.814690] XXX mlx5e_free_rq()
+[ 1290.827424] XXX __mem_id_disconnect() id:186
+[ 1290.832841] XXX __page_pool_safe_to_destroy() inflight:511
+[ 1290.839355] XXX xdp_rxq_info_unreg_mem_model() - start page_pool shutdown/destroy id(186)
+[ 1290.896866] mlx5_core 0000:03:00.0 mlx5p1: Link up
+[ 1291.035127] ixgbe 0000:01:00.1 ixgbe2: Reset adapter
+[ 1291.335453] ixgbe 0000:01:00.1 ixgbe2: detected SFP+: 4
+[ 1291.587066] ixgbe 0000:01:00.1 ixgbe2: NIC Link is Up 10 Gbps, Flow Control: RX/TX
+[ 1291.875054] XXX mem_id_disconnect_defer_retry() id:186 call __mem_id_disconnect again
+[ 1291.883661] XXX __mem_id_disconnect() id:186
+#+end_example
+
+It doesn't work with TCP:
+#+begin_example
+[ 7600.046747] XXX mem_id_disconnect_defer_retry() id:121 call __mem_id_disconnect again
+[ 7600.064706] XXX __mem_id_disconnect() id:121
+[ 7600.070009] XXX page_pool_inflight() inflight:17102512 hold:17103469 released:957
+[ 7600.078811] XXX __page_pool_request_shutdown() inflight:17102512
+[ 7600.085844] XXX page_pool_inflight() inflight:17102512 hold:17103469 released:957
+[ 7600.094627] XXX __page_pool_safe_to_destroy() inflight:17102512
+[ 7600.101574] XXX mem_id_disconnect_defer_retry() id:121 call schedule_delayed_work
+[ 7601.134756] XXX mem_id_disconnect_defer_retry() id:121 call __mem_id_disconnect again
+[ 7601.152716] XXX __mem_id_disconnect() id:121
+[ 7601.158024] XXX page_pool_inflight() inflight:17102512 hold:17103469 released:957
+[ 7601.166825] XXX __page_pool_request_shutdown() inflight:17102512
+[ 7601.173865] XXX page_pool_inflight() inflight:17102512 hold:17103469 released:957
+[ 7601.182648] XXX __page_pool_safe_to_destroy() inflight:17102512
 #+end_example
 
