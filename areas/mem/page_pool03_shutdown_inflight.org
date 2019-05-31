@@ -66,8 +66,9 @@ happen when driver have disconnected RX/alloc side. Thus, on a
 non-fast-path.
 
 The counters should track number of "real" page allocation/free operations.
-The pages getting recycled is basically counted as part of in-flight pages.
-This, also reduce the effect on the fast-path recycling code.
+The pages getting recycled, and is storing in internal ptr_ring, is
+basically counted as part of in-flight pages. This, also reduce the effect
+on the fast-path recycling code.
 
 On the alloc side the counter can be incremented lockless, as it is updated
 under NAPI/softirq protection.
@@ -265,4 +266,50 @@ It doesn't work with TCP:
 [ 7601.173865] XXX page_pool_inflight() inflight:17102512 hold:17103469 released:957
 [ 7601.182648] XXX __page_pool_safe_to_destroy() inflight:17102512
 #+end_example
+
+** Confused mlx5 doesn't fully use ring-size
+
+Summary (TLDR): There was nothing wrong with the in-flight tracking, it was
+just mlx5 driver that only fills it's ring-buffer with page_pool size
+minus 64.
+
+The mlx5 driver configures two different ring-sizes depending on if XDP is
+used or not. For the XDP case ring-size 1024 is used, and non-XDP 512 is
+used.
+
+When debugging, I was seeing (XDP case) only 960 pages "tracked" on a unused
+page_pool ring (for non-XDP case 448):
+#+begin_example
+[  370.223589] XXX page_pool_inflight() inflight:960 hold:960 released:0
+[  370.231079] XXX __page_pool_request_shutdown() inflight:960
+#+end_example
+
+It turned out that the mlx5 driver refill function =mlx5e_post_rx_mpwqes()=
+only refill up-to ring-size minus 64.
+
+#+begin_src diff
+@@ -624,7 +624,11 @@ bool mlx5e_post_rx_mpwqes(struct mlx5e_rq *rq)
+        mlx5e_poll_ico_cq(&sq->cq, rq);
+ 
+        missing = mlx5_wq_ll_missing(wq) - rq->mpwqe.umr_in_progress;
+-
++       pr_warn("XXX DEBUG %s()  missing:%d x64:%d (%ld)\n", __func__,
++               missing, (missing*64), MLX5_MPWRQ_PAGES_PER_WQE); //DEBUG
++// Results first time called:
++// missing:7 x64:448 (64)   <-- non-XDP
++// missing:15 x64:960 (64)  <-- XDP-mode
+        if (unlikely(rq->mpwqe.umr_in_progress > rq->mpwqe.umr_last_bulk))
+                rq->stats->congst_umr++;
+ 
+@@ -635,7 +639,7 @@ bool mlx5e_post_rx_mpwqes(struct mlx5e_rq *rq)
+        head = rq->mpwqe.actual_wq_head;
+        i = missing;
+        do {
+-               if (unlikely(mlx5e_alloc_rx_mpwqe(rq, head)))
++               if (unlikely(mlx5e_alloc_rx_mpwqe(rq, head))) // bulks 64
+                        break;
+                head = mlx5_wq_ll_get_wqe_next_ix(wq, head);
+        } while (--i);
+#+end_src
+
 
