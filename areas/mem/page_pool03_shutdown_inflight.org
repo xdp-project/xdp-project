@@ -312,4 +312,188 @@ only refill up-to ring-size minus 64.
         } while (--i);
 #+end_src
 
+** TCP performance difference with XDP_PASS
+
+Tom Barbette reported that when loading an XDP_PASS program, then TCP flows
+were slower and cost more CPU, but only for driver mlx5 (not for e.g. i40e).
+(via video link: https://www.youtube.com/watch?v=o5hlJZbN4Tk&feature=youtu.be)
+
+On my system it was even worse, with an XDP_PASS program loaded, and iperf
+(6 parallel TCP flows) I would see 100% CPU usage and total 83.3 Gbits/sec.
+With non-XDP case, I saw 58% CPU (43% idle) and total 89.7 Gbits/sec
+
+This was kind of hard to root-cause, but I solved it by increasing the TCP
+socket size used by the iperf tool, like this:
+
+$ iperf -s --window 4M
+------------------------------------------------------------
+Server listening on TCP port 5001
+TCP window size:  416 KByte (WARNING: requested 4.00 MByte)
+------------------------------------------------------------
+
+Given I could reproduce, I took at closer look at perf record/report stats,
+and it was actually quite clear that this was related to stalling on getting
+pages from the page allocator (function calls top#6 get_page_from_freelist
+and free_pcppages_bulk).
+
+Using my tool: ethtool_stats.pl
+ https://github.com/netoptimizer/network-testing/blob/master/bin/ethtool_stats.pl
+
+It was clear that the mlx5 driver page-cache was not working:
+#+begin_example
+Ethtool(mlx5p1  ) stat:     6653761 (   6,653,761) <= rx_cache_busy /sec
+Ethtool(mlx5p1  ) stat:     6653732 (   6,653,732) <= rx_cache_full /sec
+Ethtool(mlx5p1  ) stat:      669481 (     669,481) <= rx_cache_reuse /sec
+Ethtool(mlx5p1  ) stat:           1 (           1) <= rx_congst_umr /sec
+Ethtool(mlx5p1  ) stat:     7323230 (   7,323,230) <= rx_csum_unnecessary /sec
+Ethtool(mlx5p1  ) stat:        1034 (       1,034) <= rx_discards_phy /sec
+Ethtool(mlx5p1  ) stat:     7323230 (   7,323,230) <= rx_packets /sec
+Ethtool(mlx5p1  ) stat:     7324244 (   7,324,244) <= rx_packets_phy /sec
+#+end_example
+
+While the non-XDP case looked like this:
+#+begin_example
+Ethtool(mlx5p1  ) stat:      298929 (     298,929) <= rx_cache_busy /sec
+Ethtool(mlx5p1  ) stat:      298971 (     298,971) <= rx_cache_full /sec
+Ethtool(mlx5p1  ) stat:     3548789 (   3,548,789) <= rx_cache_reuse /sec
+Ethtool(mlx5p1  ) stat:     7695476 (   7,695,476) <= rx_csum_complete /sec
+Ethtool(mlx5p1  ) stat:     7695476 (   7,695,476) <= rx_packets /sec
+Ethtool(mlx5p1  ) stat:     7695169 (   7,695,169) <= rx_packets_phy /sec
+Manual consistence calc: 7695476-((3548789*2)+(298971*2)) = -44
+#+end_example
+
+With the increased TCP window size, the mlx5 driver cache is working better,
+but not optimally, see below. I'm getting 88.0 Gbits/sec with 68% CPU usage.
+#+begin_example
+Ethtool(mlx5p1  ) stat:      894438 (     894,438) <= rx_cache_busy /sec
+Ethtool(mlx5p1  ) stat:      894453 (     894,453) <= rx_cache_full /sec
+Ethtool(mlx5p1  ) stat:     6638518 (   6,638,518) <= rx_cache_reuse /sec
+Ethtool(mlx5p1  ) stat:           6 (           6) <= rx_congst_umr /sec
+Ethtool(mlx5p1  ) stat:     7532983 (   7,532,983) <= rx_csum_unnecessary /sec
+Ethtool(mlx5p1  ) stat:         164 (         164) <= rx_discards_phy /sec
+Ethtool(mlx5p1  ) stat:     7532983 (   7,532,983) <= rx_packets /sec
+Ethtool(mlx5p1  ) stat:     7533193 (   7,533,193) <= rx_packets_phy /sec
+Manual consistence calc: 7532983-(6638518+894453) = 12
+#+end_example
+
+To understand why this is happening, you first have to know that the
+difference is between the two RX-memory modes used by mlx5 for non-XDP vs
+XDP. With non-XDP two frames are stored per memory-page, while for XDP only
+a single frame per page is used.  The packets available in the RX-rings are
+actually the same, as the ring sizes are non-XDP=512 vs. XDP=1024.
+
+I believe, the real issue is that TCP use the SKB->truesize (based on frame
+size) for different memory pressure and window calculations, which is why it
+solved the issue to increase the window size manually.
+
+
+
+
+Case: XDP_PASS and 6 parallel iperf TCP flows:
+#+begin_example
+May 31 15:24:23 broadwell kernel: XXX mlx5e_free_rq()
+May 31 15:24:23 broadwell kernel: XXX __mem_id_disconnect() id:49
+May 31 15:24:23 broadwell kernel: XXX page_pool_inflight() inflight:1136 hold:10665185 released:10664049
+May 31 15:24:23 broadwell kernel: XXX __page_pool_request_shutdown() inflight:1136
+May 31 15:24:23 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:10665185 released:10665185
+May 31 15:24:23 broadwell kernel: XXX mlx5e_free_rq()
+May 31 15:24:23 broadwell kernel: XXX __mem_id_disconnect() id:50
+May 31 15:24:23 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:10665185 released:10665185
+May 31 15:24:23 broadwell kernel: XXX page_pool_inflight() inflight:1039 hold:10766397 released:10765358
+May 31 15:24:23 broadwell kernel: XXX __page_pool_request_shutdown() inflight:1039
+May 31 15:24:23 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:10766397 released:10766397
+May 31 15:24:23 broadwell kernel: XXX mlx5e_free_rq()
+May 31 15:24:23 broadwell kernel: XXX __mem_id_disconnect() id:51
+May 31 15:24:23 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:10766397 released:10766397
+May 31 15:24:23 broadwell kernel: XXX page_pool_inflight() inflight:1109 hold:10648725 released:10647616
+May 31 15:24:23 broadwell kernel: XXX __page_pool_request_shutdown() inflight:1109
+May 31 15:24:23 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:10648725 released:10648725
+May 31 15:24:23 broadwell kernel: XXX mlx5e_free_rq()
+May 31 15:24:23 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:10648725 released:10648725
+May 31 15:24:23 broadwell kernel: XXX __mem_id_disconnect() id:52
+May 31 15:24:23 broadwell kernel: XXX page_pool_inflight() inflight:1104 hold:10770818 released:10769714
+May 31 15:24:23 broadwell kernel: XXX __page_pool_request_shutdown() inflight:1104
+May 31 15:24:23 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:10770818 released:10770818
+May 31 15:24:24 broadwell kernel: XXX mlx5e_free_rq()
+May 31 15:24:24 broadwell kernel: XXX __mem_id_disconnect() id:53
+May 31 15:24:24 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:10770818 released:10770818
+May 31 15:24:24 broadwell kernel: XXX page_pool_inflight() inflight:1132 hold:10635235 released:10634103
+May 31 15:24:24 broadwell kernel: XXX __page_pool_request_shutdown() inflight:1132
+May 31 15:24:24 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:10635235 released:10635235
+
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    221138             0.0
+IpInDelivers                    221138             0.0
+IpOutRequests                   60230              0.0
+TcpInSegs                       221136             0.0
+TcpOutSegs                      60230              0.0
+TcpExtTCPHPHits                 216175             0.0
+TcpExtTCPHPAcks                 1                  0.0
+TcpExtTCPBacklogCoalesce        4595               0.0
+TcpExtTCPBacklogDrop            1                  0.0
+TcpExtTCPRcvCoalesce            4270               0.0
+TcpExtTCPOFOQueue               87                 0.0
+TcpExtTCPWantZeroWindowAdv      215                0.0
+TcpExtTCPOrigDataSent           1                  0.0
+TcpExtTCPDelivered              1                  0.0
+TcpExtTCPAckCompressed          48                 0.0
+IpExtInOctets                   10644770764        0.0
+IpExtOutOctets                  3132896            0.0
+IpExtInNoECTPkts                7357218            0.0
+#+end_example
+
+Case: non-XDP and 6 parallel iperf TCP flows:
+#+begin_example
+May 31 15:24:24 broadwell kernel: XXX mlx5e_alloc_rq() pool_size: 512
+May 31 15:24:24 broadwell kernel: XXX mlx5e_alloc_rq() pool_size: 512
+May 31 15:24:24 broadwell kernel: mlx5_core 0000:03:00.0 mlx5p1: Link up
+[...]
+May 31 15:28:58 broadwell kernel: XXX mlx5e_free_rq()
+May 31 15:28:58 broadwell kernel: XXX __mem_id_disconnect() id:55
+May 31 15:28:58 broadwell kernel: XXX page_pool_inflight() inflight:589 hold:13434 released:12845
+May 31 15:28:58 broadwell kernel: XXX __page_pool_request_shutdown() inflight:589
+May 31 15:28:58 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:13434 released:13434
+May 31 15:28:58 broadwell kernel: XXX mlx5e_free_rq()
+May 31 15:28:58 broadwell kernel: XXX __mem_id_disconnect() id:56
+May 31 15:28:58 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:13434 released:13434
+May 31 15:28:58 broadwell kernel: XXX page_pool_inflight() inflight:514 hold:11891 released:11377
+May 31 15:28:58 broadwell kernel: XXX __page_pool_request_shutdown() inflight:514
+May 31 15:28:58 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:11891 released:11891
+May 31 15:28:58 broadwell kernel: XXX mlx5e_free_rq()
+May 31 15:28:58 broadwell kernel: XXX __mem_id_disconnect() id:57
+May 31 15:28:58 broadwell kernel: XXX page_pool_inflight() inflight:595 hold:14093 released:13498
+May 31 15:28:58 broadwell kernel: XXX __page_pool_request_shutdown() inflight:595
+May 31 15:28:58 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:14093 released:14093
+May 31 15:28:58 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:11891 released:11891
+May 31 15:28:58 broadwell kernel: XXX mlx5e_free_rq()
+May 31 15:28:58 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:14093 released:14093
+May 31 15:28:58 broadwell kernel: XXX __mem_id_disconnect() id:58
+May 31 15:28:58 broadwell kernel: XXX page_pool_inflight() inflight:598 hold:180742 released:180144
+May 31 15:28:58 broadwell kernel: XXX __page_pool_request_shutdown() inflight:598
+May 31 15:28:58 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:180742 released:180742
+May 31 15:28:58 broadwell kernel: XXX mlx5e_free_rq()
+May 31 15:28:58 broadwell kernel: XXX __mem_id_disconnect() id:59
+May 31 15:28:58 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:180742 released:180742
+May 31 15:28:58 broadwell kernel: XXX page_pool_inflight() inflight:608 hold:173294 released:172686
+May 31 15:28:58 broadwell kernel: XXX __page_pool_request_shutdown() inflight:608
+May 31 15:28:58 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:173294 released:173294
+
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    286604             0.0
+IpInDelivers                    286604             0.0
+IpOutRequests                   205151             0.0
+TcpInSegs                       286604             0.0
+TcpOutSegs                      205147             0.0
+TcpExtDelayedACKLost            1                  0.0
+TcpExtTCPHPHits                 280054             0.0
+TcpExtTCPBacklogCoalesce        5925               0.0
+TcpExtTCPDSACKOldSent           1                  0.0
+TcpExtTCPRcvCoalesce            5959               0.0
+TcpExtTCPWantZeroWindowAdv      2                  0.0
+IpExtInOctets                   11276032476        0.0
+IpExtOutOctets                  10668956           0.0
+IpExtInNoECTPkts                7778473            0.0
+#+end_example
 
