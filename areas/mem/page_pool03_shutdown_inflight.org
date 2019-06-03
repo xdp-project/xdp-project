@@ -114,6 +114,12 @@ possible as early as possible, and only wait for the packet-pages in-flight.
 Extra: We can add a REG_STATE_DYING to XDP (struct xdp_rxq_info), which
 can/might help us catch invalid driver use-cases.
 
+*** TODO: cleanup/error code-path in drivers
+
+We cannot completely remove =page_pool_destroy()= from the API, as drivers
+setup paths can fail, and they might need to free the page_pool resource
+explicitly.  We could export a =__page_pool_free()= function.
+
 * Tests
 ** (Established): Test if __xdp_return() can hit no page_pool id issue
 
@@ -265,6 +271,7 @@ It doesn't work with TCP (Update: I cannot reproduce this any-longer):
 [ 7601.173865] XXX page_pool_inflight() inflight:17102512 hold:17103469 released:957
 [ 7601.182648] XXX __page_pool_safe_to_destroy() inflight:17102512
 #+end_example
+
 
 ** Confused mlx5 doesn't fully use ring-size
 
