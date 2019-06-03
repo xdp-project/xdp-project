@@ -114,7 +114,6 @@ possible as early as possible, and only wait for the packet-pages in-flight.
 Extra: We can add a REG_STATE_DYING to XDP (struct xdp_rxq_info), which
 can/might help us catch invalid driver use-cases.
 
-
 * Tests
 ** (Established): Test if __xdp_return() can hit no page_pool id issue
 
@@ -250,7 +249,7 @@ the non-recycle path call =page_pool_put_page()=.  The basics work:
 [ 1291.883661] XXX __mem_id_disconnect() id:186
 #+end_example
 
-It doesn't work with TCP:
+It doesn't work with TCP (Update: I cannot reproduce this any-longer):
 #+begin_example
 [ 7600.046747] XXX mem_id_disconnect_defer_retry() id:121 call __mem_id_disconnect again
 [ 7600.064706] XXX __mem_id_disconnect() id:121
