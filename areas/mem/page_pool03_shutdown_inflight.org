@@ -210,6 +210,38 @@ index 320562b39686..441323ca1464 100644
 
 #+end_src
 
+
+** page_pool: handle in-flight pages and remove page_pool_destroy
+
+This patch adds tracking of in-flight pages for page_pool.
+
+The existing scheme where the XDP memory model unregister waits one RCU
+grace-period is insufficient for page_pool, as xdp_frame's can potentially
+be stuck on a remote drivers TX ring queue for longer.
+
+This patch adds accounting for pages allocated and freed, tracking in-flight
+pages. This adds more strict requirements for page_pool, as it can no-longer
+be used as shim-layer for the page allocator. There is now a more strict
+requirement of calling page_pool_put_page() or page_pool_unmap_page(), when
+a page leaves the page_pool.
+
+For page accounting
+
+This patch removes page_pool_destroy().  
+
+Adds page_pool_request_shutdown(), which is used by XDP memory model
+unregister.
+
+
+
+
+If a driver implements a local page caching scheme on top of this (like
+mlx5) which also cache DMA-mappings, then the in-flight accounting, can be
+used for detecting if it leaks DMa mappings.
+
+
+
+
 * Tests
 ** (Established): Test if __xdp_return() can hit no page_pool id issue
 
