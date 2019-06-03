@@ -497,3 +497,9 @@ IpExtOutOctets                  10668956           0.0
 IpExtInNoECTPkts                7778473            0.0
 #+end_example
 
+* Tracepoints
+
+I got inspired by proof-reading Brendan Gregg's book on BPF, specifically
+the bpftrace tools examples. By adding some tracepoints, we can allow for
+debugging and getting stats from page_pool, without adding more kernel code.
+
