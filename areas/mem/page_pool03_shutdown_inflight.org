@@ -120,6 +120,34 @@ We cannot completely remove =page_pool_destroy()= from the API, as drivers
 setup paths can fail, and they might need to free the page_pool resource
 explicitly.  We could export a =__page_pool_free()= function.
 
+**** Found bug/issue.
+
+xdp: fix leak of IDA cyclic ID if rhashtable_insert_slow fails
+
+Fix error handling case, where inserting ID with rhashtable_insert_slow
+fails in xdp_rxq_info_reg_mem_model, which leads to never releasing the IDA
+ID, as the lookup in xdp_rxq_info_unreg_mem_model fails and thus
+ida_simple_remove() is never called.
+
+Fix by releasing ID via ida_simple_remove(), and mark xdp_rxq->mem.id with
+zero, which is already checked in xdp_rxq_info_unreg_mem_model().
+
+#+begin_src diff
+diff --git a/net/core/xdp.c b/net/core/xdp.c
+index 4b2b194f4f1f..762abeb89847 100644
+--- a/net/core/xdp.c
++++ b/net/core/xdp.c
+@@ -301,6 +301,8 @@ int xdp_rxq_info_reg_mem_model(struct xdp_rxq_info *xdp_rxq,
+        /* Insert allocator into ID lookup table */
+        ptr = rhashtable_insert_slow(mem_id_ht, &id, &xdp_alloc->node);
+        if (IS_ERR(ptr)) {
++               ida_simple_remove(&mem_id_pool, xdp_rxq->mem.id);
++               xdp_rxq->mem.id = 0;
+                errno = PTR_ERR(ptr);
+                goto err;
+        }
+#+end_src
+
 * Tests
 ** (Established): Test if __xdp_return() can hit no page_pool id issue
 
