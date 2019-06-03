@@ -148,6 +148,68 @@ index 4b2b194f4f1f..762abeb89847 100644
         }
 #+end_src
 
+
+
+* Notes while cleanup patchset
+
+Keeping some notes while cleaning up patchset. This section might not make
+sense, consider removing this section later.
+
+** Prepare mlx5
+
+Removed comment.
+#+begin_example
++void __page_pool_free(struct page_pool *pool)
++{
++       /* API user must call page_pool_request_shutdown first, and
++        * assure that it was successful
++        */
+#+end_example
+
+page_pool: introduce page_pool_free
+
+In case driver fails to register the page_pool with XDP return API (via
+xdp_rxq_info_reg_mem_model()), then the driver can free the page_pool
+resources more directly than calling page_pool_destroy(), which does a
+unnecessarily RCU free procedure.
+
+This patch is preparing for removing page_pool_destroy(), from driver
+invocation.
+
+** mlx5: more correct usage of page_pool API
+
+The page_pool API states user is responsible for invoking page_pool_put_page
+once. This were not done in mlx5e_page_release() when recycle is false. This
+e.g. happens from mlx5e_free_rq() when tearing down resources.
+
+This API omission is not critical, as mlx5 doesn't use page_pool for
+DMA-mapping yet. This becomes important later when tracking in-flight
+frames. This change makes the pages on the driver local page_cache, to go
+through the page_pool system.
+
+In mlx5e_free_rq() moved the page_pool_destroy() call to after the
+mlx5e_page_release() calls, as it is more correct.
+
+
+** Strange use in i40e
+
+#+begin_src diff
+diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
+index 320562b39686..441323ca1464 100644
+--- a/drivers/net/ethernet/intel/i40e/i40e_main.c
++++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
+@@ -3248,7 +3248,7 @@ static int i40e_configure_rx_ring(struct i40e_ring *ring)
+ 
+        if (ring->vsi->type == I40E_VSI_MAIN)
+                xdp_rxq_info_unreg_mem_model(&ring->xdp_rxq);
+-
++// FIXME: Why not using xdp_rxq_info_unreg() ???
+        ring->xsk_umem = i40e_xsk_umem(ring);
+        if (ring->xsk_umem) {
+                ring->rx_buf_len = ring->xsk_umem->chunk_size_nohr -
+
+#+end_src
+
 * Tests
 ** (Established): Test if __xdp_return() can hit no page_pool id issue
 
