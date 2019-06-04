@@ -514,9 +514,6 @@ I believe, the real issue is that TCP use the SKB->truesize (based on frame
 size) for different memory pressure and window calculations, which is why it
 solved the issue to increase the window size manually.
 
-
-
-
 Case: XDP_PASS and 6 parallel iperf TCP flows:
 #+begin_example
 May 31 15:24:23 broadwell kernel: XXX mlx5e_free_rq()
@@ -623,6 +620,61 @@ TcpExtTCPWantZeroWindowAdv      2                  0.0
 IpExtInOctets                   11276032476        0.0
 IpExtOutOctets                  10668956           0.0
 IpExtInNoECTPkts                7778473            0.0
+#+end_example
+
+** Error case after patchset splitup
+
+I might have caused a regression in my patch, after splitting it up into a
+patchset.... as I can now generate a shutdown issue.
+
+Produced shutdown issue via:
+ sudo ./xdp_redirect_cpu --dev mlx5p1 --qsize 64 --cpu 4 --prog xdp_cpu_map0 --sec 3
+
+Netperf TCP_STREAM and meanwhile stop XDP program.
+
+#+begin_example
+Jun 04 17:52:10 broadwell kernel: XXX __mem_id_disconnect() id:61
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:8092173 hold:8093040 released:867
+Jun 04 17:52:10 broadwell kernel: XXX __page_pool_request_shutdown() inflight:8092173
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:8092113 hold:8093040 released:927
+Jun 04 17:52:10 broadwell kernel: XXX __page_pool_safe_to_destroy() inflight:8092113
+Jun 04 17:52:10 broadwell kernel: XXX __mem_id_disconnect() id:62
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX __mem_id_disconnect() id:63
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX __mem_id_disconnect() id:64
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX __mem_id_disconnect() id:65
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX __mem_id_disconnect() id:66
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: mlx5_core 0000:03:00.0 mlx5p1: Link up
+Jun 04 17:52:11 broadwell kernel: XXX mem_id_disconnect_defer_retry() id:61 call __mem_id_disconnect again
+Jun 04 17:52:11 broadwell kernel: XXX __mem_id_disconnect() id:61
+Jun 04 17:52:11 broadwell kernel: XXX page_pool_inflight() inflight:8092113 hold:8093040 released:927
+Jun 04 17:52:11 broadwell kernel: XXX __page_pool_request_shutdown() inflight:8092113
+Jun 04 17:52:11 broadwell kernel: XXX page_pool_inflight() inflight:8092113 hold:8093040 released:927
+Jun 04 17:52:11 broadwell kernel: XXX __page_pool_safe_to_destroy() inflight:8092113
+Jun 04 17:52:12 broadwell kernel: XXX mem_id_disconnect_defer_retry() id:61 call schedule_delayed_work
+Jun 04 17:52:12 broadwell kernel: XXX mem_id_disconnect_defer_retry() id:61 call __mem_id_disconnect again
+Jun 04 17:52:12 broadwell kernel: XXX __mem_id_disconnect() id:61
+Jun 04 17:52:12 broadwell kernel: XXX page_pool_inflight() inflight:8092113 hold:8093040 released:927
+Jun 04 17:52:12 broadwell kernel: XXX __page_pool_request_shutdown() inflight:8092113
+Jun 04 17:52:12 broadwell kernel: XXX page_pool_inflight() inflight:8092113 hold:8093040 released:927
+Jun 04 17:52:12 broadwell kernel: XXX __page_pool_safe_to_destroy() inflight:8092113
+Jun 04 17:52:13 broadwell kernel: XXX mem_id_disconnect_defer_retry() id:61 call schedule_delayed_work
+Jun 04 17:52:13 broadwell kernel: XXX mem_id_disconnect_defer_retry() id:61 call __mem_id_disconnect again
+Jun 04 17:52:13 broadwell kernel: XXX __mem_id_disconnect() id:61
 #+end_example
 
 * Tracepoints
