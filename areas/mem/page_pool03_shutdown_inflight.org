@@ -631,7 +631,6 @@ Produced shutdown issue via:
  sudo ./xdp_redirect_cpu --dev mlx5p1 --qsize 64 --cpu 4 --prog xdp_cpu_map0 --sec 3
 
 Netperf TCP_STREAM and meanwhile stop XDP program.
-
 #+begin_example
 Jun 04 17:52:10 broadwell kernel: XXX __mem_id_disconnect() id:61
 Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:8092173 hold:8093040 released:867
@@ -683,3 +682,79 @@ I got inspired by proof-reading Brendan Gregg's book on BPF, specifically
 the bpftrace tools examples. By adding some tracepoints, we can allow for
 debugging and getting stats from page_pool, without adding more kernel code.
 
+** Playing with bpftrace
+
+Can I attach to several XDP tracepoints, and then extract only the first two
+struct members, which will be:
+
+#+begin_src C
+	TP_STRUCT__entry(
+		__field(int, map_id)  or __field(int, prog_id)
+		__field(u32, act)
+#+end_src
+
+bpftrace -e 'tracepoint:raw_syscalls:sys_enter { @[comm] = count(); }'
+
+bpftrace -e 'tracepoint:xdp:xdp_redirect_map { @[comm] = count(); }'
+
+List avail: bpftrace -lv tracepoint:xdp:xdp_redirect_map
+#+begin_example
+$ sudo bpftrace -lv tracepoint:xdp:xdp_redirect_map
+tracepoint:xdp:xdp_redirect_map
+    int prog_id;
+    u32 act;
+    int ifindex;
+    int err;
+    int to_ifindex;
+    u32 map_id;
+    int map_index;
+#+end_example
+
+#+begin_src sh
+bpftrace -e 'tracepoint:xdp:xdp_redirect_map { @[comm, args->prog_id] = count(); }'
+#+end_src
+
+Currently all XDP tracepoints have "act" for XDP action:
+#+begin_example
+$ sudo bpftrace -e 'tracepoint:xdp:xdp_* { @action[args->act] = count(); }'
+Attaching 8 probes...
+^C
+
+@action[4]: 9965660
+#+end_example
+
+Examples: attach to all map XDP tracepoints:
+#+begin_example
+sudo bpftrace -e 'tracepoint:xdp:xdp_*map* { @map_id[comm, args->map_id] = count(); }'
+Attaching 5 probes...
+^C
+
+@map_id[swapper/2, 113]: 1428
+@map_id[swapper/0, 113]: 2085
+@map_id[ksoftirqd/4, 113]: 2253491
+@map_id[ksoftirqd/2, 113]: 25677560
+@map_id[ksoftirqd/0, 113]: 29004338
+@map_id[ksoftirqd/3, 113]: 31034885
+#+end_example
+
+Could not find a native bpftrace way to exit after N seconds, so I used this
+shell trick instead:
+
+#+begin_example
+sudo bpftrace -e \
+ 'tracepoint:xdp:xdp_devmap_xmit { @[args->map_id] = @[args->map_id] + args->sent; }' &\
+PID=$! ; sleep 10 && sudo kill -SIGINT $PID
+#+end_example
+
+Output:
+#+begin_example
+$ sudo bpftrace -e \
+>  'tracepoint:xdp:xdp_devmap_xmit { @[args->map_id] = @[args->map_id] + args->sent; }' &\
+> PID=$! ; sleep 10 && sudo kill -SIGINT $PID
+[1] 6029
+Attaching 1 probe...
+[jbrouer@broadwell ~]$ 
+
+@[173]: 144475692
+
+#+end_example
