@@ -377,7 +377,7 @@ the non-recycle path call =page_pool_put_page()=.  The basics work:
 [ 1291.883661] XXX __mem_id_disconnect() id:186
 #+end_example
 
-It doesn't work with TCP (Update: I cannot reproduce this any-longer):
+*Update*: this bug was caused by CPUMAP redirect not calling page_pool_unmap_page():
 #+begin_example
 [ 7600.046747] XXX mem_id_disconnect_defer_retry() id:121 call __mem_id_disconnect again
 [ 7600.064706] XXX __mem_id_disconnect() id:121
@@ -622,10 +622,12 @@ IpExtOutOctets                  10668956           0.0
 IpExtInNoECTPkts                7778473            0.0
 #+end_example
 
-** Error case after patchset splitup
+** CPUMAP redirect not releasing page_pool pages
 
-I might have caused a regression in my patch, after splitting it up into a
-patchset.... as I can now generate a shutdown issue.
+*Update*: this bug was caused by CPUMAP redirect not calling page_pool_unmap_page(),
+should likely have a page_pool_release_page.
+
+When fixing this, we need to extend XDP return API to handle this "release".
 
 Produced shutdown issue via:
  sudo ./xdp_redirect_cpu --dev mlx5p1 --qsize 64 --cpu 4 --prog xdp_cpu_map0 --sec 3
