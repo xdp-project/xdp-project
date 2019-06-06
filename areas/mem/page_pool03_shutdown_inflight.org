@@ -114,6 +114,133 @@ possible as early as possible, and only wait for the packet-pages in-flight.
 Extra: We can add a REG_STATE_DYING to XDP (struct xdp_rxq_info), which
 can/might help us catch invalid driver use-cases.
 
+*** TODO: cleanup/error code-path in drivers
+
+We cannot completely remove =page_pool_destroy()= from the API, as drivers
+setup paths can fail, and they might need to free the page_pool resource
+explicitly.  We could export a =__page_pool_free()= function.
+
+**** Found bug/issue.
+
+xdp: fix leak of IDA cyclic ID if rhashtable_insert_slow fails
+
+Fix error handling case, where inserting ID with rhashtable_insert_slow
+fails in xdp_rxq_info_reg_mem_model, which leads to never releasing the IDA
+ID, as the lookup in xdp_rxq_info_unreg_mem_model fails and thus
+ida_simple_remove() is never called.
+
+Fix by releasing ID via ida_simple_remove(), and mark xdp_rxq->mem.id with
+zero, which is already checked in xdp_rxq_info_unreg_mem_model().
+
+#+begin_src diff
+diff --git a/net/core/xdp.c b/net/core/xdp.c
+index 4b2b194f4f1f..762abeb89847 100644
+--- a/net/core/xdp.c
++++ b/net/core/xdp.c
+@@ -301,6 +301,8 @@ int xdp_rxq_info_reg_mem_model(struct xdp_rxq_info *xdp_rxq,
+        /* Insert allocator into ID lookup table */
+        ptr = rhashtable_insert_slow(mem_id_ht, &id, &xdp_alloc->node);
+        if (IS_ERR(ptr)) {
++               ida_simple_remove(&mem_id_pool, xdp_rxq->mem.id);
++               xdp_rxq->mem.id = 0;
+                errno = PTR_ERR(ptr);
+                goto err;
+        }
+#+end_src
+
+
+
+* Notes while cleanup patchset
+
+Keeping some notes while cleaning up patchset. This section might not make
+sense, consider removing this section later.
+
+** Prepare mlx5
+
+Removed comment.
+#+begin_example
++void __page_pool_free(struct page_pool *pool)
++{
++       /* API user must call page_pool_request_shutdown first, and
++        * assure that it was successful
++        */
+#+end_example
+
+page_pool: introduce page_pool_free
+
+In case driver fails to register the page_pool with XDP return API (via
+xdp_rxq_info_reg_mem_model()), then the driver can free the page_pool
+resources more directly than calling page_pool_destroy(), which does a
+unnecessarily RCU free procedure.
+
+This patch is preparing for removing page_pool_destroy(), from driver
+invocation.
+
+** mlx5: more correct usage of page_pool API
+
+The page_pool API states user is responsible for invoking page_pool_put_page
+once. This were not done in mlx5e_page_release() when recycle is false. This
+e.g. happens from mlx5e_free_rq() when tearing down resources.
+
+This API omission is not critical, as mlx5 doesn't use page_pool for
+DMA-mapping yet. This becomes important later when tracking in-flight
+frames. This change makes the pages on the driver local page_cache, to go
+through the page_pool system.
+
+In mlx5e_free_rq() moved the page_pool_destroy() call to after the
+mlx5e_page_release() calls, as it is more correct.
+
+
+** Strange use in i40e
+
+#+begin_src diff
+diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
+index 320562b39686..441323ca1464 100644
+--- a/drivers/net/ethernet/intel/i40e/i40e_main.c
++++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
+@@ -3248,7 +3248,7 @@ static int i40e_configure_rx_ring(struct i40e_ring *ring)
+ 
+        if (ring->vsi->type == I40E_VSI_MAIN)
+                xdp_rxq_info_unreg_mem_model(&ring->xdp_rxq);
+-
++// FIXME: Why not using xdp_rxq_info_unreg() ???
+        ring->xsk_umem = i40e_xsk_umem(ring);
+        if (ring->xsk_umem) {
+                ring->rx_buf_len = ring->xsk_umem->chunk_size_nohr -
+
+#+end_src
+
+
+** page_pool: handle in-flight pages and remove page_pool_destroy
+
+This patch adds tracking of in-flight pages for page_pool.
+
+The existing scheme where the XDP memory model unregister waits one RCU
+grace-period is insufficient for page_pool, as xdp_frame's can potentially
+be stuck on a remote drivers TX ring queue for longer.
+
+This patch adds accounting for pages allocated and freed, tracking in-flight
+pages. This adds more strict requirements for page_pool, as it can no-longer
+be used as shim-layer for the page allocator. There is now a more strict
+requirement of calling page_pool_put_page() or page_pool_unmap_page(), when
+a page leaves the page_pool.
+
+For page accounting
+
+This patch removes page_pool_destroy().  
+
+Adds page_pool_request_shutdown(), which is used by XDP memory model
+unregister.
+
+
+
+
+If a driver implements a local page caching scheme on top of this (like
+mlx5) which also cache DMA-mappings, then the in-flight accounting, can be
+used for detecting if it leaks DMa mappings.
+
+
+
 
 * Tests
 ** (Established): Test if __xdp_return() can hit no page_pool id issue
@@ -250,7 +377,7 @@ the non-recycle path call =page_pool_put_page()=.  The basics work:
 [ 1291.883661] XXX __mem_id_disconnect() id:186
 #+end_example
 
-It doesn't work with TCP:
+*Update*: this bug was caused by CPUMAP redirect not calling page_pool_unmap_page():
 #+begin_example
 [ 7600.046747] XXX mem_id_disconnect_defer_retry() id:121 call __mem_id_disconnect again
 [ 7600.064706] XXX __mem_id_disconnect() id:121
@@ -266,6 +393,7 @@ It doesn't work with TCP:
 [ 7601.173865] XXX page_pool_inflight() inflight:17102512 hold:17103469 released:957
 [ 7601.182648] XXX __page_pool_safe_to_destroy() inflight:17102512
 #+end_example
+
 
 ** Confused mlx5 doesn't fully use ring-size
 
@@ -386,9 +514,6 @@ I believe, the real issue is that TCP use the SKB->truesize (based on frame
 size) for different memory pressure and window calculations, which is why it
 solved the issue to increase the window size manually.
 
-
-
-
 Case: XDP_PASS and 6 parallel iperf TCP flows:
 #+begin_example
 May 31 15:24:23 broadwell kernel: XXX mlx5e_free_rq()
@@ -497,3 +622,141 @@ IpExtOutOctets                  10668956           0.0
 IpExtInNoECTPkts                7778473            0.0
 #+end_example
 
+** CPUMAP redirect not releasing page_pool pages
+
+*Update*: this bug was caused by CPUMAP redirect not calling page_pool_unmap_page(),
+should likely have a page_pool_release_page.
+
+When fixing this, we need to extend XDP return API to handle this "release".
+
+Produced shutdown issue via:
+ sudo ./xdp_redirect_cpu --dev mlx5p1 --qsize 64 --cpu 4 --prog xdp_cpu_map0 --sec 3
+
+Netperf TCP_STREAM and meanwhile stop XDP program.
+#+begin_example
+Jun 04 17:52:10 broadwell kernel: XXX __mem_id_disconnect() id:61
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:8092173 hold:8093040 released:867
+Jun 04 17:52:10 broadwell kernel: XXX __page_pool_request_shutdown() inflight:8092173
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:8092113 hold:8093040 released:927
+Jun 04 17:52:10 broadwell kernel: XXX __page_pool_safe_to_destroy() inflight:8092113
+Jun 04 17:52:10 broadwell kernel: XXX __mem_id_disconnect() id:62
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX __mem_id_disconnect() id:63
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX __mem_id_disconnect() id:64
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX __mem_id_disconnect() id:65
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX __mem_id_disconnect() id:66
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: XXX page_pool_inflight() inflight:0 hold:960 released:960
+Jun 04 17:52:10 broadwell kernel: mlx5_core 0000:03:00.0 mlx5p1: Link up
+Jun 04 17:52:11 broadwell kernel: XXX mem_id_disconnect_defer_retry() id:61 call __mem_id_disconnect again
+Jun 04 17:52:11 broadwell kernel: XXX __mem_id_disconnect() id:61
+Jun 04 17:52:11 broadwell kernel: XXX page_pool_inflight() inflight:8092113 hold:8093040 released:927
+Jun 04 17:52:11 broadwell kernel: XXX __page_pool_request_shutdown() inflight:8092113
+Jun 04 17:52:11 broadwell kernel: XXX page_pool_inflight() inflight:8092113 hold:8093040 released:927
+Jun 04 17:52:11 broadwell kernel: XXX __page_pool_safe_to_destroy() inflight:8092113
+Jun 04 17:52:12 broadwell kernel: XXX mem_id_disconnect_defer_retry() id:61 call schedule_delayed_work
+Jun 04 17:52:12 broadwell kernel: XXX mem_id_disconnect_defer_retry() id:61 call __mem_id_disconnect again
+Jun 04 17:52:12 broadwell kernel: XXX __mem_id_disconnect() id:61
+Jun 04 17:52:12 broadwell kernel: XXX page_pool_inflight() inflight:8092113 hold:8093040 released:927
+Jun 04 17:52:12 broadwell kernel: XXX __page_pool_request_shutdown() inflight:8092113
+Jun 04 17:52:12 broadwell kernel: XXX page_pool_inflight() inflight:8092113 hold:8093040 released:927
+Jun 04 17:52:12 broadwell kernel: XXX __page_pool_safe_to_destroy() inflight:8092113
+Jun 04 17:52:13 broadwell kernel: XXX mem_id_disconnect_defer_retry() id:61 call schedule_delayed_work
+Jun 04 17:52:13 broadwell kernel: XXX mem_id_disconnect_defer_retry() id:61 call __mem_id_disconnect again
+Jun 04 17:52:13 broadwell kernel: XXX __mem_id_disconnect() id:61
+#+end_example
+
+* Tracepoints
+
+I got inspired by proof-reading Brendan Gregg's book on BPF, specifically
+the bpftrace tools examples. By adding some tracepoints, we can allow for
+debugging and getting stats from page_pool, without adding more kernel code.
+
+** Playing with bpftrace
+
+Can I attach to several XDP tracepoints, and then extract only the first two
+struct members, which will be:
+
+#+begin_src C
+	TP_STRUCT__entry(
+		__field(int, map_id)  or __field(int, prog_id)
+		__field(u32, act)
+#+end_src
+
+bpftrace -e 'tracepoint:raw_syscalls:sys_enter { @[comm] = count(); }'
+
+bpftrace -e 'tracepoint:xdp:xdp_redirect_map { @[comm] = count(); }'
+
+List avail: bpftrace -lv tracepoint:xdp:xdp_redirect_map
+#+begin_example
+$ sudo bpftrace -lv tracepoint:xdp:xdp_redirect_map
+tracepoint:xdp:xdp_redirect_map
+    int prog_id;
+    u32 act;
+    int ifindex;
+    int err;
+    int to_ifindex;
+    u32 map_id;
+    int map_index;
+#+end_example
+
+#+begin_src sh
+bpftrace -e 'tracepoint:xdp:xdp_redirect_map { @[comm, args->prog_id] = count(); }'
+#+end_src
+
+Currently all XDP tracepoints have "act" for XDP action:
+#+begin_example
+$ sudo bpftrace -e 'tracepoint:xdp:xdp_* { @action[args->act] = count(); }'
+Attaching 8 probes...
+^C
+
+@action[4]: 9965660
+#+end_example
+
+Examples: attach to all map XDP tracepoints:
+#+begin_example
+sudo bpftrace -e 'tracepoint:xdp:xdp_*map* { @map_id[comm, args->map_id] = count(); }'
+Attaching 5 probes...
+^C
+
+@map_id[swapper/2, 113]: 1428
+@map_id[swapper/0, 113]: 2085
+@map_id[ksoftirqd/4, 113]: 2253491
+@map_id[ksoftirqd/2, 113]: 25677560
+@map_id[ksoftirqd/0, 113]: 29004338
+@map_id[ksoftirqd/3, 113]: 31034885
+#+end_example
+
+Could not find a native bpftrace way to exit after N seconds, so I used this
+shell trick instead:
+
+#+begin_example
+sudo bpftrace -e \
+ 'tracepoint:xdp:xdp_devmap_xmit { @[args->map_id] = @[args->map_id] + args->sent; }' &\
+PID=$! ; sleep 10 && sudo kill -SIGINT $PID
+#+end_example
+
+Output:
+#+begin_example
+$ sudo bpftrace -e \
+>  'tracepoint:xdp:xdp_devmap_xmit { @[args->map_id] = @[args->map_id] + args->sent; }' &\
+> PID=$! ; sleep 10 && sudo kill -SIGINT $PID
+[1] 6029
+Attaching 1 probe...
+[jbrouer@broadwell ~]$ 
+
+@[173]: 144475692
+
+#+end_example
