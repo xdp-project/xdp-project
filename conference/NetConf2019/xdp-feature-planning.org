@@ -1,0 +1,84 @@
+# -*- fill-column: 79; -*-
+#+TITLE: XDP feature planning
+#+AUTHOR: Toke Høiland-Jørgensen
+#+EMAIL: toke@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: './reveal.js/js/custom-netconf.js'}
+#+REVEAL_EXTRA_CSS: ./reveal.js/css/custom-adjust-logo.css
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: Lund Linux Con 2019
+
+This presentation will be given at Netconf 2019.
+
+* Export/generate presentation
+
+This presentation is written in org-mode and exported to reveal.js HTML format.
+The org-mode :export: tag determines what headlines/section are turned into
+slides for the presentation.
+
+** Setup for org-mode export to reveal.js
+First, install the ox-reveal emacs package.
+
+Package: ox-reveal git-repo and install instructions:
+https://github.com/yjwen/org-reveal
+
+** Export to HTML reveal.js
+
+After installing ox-reveal emacs package, export to HTML reveal.js format via
+keyboard shortcut: =C-c C-e R R=
+
+The variables at document end ("Local Variables") will set up the title slide
+and filter the "Slide:" prefix from headings; Emacs will ask for permission to
+load them, as they will execute code.
+
+** Export to PDF
+
+The presentations can be converted to PDF format.  Usually the reveal.js when
+run as a webserver under nodejs, have a printer option for exporting to PDF via
+print to file, but we choose not run this builtin webserver.
+
+Alternatively we found a tool called 'decktape', for exporting HTML pages to
+PDF: https://github.com/astefanutti/decktape
+
+The 'npm install' command:
+
+ $ npm install decktape
+
+After this the =decktape= command should be avail. If the npm install failed,
+then it's possible to run the decktape.js file direct from the git-repo via the
+=node= command:
+
+#+begin_src bash
+$ node ~/git/decktape/decktape.js \
+    -s 1600x900 -p 100 --chrome-arg=--no-sandbox \
+     xdp_building_block.html \
+     xdp_building_block.pdf
+#+end_src
+
+The size is set to get slide text to fit on the page. And -p 100 makes it go
+faster.
+
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation.
+
+Colors are choosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+
+* Emacs tricks
+
+# Local Variables:
+# org-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# <h2 class=\"author\">Toke Høiland-Jørgensen (Red Hat)<br/></h2>
+# <h3>Netconf<br/>Boston, June 2019</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
