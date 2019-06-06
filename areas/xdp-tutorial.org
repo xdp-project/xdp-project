@@ -112,6 +112,9 @@ We would like to have a system that (integrated with Makefile) that can run
 a selftest per assignment directory.
 
 
+** TODO Solution for basic04
+[2019-06-04 Tue 14:52]
+[[notmuch:id:xdp-project/xdp-tutorial/issues/46@github.com][Email from Adam Drescher: [xdp-project/xdp-tutorial] A solution for basic04 would be helpful (#46)]]
 * Longer-term preliminary plans                                       :@long:
 ** TODO XDP-tutorial misc assignments
 
