@@ -239,7 +239,24 @@ If a driver implements a local page caching scheme on top of this (like
 mlx5) which also cache DMA-mappings, then the in-flight accounting, can be
 used for detecting if it leaks DMa mappings.
 
+** Notes for patchset RFCv1-pre-upstream
 
+stg mail --edit-cover --version="RFCv1-pre-upstream" --to meup \
+ --to ilias --to toke --to tariq \
+ --cc ivan.khoronzhuk@linaro.org --cc grygorii.strashko@ti.com \
+ 01-net-page_pool-add-helper1..split-page-DMA-issue
+
+Subj: Bugfixes related to page_pool
+
+I've not had time to write a cover-letter...
+
+I wanted to show you the patches, I'm currently working on, which I guess
+are blocking the drivers/net/ethernet/ti/ update. I'm running out of time
+(as it my birthday today and I have plans), so just dumping these...
+not-cleaned up patches.
+
+My notes are here:
+ https://github.com/xdp-project/xdp-project/blob/master/areas/mem/page_pool03_shutdown_inflight.org
 
 
 * Tests
