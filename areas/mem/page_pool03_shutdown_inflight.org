@@ -258,6 +258,67 @@ not-cleaned up patches.
 My notes are here:
  https://github.com/xdp-project/xdp-project/blob/master/areas/mem/page_pool03_shutdown_inflight.org
 
+** Patchset plan v1
+
+Reorg order of patches, such that mlx5 and cpumap fixes appear before
+introducing in-flight handling.  Need to introduce page_pool_release_page
+earlier.
+
+*** cover letter
+
+This patchset fix page_pool API, such that drivers can use it for
+DMA-mapping. As a number of places exist, where the DMA-mapping would not
+get released/unmapped. This occurs e.g. when an xdp_frame gets converted to
+an SKB. As network stack doesn't have any callback for XDP memory models.
+
+The patchset also address a shutdown race-condition. Today removing a XDP
+memory model based on page_pool, is only delayed one RCU grace period. This
+isn't enough, as redirected xdp_frames can still be in-flight on different
+queues (remote driver TX, cpumap or veth).
+
+We stress that when drivers use page_pool for DMA-mapping, then they MUST
+use one packet per page. This might change in the future, but an unknown
+amount of work lies ahead, before we can lift this restriction.
+
+
+*** cpumap issue and fix
+
+xdp: page_pool related fix to cpumap
+
+When converting an xdp_frame into an SKB, and sending this into the network
+stack, then the underlying XDP memory model need to release associated
+resources, because the network stack don't have callbacks for XDP memory
+models.  The only memory model that needs this is page_pool, when a driver
+use the DMA-mapping feature.
+
+Introduce page_pool_release_page(), which basically does the same as
+page_pool_unmap_page(). Add xdp_release_frame() as the XDP memory model
+interface for calling it, if the memory model match MEM_TYPE_PAGE_POOL, to
+save the function call overhead for others. Have cpumap call
+xdp_release_frame() before xdp_scrub_frame().
+
+
+*** mlx5: more strict use of page_pool API
+
+The mlx5 driver is using page_pool, but not for DMA-mapping (currently), and
+is a little too relaxed about returning or releasing page resources, as it
+is not strictly necessary, when not using DMA-mappings.
+
+As this patchset is working towards tracking page_pool resources, to know
+about in-flight frames on shutdown. Then fix places where mlx5 leak
+page_pool resource.
+
+In case of dma_mapping_error, when recycle into page_pool.
+
+In mlx5e_free_rq() moved the page_pool_destroy() call to after the
+mlx5e_page_release() calls, as it is more correct.
+
+In mlx5e_page_release() when no recycle was requested, then release page
+from the page_pool, via page_pool_release_page().
+
+
+
+
 
 * Tests
 ** (Established): Test if __xdp_return() can hit no page_pool id issue
