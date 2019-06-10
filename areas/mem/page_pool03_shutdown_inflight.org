@@ -838,3 +838,122 @@ Attaching 1 probe...
 @[173]: 144475692
 
 #+end_example
+
+** bpftrace for XDP/page_pool disconnect/shutdown
+
+sudo bpftrace -e  'kprobe:__mem_id_disconnect { @[kstack] = count(); }'
+
+Re-introduce bug in CPUMAP to provoke shutdown/disconnect issue.
+
+#+begin_example
+$  sudo bpftrace -e  'kprobe:__mem_id_disconnect { @[kstack] = count(); }'
+Attaching 1 probe...
+^C
+
+@[
+    __mem_id_disconnect+1
+    xdp_rxq_info_unreg_mem_model+100
+    xdp_rxq_info_unreg+30
+    mlx5e_free_rq+132
+    mlx5e_close_channel+34
+    mlx5e_close_channels+38
+    mlx5e_close_locked+71
+    mlx5e_xdp+412
+    dev_xdp_install+60
+    dev_change_xdp_fd+206
+    do_setlink+3286
+    rtnl_setlink+208
+    rtnetlink_rcv_msg+290
+    netlink_rcv_skb+55
+    netlink_unicast+361
+    netlink_sendmsg+657
+    sock_sendmsg+48
+    __sys_sendto+232
+    __x64_sys_sendto+36
+    do_syscall_64+66
+    entry_SYSCALL_64_after_hwframe+68
+]: 6
+@[
+    __mem_id_disconnect+1
+    xdp_rxq_info_unreg_mem_model+100
+    xdp_rxq_info_unreg+30
+    mlx5e_free_rq+132
+    mlx5e_close_channel+34
+    mlx5e_close_channels+38
+    mlx5e_close_locked+71
+    mlx5e_xdp+412
+    dev_xdp_install+60
+    do_setlink+3286
+    rtnl_setlink+208
+    rtnetlink_rcv_msg+290
+    netlink_rcv_skb+55
+    netlink_unicast+361
+    netlink_sendmsg+657
+    sock_sendmsg+48
+    __sys_sendto+232
+    __x64_sys_sendto+36
+    do_syscall_64+66
+    entry_SYSCALL_64_after_hwframe+68
+]: 6
+@[
+    __mem_id_disconnect+1
+    mem_id_disconnect_defer_retry+27
+    process_one_work+390
+    worker_thread+48
+    kthread+273
+    ret_from_fork+31
+]: 121
+#+end_example
+
+Coded up a force-shutdown mechanism after 120 attempts:
+
+#+begin_example
+Jun 09 13:03:57 broadwell kernel: mlx5_core 0000:03:00.0 mlx5p1: Link up
+Jun 09 13:04:28 broadwell kernel: mem_id_disconnect_defer_retry() stalled mem.id=28 shutdown 31 attempts 30 sec
+Jun 09 13:04:58 broadwell kernel: mem_id_disconnect_defer_retry() stalled mem.id=28 shutdown 61 attempts 61 sec
+Jun 09 13:05:29 broadwell kernel: mem_id_disconnect_defer_retry() stalled mem.id=28 shutdown 91 attempts 92 sec
+Jun 09 13:06:00 broadwell kernel: mem_id_disconnect_defer_retry() stalled mem.id=28 shutdown 121 attempts 122 sec
+Jun 09 13:06:01 broadwell kernel: ------------[ cut here ]------------
+Jun 09 13:06:01 broadwell kernel: Still in-flight pages:10053168 hold:10054146 released:978
+Jun 09 13:06:01 broadwell kernel: WARNING: CPU: 1 PID: 0 at net/core/page_pool.c:349 __page_pool_free+0x78/0xc0
+Jun 09 13:06:01 broadwell kernel: Modules linked in: xt_CHECKSUM xt_MASQUERADE xt_conntrack ipt_REJECT nf_reject_ipv4 xt_tcpudp tun bridge ip6table_mangle ip6table_nat iptable_mangle iptable_nat nf_nat nf_conntrack nf_defrag_ipv6 nf_defrag_ipv4 ebtable_filter ebtables ip6table_filter ip6_tables iptable_filter bpfilter rpcrdma sunrpc ib_umad rdma_ucm ib_ipoib rdma_cm iw_cm ib_cm mlx5_ib i40iw ib_uverbs ib_core coretemp intel_cstate intel_uncore ftdi_sio intel_rapl_perf pcspkr usbserial i2c_i801 wmi ipmi_si ipmi_devintf ipmi_msghandler acpi_pad pcc_cpufreq sch_fq_codel ip_tables x_tables igb ixgbe i40e mdio mlx5_core ptp nfp i2c_algo_bit i2c_core pps_core hid_generic
+Jun 09 13:06:01 broadwell kernel: CPU: 1 PID: 0 Comm: swapper/1 Tainted: G        W         5.2.0-rc1-bpf-next-page-pool+ #171
+Jun 09 13:06:01 broadwell kernel: Hardware name: Supermicro Super Server/X10SRi-F, BIOS 2.0a 08/01/2016
+Jun 09 13:06:01 broadwell kernel: RIP: 0010:__page_pool_free+0x78/0xc0
+Jun 09 13:06:01 broadwell kernel: Code: 4d 85 e4 75 3f 48 89 df e8 65 ff ff ff 84 c0 75 1b 8b 8b 40 05 00 00 48 c7 c7 38 83 16 82 8b 53 20 89 d6 29 ce e8 68 d7 92 ff <0f> 0b 48 8b bb 08 05 00 00 e8 0a db a7 ff 48 89 df 5b 5d 41 5c e9
+Jun 09 13:06:01 broadwell kernel: RSP: 0018:ffffc9000003eee8 EFLAGS: 00010296
+Jun 09 13:06:01 broadwell kernel: RAX: 0000000000000039 RBX: ffff88882a376000 RCX: 0000000000000000
+Jun 09 13:06:01 broadwell kernel: RDX: 0000000000000039 RSI: ffffffff82a64fd9 RDI: ffffffff82a62b6c
+Jun 09 13:06:01 broadwell kernel: RBP: ffff88882a3764c8 R08: ffffffff82a64fa0 R09: 0000000000028cc0
+Jun 09 13:06:01 broadwell kernel: R10: ffffc9000003ef40 R11: 0000000080000001 R12: 0000000000000000
+Jun 09 13:06:01 broadwell kernel: R13: 0000000000000202 R14: 0000000000000009 R15: 0000000000000000
+Jun 09 13:06:01 broadwell kernel: FS:  0000000000000000(0000) GS:ffff88885c640000(0000) knlGS:0000000000000000
+Jun 09 13:06:01 broadwell kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+Jun 09 13:06:01 broadwell kernel: CR2: 00007f54c1822000 CR3: 000000087f20a006 CR4: 00000000003606e0
+Jun 09 13:06:01 broadwell kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Jun 09 13:06:01 broadwell kernel: DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
+Jun 09 13:06:01 broadwell kernel: Call Trace:
+Jun 09 13:06:01 broadwell kernel:  <IRQ>
+Jun 09 13:06:01 broadwell kernel:  __xdp_mem_allocator_rcu_free+0x4d/0x50
+Jun 09 13:06:01 broadwell kernel:  rcu_core+0x2c4/0x4d0
+Jun 09 13:06:01 broadwell kernel:  __do_softirq+0xdd/0x323
+Jun 09 13:06:01 broadwell kernel:  irq_exit+0xb6/0xc0
+Jun 09 13:06:01 broadwell kernel:  smp_apic_timer_interrupt+0x68/0x150
+Jun 09 13:06:01 broadwell kernel:  apic_timer_interrupt+0xf/0x20
+Jun 09 13:06:01 broadwell kernel:  </IRQ>
+Jun 09 13:06:01 broadwell kernel: RIP: 0010:cpuidle_enter_state+0xad/0x420
+Jun 09 13:06:01 broadwell kernel: Code: c4 0f 1f 44 00 00 31 ff e8 30 37 9d ff 80 7c 24 0b 00 74 12 9c 58 f6 c4 02 0f 85 40 03 00 00 31 ff e8 07 4e a2 ff fb 45 85 ed <0f> 88 0e 03 00 00 4c 2b 24 24 49 63 f5 48 ba cf f7 53 e3 a5 9b c4
+Jun 09 13:06:01 broadwell kernel: RSP: 0018:ffffc900031ebe98 EFLAGS: 00000202 ORIG_RAX: ffffffffffffff13
+Jun 09 13:06:01 broadwell kernel: RAX: ffff88885c669440 RBX: ffffffff82316920 RCX: 000000000000001f
+Jun 09 13:06:01 broadwell kernel: RDX: 0000005e14cbccaf RSI: 00000000238e3c20 RDI: 0000000000000000
+Jun 09 13:06:01 broadwell kernel: RBP: ffff88885c672500 R08: 0000000000000002 R09: 0000000000028cc0
+Jun 09 13:06:01 broadwell kernel: R10: ffffc900031ebe78 R11: 0000000000000356 R12: 0000005e14cbccaf
+Jun 09 13:06:01 broadwell kernel: R13: 0000000000000004 R14: 0000000000000004 R15: 0000000000000000
+Jun 09 13:06:01 broadwell kernel:  ? cpuidle_enter_state+0x90/0x420
+Jun 09 13:06:01 broadwell kernel:  cpuidle_enter+0x29/0x40
+Jun 09 13:06:01 broadwell kernel:  do_idle+0x1a1/0x1e0
+Jun 09 13:06:01 broadwell kernel:  cpu_startup_entry+0x19/0x20
+Jun 09 13:06:01 broadwell kernel:  start_secondary+0x10f/0x140
+Jun 09 13:06:01 broadwell kernel:  secondary_startup_64+0xa4/0xb0
+Jun 09 13:06:01 broadwell kernel: ---[ end trace c381db20c024d417 ]---
+#+end_example
