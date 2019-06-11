@@ -237,7 +237,9 @@ unregister.
 
 If a driver implements a local page caching scheme on top of this (like
 mlx5) which also cache DMA-mappings, then the in-flight accounting, can be
-used for detecting if it leaks DMa mappings.
+used for detecting if it leaks DMA mappings.
+
+
 
 ** Notes for patchset RFCv1-pre-upstream
 
@@ -257,6 +259,18 @@ not-cleaned up patches.
 
 My notes are here:
  https://github.com/xdp-project/xdp-project/blob/master/areas/mem/page_pool03_shutdown_inflight.org
+
+** Notes for patchset RFCv2-pre-upstream
+
+stg mail --edit-cover --version="RFCv2-pre-upstream" --to meup \
+ --to ilias --to toke --to tariq \
+ --cc ivan.khoronzhuk@linaro.org --cc grygorii.strashko@ti.com \
+ 01-net-page_pool-add-helper1..split-page-DMA-issue
+
+Subj: Bugfixes related to page_pool
+
+Just wanted to send out an updated version of the patchset.
+
 
 ** Patchset plan v1
 
