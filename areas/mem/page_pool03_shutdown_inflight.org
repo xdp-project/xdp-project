@@ -1061,3 +1061,33 @@ tracepoint:xdp:mem_disconnect {
 	printf("%s: mem.id-A:%d B:%d 0x%lX\n", probe, $idA, $idB, $page_pool);
 }
 #+end_src
+
+*** Adding tracepoint for xdp mem_connect
+
+Also add a tracepoint called =xdp:mem_connect= to pickup ifindex.
+
+*** Patch desc for adding xdp tracepoints
+
+xdp: add tracepoints for XDP mem
+
+These tracepoints make it easier to troubleshoot XDP mem id disconnect
+and deferred shutdown procedure.
+
+The xdp:mem_disconnect tracepoint cannot be replaced via kprobe. It is
+placed at the last stable place for the pointer to struct xdp_mem_allocator,
+just before it's scheduled for RCU removal. It also extract info on
+'safe_to_remove' and 'force'.
+
+Detailed info about in-flight pages is not available at this layer. The next
+patch will added tracepoints needed at the page_pool layer for this.
+
+
+
+
+
+
+
+
+
+
+
