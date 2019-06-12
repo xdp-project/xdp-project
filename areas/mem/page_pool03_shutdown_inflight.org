@@ -297,7 +297,7 @@ amount of work lies ahead, before we can lift this restriction.
 
 *** cpumap issue and fix
 
-xdp: page_pool related fix to cpumap
+Patch-desc: xdp: page_pool related fix to cpumap
 
 When converting an xdp_frame into an SKB, and sending this into the network
 stack, then the underlying XDP memory model need to release associated
@@ -312,7 +312,7 @@ save the function call overhead for others. Have cpumap call
 xdp_release_frame() before xdp_scrub_frame().
 
 
-*** mlx5: more strict use of page_pool API
+*** Patch-desc: mlx5: more strict use of page_pool API
 
 The mlx5 driver is using page_pool, but not for DMA-mapping (currently), and
 is a little too relaxed about returning or releasing page resources, as it
@@ -330,7 +330,7 @@ mlx5e_page_release() calls, as it is more correct.
 In mlx5e_page_release() when no recycle was requested, then release page
 from the page_pool, via page_pool_release_page().
 
-*** xdp: tracking page_pool resources and safe removal
+*** Patch-desc: xdp: tracking page_pool resources and safe removal
 
 This patch is needed before we can allow drivers to use page_pool for
 DMA-mappings. Today with page_pool and XDP return API, it is possible to
@@ -367,6 +367,22 @@ Drivers no-longer call page_pool_destroy(). Drivers already call
 xdp_rxq_info_unreg() which call xdp_rxq_info_unreg_mem_model(), which will
 attempt to disconnect the mem id, and if attempt fails schedule the
 disconnect for later via delayed workqueue.
+
+
+*** Patch-desc: xdp: force mem allocator removal and periodic warning
+
+If bugs exists or are introduced later e.g. by drivers misusing the API,
+then we want to warn about the issue, such that developer notice. This patch
+will generate a bit of noise in form of periodic pr_warn every 30 seconds.
+
+It is not nice to have this stall warning running forever. Thus, this patch
+will (after 120 attempts) force disconnect the mem id (from the rhashtable)
+and free the page_pool object. This will cause fallback to the put_page() as
+before, which only potentially leak DMA-mappings, if objects are really
+stuck for this long. In that unlikely case, a WARN_ONCE should show us the
+call stack.
+
+
 
 
 * Tests
@@ -1116,13 +1132,17 @@ just before it's scheduled for RCU removal. It also extract info on
 Detailed info about in-flight pages is not available at this layer. The next
 patch will added tracepoints needed at the page_pool layer for this.
 
+** Adding tracepoints for page_pool
 
+*** Patch desc: page_pool: add tracepoints for page_pool details need by XDP
 
+The xdp tracepoints for mem id disconnect don't carry information about, why
+it was not safe_to_remove.  The tracepoint page_pool:page_pool_inflight in
+this patch can be used for extract this info for further debugging.
 
-
-
-
-
-
+This patchset also adds tracepoint for the pages_state_* release/hold
+transitions, including a pointer to the page.  This can be used for stats
+about in-flight pages, or used to debug page leakage via keeping track of
+page pointer and combining this with kprobe for __put_page().
 
 
