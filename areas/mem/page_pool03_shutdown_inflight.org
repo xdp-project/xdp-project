@@ -971,3 +971,93 @@ Jun 09 13:06:01 broadwell kernel:  start_secondary+0x10f/0x140
 Jun 09 13:06:01 broadwell kernel:  secondary_startup_64+0xa4/0xb0
 Jun 09 13:06:01 broadwell kernel: ---[ end trace c381db20c024d417 ]---
 #+end_example
+
+** Adding tracepoints for xdp mem_disconnect
+
+When adding a tracepoint, consider if a kprobe could serve the same purpose.
+
+As shown above we can use kprobes via =kprobe:__mem_id_disconnect=, but info
+is lacking info 'safe_to_remove' and 'force' event.
+
+More importantly we want a stable pointer to =struct xdp_mem_allocator=,
+just before it's scheduled for RCU removal.
+
+Adding tracepoint xdp:mem_disconnect
+
+Base tests for it tracepoint exists:
+#+begin_example
+ perf record -e xdp:mem_disconnect
+ sudo bpftrace -e 'tracepoint:xdp:mem_disconnect { @[comm] = count(); }'
+#+end_example
+
+Question: can we extract =xa->allocator= info ?
+
+First need to mount kernel source:
+#+begin_example
+sshfs -o allow_other 192.168.42.3:git/kernel/bpf-next ~/git/kernel/bpf-next
+#+end_example
+
+sudo bpftrace -e 'tracepoint:xdp:mem_disconnect { @[comm] = count(); }'
+
+More advanced fails:
+#+begin_example
+sudo bpftrace -e 'tracepoint:xdp:mem_disconnect { @[comm] = args->xa->mem.id; }'
+Unknown struct/union: 'const struct xdp_mem_allocator'
+#+end_example
+
+sudo bpftrace -e 'tracepoint:xdp:mem_disconnect { $a = args->xa; }'
+
+If we manually define =struct xdp_mem_allocator= (and =struct xdp_mem_info=)
+inside the bpftrace script, and manually type-cast, then it works. Behind
+the scenes bpftrace will do =bpf_probe_read= to extract the info from kernel
+memory.
+
+#+begin_src C
+#!/usr/bin/bpftrace
+#include <linux/types.h>
+
+struct xdp_mem_info {
+	u32 type; /* enum xdp_mem_type, but known size type */
+	u32 id;
+};
+
+struct xdp_mem_allocator {
+	struct xdp_mem_info mem;
+	union {
+		void *allocator;
+		struct page_pool *page_pool;
+		struct zero_copy_allocator *zc_alloc;
+	};
+	int disconnect_cnt;
+	unsigned long defer_start;
+	//struct rhash_head node;
+	//struct rcu_head rcu;
+	//struct delayed_work defer_wq;
+	//unsigned long defer_warn;
+};
+
+tracepoint:xdp:mem_disconnect {
+	$xa = (struct xdp_mem_allocator *)args->xa;
+	$cntA = args->disconnect_cnt;
+	//$cntB = $xa->disconnect_cnt;
+
+	/* Extract mem.id in two different ways */
+	$idA = args->mem_id;
+	$idB = $xa->mem.id;
+
+	if ($cntA > 1) {
+		printf("%s: mem.id=%d re-scheduled", probe, $idA);
+	}
+
+	if (args->force == 1) {
+		printf("%s: mem.id=%d FORCE shutdown", probe, $idA);
+	}
+
+	$page_pool = args->allocator;
+	// $page_pool = $xa->allocator;
+	@memid_to_page_pool[$idA] = $page_pool;
+
+	time();
+	printf("%s: mem.id-A:%d B:%d 0x%lX\n", probe, $idA, $idB, $page_pool);
+}
+#+end_src
