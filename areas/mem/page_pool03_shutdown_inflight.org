@@ -330,8 +330,43 @@ mlx5e_page_release() calls, as it is more correct.
 In mlx5e_page_release() when no recycle was requested, then release page
 from the page_pool, via page_pool_release_page().
 
+*** xdp: tracking page_pool resources and safe removal
 
+This patch is needed before we can allow drivers to use page_pool for
+DMA-mappings. Today with page_pool and XDP return API, it is possible to
+remove the page_pool object (from rhashtable), while there are still
+in-flight packet-pages. This is safely handled via RCU and failed lookups in
+__xdp_return() fallback to call put_page(), when page_pool object is gone.
+In-case page is still DMA mapped, this will result in page note getting
+correctly DMA unmapped.
 
+To solve this, the page_pool is extended with tracking in-flight pages. And
+XDP disconnect system queries page_pool and waits, via workqueue, for all
+in-flight pages to be returned.
+
+To avoid killing performance when tracking in-flight pages, the implement
+use two (unsigned) counters, that in placed on different cache-lines, and
+can be used to deduct in-flight packets. This is done by mapping the
+unsigned "sequence" counters onto signed Two's complement arithmetic
+operations. This is e.g. used by kernel's time_after macros, described in
+kernel commit 1ba3aab3033b and 5a581b367b5, and also explained in RFC1982.
+
+The trick is these two incrementing counters only need to be read and
+compared, when checking if it's safe to free the page_pool structure. Which
+will only happen when driver have disconnected RX/alloc side. Thus, on a
+non-fast-path.
+
+It is chosen that page_pool tracking is also enabled for the non-DMA
+use-case, as this can be used for statistics later.
+
+After this patch, using page_pool requires more strict resource "release",
+e.g. via page_pool_release_page() that was introduced in this patchset, and
+previous patches implement/fix this more strict requirement.
+
+Drivers no-longer call page_pool_destroy(). Drivers already call
+xdp_rxq_info_unreg() which call xdp_rxq_info_unreg_mem_model(), which will
+attempt to disconnect the mem id, and if attempt fails schedule the
+disconnect for later via delayed workqueue.
 
 
 * Tests
