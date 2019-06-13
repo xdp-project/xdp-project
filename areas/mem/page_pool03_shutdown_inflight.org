@@ -1146,3 +1146,27 @@ about in-flight pages, or used to debug page leakage via keeping track of
 page pointer and combining this with kprobe for __put_page().
 
 
+
+* bpftrace notes
+
+** Compile notes
+
+I want build, but install in /usr/local/stow/
+
+#+begin_src sh
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=/usr/local/stow/bpftrace-git01 ..
+make -j 4
+make install
+-- Installing: /usr/local/stow/bpftrace-git01/bin/bpftrace
+#+end_src
+
+Use stow to enable/disable using this version:
+
+#+begin_src sh
+cd /usr/local/stow/
+sudo stow    bpftrace-git01/
+sudo stow -D bpftrace-git01/
+#+end_src
+
