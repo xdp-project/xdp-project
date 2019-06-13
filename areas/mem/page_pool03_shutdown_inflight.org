@@ -272,30 +272,46 @@ Subj: Bugfixes related to page_pool
 Just wanted to send out an updated version of the patchset.
 
 
-** Patchset plan v1
+
+* Patchset submission
 
 Reorg order of patches, such that mlx5 and cpumap fixes appear before
-introducing in-flight handling.  Need to introduce page_pool_release_page
+introducing in-flight handling. API page_pool_release_page introduced
 earlier.
 
-*** cover letter
+** Cover letter V1
 
-This patchset fix page_pool API, such that drivers can use it for
-DMA-mapping. As a number of places exist, where the DMA-mapping would not
-get released/unmapped. This occurs e.g. when an xdp_frame gets converted to
-an SKB. As network stack doesn't have any callback for XDP memory models.
+xdp: page_pool fixes and in-flight accounting
+
+This patchset fix page_pool API and users, such that drivers can use it for
+DMA-mapping. A number of places exist, where the DMA-mapping would not get
+released/unmapped, all these are fixed. This occurs e.g. when an xdp_frame
+gets converted to an SKB. As network stack doesn't have any callback for XDP
+memory models.
 
 The patchset also address a shutdown race-condition. Today removing a XDP
-memory model based on page_pool, is only delayed one RCU grace period. This
-isn't enough, as redirected xdp_frames can still be in-flight on different
+memory model, based on page_pool, is only delayed one RCU grace period. This
+isn't enough as redirected xdp_frames can still be in-flight on different
 queues (remote driver TX, cpumap or veth).
 
 We stress that when drivers use page_pool for DMA-mapping, then they MUST
-use one packet per page. This might change in the future, but an unknown
-amount of work lies ahead, before we can lift this restriction.
+use one packet per page. This might change in the future, but more work lies
+ahead, before we can lift this restriction.
+
+This patchset change the page_pool API to be more strict, as in-flight page
+accounting is added.
+
+Stg mail command:
+#+begin_example
+stg mail --edit-cover --version="net-next v1" --to meup \
+ --to ilias --to toke --to tariq \
+ --cc ivan.khoronzhuk@linaro.org --cc grygorii.strashko@ti.com \
+ --cc mcroce@redhat.com --cc toshiaki.makita1@gmail.com \
+ 01-net-page_pool-add-helper1..tracepoint02-page-pool
+#+end_example
 
 
-*** cpumap issue and fix
+** cpumap issue and fix
 
 Patch-desc: xdp: page_pool related fix to cpumap
 
@@ -311,8 +327,7 @@ interface for calling it, if the memory model match MEM_TYPE_PAGE_POOL, to
 save the function call overhead for others. Have cpumap call
 xdp_release_frame() before xdp_scrub_frame().
 
-
-*** Patch-desc: mlx5: more strict use of page_pool API
+** Patch-desc: mlx5: more strict use of page_pool API
 
 The mlx5 driver is using page_pool, but not for DMA-mapping (currently), and
 is a little too relaxed about returning or releasing page resources, as it
@@ -330,7 +345,7 @@ mlx5e_page_release() calls, as it is more correct.
 In mlx5e_page_release() when no recycle was requested, then release page
 from the page_pool, via page_pool_release_page().
 
-*** Patch-desc: xdp: tracking page_pool resources and safe removal
+** Patch-desc: xdp: tracking page_pool resources and safe removal
 
 This patch is needed before we can allow drivers to use page_pool for
 DMA-mappings. Today with page_pool and XDP return API, it is possible to
@@ -369,7 +384,7 @@ attempt to disconnect the mem id, and if attempt fails schedule the
 disconnect for later via delayed workqueue.
 
 
-*** Patch-desc: xdp: force mem allocator removal and periodic warning
+** Patch-desc: xdp: force mem allocator removal and periodic warning
 
 If bugs exists or are introduced later e.g. by drivers misusing the API,
 then we want to warn about the issue, such that developer notice. This patch
@@ -381,7 +396,6 @@ and free the page_pool object. This will cause fallback to the put_page() as
 before, which only potentially leak DMA-mappings, if objects are really
 stuck for this long. In that unlikely case, a WARN_ONCE should show us the
 call stack.
-
 
 
 
