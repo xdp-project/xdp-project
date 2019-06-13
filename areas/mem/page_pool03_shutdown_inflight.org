@@ -304,12 +304,16 @@ accounting is added.
 Stg mail command:
 #+begin_example
 stg mail --edit-cover --version="net-next v1" --to meup \
+ --to netdev \
  --to ilias --to toke --to tariq \
  --cc ivan.khoronzhuk@linaro.org --cc grygorii.strashko@ti.com \
  --cc mcroce@redhat.com --cc toshiaki.makita1@gmail.com \
  01-net-page_pool-add-helper1..tracepoint02-page-pool
 #+end_example
 
+Message-ID: <156045046024.29115.11802895015973488428.stgit@firesoul>
+
+Link: https://lore.kernel.org/netdev/156045046024.29115.11802895015973488428.stgit@firesoul/
 
 ** cpumap issue and fix
 
