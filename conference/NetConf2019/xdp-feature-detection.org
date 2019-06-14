@@ -87,6 +87,33 @@ Original argument:
   - Thus, there is not reason to expose feature bits
   - This was never true, and e.g. very few drivers support redirect
 
+* Slide: Original plan (didn't work): Hide feature check             :export:
+
+Wanted to /detect XDP features/ via analysing *return codes* used by program
+- */Not possible/* due to map value (register) can be a return value
+- Could still detect XDP_REDIRECT feature, as it needs a helper call
+
+Wanted to /supply XDP features/ used, when *attaching* bpf_prog to a device
+- */Not possible/* due to BPF *tail-call* maps
+- E.g. after XDP prog is attached (and checked), new bpf_prog inserted into map
+- E.g. on attach, need to traversing levels of tail-calls
+
+One option left: HW-offload can associate ifindex with bpf_prog *at load time*
+- Leverage this, to check /supplied XDP features/ against driver
+
+* Slide: Internal API                                                :export:
+
+Should likely use net_device NDO (Network Device Operation) call =ndo_bpf=
+- for query supported XDP features
+- (Think this was requested by Daniel Borkman)
+
+* Slide: External API
+
+Add a userspace API to query features
+- Netlink?
+- Ethtool?
+
+
 * Emacs tricks
 
 # Local Variables:
