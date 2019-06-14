@@ -107,12 +107,16 @@ Should likely use net_device NDO (Network Device Operation) call =ndo_bpf=
 - for query supported XDP features
 - (Think this was requested by Daniel Borkman)
 
-* Slide: External API
+* Slide: External API                                                :export:
 
 Add a userspace API to query features
 - Netlink?
 - Ethtool?
 
+* Slide: One option left: BPF-load time ifindex binding              :export:
+
+TODO: Expand on using HW-offload ifindex load-time binding
+- Can this cover all the cases?
 
 * Emacs tricks
 
