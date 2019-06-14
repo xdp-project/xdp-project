@@ -1,0 +1,86 @@
+# -*- fill-column: 76; -*-
+#+CATEGORY: OVS
+#+OPTIONS: ^:nil
+#+TITLE: Project management for XDP and Open vSwitch integration
+
+This document tries to describe the XDP requirements for Open vSwitch(OVS)
+to implement its full datapath in XDP.
+
+The current OVS kernel datapath through the openvswitch kernel module
+consists roughly of two stages:
+
+- Match the packet against an OpenFlow rule
+- Do the list of actions assigned to this OpenFlow rule (one last action can
+  be to continue with another match, recirculation)
+
+More information can be found in the following paper [[https://www.openvswitch.org/support/papers/nsdi2015.pdf][The Design and
+Implementation of Open vSwitch]]
+
+
+* Possible approach for re-implement this using XDP
+
+** Helper for the flow lookup
+
+To simplify the design it would be beneficial to add a helper function to
+the OVS kernel module which will do the flow lookup and return the set of
+actions. If the flow does not exist, or can't be handled by XDP no actions
+are returned and the flow can pass through the normal kernel pipeline.
+
+This design will also remove the complexity of duplicating the flow table in
+the XDP data space, and keeping it in sync.
+
+
+** Action processing
+
+Actions are processed in a linear fashion, one at a time, where the last
+action can be a recirculation resulting in another lookup and another set of
+actions.
+
+In pseudo code the XDP main part could look like this:
+
+#+BEGIN_SRC C
+for (iter = 0; iter < OVS_RECURSION_LIMIT; iter++) {
+
+    actions = ovs_flow_lookup_helper(&key)
+    if (!actions)
+        return XDP_PASS; /* We need to handle the none first iter case */
+
+    ret = do_ovs_actions(actions, &key)
+    if (ret != RECIRCUITATE)
+        break;
+
+    if (iter == OVS_RECURSION_LIMIT - 1) {
+		warn(unsupported flow)
+        return XDP_DROP;
+    }
+}
+return XDP_REDIRECT; /* If one or more packets got sent */
+#+END_SRC
+
+In the current OVS kernel code, the recirculation is limited to 5 iterations.
+
+
+The sequence of actions can consist of sending the packet to port A, do
+some conntrack handling, add a tunnel header and sent it out port B.
+
+So there is a need to make multiple clones of an ingress packet, do
+modifications, and sent out the clones to different ports. This part is
+currently missing from XDP.
+
+
+** Actions required to be implemented in XDP
+
+TODO: Add more details on what actions the datapath can/will take. See the
+kernel function [[https://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git/tree/net/openvswitch/actions.c?h=v5.1#n1217][do_execute_actions()]] for some  reference.
+
+
+* List of open items
+
+ - Support for Cloning packets, and work on multiple clones in the XDP
+   program, and be able to sent the clones to different egress ports.
+ - No hardware metadata, i.e. checksums, frame valid, etc.
+ - Specific offloads might need to be disabled, for example VLAN offload
+ - Fragmented tunnel packets need kernel processing for re-assembly
+ - Conntrack handling, including IP fragments
+ - Ingress / Egress shaping
+ - Tunnel handling
