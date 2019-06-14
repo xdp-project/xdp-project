@@ -66,8 +66,15 @@ It would be relevant to bring-up with MM-kernel people,
 - For page_pool: The best and safest solution, would be to get a page-flag.
 - And catch page-flag in slow-path =__put_page()= (when page refcnt == 0).
 - Still catch fast-path refcnt == 1 in page_pool_put_page() call.
-- But catch if some one "stole" page via refcnt-bump, and call =put_page()=
+- But catch if someone "stole" page via refcnt-bump, and calls =put_page()=
 
+** XDP metadata for HW-offloads and xdp_frame
+
+We need to push people to get some (NIC vendor) working on exposing their
+HW-offloads.
+
+The goal for me is actually to use/expose HW-offload, for creating SKBs
+outside drivers, when going from xdp_frame to SKB.
 
 
 
