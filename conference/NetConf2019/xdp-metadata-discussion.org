@@ -181,6 +181,7 @@ Instead of info-struct, can we store info in data-frame area?
 In either case:
 - Can kernel code understand BTF and act dynamic?
   - In =convert_to_xdp_frame()= code
+  - And in xdp_frame to SKB update fields code?
 
 ** Slide: Background: What is XDP-metadata area?                    :export:
 
