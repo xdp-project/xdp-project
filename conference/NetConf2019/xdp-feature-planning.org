@@ -1,6 +1,6 @@
 # -*- fill-column: 79; -*-
 #+TITLE: XDP feature planning
-#+AUTHOR: Toke Høiland-Jørgensen
+#+AUTHOR: Toke Høiland-Jørgensen and Jesper Dangaard Brouer
 #+EMAIL: toke@redhat.com
 #+REVEAL_THEME: redhat
 #+REVEAL_TRANS: linear
@@ -72,6 +72,19 @@ Colors are choosen via org-mode italic/bold high-lighting:
  - /italic/ = /green/
  - *bold*   = *yellow*
  - */italic-bold/* = red
+
+* Slide: The xdp-project repository                                  :export:
+
+- We've created a [[https://github.com/xdp-project/xdp-project][Github repository]] for XDP feature planning
+- The [[https://github.com/xdp-project/xdp-tutorial][XDP tutorial]] lives in the same Github org
+- Goal of this:
+  - Make you all aware of its existence and how it works
+  - Give a short overview of what's in there
+  - Get some feedback
+  - Hopefully get (some of) you to contribute :)
+
+* Slide: Contents of the xdp-project repo
+
 
 
 * Emacs tricks
