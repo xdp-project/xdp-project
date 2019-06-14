@@ -1,0 +1,201 @@
+# -*- fill-column: 79; -*-
+#+TITLE: XDP metadata discussion for hardware-offloads
+#+AUTHOR: Jesper Dangaard Brouer and Toke Høiland-Jørgensen
+#+EMAIL: brouer@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: './reveal.js/js/custom-netconf.js'}
+#+REVEAL_EXTRA_CSS: ./reveal.js/css/custom-adjust-logo.css
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: NetConf 2019
+
+This presentation will be given at [[http://vger.kernel.org/netconf2019.html][Netconf 2019]].
+
+* Export/generate presentation
+
+This presentation is written in org-mode and exported to reveal.js HTML format.
+The org-mode :export: tag determines what headlines/section are turned into
+slides for the presentation.
+
+** Setup for org-mode export to reveal.js
+First, install the ox-reveal emacs package.
+
+Package: ox-reveal git-repo and install instructions:
+https://github.com/yjwen/org-reveal
+
+** Export to HTML reveal.js
+
+After installing ox-reveal emacs package, export to HTML reveal.js format via
+keyboard shortcut: =C-c C-e R R=
+
+The variables at document end ("Local Variables") will set up the title slide
+and filter the "Slide:" prefix from headings; Emacs will ask for permission to
+load them, as they will execute code.
+
+** Export to PDF
+
+The presentations can be converted to PDF format.  Usually the reveal.js when
+run as a webserver under nodejs, have a printer option for exporting to PDF via
+print to file, but we choose not run this builtin webserver.
+
+Alternatively we found a tool called 'decktape', for exporting HTML pages to
+PDF: https://github.com/astefanutti/decktape
+
+The 'npm install' command:
+
+ $ npm install decktape
+
+After this the =decktape= command should be avail. If the npm install failed,
+then it's possible to run the decktape.js file direct from the git-repo via the
+=node= command:
+
+#+begin_src bash
+$ node ~/git/decktape/decktape.js \
+    -s 1600x900 -p 100 --chrome-arg=--no-sandbox \
+     xdp_building_block.html \
+     xdp_building_block.pdf
+#+end_src
+
+The size is set to get slide text to fit on the page. And -p 100 makes it go
+faster.
+
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation.
+
+* Colors examples                                                  :noexport:
+Colors are choosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Slide: Background: What is XDP-metadata area?                      :export:
+
+@@html:<small>@@
+Background slide, what do we have today...
+@@html:</small>@@
+
+XDP have 32 bytes *metadata* in front of payload (=xdp_buff->data_meta=)
+ - XDP tail-calls can read this (transfer info between tail-calls)
+ - TC eBPF (cls_bpf) can read this, and update SKB fields
+   - E.g. save XDP lookup and use in TC eBPF hook
+ - *AF_XDP* raw frames have this /metadata avail in front of payload/
+
+* Slide: Move SKB allocations out of NIC drivers                     :export:
+
+Goal: Simplify driver, via creating SKB inside network-core code
+- Happens today via *=xdp_frame=* in both /veth/ and /cpumap/
+
+The =xdp_frame= is placed in top of data-frame (=data_hard_start=)
+- Currently 32-bytes
+
+Issue: *SKB*'s created this way are /lacking HW-offloads/ like:
+- HW checksum info (for =skb->ip_summed= + =skb->csum=)
+- HW RX hash (=skb_set_hash(hash, type)=)
+
+Quest: How to transfer this info?
+- In a more generic and dynamic way...
+
+** Slide: Layout of xdp_frame                                       :export:
+
+@@html:<small>@@
+If layout need to be discussed...
+@@html:</small>@@
+
+#+begin_src C
+struct xdp_frame {
+	void *                     data;                 /*     0     8 */
+	u16                        len;                  /*     8     2 */
+	u16                        headroom;             /*    10     2 */
+	u16                        metasize;             /*    12     2 */
+	/* XXX 2 bytes hole, try to pack */
+	struct xdp_mem_info        mem;                  /*    16     8 */
+	struct net_device *        dev_rx;               /*    24     8 */
+
+	/* size: 32, cachelines: 1, members: 6 */
+	/* sum members: 30, holes: 1, sum holes: 2 */
+	/* last cacheline: 32 bytes */
+};
+#+end_src
+
+** Slide: Layout of xdp_buff                                        :export:
+
+@@html:<small>@@
+If layout need to be discussed...
+@@html:</small>@@
+
+#+begin_src C
+struct xdp_buff {
+	void *                     data;                 /*     0     8 */
+	void *                     data_end;             /*     8     8 */
+	void *                     data_meta;            /*    16     8 */
+	void *                     data_hard_start;      /*    24     8 */
+	long unsigned int          handle;               /*    32     8 */
+	struct xdp_rxq_info *      rxq;                  /*    40     8 */
+
+	/* size: 48, cachelines: 1, members: 6 */
+	/* last cacheline: 48 bytes */
+};
+#+end_src
+
+
+* Slide: Simple static solution                                      :export:
+
+@@html:<small>@@
+The simple solution that isn't as dynamic as we want...
+@@html:</small>@@
+
+Have drivers send along extra struct with info to =xdp_do_redirect()=
+- Use info-struct when calling =convert_to_xdp_frame()=
+
+Drivers have to fill-out info-struct every time
+- Driver basically transfer info from descriptor to info-struct
+- All drivers have to agree on struct layout
+
+The XDP-prog don't have access to info-struct
+
+** Slide: Use frame descriptor directly?
+
+@@html:<small>@@
+This came up before... why not give NIC frame descriptor directly to BPF?
+@@html:</small>@@
+
+Why can we use frame descriptor directly?
+- Very compact bit format and union overloaded
+- Even if possible to describe via BTF
+- HW revisions have erratas (e.g. ixgbe csum invalid in one HW rev)
+  - A driver translation function should handle this
+
+
+
+* Slide: XDP metadata for HW-offloads?                               :export:
+
+Can/should we use XDP-metadata area for HW-offloads?
+
+Or should we create a new dynamic area after/inside xdp_frame?
+
+
+* Different approach
+
+XDP-prog create map with special name e.g. "HW-offload"
+- Map have BTF description
+- Some BTF names have special meaning like:
+  - csum, rss-hash
+  - BTF-size can be checked by driver/bpf-core
+
+
+
+* Emacs tricks
+
+# Local Variables:
+# org-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# <h2 class=\"author\">Toke Høiland-Jørgensen (Red Hat)<br/>
+# Jesper Dangaard Brouer (Red Hat)<br/></h2>
+# <h3>Netconf<br/>Boston, June 2019</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
