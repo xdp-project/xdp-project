@@ -1,0 +1,77 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Brainstorm notes for NetConf 2019
+#+OPTIONS: ^:nil
+
+This document is primary brainstorm notes, to figure out what topic we have
+for NetConf2019, and then prioritise between them (and create short
+discussion "talks" based on priority/relevance).
+
+* Brainstorm
+
+Obviously we need to talk about XDP, but which parts?
+
+General talk: XDP feature planning
+- The unpredictable roadmap
+
+What will it cover?
+
+Topics:
+- Extending xdp_buff with frame-size or data_hard_end
+
+** topic: XDP-feature flags / info
+
+Users still cannot know if a device driver support XDP or not
+- This is the most often asked question
+- And people will often use XDP-generic without noticing, and complain about
+  performance... this is a support issue.
+- Suricata config want to query for XDP-support, else fallback to BPF-TC
+- VM-migration want to query for XDP-support, else need to abort migration
+
+Orig argument:
+- Drivers MUST support all XDP-features
+  - Thus, there is not reason to expose feature bits
+  - This was never true, and e.g. very few drivers support redirect
+
+
+* Specifics topics as separate talks?
+
+Possible topic that require its own talk.
+
+** XDP-redirect talk
+
+Title options:
+- How do we cleanup XDP-redirect user-interface?
+- Improving XDP-redirect experience for users?
+
+XDP-redirect is difficult to use!
+- Improvement for devmap lookup (in-progress)
+- map-lookup is not enough
+
+Map lookup only helps a little, as inserting a =net_device= (via ifindex) in
+=devmap= does not check (or enable) if =net_device= support =ndo_xdp_xmit=.
+
+Generic-XDP limit our options, because generic-XDP can use any =net_device=,
+even without =ndo_xdp_xmit=. Thus, we cannot reject inserting a device that
+doesn't have =ndo_xdp_xmit=, as the users might want to use this for
+generic-XDP. When creating a devmap, we simply cannot know if it is going to
+be used for native-XDP or generic-XDP.
+
+
+** Memory models (talk?)
+
+Uncertain if talking about XDP memory models is worth discussing, in this
+forum (with network-kernel people).
+
+It would be relevant to bring-up with MM-kernel people,
+- For page_pool: The best and safest solution, would be to get a page-flag.
+- And catch page-flag in slow-path =__put_page()= (when page refcnt == 0).
+- Still catch fast-path refcnt == 1 in page_pool_put_page() call.
+- But catch if some one "stole" page via refcnt-bump, and call =put_page()=
+
+
+
+
+
+
+
+
