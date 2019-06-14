@@ -11,9 +11,9 @@
 #+OPTIONS: reveal_width:1600 reveal_height:900
 #+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
 
-* For conference: Lund Linux Con 2019
+* For conference: NetConf 2019
 
-This presentation will be given at Netconf 2019.
+This presentation will be given at [[http://vger.kernel.org/netconf2019.html][Netconf 2019]].
 
 * Export/generate presentation
 
