@@ -251,13 +251,16 @@ Dynamic BPF call-back
 * Slide: When to enable populate metadata                            :export:
 
 The populate metadata function is *not default enabled*
-- Trigger to enable, when (1) =ndo_bpf= attach SKB-update BPF-prog
-- and/or when (2) =ndo_bpf= query to get BTF-format (maybe map-fd)
+- Driver create real BPF-map with BTF-format for metadata (as value)
+  - (Key is driver "id" for this map, allow for more maps per driver)
+- Add =ndo_bpf= /query for metadata-map/, return map-fd
+  - Both XDP-prog and SKB-update prog can use map
 
-*Idea*: =ndo_bpf= /query return metadata-map/ (with associated *BTF-format*)
-- Map is used by XDP-prog being attached (check BTF-format match)
-  - then map-refcnt, determine when to disable populate metadata again
-
+Trigger to *enable/disable*, when /map-user gets attached/detached/
+- (1) =ndo_bpf= attach SKB-update BPF-prog that use this map,
+- and/or when (2) =ndo_bpf= XDP-prog being attached (that use map)
+  - Both cases, check BTF-format match or reject attach
+- The *map-refcnt*, determine when to /disable/ populate metadata again
 
 * Slides: Extra                                                      :export:
 
