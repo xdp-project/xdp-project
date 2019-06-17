@@ -475,6 +475,7 @@ in eBPF. These include:
 - Hash value
 - Flow designator
 - Higher-level protocol header offsets
+- Timestamps
 
 **** TODO Needs BTF-based metadata
 To express this in a vendor-neutral way, we probably need to depend on the
