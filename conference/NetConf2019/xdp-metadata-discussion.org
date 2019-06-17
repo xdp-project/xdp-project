@@ -74,14 +74,6 @@ Colors are choosen via org-mode italic/bold high-lighting:
  - *bold*   = *yellow*
  - */italic-bold/* = red
 
-* Better title?
-
-The title and angle might need to change to talk?
-
-Title suggestions:
-- XDP metadata discussion for hardware-offloads
-- SKB creation outside drivers: using metadata and HW-offloads?
-
 * Slide: Move SKB allocations out of NIC drivers                     :export:
 
 Goal: Simplify driver, via creating SKB inside network-core code
