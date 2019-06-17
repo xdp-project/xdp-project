@@ -129,7 +129,7 @@ Add a userspace API to query features
 
 If BPF /load time/ check is possible
 - This could be the userspace API, which is a probe-API
-- Similar to 'bpftool feature' command that probe-loads BPF-progs
+- Similar to '=bpftool feature=' command that probe-loads BPF-progs
 
 * Slide: One option left: BPF-load time ifindex binding              :export:
 
@@ -137,13 +137,46 @@ TODO: Expand on using HW-offload ifindex load-time binding
 - Can this cover all the cases?
 
 Our old nemesis: tail-call maps
-- Case: ifindex bound XDP-prog use tail-call mapping
+- Case#1: ifindex bound XDP-prog use tail-call mapping
   - Issue: what stops adding a non-ifindex XDP-prog to a tail-call-map?
+- Case#2: Can NIC-A XDP-prog tail-call XDP-prog bound to NIC-B?
 
 Pitfall: Generic-XDP
 - At BPF load time, don't know is used for native or generic-XDP
 
+* Slide: Extra slides                                                :export:
 
+Below extra slide
+- with details if people want to discuss these
+
+* Slide: Code details: XDP-feature                                   :export:
+
+#+begin_notes
+Perhaps skip this slide?
+#+end_notes
+
+Open-Question: How do we express XDP-features?
+ - Drivers need to know about their features (simply bits? enough?)
+
+Code details, extending the =ndo_bpf= commands:
+#+begin_src C
+struct netdev_bpf {  /* from: include/linux/netdevice.h */
+	enum bpf_netdev_command command;
+	union {
+		/* XDP_QUERY_PROG, XDP_QUERY_PROG_HW */
+		struct {
+			u32 prog_id;
+			/* flags with which program was installed */
+			u32 prog_flags;
+		};
+		/* XDP_QUERY_FEATURES */
+		struct {
+			u64 flags;
+		};
+	[...]
+	};
+};
+#+end_src
 
 * Emacs tricks
 
