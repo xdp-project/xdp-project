@@ -262,6 +262,15 @@ Trigger to *enable/disable*, when /map-user gets attached/detached/
   - Both cases, check BTF-format match or reject attach
 - The *map-refcnt*, determine when to /disable/ populate metadata again
 
+* Slide: End                                                         :export:
+
+Disclaimer
+- These slides are only design ideas and suggestions
+- Non of this is actually implemented
+
+Main purpose was getting a discussion going
+- which were hopefully successful...
+
 * Slides: Extra                                                      :export:
 
 ** Slide: Layout of xdp_frame                                       :export:
