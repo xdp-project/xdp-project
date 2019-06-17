@@ -119,7 +119,7 @@ One option left: Associate ifindex with bpf_prog *at load time* (like HW-offload
 
 Should likely use net_device NDO (Network Device Operation) call =ndo_bpf=
 - for query (or testing) supported XDP features
-- (Think this was requested by Daniel Borkman)
+- (Think this was requested by Daniel Borkmann)
 
 * Slide: External userspace API                                      :export:
 
@@ -133,6 +133,7 @@ If BPF /load time/ check is possible
 
 * Slide: One option left: BPF-load time ifindex binding              :export:
 
+
 TODO: Expand on using HW-offload ifindex load-time binding
 - Can this cover all the cases?
 
@@ -142,7 +143,7 @@ Our old nemesis: tail-call maps
 - Case#2: Can NIC-A XDP-prog tail-call XDP-prog bound to NIC-B?
 
 Pitfall: Generic-XDP
-- At BPF load time, don't know is used for native or generic-XDP
+- At BPF load time, don't know if used for native or generic-XDP
 
 * Slide: Extra slides                                                :export:
 
@@ -150,10 +151,6 @@ Below extra slide
 - with details if people want to discuss these
 
 * Slide: Code details: XDP-feature                                   :export:
-
-#+begin_notes
-Perhaps skip this slide?
-#+end_notes
 
 Open-Question: How do we express XDP-features?
  - Drivers need to know about their features (simply bits? enough?)
