@@ -150,14 +150,15 @@ Challenge: only input is ifindex
 * Slide: Can verifier detect XDP features?                           :export:
 
 Either need to /supply features/ (more input than =ifindex=)
-- Or verifier needs to be able to detect features
+- *Or* verifier needs to be able to /detect features/
 
-Verifier: If XDP return code comes from register/map
-- Assume all XDP-return codes in use
+Verifier *detection strategy*:
+- If XDP return code comes from register/map
+  - then assume all XDP-return codes in use
 - Except: can remove XDP_REDIRECT if redirect-helper isn't used
 
-Again: What if BPF-prog is only used for generic-XDP?
-- Are we forced to supply more than =ifindex= ?
+Again: What if BPF-prog is only used for *generic-XDP?*
+- Are we /forced to supply more than =ifindex= ?/
 
 * Slide: Extra slides                                                :export:
 
