@@ -262,6 +262,14 @@ Trigger to *enable/disable*, when /map-user gets attached/detached/
   - Both cases, check BTF-format match or reject attach
 - The *map-refcnt*, determine when to /disable/ populate metadata again
 
+** Slide: Selecting metadata layouts                                :export:
+
+/Driver/ can have *multiple metadata-maps*
+- Identified via /map-key as id/
+- (the map-value define metadata layout via BTF-format)
+- Each map (likely) have *different driver populate function* associated
+
+
 * Slide: End                                                         :export:
 
 Disclaimer
