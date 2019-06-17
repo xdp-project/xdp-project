@@ -113,6 +113,70 @@ Other *potential* offloads, which hardware can do, but not used
 Quest: How to transfer this info?
 - In a more generic and dynamic way...
 
+* Slide: Simple static solution                                      :export:
+
+@@html:<small>@@
+The simple solution that isn't as dynamic as we want...
+@@html:</small>@@
+
+Have drivers send along extra struct with info to =xdp_do_redirect()=
+- Use info-struct when calling =convert_to_xdp_frame()=
+
+Drivers have to fill-out info-struct every time
+- Driver basically transfer info from descriptor to info-struct
+- All drivers have to agree on struct layout
+
+The XDP-prog don't have access to info-struct
+
+** Slide: Use NIC frame descriptor directly?                        :export:
+
+@@html:<small>@@
+This came up before... why not give NIC frame descriptor directly to BPF?
+@@html:</small>@@
+
+Why can't we use frame descriptor directly?
+- Very compact bit format and union overloaded
+- Even if possible to describe via BTF
+- HW revisions have erratas (e.g. ixgbe csum invalid in one HW rev)
+  - A driver translation function should handle/hide this
+- With cpumap xdp_frame is read on remote CPU, descriptor not-valid
+
+
+* Slide: Quest make this more dynamic                                :export:
+
+How can we make this more dynamic and runtime configurable?
+- At least info-struct should be described via BTF
+
+Instead of info-struct, can we store info in data-frame area?
+- Two options:
+  - Use XDP metadata area (already avail to XDP)
+  - Use areas "inside" xdp_frame (or dynamic area after xdp_frame ends)
+
+In either case:
+- Can kernel code understand BTF and act dynamic?
+  - In =convert_to_xdp_frame()= code
+  - And in xdp_frame to SKB update fields code?
+
+** Slide: Background: What is XDP-metadata area?                    :export:
+
+@@html:<small>@@
+Background slide, what do we have today...
+@@html:</small>@@
+
+XDP have 32 bytes *metadata* in front of payload (=xdp_buff->data_meta=)
+ - XDP tail-calls can read this (transfer info between tail-calls)
+ - TC eBPF (cls_bpf) can read this, and update SKB fields
+   - E.g. save XDP lookup and use in TC eBPF hook
+ - *AF_XDP* raw frames have this /metadata avail in front of payload/
+
+* Slide: Use XDP metadata area for HW-offloads?                      :export:
+
+Can/should we use XDP-metadata area for HW-offloads?
+
+Or should we create a new dynamic area after/inside xdp_frame?
+
+* Slides: Extra
+
 ** Slide: Layout of xdp_frame                                       :export:
 
 @@html:<small>@@
@@ -154,68 +218,6 @@ struct xdp_buff {
 	/* last cacheline: 48 bytes */
 };
 #+end_src
-
-
-* Slide: Simple static solution                                      :export:
-
-@@html:<small>@@
-The simple solution that isn't as dynamic as we want...
-@@html:</small>@@
-
-Have drivers send along extra struct with info to =xdp_do_redirect()=
-- Use info-struct when calling =convert_to_xdp_frame()=
-
-Drivers have to fill-out info-struct every time
-- Driver basically transfer info from descriptor to info-struct
-- All drivers have to agree on struct layout
-
-The XDP-prog don't have access to info-struct
-
-** Slide: Use NIC frame descriptor directly?                        :export:
-
-@@html:<small>@@
-This came up before... why not give NIC frame descriptor directly to BPF?
-@@html:</small>@@
-
-Why can't we use frame descriptor directly?
-- Very compact bit format and union overloaded
-- Even if possible to describe via BTF
-- HW revisions have erratas (e.g. ixgbe csum invalid in one HW rev)
-  - A driver translation function should handle/hide this
-
-
-* Slide: Quest make this more dynamic                                :export:
-
-How can we make this more dynamic and runtime configurable?
-- At least info-struct should be described via BTF
-
-Instead of info-struct, can we store info in data-frame area?
-- Two options:
-  - Use XDP metadata area (already avail to XDP)
-  - Use areas "inside" xdp_frame (or dynamic area after xdp_frame ends)
-
-In either case:
-- Can kernel code understand BTF and act dynamic?
-  - In =convert_to_xdp_frame()= code
-  - And in xdp_frame to SKB update fields code?
-
-** Slide: Background: What is XDP-metadata area?                    :export:
-
-@@html:<small>@@
-Background slide, what do we have today...
-@@html:</small>@@
-
-XDP have 32 bytes *metadata* in front of payload (=xdp_buff->data_meta=)
- - XDP tail-calls can read this (transfer info between tail-calls)
- - TC eBPF (cls_bpf) can read this, and update SKB fields
-   - E.g. save XDP lookup and use in TC eBPF hook
- - *AF_XDP* raw frames have this /metadata avail in front of payload/
-
-* Slide: Use XDP metadata area for HW-offloads?                      :export:
-
-Can/should we use XDP-metadata area for HW-offloads?
-
-Or should we create a new dynamic area after/inside xdp_frame?
 
 
 * Different approach
