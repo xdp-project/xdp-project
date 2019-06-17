@@ -75,17 +75,31 @@ Colors are choosen via org-mode italic/bold high-lighting:
 
 * Slide: The XDP available features issue                            :export:
 
-Users still cannot know if a device driver support XDP or not
+Users cannot know if a device driver support XDP or not
 - This is the most often asked question
 - And people will often use XDP-generic without noticing,
   - and complain about performance... this is a support issue.
-- Suricata config want to query for XDP-support, else fallback to BPF-TC
-- VM-migration want to query for XDP-support, else need to abort migration
 
-Original argument:
-- Drivers MUST support all XDP-features
+Real /users/ requesting this:
+- /Suricata config/ want to query for XDP-support, else fallback to BPF-TC
+- /VM-migration/ want to query for XDP-support, else need to abort migration
+
+Original argument: Drivers *MUST support all XDP-features*
   - Thus, there is not reason to expose feature bits
-  - This was never true, and e.g. very few drivers support redirect
+  - This was *never true*, and e.g. very few drivers support redirect
+
+* Slide: What is the real issue?                                     :export:
+
+Simply exposing feature XDP to userspace, doesn't solve the real issue
+- Real issue: *too easy to misconfigure*
+- How to get users to check features before attach (API didn't prev exist)
+
+Kernel *allow* users to attach XDP bpf_prog
+- that use *features that driver doesn't implement*
+- cause */silent drops/* (debug via tracepoints)
+
+We want something that can /reject earlier/
+- at BPF-load or XDP-attach time
 
 * Slide: Original plan (didn't work): Hide feature check             :export:
 
@@ -94,29 +108,42 @@ Wanted to /detect XDP features/ via analysing *return codes* used by program
 - Could still detect XDP_REDIRECT feature, as it needs a helper call
 
 Wanted to /supply XDP features/ used, when *attaching* bpf_prog to a device
-- */Not possible/* due to BPF *tail-call* maps
+- */Not possible/* due to BPF *tail-call* maps (=BPF_MAP_TYPE_PROG_ARRAY=)
 - E.g. after XDP prog is attached (and checked), new bpf_prog inserted into map
 - E.g. on attach, need to traversing levels of tail-calls
 
-One option left: HW-offload can associate ifindex with bpf_prog *at load time*
-- Leverage this, to check /supplied XDP features/ against driver
+One option left: Associate ifindex with bpf_prog *at load time* (like HW-offload)
+- See /later slide/ for challenges and pitfalls...
 
-* Slide: Internal API                                                :export:
+* Slide: Internal kernel API                                         :export:
 
 Should likely use net_device NDO (Network Device Operation) call =ndo_bpf=
-- for query supported XDP features
+- for query (or testing) supported XDP features
 - (Think this was requested by Daniel Borkman)
 
-* Slide: External API                                                :export:
+* Slide: External userspace API                                      :export:
 
 Add a userspace API to query features
 - Netlink?
 - Ethtool?
 
+If BPF /load time/ check is possible
+- This could be the userspace API, which is a probe-API
+- Similar to 'bpftool feature' command that probe-loads BPF-progs
+
 * Slide: One option left: BPF-load time ifindex binding              :export:
 
 TODO: Expand on using HW-offload ifindex load-time binding
 - Can this cover all the cases?
+
+Our old nemesis: tail-call maps
+- Case: ifindex bound XDP-prog use tail-call mapping
+  - Issue: what stops adding a non-ifindex XDP-prog to a tail-call-map?
+
+Pitfall: Generic-XDP
+- At BPF load time, don't know is used for native or generic-XDP
+
+
 
 * Emacs tricks
 
