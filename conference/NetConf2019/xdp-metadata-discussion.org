@@ -120,7 +120,7 @@ The GOAL is to come-up with a Generic Offload Abstraction Layer...
 
 Generic and dynamic way to transfer HW-offload info
 - Only enable info when needed
-- Both /made available for SKB creation and and XDP-prog/
+- Both /made available for SKB creation and XDP programs/
 
 The big questions are:
 - Where to *store this information?*
@@ -141,7 +141,7 @@ Drivers have to *fill-out* info-struct *every time*
 
 The *XDP-prog don't have access to info-struct*
 - As =xdp_do_redirect()= happens after XDP-prog runs
-  - (could solve via also giving info-struct to XDP-prog)
+  - (could be solved by also giving info-struct to XDP-prog)
 
 ** Slide: Use NIC frame descriptor directly? (No)                   :export:
 
@@ -195,13 +195,13 @@ Likely need some boundary checks
 * Slide: Lacking knowledge about BTF                                 :export:
 
 When info-struct is described via BTF
-- Can kernel code understand BTF and act dynamic???
+- Can kernel code understand BTF and act dynamically???
   - In =convert_to_xdp_frame()= code
   - And in xdp_frame to SKB update fields code?
 
 Hack: if driver knows order struct-members can appear in
 - Walk BTF format and create bitmap with enabled members
-- When member is match, increment iterator with member size
+- When member is matched, increment iterator with member size
 - (Fear this is slow, due to data dependency on iterator)
 
 * Slide: Driver call-back function                                   :export:
@@ -229,38 +229,38 @@ Steps for static driver
 - /Point#A/: Driver define static info-struct for metadata area
   - Create BTF-format (via macros) and register with BPF (?)
   - Adjust =xdp_buff->data_meta= with info-struct size
-- /Point#B/: Driver function *populate metadata with offloads* from descriptor
-  - It know about HW offloads curr enabled, revisions and quirks
-- *XDP-prog* is called (how do user get BTF-format?)
+- /Point#B/: Driver function *populates metadata with offloads* from descriptor
+  - It knows about HW offloads curr enabled, revisions and quirks
+- *XDP-prog* is called (how does user get BTF-format?)
 - /Point#C/: Driver static SKB-update call-back
   - Via XDP-redirect (either cpumap or veth) call-back is invoked with SKB
 
 ** Slide: More dynamic approach                                     :export:
 
 Same steps: /Point#A/ + /Point#B/
-- /Point#A/: Driver define static info-struct for metadata area
+- /Point#A/: Driver defines static info-struct for metadata area
   - Create BTF-format (via macros) and register with BPF
-- /Point#B/: Driver function *populate metadata with offloads* from descriptor
+- /Point#B/: Driver function *populates metadata with offloads* from descriptor
 
 Dynamic BPF call-back
 - /Point#C/: Driver SKB-update call-back is a BPF-prog
 - This SKB-update BPF-prog, must have /map named 'metadata'/
-  - map must have *BTF-format that match driver* BTF-format
+  - map must have *BTF-format that matches driver* BTF-format
     - checked on attach via =ndo_bpf=, else reject
 
 * Slide: When to enable populate metadata                            :export:
 
-The populate metadata function is *not default enabled*
-- Driver create real BPF-map with BTF-format for metadata (as value)
+The populate metadata function is *not enabled by default*
+- Driver creates real BPF-map with BTF-format for metadata (as value)
   - (Key is driver "id" for this map, allow for more maps per driver)
 - Add =ndo_bpf= /query for metadata-map/, return map-fd
   - Both XDP-prog and SKB-update prog can use map
 
 Trigger to *enable/disable*, when /map-user gets attached/detached/
-- (1) =ndo_bpf= attach SKB-update BPF-prog that use this map,
-- and/or when (2) =ndo_bpf= XDP-prog being attached (that use map)
+- (1) =ndo_bpf= attach SKB-update BPF-prog that uses this map,
+- and/or when (2) =ndo_bpf= XDP-prog being attached (that uses map)
   - Both cases, check BTF-format match or reject attach
-- The *map-refcnt*, determine when to /disable/ populate metadata again
+- The *map-refcnt*, determines when to /disable/ populate metadata again
 
 * Slide: End                                                         :export:
 
@@ -276,7 +276,7 @@ Main purpose was getting a discussion going
 ** Slide: Layout of xdp_frame                                       :export:
 
 @@html:<small>@@
-If layout need to be discussed...
+If layout needs to be discussed...
 @@html:</small>@@
 
 #+begin_src C
@@ -298,7 +298,7 @@ struct xdp_frame {
 ** Slide: Layout of xdp_buff                                        :export:
 
 @@html:<small>@@
-If layout need to be discussed...
+If layout needs to be discussed...
 @@html:</small>@@
 
 #+begin_src C
@@ -319,12 +319,11 @@ struct xdp_buff {
 
 * Different approach
 
-XDP-prog create map with special name e.g. "HW-offload"
-- Map have BTF description
+XDP-prog creates map with special name e.g. "HW-offload"
+- Map has BTF description
 - Some BTF names have special meaning like:
   - csum, rss-hash
   - BTF-size can be checked by driver/bpf-core
-
 
 
 * Emacs tricks

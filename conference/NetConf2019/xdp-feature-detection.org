@@ -94,7 +94,7 @@ Simply exposing feature XDP to userspace, doesn't solve the real issue
 - Real issue: *too easy to misconfigure*
 - How to get users to check features before attach (API didn't prev exist)
 
-Kernel *allow* users to attach XDP bpf_prog
+Kernel *allows* users to attach XDP bpf_prog
 - that use *features that driver doesn't implement*
 - cause */silent drops/* (debug via tracepoints)
 
@@ -104,7 +104,7 @@ We want something that can /reject earlier/
 * Slide: Original plan (didn't work): Hide feature check             :export:
 
 Wanted to /detect XDP features/ via analysing *return codes* used by program
-- */Not possible/* due to map value (register) can be a return value
+- */Not possible/* because map value (register) can be a return value
 - Could still detect XDP_REDIRECT feature, as it needs a helper call
 
 Wanted to /supply XDP features/ used, when *attaching* bpf_prog to a device
@@ -134,7 +134,7 @@ If BPF /load time/ check is possible
 * Slide: BPF-load time ifindex binding (possible???)                 :export:
 
 General idea (like HW-offload): /Supply ifindex at BPF load time/
-- Discuss if this will work... and howto handle pitfalls?
+- Discuss if this will work... and how to handle pitfalls?
 
 Our old nemesis: *tail-call* maps
 - Case#1: ifindex bound XDP-prog use tail-call (map)
@@ -150,7 +150,7 @@ Challenge: only input is ifindex
 * Slide: Can verifier detect XDP features?                           :export:
 
 Either need to /supply features/ (more input than =ifindex=)
-- Or verifier need to be-able detect features
+- Or verifier needs to be able to detect features
 
 Verifier: If XDP return code comes from register/map
 - Assume all XDP-return codes in use
@@ -166,7 +166,7 @@ Below extra slide
 
 * Slide: Code details: XDP-feature                                   :export:
 
-Open-Question: How do we express XDP-features?
+Open Question: How do we express XDP-features?
  - Drivers need to know about their features (simply bits? enough?)
 
 Code details, extending the =ndo_bpf= commands:
