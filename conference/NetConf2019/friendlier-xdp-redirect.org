@@ -1,5 +1,5 @@
 # -*- fill-column: 79; -*-
-#+TITLE: A friendlier UAPI for XDP_REDIRECT
+#+TITLE: Creating a friendlier UAPI for XDP_REDIRECT
 #+AUTHOR: Toke Høiland-Jørgensen and Jesper Dangaard Brouer
 #+EMAIL: toke@redhat.com
 #+REVEAL_THEME: redhat
