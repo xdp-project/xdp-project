@@ -323,17 +323,6 @@ struct xdp_buff {
 };
 #+end_src
 
-
-
-* Different approach
-
-XDP-prog creates map with special name e.g. "HW-offload"
-- Map has BTF description
-- Some BTF names have special meaning like:
-  - csum, rss-hash
-  - BTF-size can be checked by driver/bpf-core
-
-
 * Emacs tricks
 
 # Local Variables:
