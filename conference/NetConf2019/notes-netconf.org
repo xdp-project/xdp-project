@@ -3,7 +3,7 @@
 #+OPTIONS: ^:nil
 
 This document is primary brainstorm notes, to figure out what topic we have
-for NetConf2019, and then prioritise between them (and create short
+for [[http://vger.kernel.org/netconf2019.html][Netconf 2019]], and then prioritise between them (and create short
 discussion "talks" based on priority/relevance).
 
 * Brainstorm
