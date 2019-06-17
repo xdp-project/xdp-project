@@ -160,6 +160,15 @@ Verifier *detection strategy*:
 Again: What if BPF-prog is only used for *generic-XDP?*
 - Are we /forced to supply more than =ifindex= ?/
 
+* Slide: End                                                         :export:
+
+Disclaimer
+- These slides are only design ideas and suggestions
+- Non of this is actually implemented
+
+Main purpose was getting a discussion going
+- which were hopefully successful...
+
 * Slide: Extra slides                                                :export:
 
 Below extra slide
