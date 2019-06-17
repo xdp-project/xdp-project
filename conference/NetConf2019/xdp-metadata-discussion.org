@@ -104,14 +104,27 @@ Other /existing/ offloads, used by SKBs, but *not always enabled*
    - Earlier XDP software timestamp (for =skb->tstamp=)
  - RX /mark/ (=skb->mark= supported by mlx5)
 
-Other *potential* offloads, which hardware can do, but not used
+@@html:<br/><small>@@
+Other *potential* offloads, which hardware can do (but not used by SKB):
  - Unique u64 /flow identifier/ key (mlx5 HW)
  - Higher-level protocol header offsets
    - RSS-hash can deduce e.g. IPv4/TCP (as frag not marked as TCP)
    - But NIC HW have full parse info avail
+@@html:</small>@@
 
-Quest: How to transfer this info?
-- In a more generic and dynamic way...
+* Slide: The holy-grail for HW-offloads                             :export:
+
+@@html:<small>@@
+The GOAL is to come-up with a Generic Offload Abstraction Layer...
+@@html:</small>@@
+
+Generic and dynamic way to transfer HW-offload info
+- Only enable info when needed
+- Both /made available for SKB creation and and XDP-prog/
+
+The big questions are:
+- Where to *store this information?*
+- How to make it /dynamic/?
 
 * Slide: Simple static solution                                      :export:
 
@@ -119,16 +132,18 @@ Quest: How to transfer this info?
 The simple solution that isn't as dynamic as we want...
 @@html:</small>@@
 
-Have drivers send along extra struct with info to =xdp_do_redirect()=
+Have drivers send along *extra struct with info* to =xdp_do_redirect()=
 - Use info-struct when calling =convert_to_xdp_frame()=
 
-Drivers have to fill-out info-struct every time
-- Driver basically transfer info from descriptor to info-struct
+Drivers have to *fill-out* info-struct *every time*
+- Driver basically transfer /info from descriptor/ to info-struct
 - All drivers have to agree on struct layout
 
-The XDP-prog don't have access to info-struct
+The *XDP-prog don't have access to info-struct*
+- As =xdp_do_redirect()= happens after XDP-prog runs
+  - (could solve via also giving info-struct to XDP-prog)
 
-** Slide: Use NIC frame descriptor directly?                        :export:
+** Slide: Use NIC frame descriptor directly? (No)                   :export:
 
 @@html:<small>@@
 This came up before... why not give NIC frame descriptor directly to BPF?
@@ -136,26 +151,24 @@ This came up before... why not give NIC frame descriptor directly to BPF?
 
 Why can't we use frame descriptor directly?
 - Very compact bit format and union overloaded
-- Even if possible to describe via BTF
-- HW revisions have erratas (e.g. ixgbe csum invalid in one HW rev)
+  - Even if possible to describe via BTF
+  - Prog to *decode too specific to vendor* HW (+ revision)
+- *HW revisions have erratas* (e.g. ixgbe csum invalid in one HW rev)
   - A driver translation function should handle/hide this
-- With cpumap xdp_frame is read on remote CPU, descriptor not-valid
+- With cpumap xdp_frame is /read on remote CPU/, descriptor not-valid
 
+* Slide: Where to store the offload info?                            :export:
 
-* Slide: Quest make this more dynamic                                :export:
+At least /info-struct/ should be /described via BTF/
 
-How can we make this more dynamic and runtime configurable?
-- At least info-struct should be described via BTF
-
-Instead of info-struct, can we store info in data-frame area?
+Instead of separate info-struct, *store* /info-struct/ *in data-frame area*?
 - Two options:
   - Use XDP metadata area (already avail to XDP)
   - Use areas "inside" xdp_frame (or dynamic area after xdp_frame ends)
+    - not curr avail to XDP, as xdp_frame is after XDP-prog
 
-In either case:
-- Can kernel code understand BTF and act dynamic?
-  - In =convert_to_xdp_frame()= code
-  - And in xdp_frame to SKB update fields code?
+Note: Cannot store info-struct inside =xdp_rxq_info=
+- Because not a per frame data-structure, and xdp_frame use bulk processing
 
 ** Slide: Background: What is XDP-metadata area?                    :export:
 
@@ -169,13 +182,38 @@ XDP have 32 bytes *metadata* in front of payload (=xdp_buff->data_meta=)
    - E.g. save XDP lookup and use in TC eBPF hook
  - *AF_XDP* raw frames have this /metadata avail in front of payload/
 
-* Slide: Use XDP metadata area for HW-offloads?                      :export:
+* Slide: Safe to allow XDP to update offload info?                   :export:
 
-Can/should we use XDP-metadata area for HW-offloads?
+Can we allow XDP to update offload info area?
+- Happens before SKB field update
+- Are there any safety issues? (kernel netstack stability)
+- XDP could potentially fix HW-offload fields
 
-Or should we create a new dynamic area after/inside xdp_frame?
+Likely need some boundary checks
+- Especially for higher-level protocol header offsets
 
-* Slides: Extra
+* Slide: Lacking knowledge about BTF                                 :export:
+
+When info-struct is described via BTF
+- Can kernel code understand BTF and act dynamic???
+  - In =convert_to_xdp_frame()= code
+  - And in xdp_frame to SKB update fields code?
+
+Hack: if driver knows order struct-members can appear in
+- Walk BTF format and create bitmap with enabled members
+- When member is match, increment iterator with member size
+- (Fear this is slow, due to data dependency on iterator)
+
+* Slide: Driver call-back function                                   :export:
+
+Driver fill-out "info-struct", thus knows layout
+- xdp_frame to SKB conversion, use driver call-back to update SKB fields?
+
+One step further
+- Could driver call-back be a BPF-prog, that update SKB fields?
+
+
+* Slides: Extra                                                      :export:
 
 ** Slide: Layout of xdp_frame                                       :export:
 
