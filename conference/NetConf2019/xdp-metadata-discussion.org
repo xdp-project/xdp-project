@@ -218,6 +218,45 @@ One step further
 :END:
 
 Next challenge: What is the interface for configuring this?
+- Extending =ndo_bpf= seems obvious
+- But there is a dependency between
+  - info-struct, driver populate, and SKB-update call-back
+  - And if XDP-prog use BTF-metadata layout, how can it change
+
+* Slide: Driver static approach                                      :export:
+
+Steps for static driver
+- /Point#A/: Driver define static info-struct for metadata area
+  - Create BTF-format (via macros) and register with BPF (?)
+  - Adjust =xdp_buff->data_meta= with info-struct size
+- /Point#B/: Driver function *populate metadata with offloads* from descriptor
+  - It know about HW offloads curr enabled, revisions and quirks
+- *XDP-prog* is called (how do user get BTF-format?)
+- /Point#C/: Driver static SKB-update call-back
+  - Via XDP-redirect (either cpumap or veth) call-back is invoked with SKB
+
+** Slide: More dynamic approach                                     :export:
+
+Same steps: /Point#A/ + /Point#B/
+- /Point#A/: Driver define static info-struct for metadata area
+  - Create BTF-format (via macros) and register with BPF
+- /Point#B/: Driver function *populate metadata with offloads* from descriptor
+
+Dynamic BPF call-back
+- /Point#C/: Driver SKB-update call-back is a BPF-prog
+- This SKB-update BPF-prog, must have /map named 'metadata'/
+  - map must have *BTF-format that match driver* BTF-format
+    - checked on attach via =ndo_bpf=, else reject
+
+* Slide: When to enable populate metadata                            :export:
+
+The populate metadata function is *not default enabled*
+- Trigger to enable, when (1) =ndo_bpf= attach SKB-update BPF-prog
+- and/or when (2) =ndo_bpf= query to get BTF-format (maybe map-fd)
+
+*Idea*: =ndo_bpf= /query return metadata-map/ (with associated *BTF-format*)
+- Map is used by XDP-prog being attached (check BTF-format match)
+  - then map-refcnt, determine when to disable populate metadata again
 
 
 * Slides: Extra                                                      :export:
