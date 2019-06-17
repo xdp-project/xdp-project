@@ -212,6 +212,13 @@ Driver fill-out "info-struct", thus knows layout
 One step further
 - Could driver call-back be a BPF-prog, that update SKB fields?
 
+* Slide: How to configure driver for this?                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Next challenge: What is the interface for configuring this?
+
 
 * Slides: Extra                                                      :export:
 
@@ -256,6 +263,7 @@ struct xdp_buff {
 	/* last cacheline: 48 bytes */
 };
 #+end_src
+
 
 
 * Different approach
