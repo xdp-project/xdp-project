@@ -82,7 +82,7 @@ Colors are choosen via org-mode italic/bold high-lighting:
 - The helper calls /always succeed/
   - But may just silently drop packets
 
-** Slide: The XDP_REDURECT UAPI is not very friendly (cont.)
+** Slide: The XDP_REDIRECT UAPI is not very friendly (cont.)
 - /*No way to know*/ if an interface supports REDIRECT
 - Need to load a /dummy XDP/ program on TX iface (some drivers)
 - No *QoS* or rate management, only small queue
