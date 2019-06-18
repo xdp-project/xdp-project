@@ -2,13 +2,14 @@
 #+TITLE: Creating a friendlier UAPI for XDP_REDIRECT
 #+AUTHOR: Toke Høiland-Jørgensen <toke@redhat.com>
 #+EMAIL: toke@redhat.com
+#+DATE: <2019-06-18 Tue>
 #+REVEAL_THEME: redhat
 #+REVEAL_TRANS: linear
 #+REVEAL_MARGIN: 0
 #+REVEAL_EXTRA_JS: { src: './reveal.js/js/redhat.js'}
 #+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
 #+OPTIONS: reveal_width:1600 reveal_height:900
-#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t timestamp:nil
 
 * For conference: NetConf 2019
 
@@ -74,36 +75,36 @@ Colors are choosen via org-mode italic/bold high-lighting:
 
 * Slide: The XDP_REDIRECT UAPI is not very friendly                  :export:
 
-- Two different helpers (=bpf_redirect()= and =bpf_redirect_map()=).
+- Two *different* helpers (=bpf_redirect()= and =bpf_redirect_map()=).
   - Using the _map variant doubles performance (why?! asks the user)
-- Can't lookup into redirect maps
+- /*Can't lookup*/ into redirect maps
   - So people use "shadow" maps of a different type
-- The helper calls always succeed
+- The helper calls /always succeed/
   - But may just silently drop packets
 
 ** Slide: The XDP_REDURECT UAPI is not very friendly (cont.)
-- No way to know if an interface supports REDIRECT
-- Need to load a dummy XDP program on TX iface (some drivers)
-- No QoS or rate management, only small queue
+- /*No way to know*/ if an interface supports REDIRECT
+- Need to load a /dummy XDP/ program on TX iface (some drivers)
+- No *QoS* or rate management, only small queue
   - Ever tried REDIRECT'ing from 100Gbit -> 10 Gbit?
-- No packet duplication (i.e., no multicast / L2 broadcast)
+- No *packet duplication* (i.e., no multicast / L2 broadcast)
 
 ** Slide: Why is this a problem?
 
-- Difficult to get config right
-  - Config failures lead to silent packet drops
-- No way to react dynamically to redirect failures
+- *Difficult* to get config right
+  - Config failures lead to /*silent drops*/
+- No way to /react dynamically/ to redirect failures
   - E.g., fall back to XDP_PASS
 
 * Slide: What can we do about it? (short term)                       :export:
 
 In progress:
-- Allow lookups into maps (3-line patch, thanks to =BPF_F_RDONLY_PROG=!)
-- Return error codes from =bpf_redirect_map()= helper on lookup failure
-- Use hidden maps to improve performance of =bpf_redirect()=
+- Allow /lookups into maps/ (3-line patch, thanks to =BPF_F_RDONLY_PROG=!)
+- Return *error codes* from =bpf_redirect_map()= helper on lookup failure
+- Use /hidden maps/ to improve performance of =bpf_redirect()=
   - Allows users to use the API (helper) that makes sense for use case
   - E.g., =bpf_redirect(bpf_fib_lookup())=
-  - But is this really a good idea? See next slides...
+  - But /*is this really a good idea*/? See next slides...
 
 * Slide: TX resource allocation                                      :export:
 
@@ -111,12 +112,12 @@ Can we ensure successful /lookup/ == successful *xmit*?
 
 Two approaches:
 
-1. Allocate resources first, then insert those into map
+1. /Allocate resources first/, then insert those into map
    - Separate (ethtool?) UAPI to allocate TX resources
    - Change devmap to accept a handle instead of ifindex
    - Separate API => potentially more flexible(?)
 
-2. Trigger resource allocation on map insert
+2. Trigger *resource allocation on map insert*
    - Call allocation =ndo= when iface inserted into devmap
    - Fail insert if allocation fails
    - Probably needs more descriptive map values(?) BTF?
@@ -125,41 +126,41 @@ Two approaches:
 
 What are the barriers to achieve this?
 
-- Don't know on map insert if we're using generic XDP
+- /*Don't know*/ on map insert if we're using /generic XDP/
   - Maybe use different map types?
 - Supporting configs other than "1 TXQ/CPU"? Automatic locking?
 - What about =bpf_redirect()= and XDP offload?
 
 * Slide: Queueing                                                    :export:
-- Expand queueing capabilities of XDP_REDIRECT
+- Expand *queueing capabilities* of XDP_REDIRECT
   - Select queueing scheme along with TX resource?
-  - Probably not full qdisc, but at least a few options
+  - Probably not full qdisc, but at least /a few options/
   - Programmable, or just configurable?
 
 * Slide: Multicast                                                   :export:
 - Multicast through multi-send
-  - Allow calling redirect helper multiple times?
-  - Or new redirect target that selects multiple output "ports"?
+  - Allow /calling redirect helper multiple times/?
+  - Or new *redirect target* that selects multiple output "ports"?
   - Should program be allowed to modify packets in-between?
   - To copy or not to copy?
 
 * Slide: Introducing an XDP TX hook                                  :export:
 
-Can we add a separate hook just before TX?
+Can we add a /separate hook/ just before TX?
 
 - Would know HW TX-ring occupancy
-  - Can provide programmable back pressure to stack/redirect map
+  - Can provide programmable *back pressure* to stack/redirect map
   - Maybe even redirect packets again if TX ring is full?
-- Enables programmable QoS/queueing
+- Enables /programmable QoS/queueing/
 - Symmetry with XDP RX hook (first/last thing that happens to pkt)
-  - In particular, after all stack processing
+  - In particular, /*after regular stack*/ processing
   - Programmable packet verdict (AQMs)
 
 * Emacs tricks
 
 # Local Variables:
 # org-reveal-title-slide: "<h1 class=\"title\">%t</h1>
-# <h2 class=\"author\">Toke Høiland-Jørgensen (Red Hat)<br/></h2>
+# <h2 class=\"author\">%a<br/></h2>
 # <h3>Netconf<br/>Boston, June 2019</h3>"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
 # End:
