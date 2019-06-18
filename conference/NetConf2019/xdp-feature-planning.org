@@ -82,7 +82,7 @@ Colors are choosen via org-mode italic/bold high-lighting:
   - Get some feedback
   - Hopefully get (some of) you to contribute :)
 
-* Slide: Contents of the xdp-project repo
+* Slide: Contents of the xdp-project repo                            :export:
 Org-mode files describing various aspects of XDP planning
 
 - Toplevel:
@@ -101,7 +101,7 @@ Org-mode files describing various aspects of XDP planning
 - Conferences: Slides for XDP talks at various conferences
   - Including this one :)
 
-** Slide: Repo logic for each file
+** Slide: Repo logic for each file                                  :export:
 
 - Top-level "projects"
   - A "project" is any TODO with sub-TODOs
