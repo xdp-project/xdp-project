@@ -1,27 +1,33 @@
-var titleFooter = 'XDP feature planning';
-var authorName = 'Toke Høiland-Jørgensen';
-var authorEmail = 'toke@redhat.com';
-
 var logoWhite = '<img src="./reveal.js/images/Logo-RedHat-A-White-RGB.svg" />';
 var logoHat = '<img src="./reveal.js/images/Logo-RedHat-Hat-White-RGB.svg" />';
 var logoRed = '<img src="./reveal.js/images/Logo-RedHat-A-Reverse-RGB.svg" />';
-var authorHTML = [
-    '<span class="footer">',
-    '&nbsp;&nbsp;&nbsp;',
-    '&nbsp;&nbsp;&nbsp;',
-    '&nbsp;&nbsp;&nbsp;',
-    '&nbsp;&nbsp;&nbsp;',
-    '&nbsp;&nbsp;&nbsp;',
-    '&nbsp;&nbsp;&nbsp;',
-    titleFooter,
-    '</span>',
-    '<span class="authors">&nbsp;&nbsp; - &nbsp;&nbsp;',
-    authorName,
-    '&nbsp;',
-    '</span>',
-].join('');
+
+function getAuthorHTML(title, authors) {
+    return [
+        '<span class="title">',
+        title,
+        '</span>',
+        '<span class="authors">',
+        processAuthors(authors),
+        '</span>',
+    ].join('');
+}
+
+function processAuthors(authors) {
+    authors = authors.replace(/^\(|\)$/g, "");
+    authors = authors.replace(/</g, "&lt;");
+    authors = authors.replace(/>/g, "&gt;");
+    authors = authors.replace(/[a-z0-9\._-]+@[a-z0-9_-]+(\.[a-z0-9_-]+)+/g,
+                              function(x) {
+                                  return "<a href=\"mailto:" + x + "\">"+x+"</a>";
+                              });
+    return authors;
+}
 
 function addAuthor(selector, logo) {
+    var title = document.querySelectorAll("title")[0].innerText;
+    var authors = document.querySelectorAll("meta[name=author]")[0].content;
+    var authorHTML = getAuthorHTML(title, authors);
     return function() {
         var elems = document.querySelectorAll(selector);
         elems.forEach(function (e) {

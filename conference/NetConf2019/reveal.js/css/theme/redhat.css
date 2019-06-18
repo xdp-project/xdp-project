@@ -75,6 +75,19 @@ body {
     box-shadow: none;
 }
 
+.reveal .slides .authorbox .title {
+  margin-left: 2em;
+}
+
+.reveal .slides .authorbox .authors {
+  margin-left: 1.5em;
+  font-size: 90%;
+}
+.reveal .slides .authorbox .authors:before {
+  content: "-";
+  margin-right: 1.5em;
+}
+
 
 .reveal .slides > section > section  {
   background-image: url('../../images/slide-bg.png');
