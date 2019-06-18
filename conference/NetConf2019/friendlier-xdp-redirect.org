@@ -76,39 +76,83 @@ Colors are choosen via org-mode italic/bold high-lighting:
 * Slide: The XDP_REDIRECT UAPI is not very friendly                  :export:
 
 - Two different helpers (=bpf_redirect()= and =bpf_redirect_map()=).
-  - Using the _map variant almost doubles performance
+  - Using the _map variant doubles performance (why?! asks the user)
 - Can't lookup into redirect maps
+  - So people use "shadow" maps of a different type
 - The helper calls always succeed
   - But may just silently drop packets
+
+** Slide: The XDP_REDURECT UAPI is not very friendly (cont.)
 - No way to know if an interface supports REDIRECT
-- No QoS or rate management
+- Need to load a dummy XDP program on TX iface (some drivers)
+- No QoS or rate management, only small queue
   - Ever tried REDIRECT'ing from 100Gbit -> 10 Gbit?
+- No packet duplication (i.e., no multicast / L2 broadcast)
+
+** Slide: Why is this a problem?
+
+- Difficult to get config right
+  - Config failures lead to silent packet drops
+- No way to react dynamically to redirect failures
+  - E.g., fall back to XDP_PASS
 
 * Slide: What can we do about it? (short term)                       :export:
 
-- In progress:
-  - Allow lookups into maps (3-line patch, thanks to =BPF_F_RDONLY_PROG=!)
-  - Return error codes from =bpf_redirect_map()= helper on lookup failure
-  - Use hidden maps to improve performance of =bpf_redirect()=
+In progress:
+- Allow lookups into maps (3-line patch, thanks to =BPF_F_RDONLY_PROG=!)
+- Return error codes from =bpf_redirect_map()= helper on lookup failure
+- Use hidden maps to improve performance of =bpf_redirect()=
+  - Allows users to use the API (helper) that makes sense for use case
+  - E.g., =bpf_redirect(bpf_fib_lookup())=
+  - But is this really a good idea? See next slides...
 
-* Slide: What can we do about it? (longer term)                      :export:
+* Slide: TX resource allocation                                      :export:
 
-- Ensure TX resource allocation before/on insert into map
-  - Allocate resources first, then insert those?
-  - Can we ensure successful lookup == successful xmit?
-- Expand queueing capabilities of maps
-  - Select queueing scheme when creating map?
+Can we ensure successful /lookup/ == successful *xmit*?
+
+Two approaches:
+
+1. Allocate resources first, then insert those into map
+   - Separate (ethtool?) UAPI to allocate TX resources
+   - Change devmap to accept a handle instead of ifindex
+   - Separate API => potentially more flexible(?)
+
+2. Trigger resource allocation on map insert
+   - Call allocation =ndo= when iface inserted into devmap
+   - Fail insert if allocation fails
+   - Probably needs more descriptive map values(?) BTF?
+
+** Slide: TX resource allocation: challenges
+
+What are the barriers to achieve this?
+
+- Don't know on map insert if we're using generic XDP
+  - Maybe use different map types?
+- Supporting configs other than "1 TXQ/CPU"? Automatic locking?
+- What about =bpf_redirect()= and XDP offload?
+
+* Slide: Queueing                                                    :export:
+- Expand queueing capabilities of XDP_REDIRECT
+  - Select queueing scheme along with TX resource?
   - Probably not full qdisc, but at least a few options
+  - Programmable, or just configurable?
+
+* Slide: Multicast                                                   :export:
+- Multicast through multi-send
+  - Allow calling redirect helper multiple times?
+  - Or new redirect target that selects multiple output "ports"?
+  - Should program be allowed to modify packets in-between?
+  - To copy or not to copy?
 
 * Slide: Introducing an XDP TX hook                                  :export:
 
-What about having a separate hook just before TX?
+Can we add a separate hook just before TX?
 
 - Would know HW TX-ring occupancy
   - Can provide programmable back pressure to stack/redirect map
   - Maybe even redirect packets again if TX ring is full?
 - Enables programmable QoS/queueing
-- Symmetry with XDP RX hook (just before TX)
+- Symmetry with XDP RX hook (first/last thing that happens to pkt)
   - In particular, after all stack processing
   - Programmable packet verdict (AQMs)
 
