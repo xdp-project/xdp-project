@@ -77,15 +77,97 @@ Colors are choosen via org-mode italic/bold high-lighting:
 
 - We've created a [[https://github.com/xdp-project/xdp-project][Github repository]] for XDP feature planning
 - The [[https://github.com/xdp-project/xdp-tutorial][XDP tutorial]] lives in the same Github org
-- Goal of this:
+- Goal of this discussion:
   - Make you all aware of its existence and how it works
   - Give a short overview of what's in there
   - Get some feedback
   - Hopefully get (some of) you to contribute :)
 
 * Slide: Contents of the xdp-project repo
+Org-mode files describing various aspects of XDP planning
+
+- Toplevel:
+  - =xdp-project.org= - general TODO entries
+  - =brainstorm.org= - looser ideas (Jesper's brain dump, basically)
+- Areas: =areas/*.org=
+  - Top-level .org files: TODO item tracking
+  - Subdirs: More detailed notes, performance numbers, etc.
+  - Current areas:
+    - =cpumap.org=
+    - =drivers.org=
+    - =mem.org=
+    - =ovs.org=
+    - =xdp_flowcache.org=
+    - =xdp-tutorial.org=
+- Conferences: Slides for XDP talks at various conferences
+  - Including this one :)
+
+** Slide: Repo logic for each file
+
+- Top-level "projects"
+  - A "project" is any TODO with sub-TODOs
+  - Use TODO-keyword =NEXT= for "immediate" tasks
+  - Ex: Project: "Handling XDP_REDIRECT failures"
+
+- Projects categorised in three (somewhat fluid) categories:
+
+  - "Current high-priority tasks" - tag =@short=
+  - "Important medium-term tasks" - tag =@medium=
+  - "Longer-term preliminary plans" - tag =@long=
+
+* Slide: Why have this repo at all?                                  :export:
+
+- Document progress, known issues, feature plan
+  - Somewhere to point users and PHBs
+- Keeping track of our own work + ensure follow-up
+  - I am the self-assigned "cat herder"
+- Make it possible to plan and prioritise, at least a bit
 
 
+** Slide: Why org-mode?                                             :export:
+- Really powerful query + project management tool.
+  - Can pull out agenda views (demo?)
+- Originates from Emacs world, but also has a =vim= implementation
+- But you can also just /treat them as text files/!
+  - Jesper and I will do the project management work
+
+See =org-setup.el= if you do want to give it a shot in Emacs
+
+* Slide: Current short-term projects                                 :export:
+
+- Consistency for statistics with XDP
+- Better ndo_xdp_xmit resource management
+- XDP feature flags
+- Handling XDP_REDIRECT failures
+
+** Current medium-term projects
+
+(This is most of them, so not all fit on one slide)
+
+- Usability of programs in samples/bpf
+- Exposing more kernel data structures through helpers
+- Expanding XDP_REDIRECT support to more drivers
+- Adding XDP support to new drivers
+- xdp-tutorial for tracepoints project
+- Layer-2 bridging helper
+- Metadata from hardware
+- Implementing page_pool return-hook via SKB
+- XDP-tutorial ideas for assignments/examples
+
+** Current long-term projects
+- Various cpumap features
+- XDP flowcache project
+- XDP-tutorial misc assignments
+- Generic XDP fixes
+
+* Slide: Discussion points / action items                            :export:
+
+- Is this useful for anyone else?
+  - Is there any way we can make it /more/ useful?
+  - E.g., HTML "reports" of various sorts?
+- Please add anything you are working on / would like to see
+  - Pull requests, patches, or just email works
+  - Doesn't *have to* be something you want to work on
 
 * Emacs tricks
 
