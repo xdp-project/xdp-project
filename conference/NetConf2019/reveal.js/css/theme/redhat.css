@@ -160,6 +160,12 @@ body {
 .reveal h1 {
   text-shadow: none; }
 
+.reveal .img-slide h3 {
+    position: absolute;
+    top: .2em;
+    right: 1em;
+}
+
 /*********************************************
  * OTHER
  *********************************************/
@@ -402,3 +408,49 @@ body {
   -moz-transition: width 800ms cubic-bezier(0.26, 0.86, 0.44, 0.985);
   transition: width 800ms cubic-bezier(0.26, 0.86, 0.44, 0.985); }
 
+
+
+.reveal .figure {
+  text-align: center;
+}
+
+.reveal .figure .org-svg {
+  width: 100%;
+  max-height: 650px;
+}
+
+.reveal .two-column .figure {
+  width: 50%;
+  float: left;
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+.reveal .figure-bg {
+  background-color: white;
+  padding: .3em;
+  height: 650px;
+  max-width: 100%;
+}
+
+.reveal .figure-top-right {
+  position: absolute;
+  top: 1em;
+  right: 1em;}
+
+.reveal .figure-right {
+  float: right; }
+
+.reveal .figure-left {
+  float: left; }
+
+
+.reveal .figure-number {
+  display: none; }
+
+.reveal .space-list ol,
+.reveal .space-list ul {
+  margin-bottom: 1.2em; }
+
+.reveal .space-list li {
+  margin: auto 0em; }
