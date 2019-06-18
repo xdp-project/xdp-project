@@ -325,6 +325,7 @@ stg mail --edit-cover --version="net-next v2" --to meup \
  01-net-page_pool-add-helper1..fix-device-refcnt
 #+end_example
 
+Link: https://lore.kernel.org/netdev/156086304827.27760.11339786046465638081.stgit@firesoul
 
 https://patchwork.ozlabs.org/project/netdev/list/?series=114508&state=%2a
 
