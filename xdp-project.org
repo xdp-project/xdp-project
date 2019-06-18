@@ -516,7 +516,7 @@ investigated.
 Maybe write a tuning doc as well?
 
 WAIT status as this is low priority for now.
-** TODO Generic XDP
+** TODO Generic XDP fixes
 Various fixes that should be fixed in generic XDP eventually
 
 *** TODO Bulking for redirect maps
