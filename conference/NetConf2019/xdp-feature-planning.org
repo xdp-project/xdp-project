@@ -87,17 +87,12 @@ Org-mode files describing various aspects of XDP planning
 
 - Toplevel:
   - =xdp-project.org= - general TODO entries
-  - =brainstorm.org= - looser ideas (Jesper's brain dump, basically)
 - Areas: =areas/*.org=
   - Top-level .org files: TODO item tracking
   - Subdirs: More detailed notes, performance numbers, etc.
   - Current areas:
-    - =cpumap.org=
-    - =drivers.org=
-    - =mem.org=
-    - =ovs.org=
-    - =xdp_flowcache.org=
-    - =xdp-tutorial.org=
+    - =cpumap.org=, =drivers.org=, =mem.org=
+    - =ovs.org=,  =xdp_flowcache.org=, =xdp-tutorial.org=
 - Conferences: Slides for XDP talks at various conferences
   - Including this one :)
 
