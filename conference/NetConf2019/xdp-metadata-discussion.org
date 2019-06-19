@@ -154,9 +154,9 @@ At least /info-struct/ should be /described via BTF/
 
 Instead of separate info-struct, *store* /info-struct/ *in data-frame area*?
 - Two options:
-  - Use XDP metadata area (already avail to XDP)
+  - Use XDP *metadata area* (already avail to XDP)
   - Use areas "inside" xdp_frame (or dynamic area after xdp_frame ends)
-    - not curr avail to XDP, as xdp_frame is after XDP-prog
+    - not curr avail to XDP (as =xdp_frame= is created after XDP-prog ran)
 
 Note: Cannot store info-struct inside =xdp_rxq_info=
 - Because not a per frame data-structure, and xdp_frame use bulk processing
@@ -197,11 +197,11 @@ Hack: if driver knows order struct-members can appear in
 
 * Slide: Driver call-back function                                   :export:
 
-Driver fill-out "info-struct", thus knows layout
-- xdp_frame to SKB conversion, use driver call-back to update SKB fields?
+/Driver/ fill-out "info-struct", thus /knows layout/
+- xdp_frame to SKB conversion, use /driver/ *call-back to update SKB fields*?
 
 One step further
-- Could driver call-back be a BPF-prog, that update SKB fields?
+- Could driver *call-back* be a /BPF-prog/, that update SKB fields?
 
 * Slide: How to configure driver for this?                           :export:
 :PROPERTIES:
@@ -212,7 +212,8 @@ Next challenge: What is the interface for configuring this?
 - Extending =ndo_bpf= seems obvious
 - But there is a dependency between
   - info-struct, driver populate, and SKB-update call-back
-  - And if XDP-prog use BTF-metadata layout, how can it change
+  - If XDP-prog use BTF-metadata layout
+    - how to handle (or lock) BTF-layout changes runtime
 
 * Slide: Driver static approach                                      :export:
 
