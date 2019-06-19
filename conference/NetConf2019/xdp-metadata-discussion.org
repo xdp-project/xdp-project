@@ -218,24 +218,24 @@ Next challenge: What is the interface for configuring this?
 * Slide: Driver static approach                                      :export:
 
 Steps for static driver
-- /Point#A/: Driver define static info-struct for metadata area
+- /Step#A/: Driver define static info-struct for metadata area
   - Create BTF-format (via macros) and register with BPF (?)
   - Adjust =xdp_buff->data_meta= with info-struct size
-- /Point#B/: Driver function *populates metadata with offloads* from descriptor
+- /Step#B/: Driver function *populates metadata with offloads* from descriptor
   - It knows about HW offloads curr enabled, revisions and quirks
 - *XDP-prog* is called (how does user get BTF-format?)
-- /Point#C/: Driver static SKB-update call-back
+- /Step#C/: Driver static SKB-update call-back
   - Via XDP-redirect (either cpumap or veth) call-back is invoked with SKB
 
 ** Slide: More dynamic approach                                     :export:
 
-Same steps: /Point#A/ + /Point#B/
-- /Point#A/: Driver defines static info-struct for metadata area
+Same steps: /Step#A/ + /Step#B/
+- /Step#A/: Driver defines static info-struct for metadata area
   - Create BTF-format (via macros) and register with BPF
-- /Point#B/: Driver function *populates metadata with offloads* from descriptor
+- /Step#B/: Driver function *populates metadata with offloads* from descriptor
 
 Dynamic BPF call-back
-- /Point#C/: Driver SKB-update call-back is a BPF-prog
+- /Step#C/: Driver SKB-update call-back is a BPF-prog
 - This SKB-update BPF-prog, must have /map named 'metadata'/
   - map must have *BTF-format that matches driver* BTF-format
     - checked on attach via =ndo_bpf=, else reject
