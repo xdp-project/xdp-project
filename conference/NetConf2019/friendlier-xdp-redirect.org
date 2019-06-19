@@ -141,6 +141,8 @@ What are the barriers to achieve this?
 - Multicast through multi-send
   - Allow /calling redirect helper multiple times/?
   - Or new *redirect target* that selects multiple output "ports"?
+  - Or =bpf_redirect_map= /FLAG/ that send to *ALL ports in =devmap=*
+    - Multicast is done by creating a *map with ports in multicast group*
   - Should program be allowed to modify packets in-between?
   - To copy or not to copy?
 
