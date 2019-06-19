@@ -74,8 +74,8 @@ Colors are choosen via org-mode italic/bold high-lighting:
 
 * Slide: The xdp-project repository                                  :export:
 
-- We've created a [[https://github.com/xdp-project/xdp-project][Github repository]] for XDP feature planning
-- The [[https://github.com/xdp-project/xdp-tutorial][XDP tutorial]] lives in the same Github org
+- We've created a [[https://github.com/xdp-project/xdp-project][GitHub repository]] for XDP feature planning
+- The [[https://github.com/xdp-project/xdp-tutorial][XDP tutorial]] lives in the same GitHub org
 - Goal of this discussion:
   - Make you all /aware of its existence/ and how it works
   - Give a *short overview* of what's in there
