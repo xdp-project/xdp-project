@@ -232,6 +232,12 @@ This makes it easy to implement "defer to stack on error" type programs,
 Mellanox drivers turn a failure in xdp_do_redirect() into an ABORTED action,
 other drivers do not.
 
+*** NEXT Retire bpf_redirect() helper
+
+Rather than extending the bpf_redirect() helper to use hidden maps, it is
+probably better to document it as deprecated and point users to use the
+bpf_redirect_map() helper.
+
 *** TODO What happens if redirect fails even though TX resources are available?
 
 Even with the above, we can still get failures if, e.g., TX ring runs out of
@@ -480,6 +486,40 @@ in eBPF. These include:
 **** TODO Needs BTF-based metadata
 To express this in a vendor-neutral way, we probably need to depend on the
 [[id:25240998-2037-4ebf-befe-c0d0fdacb9c7][BTF-based metadata for XDP]]
+
+** TODO Improvements to XDP_REDIRECT
+
+*** TODO Handling multicast
+We want to be able to REDIRECT a packet to multiple interfaces in order to
+implement multicast.
+
+From the discussion at netconf2019 ([[id:92b4926b-cce4-4199-bf99-efc1e4c342be][see slides]]), we probably want to
+implement it by:
+
+- Using a map-in-map (or map flag) to designate a group of egress interfaces
+  (put multiple ifaces into a map and send to all of them in one operation).
+
+- Just copy the packet rather than try to do clever refcnt stuff for
+  multi-xmit.
+
+As a first pass, we probably want to implement a simple multi-xmit, and
+leave off the possibility for the eBPF program to modify the packet between
+destinations.
+
+*** TODO Queueing and QoS
+
+[[id:6581cd98-c2f8-4244-a4db-b0a5922647c2][See slide for discussion at netconf2019]].
+
+There is currently no queueing in XDP_REDIRECT, apart from the bulking queue
+used in the devmaps. This means that rate transitions can't be handled
+properly (e.g., redirect 100Gbps->10Gbps).
+
+To fix this, we would need to allow queueing of some sort. Options:
+
+- Allow user to define a queueing structure as part of the TXQ setup
+- Create the low-level hooks necessary for eBPF-programmable queueing
+- Have some kind of "intermediate queueing structure" that can be a redirect
+  target, does queueing, and can forward packets on afterwards
 
 * Longer-term preliminary plans                                       :@long:
 
