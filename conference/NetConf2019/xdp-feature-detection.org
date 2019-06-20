@@ -152,14 +152,10 @@ Pitfall: *Generic-XDP*
 Either need to /supply features/ (more input than =ifindex=)
 - *Or* verifier needs to be able to /detect features/
 
-Verifier *detection strategy*, to construct XDP features in-use
+Verifier *detection strategy*, to deduce XDP features in-use
 - If XDP return code comes from register/map
   - then assume all XDP-return codes in use
 - Except: can remove XDP_REDIRECT if redirect-helper isn't used
-
-Again remember:
-- Verifier don't know if BPF-prog is used for *generic-XDP*
-- Are we /forced to supply more info than =ifindex= ?/
 
 * Slide: End                                                         :export:
 
