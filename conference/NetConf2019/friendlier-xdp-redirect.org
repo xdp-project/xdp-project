@@ -121,6 +121,8 @@ Two approaches:
    - Call allocation =ndo= when iface inserted into devmap
    - Fail insert if allocation fails
    - Probably needs more descriptive map values(?) BTF?
+** Notes                                                          :noexport:
+Go with "allocate first" approach (Alexei)
 
 ** Slide: TX resource allocation: challenges
 
@@ -132,12 +134,18 @@ What are the barriers to achieve this?
 - What about =bpf_redirect()= and XDP offload?
 
 * Slide: Queueing                                                    :export:
+:PROPERTIES:
+:ID:       6581cd98-c2f8-4244-a4db-b0a5922647c2
+:END:
 - Expand *queueing capabilities* of XDP_REDIRECT
   - Select queueing scheme along with TX resource?
   - Probably not full qdisc, but at least /a few options/
   - Programmable, or just configurable?
 
 * Slide: Multicast                                                   :export:
+:PROPERTIES:
+:ID:       92b4926b-cce4-4199-bf99-efc1e4c342be
+:END:
 - Multicast through multi-send
   - Allow /calling redirect helper multiple times/?
   - Or new *redirect target* that selects multiple output "ports"?
@@ -145,6 +153,12 @@ What are the barriers to achieve this?
     - Multicast is done by creating a *map with ports in multicast group*
   - Should program be allowed to modify packets in-between?
   - To copy or not to copy?
+
+** Notes                                                          :noexport:
+
+Davem: map-in-map probably better - scheduling point
+
+Alexei: Just copy the packet for multicast
 
 * Slide: Introducing an XDP TX hook                                  :export:
 
@@ -158,11 +172,17 @@ Can we add a /separate hook/ just before TX?
   - In particular, /*after regular stack*/ processing
   - Programmable packet verdict (AQMs)
 
+** Notes                                                          :noexport:
+TX hook vs queueing structure?
+
+Some kind of intermediate queueing structure separate from the RX/TX hooks?
+
 * Emacs tricks
 
 # Local Variables:
 # org-reveal-title-slide: "<h1 class=\"title\">%t</h1>
-# <h2 class=\"author\">%a<br/></h2>
+# <h2 class=\"author\">Toke Høiland-Jørgensen (Red Hat)<br/>
+# Jesper Dangaard Brouer (Red Hat)<br/></h2>
 # <h3>Netconf<br/>Boston, June 2019</h3>"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
 # End:

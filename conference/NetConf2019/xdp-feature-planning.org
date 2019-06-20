@@ -171,7 +171,8 @@ See =org-setup.el= if you do want to give it a shot in Emacs
 
 # Local Variables:
 # org-reveal-title-slide: "<h1 class=\"title\">%t</h1>
-# <h2 class=\"author\">%a<br/></h2>
+# <h2 class=\"author\">Toke Høiland-Jørgensen (Red Hat)<br/>
+# Jesper Dangaard Brouer (Red Hat)<br/></h2>
 # <h3>Netconf<br/>Boston, June 2019</h3>"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
 # End:
