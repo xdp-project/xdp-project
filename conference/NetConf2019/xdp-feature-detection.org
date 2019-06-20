@@ -108,8 +108,10 @@ Wanted to /detect XDP features/ via analysing *return codes* used by program
 
 Wanted to /supply XDP features/ used, when *attaching* bpf_prog to a device
 - */Not possible/* due to BPF *tail-call* maps (=BPF_MAP_TYPE_PROG_ARRAY=)
-- E.g. after XDP prog is attached (and checked), new bpf_prog inserted into map
-- E.g. on attach, need to traversing levels of tail-calls
+- Driver attach =ndo_bpf= is bypassed, on map insert in tail-call map
+- as map insert becomes second level XDP attach
+- E.g. XDP using tail-calls, driver is unaware of map inserts
+- E.g. verifying on attach, require traversing levels of tail-calls
 
 One option left: Associate ifindex with bpf_prog *at load time* (like HW-offload)
 - See /later slide/ for challenges and pitfalls...
