@@ -76,8 +76,8 @@ Colors are choosen via org-mode italic/bold high-lighting:
 
 * Slide: Framing XDP                                                 :export:
 
-XDP: /in-kernel programmable/ (eBPF) *layer before netstack*
- - Similar speeds as DPDK
+XDP: /in-kernel/ programmable (eBPF) *layer before netstack*
+ - (AF_XDP is our selective kernel-bypass to userspace)
 XDP ensures that *Linux networking stays relevant*
  - Operates at L2-L3, netstack is L4-L7
 XDP is not first mover, but we believe XDP is /different and better/
