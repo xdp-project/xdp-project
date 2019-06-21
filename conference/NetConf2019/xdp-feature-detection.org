@@ -157,6 +157,10 @@ Verifier *detection strategy*, to deduce XDP features in-use
   - then assume all XDP-return codes in use
 - Except: can remove XDP_REDIRECT if redirect-helper isn't used
 
+(Came up yesterday)
+- verifier knows helpers used. e.g. =bpf_xdp_adjust_tail=
+- With jumbo-frames, driver want to know if adjust-tail is used
+
 * Slide: End                                                         :export:
 
 Disclaimer
