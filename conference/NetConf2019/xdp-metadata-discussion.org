@@ -195,7 +195,8 @@ Can we allow XDP to update offload info area?
 Likely need some boundary checks
 - Especially for higher-level protocol header offsets
 
-Can verifier tell us if XDP prog changed metadata area?
+Can verifier tell us
+- if XDP prog changed metadata area?
 
 * Slide: Lacking knowledge about BTF                                 :export:
 
