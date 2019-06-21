@@ -73,6 +73,18 @@ Colors are choosen via org-mode italic/bold high-lighting:
  - *bold*   = *yellow*
  - */italic-bold/* = red
 
+
+* Slide: Framing XDP                                                 :export:
+
+XDP: /in-kernel programmable/ (eBPF) *layer before netstack*
+ - Similar speeds as DPDK
+XDP ensures that *Linux networking stays relevant*
+ - Operates at L2-L3, netstack is L4-L7
+XDP is not first mover, but we believe XDP is /different and better/
+ - Flexible sharing of NIC resources
+ - /Killer feature/: Integration with Linux kernel
+   - This talk is about extending this integration further
+
 * Slide: Move SKB allocations out of NIC drivers                     :export:
 
 Goal: Simplify driver, via creating SKB inside network-core code
