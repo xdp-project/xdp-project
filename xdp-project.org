@@ -261,7 +261,12 @@ unfriendly. #1 they use raw ifindex'es as input + output. #2 the pkt/s
 number count RX packets, not TX'ed packets which can be dropped silently.
 Red Hat QA, got very confused by #2.
 
-*** NEXT Change sample programs to accept ifnames as well as indexes
+*** DONE Change sample programs to accept ifnames as well as indexes
+CLOSED: [2019-06-25 Tue 13:32]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-06-25 Tue 13:32]
+:END:
+Fixed by https://patchwork.ozlabs.org/patch/1121683/
 
 *** NEXT Add TX counters to redirect samples/bpf programs
 
