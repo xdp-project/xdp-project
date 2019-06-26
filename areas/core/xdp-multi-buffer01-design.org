@@ -59,5 +59,20 @@ could not be changed.
 
 Perhaps it is better to let bpf_xdp_adjust_tail() fail runtime?
 
+** XDP access to full packet length?
+
+We likely need to provide the full packet length to XDP core and also
+XDP-developer. The use-case for XDP-developers is validating the length of
+the packet against what packet headers claim.
+
+But if we need to know the full length, when the first-buffer is processed.
+Then realize that this affect the drivers RX-loop, because then we need to
+"collect" all the buffers before we can know the length (although some HW
+provide this in first descriptor).
+
+We likely have to change drivers RX-loop anyhow, as XDP_TX and XDP_REDIRECT
+will also need to "collect" all buffers before the packet can be forwarded.
+(Although this could potentially happen later in driver loop when it
+meet/find the End-Of-Packet descriptor bit).
 
 
