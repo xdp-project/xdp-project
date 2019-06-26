@@ -24,9 +24,18 @@ What are the use-cases for multi-buffer packets:
 - Packet header split
 - TSO/LRO
 
+* Proposal#1: XDP only access first-buffer
 
+The eBPF Direct-Access (DA) feature is essential for performance. Thus, we
+don't want to add an abstraction layer, that transparently gives XDP
+BPF-prog access to payload across multiple buffers.
 
+One way forward is to define that XDP only get access to the first packet
+buffer, and it cannot see subsequent buffers.
 
-
+We likely need to extend xdp_buff or xdp_md (the XDP bpf context) with some
+indication that this is a multi-buffer packets, as this is needed by
+internal helpers (see later) and might be useful for XDP-developer (e.g.
+return XDP_PASS for these kind of frames).
 
 
