@@ -38,4 +38,26 @@ indication that this is a multi-buffer packets, as this is needed by
 internal helpers (see later) and might be useful for XDP-developer (e.g.
 return XDP_PASS for these kind of frames).
 
+* XDP multi-buffer extensions and complications
+
+How and what do we need to extend the XDP data structured with to handle
+multi-buffer packets?
+
+** XDP tail adjust
+
+The BPF XDP helper named: =bpf_xdp_adjust_tail= change length of the packet.
+Currently it can only shrink the packet (but we need to extended it to allow
+extending the tail, as e.g IPSEC and DNS-cache needs this).
+
+With multi-buffer XDP packets (and proposal#1) then this adjust tail helper
+becomes problematic.
+
+Wouldn't it be easier to disallow a BPF-prog with this helper, when
+driver have configured multi-buffer?  Or will it be too restrictive,
+if jumbo-frame is very uncommon and only enabled because switch infra
+could not be changed.
+
+Perhaps it is better to let bpf_xdp_adjust_tail() fail runtime?
+
+
 
