@@ -1,0 +1,32 @@
+# -*- fill-column: 76; -*-
+#+Title: XDP multi buffer design
+
+This document is a serious attempt to find a way to support multi-buffer
+packets with XDP. With the important criteria of not hurting performance of
+the single-buffer per packet design.
+
+Keywords: xdp vs. jumbo-frame, TSO/LRO, packet header split
+
+* Why XDP don't have multi-buffer support
+
+XDP is designed for maximum performance, which is why certain driver-level
+use-cases were not supported, like multi-buffer packets (like jumbo-frames).
+As it e.g. complicated the driver RX-loop and memory model handling.
+
+The single buffer per packet design, is also tied into eBPF Direct-Access
+(DA) to packet data, which can only be allowed if the packet memory is in
+contiguous memory.  This DA feature is essential for XDP performance.
+
+* Use-cases for multi-buffer
+
+What are the use-cases for multi-buffer packets:
+- Jumbo-frames
+- Packet header split
+- TSO/LRO
+
+
+
+
+
+
+
