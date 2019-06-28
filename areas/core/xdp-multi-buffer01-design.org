@@ -63,10 +63,10 @@ Perhaps it is better to let bpf_xdp_adjust_tail() fail runtime?
 
 Use-cases that need to adjust tail of packet:
 
-- ICMP replies directly from XDP[1] need to shorten packet tail, but
-  this use-case doesn't use fragments.
+- ICMP replies directly from XDP need to shorten packet tail, but
+  this use-case doesn't use fragments. See [[https://github.com/torvalds/linux/blob/master/samples/bpf/xdp_adjust_tail_kern.c][bpf-sample]].
 
-- IPsec need to add/extend packet tail for IPset-trailer[2], again
+- IPsec need to add/extend packet tail for [[http://vger.kernel.org/netconf2019_files/xfrm_xdp.pdf][IPset-trailer]], again
   unlikely that this needs fragments(?). (This use-case convinced me
   that we need to add extend-tail support to bpf_xdp_adjust_tail)
 
