@@ -59,6 +59,21 @@ could not be changed.
 
 Perhaps it is better to let bpf_xdp_adjust_tail() fail runtime?
 
+*** Use-cases for adjust tail
+
+Use-cases that need to adjust tail of packet:
+
+- ICMP replies directly from XDP[1] need to shorten packet tail, but
+  this use-case doesn't use fragments.
+
+- IPsec need to add/extend packet tail for IPset-trailer[2], again
+  unlikely that this needs fragments(?). (This use-case convinced me
+  that we need to add extend-tail support to bpf_xdp_adjust_tail)
+
+- DNS or memcached replies directly from XDP, need to extend packet
+  tail, to have room for reply. (It would be interesting to allow larger
+  replies, but I'm not sure we should ever support that).
+
 ** XDP access to full packet length?
 
 We likely need to provide the full packet length to XDP core and also
