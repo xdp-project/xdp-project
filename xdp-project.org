@@ -209,12 +209,22 @@ going to fail. This means that programs end up doing things like using
 duplicate maps for checking if a redirect map entry exists, or to packets
 being silently dropped.
 
-*** NEXT Allow lookups in devmap/cpumap
+*** DONE Allow lookups in devmap/cpumap
+CLOSED: [2019-06-29 Sat 18:24]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-06-29 Sat 18:24]
+:END:
 
 Return pointer to same ID as we insert, just copy it to a scratch space
 first.
 
-*** NEXT Make bpf_redirect_map() check map contents
+Merged as [[https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/commit/?id=0cdbb4b09a0658b72c563638d476113aadd91afb][0cdbb4b09a0]].
+
+*** DONE Make bpf_redirect_map() check map contents
+CLOSED: [2019-06-29 Sat 18:25]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-06-29 Sat 18:25]
+:END:
 
 If we simply make the redirect_map() helper check that something exists in
 that position in the map, we at least catch the case where a map entry is
@@ -231,6 +241,8 @@ This makes it easy to implement "defer to stack on error" type programs,
 
 Mellanox drivers turn a failure in xdp_do_redirect() into an ABORTED action,
 other drivers do not.
+
+Merged as [[https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/commit/?id=43e74c0267a35d6f5127218054b2d80c7fe801f5][43e74c0267a3]].
 
 *** NEXT Retire bpf_redirect() helper
 
