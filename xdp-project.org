@@ -454,11 +454,16 @@ happens through kernel helpers. We already have routing, but we will need
 more helpers.
 
 *** NEXT Layer-2 bridging helper
+:PROPERTIES:
+:ID:       2e026d1b-d1a1-4fd4-8097-08991cbb8fec
+:END:
 
 The obvious next step is a l2 bridging helper that mirrors the l3 routing
 one. Should be fairly straight forward to implement.
 
 **** TODO What to do about broadcast/multicast?
+
+See [[id:7e5439f6-7603-4df6-8164-7d2bc5dcd8c3][Handling multicast]] below.
 
 *** TODO Connection/flow tracking
 
@@ -507,8 +512,11 @@ To express this in a vendor-neutral way, we probably need to depend on the
 ** TODO Improvements to XDP_REDIRECT
 
 *** TODO Handling multicast
+:PROPERTIES:
+:ID:       7e5439f6-7603-4df6-8164-7d2bc5dcd8c3
+:END:
 We want to be able to REDIRECT a packet to multiple interfaces in order to
-implement multicast.
+implement multicast. Relevant for the [[id:2e026d1b-d1a1-4fd4-8097-08991cbb8fec][Layer-2 bridging helper]].
 
 From the discussion at netconf2019 ([[id:92b4926b-cce4-4199-bf99-efc1e4c342be][see slides]]), we probably want to
 implement it by:
