@@ -25,6 +25,7 @@ The following drivers support XDP in upstream kernels.
 - tun
 - veth
 - virtio_net
+- netsec
 
 * Other sources
 

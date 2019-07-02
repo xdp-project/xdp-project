@@ -57,6 +57,7 @@ Driver developers:
 - Michael S. Tsirkin (ptr_ring)
 - Edward Cree (sfc)
 - Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp> (veth)
+- Ilias Apalodimas <ilias.apalodimas@linaro.org> (netsec)
 
 Developers unsorted:
 - PJ (still waiting for data_meta work)
@@ -86,3 +87,6 @@ Drivers that will get XDP and use page_pool:
  - driver: mlx5
  - driver: mvpp2  board: Macchiatobin
  - driver: mvneta board: espressobin + Turris-Omnia
+
+Drivers with XDP and page_pool usage:
+ - driver: netsec board: Socionext DeveloperBox
