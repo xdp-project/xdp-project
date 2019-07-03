@@ -546,6 +546,15 @@ To fix this, we would need to allow queueing of some sort. Options:
 - Have some kind of "intermediate queueing structure" that can be a redirect
   target, does queueing, and can forward packets on afterwards
 
+** TODO Multi-buffer XDP (aka. jumbo-frames)
+
+As described in the design document
+[[file:areas/core/xdp-multi-buffer01-design.org]] we need to come up with a
+serious attempt at supporting multi-buffer XDP handling.
+
+Add TODO steps here to move this forward.
+
+
 * Longer-term preliminary plans                                       :@long:
 
 These are longer-term plans or ideas that either fall into the "nice to
