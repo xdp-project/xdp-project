@@ -563,6 +563,12 @@ Link to upstream discussion:
 https://lore.kernel.org/netdev/20190626103829.5360ef2d@carbon/
 
 
+*** TODO Create plan to move forward with initial constraints
+
+As [[https://lore.kernel.org/netdev/CA+FuTSfKnhv9rr=cDa_4m7Dd9qkEm_oabDfyvH0T0sM+fQTU=w@mail.gmail.com/][Willem points out]]:
+As long as we don't arrive at a design that cannot be extended with
+those features later.
+
 * Longer-term preliminary plans                                       :@long:
 
 These are longer-term plans or ideas that either fall into the "nice to
