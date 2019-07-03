@@ -550,7 +550,9 @@ To fix this, we would need to allow queueing of some sort. Options:
 
 As described in the design document
 [[file:areas/core/xdp-multi-buffer01-design.org]] we need to come up with a
-serious attempt at supporting multi-buffer XDP handling.
+serious attempt at supporting multi-buffer XDP handling. The term
+multi-buffer covers the uses cases: jumbo-frames, TSO/LRO, packet header
+split.
 
 Add TODO steps here to move this forward.
 
