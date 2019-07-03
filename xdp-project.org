@@ -554,6 +554,14 @@ serious attempt at supporting multi-buffer XDP handling.
 
 Add TODO steps here to move this forward.
 
+*** DONE Start upstream discussion on multi-buffer
+CLOSED: [2019-07-03 Wed 13:15]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-07-03 Wed 13:15]
+:END:
+Link to upstream discussion:
+https://lore.kernel.org/netdev/20190626103829.5360ef2d@carbon/
+
 
 * Longer-term preliminary plans                                       :@long:
 
