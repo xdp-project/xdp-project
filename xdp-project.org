@@ -564,12 +564,18 @@ CLOSED: [2019-07-03 Wed 13:15]
 Link to upstream discussion:
 https://lore.kernel.org/netdev/20190626103829.5360ef2d@carbon/
 
-
 *** TODO Create plan to move forward with initial constraints
 
 As [[https://lore.kernel.org/netdev/CA+FuTSfKnhv9rr=cDa_4m7Dd9qkEm_oabDfyvH0T0sM+fQTU=w@mail.gmail.com/][Willem points out]]:
 As long as we don't arrive at a design that cannot be extended with
 those features later.
+
+*** TODO Find driver developers that will participate in multi-buffer work
+
+We need some developers that have an actual use-case for this multi-buffer
+feature, and also buy-in from some driver team, else this sub-project will
+not see any progress.  The Amazon guys seems to have a interest.
+
 
 * Longer-term preliminary plans                                       :@long:
 
