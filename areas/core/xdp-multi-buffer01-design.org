@@ -90,4 +90,79 @@ will also need to "collect" all buffers before the packet can be forwarded.
 (Although this could potentially happen later in driver loop when it
 meet/find the End-Of-Packet descriptor bit).
 
+** Storage space for multi-buffer references/segments
+
+A multi-buffer packet consist of several frame segments. The data structure
+used for holding these packet buffers/segments also needs to be discussed.
+
+To describe each segment we need a pointer (to the page or data start),
+offset and length. There are (at-least) two existing kernel data structures
+that have such a layout, =bio_vec= and =skb_frag_t= (aka =skb_frag_struct=).
+
+Layout of =skb_frag_struct=:
+#+begin_src C
+$ pahole -C skb_frag_struct vmlinux
+struct skb_frag_struct {
+	struct {
+		struct page * p;                         /*     0     8 */
+	} page;                                          /*     0     8 */
+	__u32                      page_offset;          /*     8     4 */
+	__u32                      size;                 /*    12     4 */
+
+	/* size: 16, cachelines: 1, members: 3 */
+	/* last cacheline: 16 bytes */
+};
+#+end_src
+
+Layout of =bio_vec=:
+#+begin_src C
+$ pahole -C bio_vec vmlinux
+struct bio_vec {
+	struct page              * bv_page;              /*     0     8 */
+	unsigned int               bv_len;               /*     8     4 */
+	unsigned int               bv_offset;            /*    12     4 */
+
+	/* size: 16, cachelines: 1, members: 3 */
+	/* last cacheline: 16 bytes */
+};
+#+end_src
+
+The skb_frag_t would be most obvious, as we already have to write this when
+creating an SKB, in =skb_shared_info= area. Which layout looks like this:
+
+#+begin_src C
+$ pahole -C skb_shared_info vmlinux
+struct skb_shared_info {
+	__u8                       __unused;             /*     0     1 */
+	__u8                       meta_len;             /*     1     1 */
+	__u8                       nr_frags;             /*     2     1 */
+	__u8                       tx_flags;             /*     3     1 */
+	short unsigned int         gso_size;             /*     4     2 */
+	short unsigned int         gso_segs;             /*     6     2 */
+	struct sk_buff     * frag_list;                  /*     8     8 */
+	struct skb_shared_hwtstamps hwtstamps;           /*    16     8 */
+	unsigned int               gso_type;             /*    24     4 */
+	u32                        tskey;                /*    28     4 */
+	atomic_t                   dataref;              /*    32     0 */
+
+	/* XXX 8 bytes hole, try to pack */
+
+	void *                     destructor_arg;       /*    40     8 */
+	skb_frag_t                 frags[17];            /*    48   272 */
+
+	/* size: 320, cachelines: 5, members: 13 */
+	/* sum members: 312, holes: 1, sum holes: 8 */
+};
+#+end_src
+
+The problem is also that size of these structs (16 bytes) per
+buffer/segment, and we likely need to support 17 segments, as this need to
+be compatible with SKBs, which result in a size of 272 bytes.
+
+One idea: is that we simply use the same memory area, that we have to store
+skb_shared_info into. As this allow us to get the SKB setup for free, when
+doing XDP_PASS or when doing SKB alloc after XDP_REDIRECT.
+
+Side-note: There have been suggestion before, to unify =bio_vec= and
+=skb_frag_t= (see [[https://lore.kernel.org/netdev/20190501041757.8647-1-willy@infradead.org/][here]])
 
