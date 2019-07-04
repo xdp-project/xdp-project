@@ -546,6 +546,37 @@ To fix this, we would need to allow queueing of some sort. Options:
 - Have some kind of "intermediate queueing structure" that can be a redirect
   target, does queueing, and can forward packets on afterwards
 
+** TODO Multi-buffer XDP (aka. jumbo-frames)
+
+As described in the design document
+[[file:areas/core/xdp-multi-buffer01-design.org]] we need to come up with a
+serious attempt at supporting multi-buffer XDP handling. The term
+multi-buffer covers the uses cases: jumbo-frames, TSO/LRO, packet header
+split.
+
+Add TODO steps here to move this forward.
+
+*** DONE Start upstream discussion on multi-buffer
+CLOSED: [2019-07-03 Wed 13:15]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-07-03 Wed 13:15]
+:END:
+Link to upstream discussion:
+https://lore.kernel.org/netdev/20190626103829.5360ef2d@carbon/
+
+*** TODO Create plan to move forward with initial constraints
+
+As [[https://lore.kernel.org/netdev/CA+FuTSfKnhv9rr=cDa_4m7Dd9qkEm_oabDfyvH0T0sM+fQTU=w@mail.gmail.com/][Willem points out]]:
+As long as we don't arrive at a design that cannot be extended with
+those features later.
+
+*** TODO Find driver developers that will participate in multi-buffer work
+
+We need some developers that have an actual use-case for this multi-buffer
+feature, and also buy-in from some driver team, else this sub-project will
+not see any progress.  The Amazon guys seems to have a interest.
+
+
 * Longer-term preliminary plans                                       :@long:
 
 These are longer-term plans or ideas that either fall into the "nice to
