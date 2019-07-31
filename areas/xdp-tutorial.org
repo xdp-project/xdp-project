@@ -78,7 +78,12 @@ and troubleshooting XDP. E.g. see the kernel/samples/bpf program xdp_monitor
 xdp_monitor (and other trace samples) use another ELF loader than libbpf
 (the samples local [[https://github.com/torvalds/linux/blob/master/samples/bpf/bpf_load.c][bpf_load.c]]), which we want to move people way from.
 
-*** NEXT xdp-tutorial: add tracepoint examples for reading XDP tracepoints
+*** DONE xdp-tutorial: add tracepoint examples for reading XDP tracepoints
+CLOSED: [2019-07-31 Wed 16:11]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-07-31 Wed 16:11]
+:END:
+(This was merged as part of [[https://github.com/xdp-project/xdp-tutorial/pull/42][PR#42]])
 
 Work in progress by Jiri Olsa:
 https://github.com/olsajiri/xdp-tutorial/tree/tracing
@@ -97,7 +102,12 @@ consider upstreaming to libbpf are placed in [[https://github.com/xdp-project/xd
 Another consideration: We should promote using raw_tracepoints for BPF as it
 have much less overhead for getting info that BPF need.
 
-*** TODO xdp-tutorial: relate tracing to other assignments
+*** DONE xdp-tutorial: relate tracing to other assignments
+CLOSED: [2019-07-31 Wed 16:16]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-07-31 Wed 16:16]
+:END:
+(This was merged as part of [[https://github.com/xdp-project/xdp-tutorial/pull/42][PR#42]])
 
 When building up tracing assignments relate this to other parts of tutorial.
 
