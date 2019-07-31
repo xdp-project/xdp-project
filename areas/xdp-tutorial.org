@@ -116,6 +116,13 @@ how to use perf record + script with tracepoint event =xdp:xdp_exception=.
 And basic04 program have a "xdp_abort" section program, that can trigger
 this tracepoint.
 
+*** NEXT xdp-tutorial: fix bugs for raw_tracepoints
+
+The [[https://github.com/xdp-project/xdp-tutorial/pull/42][PR#42]] contained some bugs for [[https://github.com/xdp-project/xdp-tutorial/tree/master/tracing02-xdp-monitor][tracing02-xdp-monitor]].
+The bug is tracked by [[https://github.com/xdp-project/xdp-tutorial/issues/48][issue#48]].
+
+Deadline: This must be fixed before talk at [[https://bornhack.dk/bornhack-2019/program/#/event/xdp-hands-on-tutorial][Bornhack]].
+
 ** TODO xdp-tutorial: selftests project
 
 We would like to have a system that (integrated with Makefile) that can run
