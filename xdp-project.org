@@ -251,6 +251,13 @@ other drivers do not.
 
 Merged as [[https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/commit/?id=43e74c0267a35d6f5127218054b2d80c7fe801f5][43e74c0267a3]].
 
+*** NEXT In samples/bpf: use that bpf_redirect_map() can check map content
+
+Toke's patchset for allowing reading redirect maps were accepted upstream,
+and also the fallback return codes if map index were unpopulated.  BUT the
+samples/bpf programs does not take advantage of this. Task is to update
+samples/bpf to demonstrate these new features.
+
 *** NEXT Retire bpf_redirect() helper
 
 Rather than extending the bpf_redirect() helper to use hidden maps, it is
