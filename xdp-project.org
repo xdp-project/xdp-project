@@ -190,7 +190,50 @@ CLOSED: [2019-07-31 Wed 17:10]
 :LOGBOOK:
 - State "DONE"       from "TODO"       [2019-07-31 Wed 17:10]
 :END:
-Title:Improving the XDP User eXperience: via feature detection
+Title:
+- Improving the XDP User eXperience: via feature detection
+
+Abstract:
+#+begin_quote
+The most common asked question is: Does my NIC support XDP, and our current
+answer is read the source code. We really need to come up with a better
+answer.
+
+The real issue is that users can attach an XDP bpf_prog to a drivers that
+use features the driver doesn't implement, which cause silent drops. Or user
+doesn't notice, that NIC loading fallback to generic-XDP, which is first
+discovered when observing lower performance, or worse not all features are
+supported with generic-XDP, resulting in unexpected packet drops.
+
+BPF feature detection, recently added to bpftool, is based on probing the
+BPF-core by loading BPF-programs using individual features (notice BPF load
+time, not attaching it).
+
+Even if your BPF loader doesn't use feature probing, it will notice if
+loaded on a incompatible kernel. As an BPF-prog using something the kernel
+BPF-core doesn't support will get rejected at load-time, before you attach
+the BPF-prog.
+
+This doesn't work for XDP, as features vary on a per driver basis. Currently
+an XDP BPF-prog isn't aware of that driver it will get used on, until driver
+attach-time. Unfortunately, due to BPF tail-calls, we cannot use the driver
+attach-time hook to check for compatibility (given new XDP BPF-progs can be
+indirectly "attached" via tail-call map inserts).
+
+In this talk, we will investigate the possibilities of doing XDP feature
+check at BPF load-time, by assigning an ifindex to the BPF-prog. The ground
+work have already been laid by XDP hardware offload, which already need
+ifindex at BPF load-time (to perform BPF byte-code translation into NIC
+compatible code).
+
+The open question are:
+- Can the verifier detect/deduce XDP feature in use, for us?
+- How does drivers express/expose XDP features?
+- Are features more than XDP return codes, like meta-data support?
+- How does this interact with generic-XDP?
+- How to expose this to userspace? (to answer does NIC support XDP)
+- How to handle tail-call map inserts?
+#+end_quote
 
 *** NEXT Propose a driver API to communicate feature flags
 
