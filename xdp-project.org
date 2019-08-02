@@ -356,10 +356,16 @@ components (via selftests).
 Since driver =veth= got native-XDP support, we have an opportunity for
 writing selftests that cover both generic-XDP and native-XDP.
 
-*** TODO bpf-selftest: improve XDP VLAN selftests
+*** NEXT bpf-selftest: improve XDP VLAN selftests
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-08-02 Fri 14:02]
+:END:
 
 *Assignment* is to improve the selftest shell-script to test both
 generic-XDP and native-XDP (for veth driver).
+
+In-progress:
+- [[https://patchwork.ozlabs.org/project/netdev/list/?series=122796&state=%2a][Patchset V1]]
 
 XDP add/remove VLAN headers have a selftest in =tools/testing/selftests/bpf/=
 in files =test_xdp_vlan.c= and =test_xdp_vlan.sh=. This test was developed
