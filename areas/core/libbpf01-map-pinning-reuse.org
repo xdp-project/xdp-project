@@ -4,3 +4,18 @@
 This document is about improving and extending libbpf with an API that
 makes it easier to share BPF maps between BPF-programs.
 
+* Current issue with libbpf map pinning
+
+Currently there are two libbpf API calls for pinning maps (path must be a
+bpffs mount point), which will pin (on unpin) *ALL* maps in the BPF-ELF
+file, based on the map name.
+
+#+begin_src C
+int bpf_object__pin_maps(struct bpf_object *obj, const char *path);
+int bpf_object__unpin_maps(struct bpf_object *obj, const char *path);
+#+end_src
+
+The main issue is that existing pinned map files will NOT get "reused" (like
+iproute2 is doing). Instead if a pinned map file exist with same name, the
+pin operation will simply fail.
+
