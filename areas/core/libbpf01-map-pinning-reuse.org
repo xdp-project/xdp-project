@@ -1,5 +1,6 @@
 # -*- fill-column: 76; -*-
 #+Title: Using libbpf to share maps between programs
+#+Options: ^:nil
 
 This document is about improving and extending libbpf with an API that
 makes it easier to share BPF maps between BPF-programs.
@@ -18,4 +19,11 @@ int bpf_object__unpin_maps(struct bpf_object *obj, const char *path);
 The main issue is that existing pinned map files will NOT get "reused" (like
 iproute2 is doing). Instead if a pinned map file exist with same name, the
 pin operation will simply fail.
+
+** Difficult to extend bpf_object__pin_maps
+
+It's not trivial (read difficult) to extend =bpf_object__pin_maps()= to
+reuse existing maps.  This connected with how the different phases of
+BPF-ELF "opening" and kernel "loading" happens.
+
 
