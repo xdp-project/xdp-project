@@ -116,7 +116,11 @@ how to use perf record + script with tracepoint event =xdp:xdp_exception=.
 And basic04 program have a "xdp_abort" section program, that can trigger
 this tracepoint.
 
-*** NEXT xdp-tutorial: fix bugs for raw_tracepoints
+*** DONE xdp-tutorial: fix bugs for raw_tracepoints
+CLOSED: [2019-08-09 Fri 20:48]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-08-09 Fri 20:48]
+:END:
 
 The [[https://github.com/xdp-project/xdp-tutorial/pull/42][PR#42]] contained some bugs for [[https://github.com/xdp-project/xdp-tutorial/tree/master/tracing02-xdp-monitor][tracing02-xdp-monitor]].
 The bug is tracked by [[https://github.com/xdp-project/xdp-tutorial/issues/48][issue#48]].
