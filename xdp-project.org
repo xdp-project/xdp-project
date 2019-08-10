@@ -313,6 +313,11 @@ Even with the above, we can still get failures if, e.g., TX ring runs out of
 space. We can't really handle this by return, so what should we do instead?
 Maybe just defer this to [[id:24faae01-542b-4882-9f7a-5ab283e657b0][XDP hook at TX]].
 
+*** TODO Add selftests for devmaps
+[2019-08-09 Fri 20:51]
+[[notmuch:id:CAADnVQLY3CUe3hdDMvEc3QiM6gLd6fEVy9vwDc38wpY4_wajxQ@mail.gmail.com][Email from Alexei Starovoitov: Re: [PATCH bpf-next v5 0/6] xdp: Add devmap_hash map type]]
+*** TODO REDIRECT_MAP idx type - what happens with namespace moving?
+[2019-05-13 Mon 14:03]
 * Important medium-term tasks                                       :@medium:
 
 These are tasks that are important to fix in the medium term, but that are
