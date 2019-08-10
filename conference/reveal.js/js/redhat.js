@@ -1,6 +1,6 @@
-var logoWhite = '<img src="./reveal.js/images/Logo-RedHat-A-White-RGB.svg" />';
-var logoHat = '<img src="./reveal.js/images/Logo-RedHat-Hat-White-RGB.svg" />';
-var logoRed = '<img src="./reveal.js/images/Logo-RedHat-A-Reverse-RGB.svg" />';
+var logoWhite = '<img src="../reveal.js/images/Logo-RedHat-A-White-RGB.svg" />';
+var logoHat = '<img src="../reveal.js/images/Logo-RedHat-Hat-White-RGB.svg" />';
+var logoRed = '<img src="../reveal.js/images/Logo-RedHat-A-Reverse-RGB.svg" />';
 
 function getAuthorHTML(title, authors) {
     return [
