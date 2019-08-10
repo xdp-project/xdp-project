@@ -1,0 +1,219 @@
+# -*- fill-column: 79; -*-
+#+TITLE: XDP hands-on tutorial
+#+AUTHOR: Jesper Dangaard Brouer <brouer@redhat.com> and Toke Høiland-Jørgensen <toke@redhat.com>
+#+EMAIL: toke@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+This is the slide deck for the XDP tutorial at Bornhack, August 2019.
+
+ https://bornhack.dk/bornhack-2019/program/#/event/xdp-hands-on-tutorial
+
+The tutorial material is available on Github at:
+
+ https://github.com/xdp-project/xdp-tutorial/
+
+* Export/generate presentation
+
+** Setup for org export to reveal.js
+First, install the ox-reveal emacs package.
+
+Package: ox-reveal git-repo and install instructions:
+https://github.com/yjwen/org-reveal
+
+After this, move to the 'Topics and slides' subtree and hit =C-c C-e C-s R R=
+to export just the subtree; then open .html file to view slideshow. The
+variables at document end ("Local Variables") will set up the title slide and
+filter the "Slide:" prefix from headings; Emacs will ask for permission to load
+them, as they will execute code.
+
+** Export to PDF
+
+The conference requires presentations to be delivered in PDF format.  Usually
+the reveal.js when run as a webserver under nodejs, have a printer option for
+exporting to PDF vai print to file, but we choose not run this builtin
+webserver.
+
+Alternatively I found a tool called 'decktape', for exporting HTML pages to
+PDF: https://github.com/astefanutti/decktape
+
+The 'npm install' failed on my system:
+
+ $ npm install decktape
+
+But (after running npm update) I can start the decktape.js file direct via
+the 'node' command.
+
+ $ node ~/git/decktape/decktape.js presentation-lpc2018-xdp-future.html slides.pdf
+
+This is the command needed on Arch - size is set to get slide text to fit on
+the page. -p 100 makes it go faster.
+
+$ decktape -s 1600x900 -p 100 --chrome-arg=--no-sandbox tutorial-presentation.html tutorial-presentation.pdf
+
+
+* Slide: Outline                                                     :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Introduction - what is XDP?
+
+About this tutorial - plan for today
+
+Bonus tasks
+
+** Slide: What is XDP?                                              :export:
+
+#+BEGIN_NOTES
+People should already know this; but since we already have the slide, might as
+well include it.
+#+END_NOTES
+
+XDP basically: *New layer in the kernel network stack*
+ - Before allocating the SKB
+ - Driver level hook at DMA level
+
+Means: Competing at the same “layer” as DPDK / netmap
+ - Super fast, due to
+   - Take action/decision earlier (e.g. skip some network layers)
+   - No memory allocations
+
+/Not kernel bypass/; data-plane is kept inside the kernel
+ - Via eBPF: makes early network stack *run-time programmable*
+ - Cooperates with the kernel stack
+
+* Slide: About this tutorial                                    :export:
+This tutorial is meant as a living document, developed on Github:
+
+ https://github.com/xdp-project/xdp-tutorial
+
+This session is the *second beta test* of the live version.
+
+- Please send feedback; or even better, pull requests!
+
+** Slide: Plan for today's session                             :export:
+
+- This introduction
+- You each go through the tutorial in the git repo
+- We will help answer questions
+- Plenary follow-ups as needed
+
+** Slide: Structure of the tutorial                            :export:
+
+Comprised of seven topical *lessons*, in the numbered directories in the git
+repo.
+
+We recommend you complete them in this order:
+
+- basic01-xdp-pass
+- basic02-prog-by-name
+- basic03-map-counter
+- basic04-pinning-maps
+- packet01-parsing
+- packet02-rewriting
+- packet03-redirecting
+
+Read the /README.org/ file in each directory to get started.
+
+*** DONE Fix up this list                                        :noexport:
+CLOSED: [2019-03-19 Tue 11:35]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-03-19 Tue 11:35]
+:END:
+
+** Slide: The test environment helper script                        :export:
+The =testenv= directory contains a helper script to setup a test environment.
+
+- Uses network namespaces and virtual network devices to simulate a real setup
+- Requires kernel version *4.19 or higher*
+  * Due to =veth= driver getting native-XDP support (incl. fixes)
+  * Preferred kernel is *4.20* as =veth= got ethtool statistics
+- See README.org in the testenv directory for instructions
+- Easy alias: =eval $(./testenv alias)=, then =t setup=
+
+** Slide: Namespaces and virtual ethernet devices              :export:
+
+- The testenv script uses /network namespaces/ and *virtual ethernet devices*
+  to simulate a real environment.
+
+#+begin_example
++-----------------------------+                          +-----------------------------+
+| Root namespace              |                          | Testenv namespace 'test01'  |
+|                             |      From 'test01'       |                             |
+|                    +--------+ TX->                RX-> +--------+                    |
+|                    | test01 +--------------------------+  veth0 |                    |
+|                    +--------+ <-RX                <-TX +--------+                    |
+|                             |       From 'veth0'       |                             |
++-----------------------------+                          +-----------------------------+
+#+end_example
+
+- XDP programs are installed on the *test01* interface in root namespace
+- Generate traffic from /inside/ the namespace
+
+* Slide: Bonus tasks                                            :export:
+As we said, this is the *second beta test*. So some of you may /finish all tasks/ before
+we run out of time.
+
+Here are some suggestions for extra tasks:
+
+- Complete some of the other lessons not mentioned above
+- Improve the tutorial and send a pull request
+- Implement your own use case and test it (we'll help!)
+- Write a blog post about your experience with XDP
+
+* Slide: Getting started                                             :export:
+
+
+#+begin_example
+$ git clone https://github.com/xdp-project/xdp-tutorial
+$ cd xdp-tutorial
+$ git submodule update --init
+$ less README.org
+#+end_example
+
+* Notes
+
+** Org-mode hints
+
+https://orgmode.org/manual/Quoting-HTML-tags.html#Quoting-HTML-tags
+
+** Colors from Red Hat guide lines
+
+Red Hat Colors:
+
+ - Red Hat Red #cc0000
+ - Medium Red #a30000
+ - Dark Red #820000
+
+None of these red colors fit with baggrond color:
+ - Using red 65% #ff4d4d
+ - Found via: https://www.w3schools.com/colors/colors_picker.asp
+
+Secondary Palette:
+
+ - Dark Blue #004153
+ - Medium Blue #4e9fdd
+ - Light Blue #5bc6e8
+ - Lighter Blue #a3dbe8
+
+Accent Palette:
+
+ - Purple #3b0083
+ - Orange #ec7a08
+ - Green #7ab800
+ - Turquoise #007a87
+ - Yellow #fecb00
+
+# Local Variables:
+# org-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
+# class=\"author\">Jesper Dangaard Brouer<br/>Toke Høiland-Jørgensen</h2>
+# <h3>Bornhack<br/>Gelsted, August 2019</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
