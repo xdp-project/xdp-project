@@ -153,6 +153,20 @@ The eBPF bytecode is:
   * It is a *sandbox* technology, via BPF-verfier for code safety
   * Kernel provides a /eBPF runtime/ environment, via /BPF-helper/ calls
 
+** Slide: Compiling restricted-C to eBPF into ELF                   :export:
+
+/LLVM compiler/ have eBPF backend (*/avoid writing eBPF assembly/* by hands)
+- Write *Restricted-C*, due to limits imposed by sandbox BPF-verfier
+
+Compiler produces an standard ELF "executable" file
+- Cannot execute this file directly, as eBPF-runtime is inside kernel
+- Need our *own ELF-loader* that can
+  * Extract the eBPF-bytecode and eBPF maps
+  * Do ELF relocation of eBPF-maps references in bytecode
+  * Create/load eBPF maps and bytecode into kernel
+- *Attaching to hook is separate* step
+
+
 * Slide: Testlab on your laptop!                                     :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
