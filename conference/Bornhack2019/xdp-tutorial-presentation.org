@@ -179,6 +179,19 @@ Please userspace apps: *Everybody should use this library*
   * cause incompatible ELF object, if using eBPF maps
   * (stalled?) plans for converting to libbpf
 
+** Slide: eBPF concepts: context, maps and helpers
+
+Each eBPF runtime hook get a *pointer to a context* struct
+- BPF-bytecode have access to context (read/write limited)
+  * verifier step might adjust bytecode for safety
+
+The BPF-program itself is stateless
+- /Concept eBPF maps/ can be used to create state
+- Maps are basically /key = value/ construct
+
+BPF-helpers is a concept for
+- calling kernel functions, to obtain info/state from kernel
+
 * Slide: Testlab on your laptop!                                     :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
