@@ -128,6 +128,20 @@ CLOSED: [2019-03-19 Tue 11:35]
 - State "DONE"       from "TODO"       [2019-03-19 Tue 11:35]
 :END:
 
+
+* Slide: Testlab on your laptop!
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+XDP performance comes from running at driver level
+- as close as possible to NIC hardware, just after DMA-sync to CPU
+
+In this tutorial, we create a *virtual network environment*
+- Disadvantage: obviously not as fast
+- Advantage: can be /setup directly on your Linux laptop/
+  - use network namespaces and veth (like containers do)
+
 ** Slide: The test environment helper script                        :export:
 The =testenv= directory contains a helper script to setup a test environment.
 
