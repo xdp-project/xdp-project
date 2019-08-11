@@ -150,25 +150,25 @@ The eBPF bytecode is:
   * Read: the eBPF assembly language
 - Designed to *run in the Linux kernel*
   * It is */not a kernel module/*
-  * It is a *sandbox* technology, via BPF-verfier for code safety
-  * Kernel provides a /eBPF runtime/ environment, via /BPF-helper/ calls
+  * It is a *sandbox* technology; BPF verfier ensures code safety
+  * Kernel provides an /eBPF runtime/ environment, via BPF /helper calls/
 
 ** Slide: Compiling restricted-C to eBPF into ELF                   :export:
 
-/LLVM compiler/ have eBPF backend (*/avoid writing eBPF assembly/* by hands)
-- Write *Restricted-C*, due to limits imposed by sandbox BPF-verfier
+/LLVM compiler/ has an eBPF backend (to */avoid writing eBPF assembly/* by hand)
+- Write *Restricted C* -- some limits imposed by sandbox BPF-verfier
 
 Compiler produces an standard ELF "executable" file
-- Cannot execute this file directly, as eBPF-runtime is inside kernel
-- Need our *own ELF-loader* that can
-  * Extract the eBPF-bytecode and eBPF maps
-  * Do ELF relocation of eBPF-maps references in bytecode
+- Cannot execute this file directly, as the eBPF runtime is inside the kernel
+- Need our *own ELF loader* that can:
+  * Extract the eBPF bytecode and eBPF maps
+  * Do ELF relocation of eBPF maps references in bytecode
   * Create/load eBPF maps and bytecode into kernel
 - *Attaching to hook is separate* step
 
 ** Slide: libbpf                                                    :export:
 
-This tutorial use /libbpf/ as our *ELF-loader for eBPF*
+This tutorial uses /libbpf/ as our *ELF loader for eBPF*
 - libbpf is /part of Linux kernel tree/
 - Facebook fortunately *exports* this to https://github.com/libbpf
   * Tutorial git repo, use [[https://github.com/libbpf/libbpf][libbpf]] as git-submodule
@@ -181,15 +181,15 @@ Please userspace apps: *Everybody should use this library*
 
 ** Slide: eBPF concepts: context, maps and helpers
 
-Each eBPF runtime hook get a *pointer to a context* struct
-- BPF-bytecode have access to context (read/write limited)
-  * verifier step might adjust bytecode for safety
+Each eBPF runtime hook gets a *pointer to a context* struct
+- BPF bytecode has access to context (read/write limited)
+  * verifier may adjust the bytecode for safety
 
-The BPF-program itself is stateless
+The BPF program itself is stateless
 - /Concept eBPF maps/ can be used to create state
 - Maps are basically /key = value/ construct
 
-BPF-helpers is a concept for
+BPF helpers are used for
 - calling kernel functions, to obtain info/state from kernel
 
 * Slide: Testlab on your laptop!                                     :export:
