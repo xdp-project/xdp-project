@@ -166,6 +166,18 @@ Compiler produces an standard ELF "executable" file
   * Create/load eBPF maps and bytecode into kernel
 - *Attaching to hook is separate* step
 
+** Slide: libbpf                                                    :export:
+
+This tutorial use /libbpf/ as our *ELF-loader for eBPF*
+- libbpf is /part of Linux kernel tree/
+- Facebook fortunately *exports* this to https://github.com/libbpf
+  * Tutorial git repo, use [[https://github.com/libbpf/libbpf][libbpf]] as git-submodule
+
+Please userspace apps: *Everybody should use this library*
+- */Unfortunately/* several loaders exists
+- Worst case is iproute2 have its own
+  * cause incompatible ELF object, if using eBPF maps
+  * (stalled?) plans for converting to libbpf
 
 * Slide: Testlab on your laptop!                                     :export:
 :PROPERTIES:
