@@ -140,7 +140,18 @@ Basic introduction to
   * compiler storing it in ELF-format
   * loading this into the Linux kernel
 
-** Slide:
+** Slide: eBPF bytecode and kernel hooks                            :export:
+
+XDP 'just' a Linux kernel hook that can run eBPF-bytecode
+- Many more eBPF hooks (tracepoint, all function calls via kprobe)
+
+The eBPF bytecode is:
+- /Generic Instruction Set/ Architecture (ISA) with C-calling convention
+  * Read: the eBPF assembly language
+- Designed to *run in the Linux kernel*
+  * It is */not a kernel module/*
+  * It is a *sandbox* technology, via BPF-verfier for code safety
+  * Kernel provides a /eBPF runtime/ environment, via /BPF-helper/ calls
 
 * Slide: Testlab on your laptop!                                     :export:
 :PROPERTIES:
