@@ -24,6 +24,36 @@ into Jiri Benc's more generic XDP talk. Thus, the assignment in this doc it to
 perform this merger.  Below is listed the abstracts from the three talks, such
 that we can easier merge these.
 
+** Main abstract: XDP the Distro View (Jiri)
+
+Title: XDP: the Distro View
+Author: Jiri Benc
+
+It goes without saying that XDP is wanted more and more by everyone. Of course,
+the Linux distributions want to bring to users what they want and need. Even
+better if it can be delivered in a polished package with as few surprises as
+possible: receiving bug reports stemming from users' misunderstanding and from
+their wrong expectations does not make good experience neither for the users
+nor for the distro developers.
+
+XDP presents interesting challenges to distros: from the initial enablement
+(what config options to choose) and security considerations, through user
+supportability (packets "mysteriously" disappearing, tcpdump not seeing
+everything), through future extension (what happens after XDP is embraced by
+different tools, some of those being part of the distro, how that should
+interact with users' XDP programs?), to more high level questions, such as user
+perception ("how comes my super-important use case cannot be implemented using
+XDP?").
+
+Some of those challenges are long solved, some are in progress or have good
+workarounds, some of them are yet unsolved. Some of those are solely the
+distro's responsibility, some of them need to be addressed upstream. The talk
+will present the challenges of enabling XDP in a distro. While it will also
+mention the solved ones, its main focus are the problems currently unsolved or
+in progress. We'll present some ideas and welcome discussion about possible
+solutions using the current infrastructure and about future directions.
+
+
 * Export/generate presentation
 
 ** Setup for org export to reveal.js
