@@ -281,7 +281,7 @@ int xdp_root(struct xdp_md *ctx) {
   __u32 *fd;
   #pragma clang loop unroll(full)
   for (__u32 i = 0; i < ROOT_ARRAY_SIZE; i++) {
-    bpf_tail_call(ctx, &root_array, i);
+    bpf_tail_call(ctx, &root_array, i);  // reminder: never returns on success!
   }
   return XDP_PASS;
 }
@@ -364,18 +364,29 @@ To do this in userspace (e.g., libbpf), the loader must:
 
 /*Cons*/: Only enforceable if all loaders comply
 
-** How to implement? Option #2: Kernel support
+** How to implement? Option #2: Kernel support through verifier
 
-With kernel support:
+With kernel support in the verifier:
 
 1. Define =bpf_chain_call()= as in-kernel helper
-2. Special per-ifindex map managed by kernel
-3. Verifier enforces rewrite of return codes
-4. Userspace still responsible for populating chain call maps
+2. Verifier enforces rewrite of return codes
+3. Userspace installs per-ifindex map and populates it
 
 /Pros/: Enforceable systemwide, verifier already rewrites progs
 
-/*Cons*/: More kernel code, becomes API
+/*Cons*/: More code in already complex verifier
+
+** How to implement? Option #3: Kernel support through hook
+
+With kernel support in hook:
+
+1. Make =bpf_chain_call()= a regular function
+2. Hook into =bpf_prog_run_xdp()= and chain call from there
+3. Userspace installs per-ifindex map and populates it
+
+/Pros/: Enforceable systemwide, no new verifier code
+
+/*Cons*/: Needs another branch in fast path; negligible perf. impact?
 
 * Notes
 
