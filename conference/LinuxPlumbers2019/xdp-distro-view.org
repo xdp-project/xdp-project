@@ -200,6 +200,8 @@ XDP per *driver dependency* breaks BPF-feature "system"
 - BPF verifier will /reject/ BPF_prog
   - if using a *feature that isn't available in BPF-core*
 
+XDP challenge concept
+
 ** Slide: The XDP available features issue                          :export:
 
 Today: Users cannot know if a device driver support XDP or not
@@ -272,6 +274,17 @@ Possible solutions
   - Annoying for API perspective
 - Option(2) let ifindex imply native-XDP?
   - Force generic-XDP to implement all XDP features (with some fallback)
+
+
+* Slide: Next discussion: Expressing XDP features                    :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Next discussion:
+- What XDP features need to be expressed?
+- Can verifier detect these features?
+  - if not, can users be trusted to supply features?
 
 
 * Slide: Random slides below                                         :export:
