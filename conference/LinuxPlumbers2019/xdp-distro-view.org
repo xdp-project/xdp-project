@@ -243,6 +243,22 @@ Essentially tail-call maps adds attach "hook" outside driver control
    - with new program using unsupported feature
 How can driver reject this 2nd level map insert?!?
 
+** Slide: Solution#2: BPF-load time with ifindex
+
+Solution#2: Do /feature match/check at/ *BPF-load time*
+- /Supply ifindex/ at *BPF load time* (like HW-offload already does!)
+
+*/Issue-2A/*: /ifindex bound XDP-prog/ use */tail-call map/*
+- How to check features of programs inserted into tail-call map?
+- Solution-2A: *Bind tail-call map to ifindex*
+  - And on tail-call map insert, BPF-prog must be ifindex bound too
+  - Require: bound prog, must only use bound tail-map (same ifindex)
+- Limitations: cannot share tail-call maps (any real users?)
+
+- /Opt-in interface/ via supplying ifindex
+  - Have to support not supply ifindex, due to backwards compatibility
+
+
 * Slide: Random slides below                                         :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
