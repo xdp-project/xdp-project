@@ -92,6 +92,29 @@ The open question are:
 - How to expose this to userspace? (to answer does NIC support XDP)
 - How to handle tail-call map inserts?
 
+** Abstract#3: Unified semantics for multiple XDP programs on a single interface (Toke)
+
+Title: Unified semantics for multiple XDP programs on a single interface
+Author: Toke Høiland-Jørgensen
+
+XDP currently only supports loading a single program on each physical
+interface. This is a limitation in cases where multiple functions need to run
+on the same interface, for instance a packet filter followed by a forwarding
+program. When all programs are written by the same person or group, this can be
+solved by cooperative tail-calling between programs, and we have seen several
+variations on this scheme already. However, this does not solve the case where
+programs written by different people need to cooperate on the same interface,
+e.g., if a system administrator wants to use two different third-party software
+packages that both offer XDP support. As XDP support becomes more prevalent, we
+expect this issue to become more urgent, and so we want to discuss what we can
+do to solve this in the upstream community.
+
+As part of this discussion we would like to collect the requirements people
+have for chaining programs today. Can we agree on a common set of semantics
+that will work for all the current and expected future use cases? Assuming we
+can, is it then enough to define a common API for cooperative tail calling
+(possibly supported by libbpf), or do we need kernel support to enforce
+cooperation?
 
 * Export/generate presentation
 
