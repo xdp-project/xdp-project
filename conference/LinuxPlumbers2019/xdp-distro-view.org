@@ -219,14 +219,16 @@ Original argument: Drivers *MUST support all XDP-features*
 
 Simply exposing feature XDP to userspace, doesn't solve the real issue
 - Real issue: *too easy to misconfigure*
-- How to get users to check features before attach? (bad solution)
+- How to get users to check features before attach? (unlikely to happen)
 
-Kernel *allows* users to attach XDP bpf_prog
+Real issue: Kernel *allows* users to attach XDP bpf_prog
 - that use *features that driver doesn't implement*
 - cause */silent drops/* (debug via tracepoints)
 
-We want something that can /reject earlier/
-- at BPF-load or XDP-attach time
+Solution: /Need something that can reject earlier/
+- at /BPF-load/ *or* /XDP-attach/ *time*
+- BPF verifier rejects at BPF-load time (don't see attach time)
+  * (if using a feature that isn't available in BPF-core)
 
 * Slide: Random slides below                                         :export:
 :PROPERTIES:
