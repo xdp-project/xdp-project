@@ -17,6 +17,13 @@ formatting tools).
 
 https://www.linuxplumbersconf.org/event/4/contributions/460/
 
+* Abstracts and presentation merge background
+
+The LPC technical committee asked us (Jiri, Jesper and Toke) to merge our talks
+into Jiri Benc's more generic XDP talk. Thus, the assignment in this doc it to
+perform this merger.  Below is listed the abstracts from the three talks, such
+that we can easier merge these.
+
 * Export/generate presentation
 
 ** Setup for org export to reveal.js
