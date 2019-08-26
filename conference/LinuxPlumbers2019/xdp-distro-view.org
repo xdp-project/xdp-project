@@ -300,7 +300,7 @@ XDP currently only supports */one program per interface/*.
 
 Let's look at a couple of examples of how this is done...
 
-** Current multi-program solutions #1: Katran xdp_root
+** Multi-program solutions #1: Katran xdp_root
 
 Facebook's [[https://github.com/facebookincubator/katran][Katran load balancer]] includes a mechanism for multi-program loading.
 
@@ -320,7 +320,7 @@ int xdp_root(struct xdp_md *ctx) {
 
 /*Cons*/: Programs need to know their place in the sequence, no per-action hooks
 
-** Current multi-program solutions #2: Cloudflare xdpdump
+** Solutions #2: Cloudflare xdpdump
 
 Cloudflare has a [[https://github.com/cloudflare/xdpcap][xdpcap utility]] that can run after other XDP programs:
 
