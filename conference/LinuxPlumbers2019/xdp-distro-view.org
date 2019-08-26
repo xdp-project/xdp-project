@@ -162,6 +162,18 @@ Text colors on slides are chosen via org-mode italic/bold high-lighting:
  - *bold*   = *yellow*
  - */italic-bold/* = red
 
+* Notes - brainstorm
+
+Unsolved issues:
+- eBPF audit
+- Safety of verifier
+- Controls of eBPF capabilities (like updating maps for unpriv users)
+- Multiple XDP programs + debugability
+- Feature detection
+- Managing expectations for XDP
+  - Switching: Cloning
+  - Ready-to-run XDP programs
+
 * Slides below                                                     :noexport:
 
 Only sections with tag ":export:" will end-up in the presentation. The prefix
