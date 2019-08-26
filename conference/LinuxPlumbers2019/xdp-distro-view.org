@@ -304,9 +304,6 @@ Verifier *detection strategy*, to deduce XDP features in-use
 - Except: can remove XDP_REDIRECT if redirect-helper isn't used
   - And assume remaining codes are in use
 
-Highly prefer verifier detect this
-- Pros: Avoids defining UAPI, thus easier to extend
-
 ** Slide: What kind of XDP features to express?                     :export:
 
 Obvious feature: XDP-return codes in use
@@ -317,6 +314,17 @@ Some /BPF-helpers/ can *depend on driver feature*
 - /=bpf_xdp_adjust_tail()=/ relevant to know for multi-buffer support
 
 Verifier can easily detect BPF-helpers in use
+
+** Slide: How to expose XDP features to userspace?                  :export:
+
+Highly prefer verifier detect features
+- /Pros/: Avoids defining UAPI, thus easier to extend
+- */Cons/*: Userspace cannot easily get XDP feature bits from NIC
+
+Driver needs to express feature bits internally.
+Two options:
+- (1) Expose driver feature bits (ethtool? kind of UAPI)
+- (2) Do feature probing like bpftool
 
 
 * Slide: Random slides below                                         :export:
