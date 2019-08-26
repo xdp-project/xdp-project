@@ -185,7 +185,55 @@ emacs).
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-xxx
+
+* Slide: Topic: Missing XDP feature detection                       :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+#+BEGIN_NOTES
+This is a compressed version of Jesper's slides
+#+END_NOTES
+
+XDP per *driver dependency* breaks BPF-feature "system"
+- BPF-core is always compiled-in
+- BPF verifier will /reject/ BPF_prog
+  - if using a *feature that isn't available in BPF-core*
+
+** Slide: The XDP available features issue                          :export:
+
+Today: Users cannot know if a device driver support XDP or not
+- This is the most often asked question
+- And people will often */use XDP-generic without noticing/*,
+  - and complain about performance... this is a support issue.
+
+Real /users/ requesting this:
+- /Suricata config/ want to query for XDP-support, else fallback to BPF-TC
+- /VM-migration/ want to query for XDP-support, else need to abort migration
+
+Original argument: Drivers *MUST support all XDP-features*
+  - Thus, there is not reason to expose feature bits
+  - This was *never true*, and e.g. very few drivers support redirect
+
+** Slide: What is the real issue?!?                                 :export:
+
+Simply exposing feature XDP to userspace, doesn't solve the real issue
+- Real issue: *too easy to misconfigure*
+- How to get users to check features before attach? (bad solution)
+
+Kernel *allows* users to attach XDP bpf_prog
+- that use *features that driver doesn't implement*
+- cause */silent drops/* (debug via tracepoints)
+
+We want something that can /reject earlier/
+- at BPF-load or XDP-attach time
+
+* Slide: Random slides below                                         :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+TODO: Cleanup/delete this section
 
 ** Slide: What is XDP?                                              :export:
 
