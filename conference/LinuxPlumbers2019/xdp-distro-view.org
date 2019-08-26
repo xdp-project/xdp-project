@@ -243,7 +243,7 @@ Essentially tail-call maps adds attach "hook" outside driver control
    - with new program using unsupported feature
 How can driver reject this 2nd level map insert?!?
 
-** Slide: Solution#2: BPF-load time with ifindex
+** Slide: Solution#2: BPF-load time with ifindex (1/2)              :export:
 
 Solution#2: Do /feature match/check at/ *BPF-load time*
 - /Supply ifindex/ at *BPF load time* (like HW-offload already does!)
@@ -257,6 +257,21 @@ Solution#2: Do /feature match/check at/ *BPF-load time*
 
 - /Opt-in interface/ via supplying ifindex
   - Have to support not supply ifindex, due to backwards compatibility
+
+** Slide: Solution#2: BPF-load time with ifindex (2/2)              :export:
+
+*/Issue-2B/*: *Generic-XDP*
+- At BPF load time, don't know if used for /native or generic/-XDP
+
+Generic-XDP should support same feature set for all net_devices
+- Still, some XDP features are not supported
+  - e.g. cpumap redirect (silent drop)
+
+Possible solutions
+- Option(1) supply more info than ifindex?
+  - Annoying for API perspective
+- Option(2) let ifindex imply native-XDP?
+  - Force generic-XDP to implement all XDP features (with some fallback)
 
 
 * Slide: Random slides below                                         :export:
