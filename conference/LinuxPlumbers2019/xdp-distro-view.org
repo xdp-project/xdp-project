@@ -230,6 +230,19 @@ Solution: /Need something that can reject earlier/
 - BPF verifier rejects at BPF-load time (don't see attach time)
   * (if using a feature that isn't available in BPF-core)
 
+** Slide: Tech road-block: BPF tail-calls vs attach-time            :export:
+
+Solution#1: Do /feature match/check at XDP driver/ *attach-time*
+- Reject attach, if prog use unsupported features
+- */Not possible due to BPF tail-call maps/*
+
+Essentially tail-call maps adds attach "hook" outside driver control
+1. Driver XDP prog tail-calls into prog map
+2. Tail-prog calls into another (2nd level) prog map
+3. Later 2nd level map is updated
+   - with new program using unsupported feature
+How can driver reject this 2nd level map insert?!?
+
 * Slide: Random slides below                                         :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
