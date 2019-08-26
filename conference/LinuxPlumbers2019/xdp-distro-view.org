@@ -333,7 +333,7 @@ struct bpf_map_def xdpcap_hook =  {
 
 int xdpcap_exit(struct xdp_md *ctx, void *hook_map, enum xdp_action action) {
     bpf_tail_call(ctx, hook_map, action);
-    return action;
+    return action; // reminder: never used if bpf_tail_call "jumps"
 }
 
 int xdp_main(struct xdp_md *ctx) {
