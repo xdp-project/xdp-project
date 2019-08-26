@@ -295,6 +295,21 @@ Verifier *detection strategy*, to deduce XDP features in-use
 - If XDP return code comes from register/map
   - then assume all XDP-return codes in use
 - Except: can remove XDP_REDIRECT if redirect-helper isn't used
+  - And assume remaining codes are in use
+
+Highly prefer verifier detect this
+- Pros: Avoids defining UAPI, thus easier to extend
+
+** Slide: What kind of XDP features to express?                     :export:
+
+Obvious feature: XDP-return codes in use
+
+Some /BPF-helpers/ can *depend on driver feature*
+- /=bpf_xdp_adjust_meta()=/ depend on driver feature
+  * Today fails runtime (we can do better!)
+- /=bpf_xdp_adjust_tail()=/ relevant to know for multi-buffer support
+
+Verifier can easily detect BPF-helpers in use
 
 
 * Slide: Random slides below                                         :export:
