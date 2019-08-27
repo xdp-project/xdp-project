@@ -404,18 +404,19 @@ Let's look at a couple of examples of how this is done today...
 
 ** Prior art #1: Katran xdp_root
 
-Facebook's [[https://github.com/facebookincubator/katran][Katran load balancer]] includes a mechanism for multi-program loading.
+Facebook's [[https://github.com/facebookincubator/katran][Katran LB]] have mechanism for multi-program loading
+- Cooperatively each prog (tail) call remaining prog in root_array
 
 #+begin_src C
 int xdp_root(struct xdp_md *ctx) { // installed on interface
   for (__u32 i = 0; i < ROOT_ARRAY_SIZE; i++) {
-    bpf_tail_call(ctx, &root_array, i); // doesn't return when it succeeds
+    bpf_tail_call(ctx, &root_array, i); // continue on failure (no prog exist)
   }
   return XDP_PASS;
 }
 int xdp_prog_idx0(struct xdp_md *ctx) { // in root_array with idx=0
   for (__u32 i = 1; i < ROOT_ARRAY_SIZE; i++) { // start at 1!
-    bpf_tail_call(ctx, &root_array, i);
+    bpf_tail_call(ctx, &root_array, i); // doesn't return when it succeeds
   }
   return XDP_PASS;
 }
