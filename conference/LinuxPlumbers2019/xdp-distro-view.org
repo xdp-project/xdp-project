@@ -192,7 +192,7 @@ emacs).
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-* Topic: BPF security and safety                                     :export:
+* Topic: BPF security, safety and audit logging                      :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -220,6 +220,15 @@ effort. See his proposal: https://t.co/WIhsdN2PoJ
 
 We also find Daniel Borkmanns [[https://lore.kernel.org/bpf/98fee747-795a-ff10-fa98-10ddb5afcc03@iogearbox.net/][idea for several CAP_BPF type sub-policies]]
 interesting.
+
+** Slide: BPF audit logging                                         :export:
+
+*/INCOMPLETE SLIDE - PLEASE FIX/*
+
+Simply logging BPF prog + attach, seemed natural
+- Want simple audit trail of BPF prog load/unload + attach
+- This was blocked upstream...
+- TODO: Explain why?!
 
 
 * Slide: Topic: Missing XDP feature detection                       :export:
