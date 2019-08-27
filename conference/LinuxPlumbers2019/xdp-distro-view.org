@@ -355,6 +355,11 @@ Means: Competing at the same “layer” as DPDK / netmap
  - Cooperates with the kernel stack
 
 * Slide: Multiple XDP programs on a single interface                 :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Supporting multiple programs on one interface
 XDP currently only supports */one program per interface/*.
 
 - So how to support /multiple functions/ in sequence?
@@ -447,6 +452,14 @@ int bpf_chain_call(ctx, retcode) {
 
 Needs *userspace tooling* to make this consumable (i.e., visualise and
 configure the effective program sequence -> populate maps).
+
+** Chain-calling program flow
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_HTML: :class figure figure-bg
+[[file:figures/XDP-chain-calls.svg]]
 
 ** How to implement? Option #1: userspace only
 
