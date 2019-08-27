@@ -485,6 +485,11 @@ With the following features:
      - Either by rewriting program return instructions
      - Or by hooking into =bpf_prog_run_xdp()= in the kernel
 
+3. Adding/Removing programs from sequence
+   - Involves "linked-list" kind of updates
+   - Commonly XDP_PASS call next prog in sequence
+   - XDP_DROP/XDP_REDIRECT mostly for troubleshooting
+
 ** Chain-calling: example execution flow
 :PROPERTIES:
 :reveal_extra_attr: class="img-slide"
