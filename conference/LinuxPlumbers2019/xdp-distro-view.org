@@ -429,16 +429,16 @@ int xdp_prog_idx0(struct xdp_md *ctx) { // in root_array with idx=0
 ** Prior art #2: Cloudflare xdpdump
 
 Cloudflare has a [[https://github.com/cloudflare/xdpcap][xdpcap utility]] that can run after other XDP programs:
-- Instrument your XDP return with tail-call per XDP action
+- Instrument your XDP return with tail-call per XDP 'action' code
 
 #+begin_src c
 struct bpf_map_def xdpcap_hook =  {
 	.type = BPF_MAP_TYPE_PROG_ARRAY,
 	.key_size = sizeof(int), .value_size = sizeof(int),
-	.max_entries = 5 };
-
+	.max_entries = 5 // one entry for each XDP action
+};
 int xdpcap_exit(struct xdp_md *ctx, void *hook_map, enum xdp_action action) {
-    bpf_tail_call(ctx, hook_map, action);  // doesn't return if it succeeds
+    bpf_tail_call(ctx, hook_map, action); // doesn't return if it succeeds
     return action; // reached only if above tail-call failed (no prog installed)
 }
 
@@ -447,7 +447,7 @@ int xdp_main(struct xdp_md *ctx) {  // program installed on interface
 }
 #+end_src
 
-/Pros/: Different hook program per exit code
+/Pros/: Different hook program per exit XDP 'action' code
 
 /*Cons*/: Programs must include helper, needs one map per chain call
 
