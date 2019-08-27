@@ -413,7 +413,7 @@ int xdp_root(struct xdp_md *ctx) { // installed on interface
   }
   return XDP_PASS;
 }
-int xdp2(struct xdp_md *ctx) { // in root_array with idx=0
+int xdp_prog_idx0(struct xdp_md *ctx) { // in root_array with idx=0
   for (__u32 i = 1; i < ROOT_ARRAY_SIZE; i++) { // start at 1!
     bpf_tail_call(ctx, &root_array, i);
   }
