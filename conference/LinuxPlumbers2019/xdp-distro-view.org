@@ -192,6 +192,26 @@ emacs).
 :reveal_extra_attr: class="mid-slide"
 :END:
 
+* Topic: BPF security and safety                                     :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: Current BPF "privileged" level unusable                  :export:
+
+Current BPF only one "privileged" level, root (=CAP_SYS_ADMIN=)
+
+RHEL as distro choose, BPF is "root-only" system-wide
+- Our only option: Fully unpriv user = too high risk
+- Actually /not what we really want/ - bad for overall system safety
+- E.g. daemons *unnecessary run as root after loading BPF-prog*
+  - expose (daemon) can crash/compromise entire system
+  - common UNIX practise drop priv, cannot as still need to read maps
+
+Need more flexible BPF "capabilities" levels
+- [[https://lore.kernel.org/bpf/98fee747-795a-ff10-fa98-10ddb5afcc03@iogearbox.net/][Use-case]]: Android [[https://source.android.com/devices/tech/datausage/ebpf-traffic-monitor][ebpf-traffic-monitor]] read MAP stats (in unpriv process)
+  - Currently forced to keep unprivileged BPF enabled
+- Levels still motivate security guys to find holes
 
 * Slide: Topic: Missing XDP feature detection                       :export:
 :PROPERTIES:
