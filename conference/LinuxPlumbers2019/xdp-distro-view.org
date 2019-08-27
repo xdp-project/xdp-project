@@ -398,18 +398,21 @@ Let's look at a couple of examples of how this is done...
 Facebook's [[https://github.com/facebookincubator/katran][Katran load balancer]] includes a mechanism for multi-program loading.
 
 #+begin_src C
-SEC("xdp-root")
-int xdp_root(struct xdp_md *ctx) {
-  __u32 *fd;
-  #pragma clang loop unroll(full)
+int xdp_root(struct xdp_md *ctx) { // installed on root interface
   for (__u32 i = 0; i < ROOT_ARRAY_SIZE; i++) {
-    bpf_tail_call(ctx, &root_array, i);  // reminder: never returns on success!
+    bpf_tail_call(ctx, &root_array, i);
+  }
+  return XDP_PASS;
+}
+int xdp2(struct xdp_md *ctx) { // in root_array with idx=0
+  for (__u32 i = 1; i < ROOT_ARRAY_SIZE; i++) { // start at 1!
+    bpf_tail_call(ctx, &root_array, i);
   }
   return XDP_PASS;
 }
 #+end_src
 
-/Pros/: Supports multiple programs with one map (second program starts at =i=1=)
+/Pros/: Supports multiple programs with one map
 
 /*Cons*/: Programs need to know their place in the sequence, no per-action hooks
 
