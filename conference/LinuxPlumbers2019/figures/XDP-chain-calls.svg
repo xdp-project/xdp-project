@@ -9,15 +9,15 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="14.042557cm"
-   height="9.1844387cm"
-   viewBox="41.322 28.396 32.121086 21.386813"
+   width="16.002541cm"
+   height="9.3996267cm"
+   viewBox="41.441 28.396 34.251338 21.704813"
    version="1.1"
-   id="svg1187"
+   id="svg4883"
    sodipodi:docname="XDP-chain-calls.svg"
    inkscape:version="0.92.4 5da689c313, 2019-01-14">
   <metadata
-     id="metadata1193">
+     id="metadata4889">
     <rdf:RDF>
       <cc:Work
          rdf:about="">
@@ -29,7 +29,7 @@
     </rdf:RDF>
   </metadata>
   <defs
-     id="defs1191" />
+     id="defs4887" />
   <sodipodi:namedview
      pagecolor="#ffffff"
      bordercolor="#666666"
@@ -39,357 +39,373 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1280"
+     inkscape:window-width="2200"
      inkscape:window-height="1404"
-     id="namedview1189"
+     id="namedview4885"
      showgrid="false"
      fit-margin-top="0"
      fit-margin-left="0"
      fit-margin-right="0"
      fit-margin-bottom="0"
-     inkscape:zoom="1.5341539"
-     inkscape:cx="84.926205"
-     inkscape:cy="-119.42328"
+     inkscape:zoom="1.9162998"
+     inkscape:cx="340.82744"
+     inkscape:cy="197.82095"
      inkscape:window-x="1080"
      inkscape:window-y="0"
      inkscape:window-maximized="0"
-     inkscape:current-layer="svg1187" />
+     inkscape:current-layer="svg4883" />
   <rect
-     x="47.436241"
+     x="46.384518"
      y="31.025812"
      width="7.2480001"
      height="1.9"
-     id="rect1081"
+     id="rect4773"
      style="fill:#ffffff;stroke:none;stroke-width:0" />
   <rect
-     x="47.436241"
+     x="46.384518"
      y="31.025812"
      width="7.2480001"
      height="1.9"
-     id="rect1083"
+     id="rect4775"
      style="fill:none;stroke:#000000;stroke-width:0.1" />
   <text
-     x="51.060238"
+     x="50.008514"
      y="32.169811"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1085"
+     id="text4777"
      style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:middle;fill:#000000">XDP prog id:1</text>
   <line
-     x1="51.038239"
+     x1="49.986515"
      y1="29.217813"
-     x2="51.054241"
+     x2="50.002518"
      y2="30.538813"
-     id="line1087"
+     id="line4779"
      style="stroke:#000000;stroke-width:0.1" />
   <polygon
      points="50.745,30.9 50.488,30.403 50.74,30.525 50.988,30.397 "
-     id="polygon1089"
+     id="polygon4781"
      style="fill:#000000;stroke:none;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polygon
      points="50.745,30.9 50.488,30.403 50.74,30.525 50.988,30.397 "
-     id="polygon1091"
+     id="polygon4783"
      style="fill:none;stroke:#000000;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <text
-     x="48.853241"
+     x="47.801517"
      y="29.003813"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1093"
+     id="text4785"
      style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">XDP hook start</text>
   <polyline
-     points="50.746,32.912 50.746,33.962 44.869,33.962 44.869,38.081 45.432,38.081 "
-     id="polyline1095"
+     points="50.746,32.912 50.746,33.962 44.869,33.962 44.869,36.580 45.432,36.580 "
+     id="polyline4787"
      style="fill:none;stroke:#000000;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polygon
-     points="45.807,38.081 45.307,38.331 45.432,38.081 45.307,37.831 "
-     id="polygon1097"
+     points="45.807,36.58 45.307,36.83 45.432,36.58 45.307,36.33 "
+     id="polygon4789"
      style="fill:#000000;stroke:none;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polygon
-     points="45.807,38.081 45.307,38.331 45.432,38.081 45.307,37.831 "
-     id="polygon1099"
+     points="45.807,36.58 45.307,36.83 45.432,36.58 45.307,36.33 "
+     id="polygon4791"
      style="fill:none;stroke:#000000;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <text
-     x="44.36124"
-     y="37.532814"
+     x="43.450516"
+     y="37.072811"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1101"
-     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:end;fill:#000000">Program</text>
+     id="text4793"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:end;fill:#000000">On</text>
   <text
-     x="44.36124"
-     y="38.332813"
+     x="43.450516"
+     y="37.872814"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1103"
+     id="text4795"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:end;fill:#000000">program</text>
+  <text
+     x="43.450516"
+     y="38.672813"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text4797"
      style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:end;fill:#000000">return</text>
-  <text
-     x="44.36124"
-     y="39.132812"
-     font-size="0.80"
-     font-style="normal"
-     font-weight="400"
-     id="text1105"
-     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:end;fill:#000000">hook</text>
   <rect
-     x="48.47224"
+     x="47.420517"
      y="44.151814"
      width="7.2480001"
      height="1.9"
-     id="rect1107"
+     id="rect4799"
      style="fill:#ffffff;stroke:none;stroke-width:0" />
   <rect
-     x="48.47224"
+     x="47.420517"
      y="44.151814"
      width="7.2480001"
      height="1.9"
-     id="rect1109"
+     id="rect4801"
      style="fill:none;stroke:#000000;stroke-width:0.1" />
   <text
-     x="52.096241"
+     x="51.044518"
      y="45.295815"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1111"
+     id="text4803"
      style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:middle;fill:#000000">XDP prog id:2</text>
   <rect
-     x="48.47224"
-     y="47.832813"
+     x="47.420517"
+     y="48.150814"
      width="7.2480001"
      height="1.9"
-     id="rect1113"
+     id="rect4805"
      style="fill:#ffffff;stroke:none;stroke-width:0" />
   <rect
-     x="48.47224"
-     y="47.832813"
+     x="47.420517"
+     y="48.150814"
      width="7.2480001"
      height="1.9"
-     id="rect1115"
+     id="rect4807"
      style="fill:none;stroke:#000000;stroke-width:0.1" />
   <text
-     x="52.096241"
-     y="48.976814"
+     x="51.044518"
+     y="49.294811"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1117"
+     id="text4809"
      style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:middle;fill:#000000">XDP prog id:3</text>
   <polyline
-     points="63.541,40.908 63.541,43.063 51.782,43.063 51.782,43.652 "
-     id="polyline1119"
+     points="67.699,41.199 67.699,43.063 51.782,43.063 51.782,43.651 "
+     id="polyline4811"
      style="fill:none;stroke:#000000;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polygon
-     points="51.782,44.027 51.532,43.527 51.782,43.652 52.032,43.527 "
-     id="polygon1121"
+     points="51.782,44.026 51.532,43.526 51.782,43.651 52.032,43.526 "
+     id="polygon4813"
      style="fill:#000000;stroke:none;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polygon
-     points="51.782,44.027 51.532,43.527 51.782,43.652 52.032,43.527 "
-     id="polygon1123"
+     points="51.782,44.026 51.532,43.526 51.782,43.651 52.032,43.526 "
+     id="polygon4815"
      style="fill:none;stroke:#000000;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polyline
-     points="63.541,40.908 63.541,43.063 60.475,43.063 60.475,46.679 51.782,46.679 51.782,47.332 "
-     id="polyline1125"
+     points="67.699,41.199 67.699,43.063 60.475,43.063 60.475,47.161 51.782,47.161 51.782,47.650 "
+     id="polyline4817"
      style="fill:none;stroke:#000000;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polygon
-     points="51.782,47.707 51.532,47.207 51.782,47.332 52.032,47.207 "
-     id="polygon1127"
+     points="51.782,48.025 51.532,47.525 51.782,47.65 52.032,47.525 "
+     id="polygon4819"
      style="fill:#000000;stroke:none;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polygon
-     points="51.782,47.707 51.532,47.207 51.782,47.332 52.032,47.207 "
-     id="polygon1129"
+     points="51.782,48.025 51.532,47.525 51.782,47.65 52.032,47.525 "
+     id="polygon4821"
      style="fill:none;stroke:#000000;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polyline
-     points="48.158,45.088 44.869,45.088 44.869,38.081 45.432,38.081 "
-     id="polyline1131"
+     points="48.158,45.088 44.869,45.088 44.869,39.581 45.432,39.581 "
+     id="polyline4823"
      style="fill:none;stroke:#000000;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polygon
-     points="45.807,38.081 45.307,38.331 45.432,38.081 45.307,37.831 "
-     id="polygon1133"
+     points="45.807,39.581 45.307,39.831 45.432,39.581 45.307,39.331 "
+     id="polygon4825"
      style="fill:#000000;stroke:none;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polygon
-     points="45.807,38.081 45.307,38.331 45.432,38.081 45.307,37.831 "
-     id="polygon1135"
+     points="45.807,39.581 45.307,39.831 45.432,39.581 45.307,39.331 "
+     id="polygon4827"
      style="fill:none;stroke:#000000;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polygon
-     points="63.541,35.231 66.38,38.07 63.541,40.908 60.701,38.07 "
-     id="polygon1137"
+     points="67.699,35.022 70.626,38.11 67.699,41.199 64.773,38.11 "
+     id="polygon4829"
      style="fill:#ffffff;stroke:none;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polygon
-     points="63.541,35.231 66.38,38.07 63.541,40.908 60.701,38.07 "
-     id="polygon1139"
+     points="67.699,35.022 70.626,38.11 67.699,41.199 64.773,38.11 "
+     id="polygon4831"
      style="fill:none;stroke:#000000;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <text
-     x="63.85524"
-     y="37.877811"
+     x="66.96151"
+     y="37.917812"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1141"
-     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:middle;fill:#000000">Lookup</text>
+     id="text4833"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:middle;fill:#000000">Found</text>
   <text
-     x="63.85524"
-     y="38.677814"
+     x="66.96151"
+     y="38.717812"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1143"
-     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:middle;fill:#000000">match?</text>
+     id="text4835"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:middle;fill:#000000">next ID?</text>
   <rect
-     x="71.365234"
+     x="74.675514"
      y="37.035812"
      width="2.3169999"
      height="2.096"
-     id="rect1145"
+     id="rect4837"
      style="fill:#ffffff;stroke:none;stroke-width:0" />
   <rect
-     x="71.365234"
+     x="74.675514"
      y="37.035812"
      width="2.3169999"
      height="2.096"
-     id="rect1147"
+     id="rect4839"
      style="fill:none;stroke:#000000;stroke-width:0.1" />
   <text
-     x="72.524231"
+     x="75.834511"
      y="38.277813"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1149"
+     id="text4841"
      style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:middle;fill:#000000">End</text>
   <line
-     x1="66.744232"
-     y1="38.083813"
-     x2="70.879234"
-     y2="38.083813"
-     id="line1151"
+     x1="69.923515"
+     y1="38.108814"
+     x2="74.189514"
+     y2="38.085812"
+     id="line4843"
      style="stroke:#000000;stroke-width:0.1" />
   <polygon
-     points="70.94,38.07 70.44,38.32 70.565,38.07 70.44,37.82 "
-     id="polygon1153"
+     points="75.302,38.07 74.803,38.323 74.927,38.072 74.8,37.823 "
+     id="polygon4845"
      style="fill:#000000;stroke:none;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polygon
-     points="70.94,38.07 70.44,38.32 70.565,38.07 70.44,37.82 "
-     id="polygon1155"
+     points="75.302,38.07 74.803,38.323 74.927,38.072 74.8,37.823 "
+     id="polygon4847"
      style="fill:none;stroke:#000000;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <text
-     x="68.222229"
+     x="71.532509"
      y="37.798813"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1157"
+     id="text4849"
      style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">No</text>
   <line
-     x1="57.759239"
+     x1="60.235516"
      y1="38.094814"
-     x2="60.52824"
-     y2="38.084812"
-     id="line1159"
+     x2="63.548519"
+     y2="38.119812"
+     id="line4851"
      style="stroke:#000000;stroke-width:0.1" />
   <polygon
-     points="60.589,38.07 60.09,38.322 60.214,38.071 60.088,37.822 "
-     id="polygon1161"
+     points="64.661,38.109 64.159,38.355 64.286,38.106 64.163,37.855 "
+     id="polygon4853"
      style="fill:#000000;stroke:none;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polygon
-     points="60.589,38.07 60.09,38.322 60.214,38.071 60.088,37.822 "
-     id="polygon1163"
+     points="64.661,38.109 64.159,38.355 64.286,38.106 64.163,37.855 "
+     id="polygon4855"
      style="fill:none;stroke:#000000;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <text
-     x="62.275238"
+     x="65.218941"
      y="42.749813"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1165"
+     id="text4857"
      style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">Yes</text>
   <polyline
-     points="48.158,48.769 44.869,48.769 44.869,38.081 45.432,38.081 "
-     id="polyline1167"
+     points="48.158,49.087 44.534,49.087 44.534,38.081 45.432,38.081 "
+     id="polyline4859"
      style="fill:none;stroke:#000000;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polygon
      points="45.807,38.081 45.307,38.331 45.432,38.081 45.307,37.831 "
-     id="polygon1169"
+     id="polygon4861"
      style="fill:#000000;stroke:none;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <polygon
      points="45.807,38.081 45.307,38.331 45.432,38.081 45.307,37.831 "
-     id="polygon1171"
+     id="polygon4863"
      style="fill:none;stroke:#000000;stroke-width:0.1"
-     transform="translate(0.31423918,0.01381246)" />
+     transform="translate(-0.73748307,0.01381246)" />
   <path
-     d="m 46.233239,35.093813 h 11.526 v 6.001 c -2.306,-1 -3.458,-1 -5.763,0 -2.305,1 -3.458,1 -5.763,0 v -6.001"
-     id="path1173"
+     d="m 45.181517,35.093813 h 15.054 v 6.001 c -3.011,-1 -4.516,-1 -7.527,0 -3.011,1 -4.516,1 -7.527,0 v -6.001"
+     id="path4865"
      inkscape:connector-curvature="0"
      style="fill:#ffffff;stroke:none;stroke-width:0.1" />
   <path
-     d="m 46.233239,35.093813 h 11.526 v 6.001 c -2.306,-1 -3.458,-1 -5.763,0 -2.305,1 -3.458,1 -5.763,0 v -6.001"
-     id="path1175"
+     d="m 45.181517,35.093813 h 15.054 v 6.001 c -3.011,-1 -4.516,-1 -7.527,0 -3.011,1 -4.516,1 -7.527,0 v -6.001"
+     id="path4867"
      inkscape:connector-curvature="0"
      style="fill:none;stroke:#000000;stroke-width:0.1" />
   <text
-     x="46.91024"
+     x="45.858517"
      y="36.219814"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1177"
-     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">Chain call map</text>
+     id="text4869"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">Program sequence map (eth0)</text>
   <text
-     x="46.91024"
+     x="45.858517"
      y="37.819813"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1179"
-     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">id:1 ret:PASS → id:2</text>
+     id="text4871"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">(prog id:1, ret:PASS) → next id:2</text>
   <text
-     x="46.91024"
+     x="45.858517"
      y="38.619812"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1181"
-     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">id:1 ret:DROP → &lt;NULL&gt;</text>
+     id="text4873"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">(prog id:1, ret:DROP) → next id:3</text>
   <text
-     x="46.91024"
+     x="45.858517"
      y="39.419811"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1183"
-     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">id:2 ret:PASS → id:3</text>
+     id="text4875"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">(prog id:2, ret:PASS) → next id:3</text>
   <text
-     x="46.91024"
+     x="45.858517"
      y="40.219814"
      font-size="0.80"
      font-style="normal"
      font-weight="400"
-     id="text1185"
+     id="text4877"
      style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">...</text>
+  <text
+     x="51.549515"
+     y="42.790813"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text4879"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">Tail call</text>
+  <text
+     x="51.559517"
+     y="46.852814"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text4881"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">Tail call</text>
 </svg>

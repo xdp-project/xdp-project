@@ -391,16 +391,16 @@ XDP currently only supports */one program per interface/*.
 - Today, multiple programs only possible through *cooperative tail calls*
   - Implemented differently across projects
 
-Let's look at a couple of examples of how this is done...
+Let's look at a couple of examples of how this is done today...
 
-** Multi-program solutions #1: Katran xdp_root
+** Prior art #1: Katran xdp_root
 
 Facebook's [[https://github.com/facebookincubator/katran][Katran load balancer]] includes a mechanism for multi-program loading.
 
 #+begin_src C
-int xdp_root(struct xdp_md *ctx) { // installed on root interface
+int xdp_root(struct xdp_md *ctx) { // installed on interface
   for (__u32 i = 0; i < ROOT_ARRAY_SIZE; i++) {
-    bpf_tail_call(ctx, &root_array, i);
+    bpf_tail_call(ctx, &root_array, i); // doesn't return when it succeeds
   }
   return XDP_PASS;
 }
@@ -416,7 +416,7 @@ int xdp2(struct xdp_md *ctx) { // in root_array with idx=0
 
 /*Cons*/: Programs need to know their place in the sequence, no per-action hooks
 
-** Solutions #2: Cloudflare xdpdump
+** Prior art #2: Cloudflare xdpdump
 
 Cloudflare has a [[https://github.com/cloudflare/xdpcap][xdpcap utility]] that can run after other XDP programs:
 
@@ -428,11 +428,11 @@ struct bpf_map_def xdpcap_hook =  {
 	.max_entries = 5 }
 
 int xdpcap_exit(struct xdp_md *ctx, void *hook_map, enum xdp_action action) {
-    bpf_tail_call(ctx, hook_map, action);
-    return action; // reminder: never used if bpf_tail_call "jumps"
+    bpf_tail_call(ctx, hook_map, action);  // doesn't return if it succeeds
+    return action;
 }
 
-int xdp_main(struct xdp_md *ctx) {
+int xdp_main(struct xdp_md *ctx) {  // program installed on interface
 	return xdpcap_exit(ctx, &xdpcap_hook, XDP_PASS);
 }
 #+end_src
@@ -453,30 +453,29 @@ There are a couple of limitations we would like to overcome:
 - Sysadmin cannot /*enforce policy*/
   - E.g., always run diagnostics program (such as xdpdump) first
 
-** How to fix this?
+** Chain calling: design goals
 
-Two ingredients:
+High-level goal: execute multiple eBPF programs in a single XDP hook.
 
-- A new helper:
+With the following features:
 
-#+begin_src c
-int bpf_chain_call(ctx, retcode) {
-  map = get_chain_call_map(ctx.ifindex);
-  if (map) {
-     inner_map = bpf_map_lookup(map, ctx.prog_id);
-     if (inner_map)
-        bpf_tail_call(ctx, inner_map, retcode);
-  }
-  return retcode;
-}
-#+end_src
+1. /Arbitrary execution order/
+  - Must be possible to change the order dynamically
+  - Execution chain can depend on program return code
+2. Should work *without modifying the programs* themselves
 
-- An option to /rewrite all return instructions/ to call this helper.
+** Chain calling: Essential ideas
 
-Needs *userspace tooling* to make this consumable (i.e., visualise and
-configure the effective program sequence -> populate maps).
+1. Per-interface data structure to define program sequence
+   - Lookup /current program ID/ and *return code* and get next program
+   - Can be implemented with BPF maps
+   - Similar to *prior art #2*, but one map for whole call chain
 
-** Chain-calling program flow
+2. Add a /hook at program return/:
+     - Either by rewriting program return instructions
+     - Or by hooking into =bpf_prog_run_xdp()= in the kernel
+
+** Chain-calling: example execution flow
 :PROPERTIES:
 :reveal_extra_attr: class="img-slide"
 :END:
@@ -484,7 +483,47 @@ configure the effective program sequence -> populate maps).
 #+ATTR_HTML: :class figure figure-bg
 [[file:figures/XDP-chain-calls.svg]]
 
-** How to implement? Option #1: userspace only
+** Chain calling: Call sequence lookup helper
+
+The chain call lookup /could be/ implemented like this:
+
+#+begin_src c
+struct chain_call_lookup {
+    unsigned int prog_id;
+    unsigned int return_code;
+};
+
+int bpf_chain_call(ctx, retcode) {
+  void *map = get_chain_call_map(ctx.ifindex);
+  if (map) {
+     struct chain_call_lookup key = {
+       .prog_id = ctx.prog_id,
+       .return_code = retcode
+     };
+     bpf_tail_call(ctx, map, &key); // doesn't return if successful
+  }
+  return retcode;
+}
+#+end_src
+
+** Chain calling: Call sequence lookup helper #2
+
+The chain call lookup /could also be/ implemented like this:
+
+#+begin_src c
+int bpf_chain_call(ctx, retcode) {
+  void *map = get_chain_call_map(ctx.ifindex);
+  if (map) {
+     void *inner_map = bpf_map_lookup(map, &ctx.prog_id);
+     if (inner_map)
+       bpf_tail_call(ctx, inner_map, &retcode); // doesn't return if successful
+  }
+  return retcode;
+}
+#+end_src
+
+
+** Implement option #1: userspace only
 
 To do this in userspace (e.g., libbpf), the loader must:
 
@@ -495,31 +534,31 @@ To do this in userspace (e.g., libbpf), the loader must:
 
 /Pros/: No kernel support needed
 
-/*Cons*/: Only enforceable if all loaders comply
+/*Cons*/: Only enforceable if all loaders comply, *lots* of book-keeping
 
-** How to implement? Option #2: Kernel support through verifier
+** Implementation option #2: Kernel verifier
 
-With kernel support in the verifier:
+In the kernel verifier:
 
-1. Define =bpf_chain_call()= as in-kernel helper
-2. Verifier enforces rewrite of return codes
-3. Userspace installs per-ifindex map and populates it
+1. Define =bpf_chain_call()= as BPF helper
+2. Verifier rewrites return instructions to helper calls
+3. Userspace populates per-ifindex call sequence map
 
-/Pros/: Enforceable systemwide, verifier already rewrites progs
+/Pros/: Enforceable systemwide, uses existing tail call infrastructure
 
 /*Cons*/: More code in already complex verifier
 
-** How to implement? Option #3: Kernel support through hook
+** Implementation option #3: bpf_prog_run_xdp()
 
 With kernel support in hook:
 
 1. Make =bpf_chain_call()= a regular function
-2. Hook into =bpf_prog_run_xdp()= and chain call from there
-3. Userspace installs per-ifindex map and populates it
+2. Call it before returning from =bpf_prog_run_xdp()=
+3. Userspace populates per-ifindex call sequence map
 
 /Pros/: Enforceable systemwide, no new verifier code
 
-/*Cons*/: Needs another branch in fast path; negligible perf. impact?
+/*Cons*/: Multiple BPF invocations instead of tail calls, another check in fast path
 
 * Notes
 
