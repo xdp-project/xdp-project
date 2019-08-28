@@ -233,6 +233,13 @@ Is this kind of a /micro-kernel facility/?
   - kernel feature development is too slow
   - kernel role-out + reboot takes too long in production
 
+* Slide: Common BPF library: libbpf
+
+As distro; want communities convey on common libs
+- Reduce fragmentation, e.g. limit number of BPF-ELF-loaders
+- *libbpf*: /promote as distro/ (want others to follow)
+- libbpf vs. iproute2
+  - problematic iproute2 have *incompatible ELF-maps format*
 
 * Topic: BPF security, safety and audit logging                      :export:
 :PROPERTIES:
