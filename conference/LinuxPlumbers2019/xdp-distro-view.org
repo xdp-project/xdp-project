@@ -236,6 +236,18 @@ As distro; want communities convey on common libs
 - libbpf vs. iproute2
   - problematic iproute2 have *incompatible ELF-maps format*
 
+** Slide: Easier build and devel environment                        :export:
+
+As distro; Want FOSS project to share build and devel environments
+
+Kernel [[https://github.com/torvalds/linux/tree/master/tools/testing/selftests/bpf/prog_tests][selftests/bpf]] and [[https://github.com/torvalds/linux/tree/master/samples/bpf][samples/bpf]]
+- *Bad starting point* when FOSS project want to use BPF/XDP
+
+With XDP focus, we have created GitHub [[https://github.com/xdp-project/][XDP-project]]
+- Subproject [[https://github.com/xdp-project/xdp-tutorial][XDP-tutorial]] with /easy build and devel environment/
+  - Build and test directly on your laptop via veth and network-namespaces
+  - Recently added tracing examples too
+
 * Topic: BPF security, safety and audit logging                      :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
