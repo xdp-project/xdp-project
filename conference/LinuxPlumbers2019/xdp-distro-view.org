@@ -192,6 +192,31 @@ emacs).
 :reveal_extra_attr: class="mid-slide"
 :END:
 
+* Notes on distro view                                               :export:
+
+The BPF technology challenge our normal perspective: kernel vs user-space
+
+Current capabilities not good enough
+- Distro root-only, even-though it opens user-space attack surface
+
+Lacks community convey on common libs, build and devel environment
+- Different hooks and flexibility, fragments FOSS solutions
+
+* Slide: BPF technology challenge us!                                :export:
+
+BPF *challenge* normal /separation between kernel and user-space/
+- Running user-space supplied byte-code in kernel-space
+- Fully programmable, super flexible, but also scary
+
+BPF runtime is a /sandbox technology/ - which why we allow this
+- Puts a lot of *trust in the BPF verifier*
+
+Is this kind of a /micro-kernel facility/?
+- Can it offer solutions in areas, where:
+  - kernel feature development is too slow
+  - kernel role-out + reboot takes too long in production
+
+
 * Topic: BPF security, safety and audit logging                      :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
