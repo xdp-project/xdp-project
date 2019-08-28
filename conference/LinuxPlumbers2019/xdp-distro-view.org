@@ -656,7 +656,7 @@ $ ip link show dev eth0 xdp call-chain
     prog/xdp id 1 chain call map id 42:
      prog id 1
       -> XDP_PASS: chain prog id 2
-      -> XDP_DROP: chain prog id 3
+      -> XDP_TX: chain prog id 3
      prog id 2
       -> XDP_PASS: chain prog id 3
      prog id 3
@@ -686,7 +686,7 @@ $ ip link set dev eth0 xdp object prog.o chain before 2 ret PASS
 $ ip link set dev eth0 xdp object prog.o chain replace 3
   --> id = load(prog.o); map = new_map();
   --> map_update(map, {1, PASS}, 2);
-  --> map_update(map, {1, DROP}, id);
+  --> map_update(map, {1, TX}, id);
   --> map_update(map, {2, PASS}, id);
   --> xdp_attach(eth0, 1, map, FORCE); # atomic replace
 #+end_src
