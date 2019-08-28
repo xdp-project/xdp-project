@@ -479,7 +479,7 @@ Facebook's [[https://github.com/facebookincubator/katran][Katran LB]] have mecha
 #+begin_src C
 int xdp_root(struct xdp_md *ctx) { // installed on interface
   for (__u32 i = 0; i < ROOT_ARRAY_SIZE; i++) {
-    bpf_tail_call(ctx, &root_array, i); // continue on failure (no prog exist)
+    bpf_tail_call(ctx, &root_array, i); // doesn't return when it succeeds
   }
   return XDP_PASS;
 }
@@ -553,11 +553,6 @@ With the following features:
 2. Add a /hook at program return/:
      - Either by rewriting program return instructions
      - Or by hooking into =bpf_prog_run_xdp()= in the kernel
-
-3. Adding/Removing programs from sequence
-   - Involves "linked-list" kind of updates
-   - Commonly XDP_PASS call next prog in sequence
-   - XDP_DROP/XDP_REDIRECT mostly for troubleshooting
 
 ** Chain-calling: example execution flow
 :PROPERTIES:
@@ -643,6 +638,59 @@ With kernel support in hook:
 /Pros/: Enforceable systemwide, no new verifier code
 
 /*Cons*/: Multiple BPF invocations instead of tail calls, another check in fast path
+
+** Chain-calling: User-space interface
+
+This will need *userspace tooling* to be usable.
+
+- To activate: /New netlink attribute/ in xdp attach message:
+
+#+begin_src c
+	addattr32(&req->n, sizeof(*req), IFLA_XDP_CHAIN_CALL_MAP, map_fd);
+#+end_src
+
+- Chain call status part of output
+#+begin_src sh
+$ ip link show dev eth0 xdp call-chain
+5: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP
+    prog/xdp id 1 chain call map id 42:
+     prog id 1
+      -> XDP_PASS: chain prog id 2
+      -> XDP_DROP: chain prog id 3
+     prog id 2
+      -> XDP_PASS: chain prog id 3
+     prog id 3
+      -> No chain calls
+#+end_src
+
+
+** Chain-calling: Updating the call sequence
+
+We want /atomic updates/ to chain call sequence.
+
+- Simple updates: *linked-list like* operations (map stays the same)
+
+#+begin_src sh
+$ ip link set dev eth0 xdp object prog.o chain after 3 ret PASS
+  --> id = load(prog.o);
+  --> map_update(map, {3, PASS}, id) # atomic update
+$ ip link set dev eth0 xdp object prog.o chain before 2 ret PASS
+  --> id = load(prog.o);
+  --> map_update(map, {id, PASS}, 2); # no effect on chain sequence
+  --> map_update(map, {1, PASS}, id); # atomic update
+#+end_src
+
+- More complex operations: /*replace the whole thing*/
+
+#+begin_src sh
+$ ip link set dev eth0 xdp object prog.o chain replace 3
+  --> id = load(prog.o); map = new_map();
+  --> map_update(map, {1, PASS}, 2);
+  --> map_update(map, {1, DROP}, id);
+  --> map_update(map, {2, PASS}, id);
+  --> xdp_attach(eth0, 1, map, FORCE); # atomic replace
+#+end_src
+
 
 * Notes
 
