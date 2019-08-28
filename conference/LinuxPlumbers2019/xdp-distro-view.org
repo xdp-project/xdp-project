@@ -203,8 +203,19 @@ As distro; was hoping for /more mature BPF solutions/ (chicken & egg problem?)
 - Different hooks and nice flexibility, fragments FOSS solutions
 
 BPFtool does BPF /feature probing/, but *XDP doesn't fit this model*
-- (Deep dive later)
+- Deep dive later: Proposing a solution for XDP features
 
+** Slide: Outline: XDP specific issues
+
+*Hard to troubleshoot* XDP without tcpdump-like facility
+- Today, Sysadm/FOSS-user need modify BPF prog to debug (unreasonable)
+
+XDP currently only supports *one program per interface*
+- As distro; need to support multiple FOSS projects
+- *Need* to: Establish /common way to "share" XDP hook/
+
+/Deep dive/: Multiple programs on one interface
+- *Might* also allow (sysadm) to /load troubleshoot tcpdump-like program/
 
 * Slide: BPF technology challenge us!                                :export:
 
