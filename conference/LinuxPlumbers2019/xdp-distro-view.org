@@ -187,11 +187,6 @@ Only sections with tag ":export:" will end-up in the presentation. The prefix
 "Slide:" is only syntax-sugar for the reader (and it removed before export by
 emacs).
 
-* Slide: Outline                                                   :noexport:
-:PROPERTIES:
-:reveal_extra_attr: class="mid-slide"
-:END:
-
 * Slide: Outline: On distro view                                     :export:
 
 The BPF technology *challenge* our normal /perspective/: kernel vs user-space
@@ -233,7 +228,7 @@ Is this kind of a /micro-kernel facility/?
   - kernel feature development is too slow
   - kernel role-out + reboot takes too long in production
 
-* Slide: Common BPF library: libbpf
+* Slide: Common BPF library: libbpf                                  :export:
 
 As distro; want communities convey on common libs
 - Reduce fragmentation, e.g. limit number of BPF-ELF-loaders
