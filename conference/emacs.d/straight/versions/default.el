@@ -1,0 +1,11 @@
+(("org" . "fb866077dbd2acf3487ace7c07746f9f1ac91f11")
+ ("org-reveal" . "1cdd088ec5fab631c564dca7f9f74fd3e9b7d4d4")
+ ("use-package" . "0ee88b5cac41acf974c4bedb8859931ead8bfc79")
+ ("straight.el" . "46aa1b1ee10bfd3a20a419c3f70d7a9c6d369fb4")
+ ("s.el" . "03410e6a7a2b11e47e1fea3b7d9899c7df26435e")
+ ("emacs-htmlize" . "8db0aa6aab77475a732b7363f0d57bd3933c18fd")
+ ("emacs-color-theme-solarized" . "85af3a8c49c992e289759142fb8fbfbfb7801b21")
+ ("dash.el" . "258c324d9840901db83b2cabef3fa75bba57c1ba")
+ ("f.el" . "8191672377816a1975414cc1f116fd3b94b30bd0")
+ ("git.el" . "a3396a7027a7d986598c6a2d6d5599bac918f3da"))
+:saturn
