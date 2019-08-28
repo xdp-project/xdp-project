@@ -203,6 +203,8 @@ As distro; was hoping for /more mature BPF solutions/ (chicken & egg problem?)
 - Different hooks and nice flexibility, fragments FOSS solutions
 
 BPFtool does BPF /feature probing/, but *XDP doesn't fit this model*
+- Current situation without XDP feature check:
+  - Kernel allow users to *attach invalid XDP prog*, giving */silent drops/*
 - Deep dive later: Proposing a solution for XDP features
 
 ** Slide: Outline: XDP specific issues
