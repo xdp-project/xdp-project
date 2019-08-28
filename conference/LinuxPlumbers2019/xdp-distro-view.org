@@ -187,20 +187,24 @@ Only sections with tag ":export:" will end-up in the presentation. The prefix
 "Slide:" is only syntax-sugar for the reader (and it removed before export by
 emacs).
 
-* Slide: Outline                                                     :export:
+* Slide: Outline                                                   :noexport:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-* Notes on distro view                                               :export:
+* Slide: Outline: On distro view                                     :export:
 
-The BPF technology challenge our normal perspective: kernel vs user-space
+The BPF technology *challenge* our normal /perspective/: kernel vs user-space
 
-Current capabilities not good enough
-- Distro root-only, even-though it opens user-space attack surface
+Capabilities not good enough (*distro root-only*, open daemon attack surface)
 
-Lacks community convey on common libs, build and devel environment
-- Different hooks and flexibility, fragments FOSS solutions
+As distro; was hoping for /more mature BPF solutions/ (chicken & egg problem?)
+- Lacks community convey on common libs, build and devel environment
+- Different hooks and nice flexibility, fragments FOSS solutions
+
+BPFtool does BPF /feature probing/, but *XDP doesn't fit this model*
+- (Deep dive later)
+
 
 * Slide: BPF technology challenge us!                                :export:
 
