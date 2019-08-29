@@ -426,33 +426,6 @@ Two options:
 - (2) Do feature probing like bpftool
 
 
-* Slide: Random slides below                                         :export:
-:PROPERTIES:
-:reveal_extra_attr: class="mid-slide"
-:END:
-
-TODO: Cleanup/delete this section
-
-** Slide: What is XDP?                                              :export:
-
-#+BEGIN_NOTES
-People should already know this; but since we already have the slide, might as
-well include it.
-#+END_NOTES
-
-XDP basically: *New layer in the kernel network stack*
- - Before allocating the SKB
- - Driver level hook at DMA level
-
-Means: Competing at the same “layer” as DPDK / netmap
- - Super fast, due to
-   - Take action/decision earlier (e.g. skip some network layers)
-   - No memory allocations
-
-/Not kernel bypass/; data-plane is kept inside the kernel
- - Via eBPF: makes early network stack *run-time programmable*
- - Cooperates with the kernel stack
-
 * Slide: Multiple XDP programs on a single interface                 :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
