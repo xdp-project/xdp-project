@@ -7,7 +7,7 @@
       (bootstrap-version 4))
   (unless (file-exists-p bootstrap-file)
     (with-current-buffer
-        (find-file "install-straight.el" user-emacs-directory)
+        (find-file (expand-file-name "install-straight.el" user-emacs-directory))
       (goto-char (point-max))
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
