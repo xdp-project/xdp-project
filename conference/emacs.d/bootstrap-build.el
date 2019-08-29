@@ -1,6 +1,7 @@
 (setq user-emacs-directory (file-name-directory
                             (file-truename (or load-file-name buffer-file-name)))
-      make-backup-files nil)
+      make-backup-files nil
+      color-theme-obsolete nil)
 
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
