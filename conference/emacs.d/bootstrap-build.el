@@ -49,7 +49,15 @@
   :straight t)
 
 
+(defun silence-messages (orig-fun &rest r)
+  "Silence messages from ORIG-FUN with args R."
+  (let ((inhibit-message t))
+    (apply orig-fun r)))
+(advice-add 'sh-set-shell :around #'silence-messages)
+
+
 (defun export-slides-file (filename)
+  "Export slides from FILENAME using org-reveal."
   (let ((enable-local-variables :all))
     (with-current-buffer
         (find-file filename)
