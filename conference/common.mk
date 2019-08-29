@@ -21,3 +21,6 @@ $(HTML_FILES): %.html: %.org
 $(PDF_FILES): %.pdf: %.html
 	$(BUILD_PDF_SCRIPT) "$<" "$(DECKTAPE)"
 
+clean:
+	rm -f $(PDF_FILES)
+	rm -f $(HTML_FILES)
