@@ -451,42 +451,15 @@ With kernel support in hook:
 
 /*Cons*/: Multiple BPF invocations instead of tail calls, another check in fast path
 
-** Chain-calling: User-space interface
-
-This will need *userspace tooling* to be usable.
-
-- To activate: /New netlink attribute/ in xdp attach message:
-
-#+begin_src c
-	addattr32(&req->n, sizeof(*req), IFLA_XDP_CHAIN_CALL_MAP, map_fd);
-#+end_src
-
-- Chain call status part of output
-#+begin_src sh
-$ ip link show dev eth0 xdp call-chain
-5: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP
-    prog/xdp id 1 chain call map id 42:
-     prog id 1
-      -> XDP_PASS: chain prog id 2
-      -> XDP_TX: chain prog id 3
-     prog id 2
-      -> XDP_PASS: chain prog id 3
-     prog id 3
-      -> No chain calls
-#+end_src
-
-
 ** Chain-calling: Updating the call sequence
-
-We want /atomic updates/ to chain call sequence.
 
 - Simple updates: *linked-list like* operations (map stays the same)
 
 #+begin_src sh
-$ ip link set dev eth0 xdp object prog.o chain after 3 ret PASS
+# Insert after id 3
   --> id = load(prog.o);
   --> map_update(map, {3, PASS}, id) # atomic update
-$ ip link set dev eth0 xdp object prog.o chain before 2 ret PASS
+# Insert before id 2
   --> id = load(prog.o);
   --> map_update(map, {id, PASS}, 2); # no effect on chain sequence
   --> map_update(map, {1, PASS}, id); # atomic update
@@ -495,13 +468,15 @@ $ ip link set dev eth0 xdp object prog.o chain before 2 ret PASS
 - More complex operations: /*replace the whole thing*/
 
 #+begin_src sh
-$ ip link set dev eth0 xdp object prog.o chain replace 3
+# Replace ID 3 with new program
   --> id = load(prog.o); map = new_map();
   --> map_update(map, {1, PASS}, 2);
   --> map_update(map, {1, TX}, id);
   --> map_update(map, {2, PASS}, id);
   --> xdp_attach(eth0, 1, map, FORCE); # atomic replace
 #+end_src
+
+We want /atomic updates/; how to manage read-modify-update races?
 
 
 * Slide: Topic: Missing XDP feature detection                       :export:
