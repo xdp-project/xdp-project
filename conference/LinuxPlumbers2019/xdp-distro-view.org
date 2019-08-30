@@ -199,7 +199,7 @@ In this talk we will try to give a /distro view on XDP and eBPF/.
   - eBPF audit support
   - Safety of the verifier
   - Controlling eBPF capabilities
-  - Tooling, build environments and support
+  - Tooling and build environments
   - Managing expectations - things XDP cannot (currently) do
 
 * Slide: The high-level distro view                                  :export:
@@ -242,27 +242,6 @@ Is this a kind of /micro-kernel facility/?
 - Can it offer solutions in areas, where:
   - kernel feature development is too slow
   - kernel roll-out + reboot takes too long in production
-
-* Slide: Common BPF library: libbpf                                  :export:
-
-As distro; want community consensus on common libs
-- Reduce fragmentation, e.g. limit number of BPF-ELF-loaders
-- *libbpf*: /promote as distro/ (want others to follow)
-- libbpf vs. iproute2
-  - problematic iproute2 has *incompatible ELF-maps format*
-  - we are working on that
-
-** Slide: Easier build and devel environment                        :export:
-
-We want FOSS projects to share build and devel environments
-
-Kernel [[https://github.com/torvalds/linux/tree/master/tools/testing/selftests/bpf/prog_tests][selftests/bpf]] and [[https://github.com/torvalds/linux/tree/master/samples/bpf][samples/bpf]]
-- *Bad starting point* when a new project wants to use BPF/XDP
-
-With XDP focus, we have created a GitHub [[https://github.com/xdp-project/][XDP-project]]
-- Subproject [[https://github.com/xdp-project/xdp-tutorial][XDP-tutorial]] with /easy build and devel environment/
-  - Build and test directly on your laptop via veth and network-namespaces
-  - Recently added tracing examples too
 
 * Slide: Multiple XDP programs on a single interface                 :export:
 :PROPERTIES:
@@ -655,6 +634,32 @@ Simply logging BPF prog + attach, seemed natural
 - This was blocked upstream...
 - TODO: Explain why?!
 
+
+* Tooling and build environments                                     :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: Common BPF library: libbpf                                :export:
+
+We want to /reduce fragmentation/.
+
+- Ex: iproute2 has *incompatible ELF-maps format*
+  - WiP: convert iproute2 to use libbpf
+
+Solution:
+- *libbpf*: /promote as distro/ (want others to follow)
+
+** Slide: Easier build and devel environment                        :export:
+
+We want FOSS projects to share build and devel environments
+
+Kernel [[https://github.com/torvalds/linux/tree/master/tools/testing/selftests/bpf/prog_tests][selftests/bpf]] and [[https://github.com/torvalds/linux/tree/master/samples/bpf][samples/bpf]]: *bad starting point*
+
+With XDP focus, we have created a GitHub [[https://github.com/xdp-project/][XDP-project]]
+- Subproject [[https://github.com/xdp-project/xdp-tutorial][XDP-tutorial]] with /easy build and devel environment/
+  - Build and test directly on your laptop via veth and network-namespaces
+  - Recently added tracing examples too
 
 * Notes
 
