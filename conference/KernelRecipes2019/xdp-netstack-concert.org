@@ -1,6 +1,6 @@
 # -*- fill-column: 79; -*-
 #+TITLE: XDP closer integration with network stack
-#+AUTHOR: Jesper Dangaard Brouer
+#+AUTHOR: Jesper Dangaard Brouer <hawk@kernel.org>
 #+EMAIL: brouer@redhat.com
 #+REVEAL_THEME: redhat
 #+REVEAL_TRANS: linear
@@ -11,7 +11,7 @@
 #+OPTIONS: reveal_width:1600 reveal_height:900
 #+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
 
-* For conference: Kernel Recipes 2019
+* For conference: Kernel Recipes 2019                              :noexport:
 
 This presentation will be given at [[https://kernel-recipes.org/en/2019/][Kernel Recipes 2019]].
 
@@ -41,3 +41,27 @@ This talk is about how XDP can work in-concert with netstack, and proposal on
 how we can take this even-further. Crazy ideas like using XDP frames to move SKB
 allocation out of driver code, will also be proposed.
 
+* Colors in slides                                                 :noexport:
+Text colors on slides are chosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation. The prefix
+"Slide:" is only syntax-sugar for the reader (and it removed before export by
+emacs).
+
+* Slide: Outline  :export:
+
+*EMPTY*
+
+* Emacs end-tricks                                                 :noexport:
+
+# Local Variables:
+# org-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
+# class=\"author\">Jesper Dangaard Brouer<br/>Red Hat</h2>
+# <h3>Kernel Recipes Conf<br/>Paris, Sep 2019</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
