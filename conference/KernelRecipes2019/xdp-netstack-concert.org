@@ -1,0 +1,43 @@
+# -*- fill-column: 79; -*-
+#+TITLE: XDP closer integration with network stack
+#+AUTHOR: Jesper Dangaard Brouer
+#+EMAIL: brouer@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: Kernel Recipes 2019
+
+This presentation will be given at [[https://kernel-recipes.org/en/2019/][Kernel Recipes 2019]].
+
+Links to talk:
+ - https://kernel-recipes.org/en/2019/talks/
+ - https://kernel-recipes.org/en/2019/xdp-closer-integration-with-network-stack/
+
+** Abstract
+
+XDP (eXpress Data Path) is the new programmable in-kernel fast-path, which is
+placed as a layer before the existing Linux kernel network stack (netstack).
+
+We claim XDP is not kernel-bypass, as it is a layer before and it can easily
+fall-through to netstack. Reality is that it can easily be (ab)used to create a
+kernel-bypass situation, where non of the kernel facilities are used (in form of
+BPF-helpers and in-kernel tables). The main disadvantage with kernel-bypass, is
+the need to re-implement everything, even basic building blocks, like routing
+tables and ARP protocol handling.
+
+It is part of the concept and speed gain, that XDP allows users to avoid calling
+part of the kernel code. Users have the freedom to do kernel-bypass and
+re-implement everything, but the kernel should provide access to more in-kernel
+tables, via BPF-helpers, such that users can leverage other parts of the Open
+Source ecosystem, like router daemons etc.
+
+This talk is about how XDP can work in-concert with netstack, and proposal on
+how we can take this even-further. Crazy ideas like using XDP frames to move SKB
+allocation out of driver code, will also be proposed.
+
