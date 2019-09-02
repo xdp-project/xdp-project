@@ -57,6 +57,17 @@ emacs).
 
 *EMPTY*
 
+* Slide: Framing XDP                                                 :export:
+
+XDP: /in-kernel/ programmable (eBPF) *layer before netstack*
+ - (AF_XDP is our selective kernel-bypass to userspace)
+XDP ensures that *Linux networking stays relevant*
+ - Operates at L2-L3, netstack is L4-L7
+XDP is not first mover, but we believe XDP is /different and better/
+ - Flexible sharing of NIC resources
+ - /Killer feature/: Integration with Linux kernel
+   - This talk: *How to extend this integration further?*
+
 * Emacs end-tricks                                                 :noexport:
 
 # Local Variables:
