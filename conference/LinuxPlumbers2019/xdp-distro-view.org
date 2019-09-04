@@ -212,7 +212,7 @@ Straigthforward: CONFIG_BPF_SYSCALL=y
   - CONFIG_BPF_STREAM_PARSER=y
   - CONFIG_LWTUNNEL_BPF=y
 
-* Slide: Enabling XDP: packages                                      :export:
+* Slide: Enabling XDP: packages (1/2)                                :export:
 
 - Newest iproute2
 - bpftool
@@ -224,6 +224,9 @@ Straigthforward: CONFIG_BPF_SYSCALL=y
 - pahole
   - overloaded with BTF conversion code
   - perhaps the BTF functionality should be split into a different tool?
+
+* Slide: Enabling XDP: packages (2/2)                                :export:
+
 - libbpf
   - part of the kernel source code
   - packageable as a library since kernel v5.1
