@@ -803,7 +803,7 @@ Accent Palette:
  - Yellow #fecb00
 
 # Local Variables:
-# org-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
 # class=\"author\">Jesper Dangaard Brouer (Red Hat)<br/>Toke Høiland-Jørgensen
 # (Karlstad University)</h2><h3>LPC Networking Track<br/>Vancouver, Nov
 # 2018</h3>"

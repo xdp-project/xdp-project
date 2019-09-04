@@ -181,7 +181,7 @@ Some kind of intermediate queueing structure separate from the RX/TX hooks?
 * Emacs tricks
 
 # Local Variables:
-# org-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
 # <h2 class=\"author\">Toke Høiland-Jørgensen (Red Hat)<br/>
 # Jesper Dangaard Brouer (Red Hat)<br/></h2>
 # <h3>Netconf<br/>Boston, June 2019</h3>"

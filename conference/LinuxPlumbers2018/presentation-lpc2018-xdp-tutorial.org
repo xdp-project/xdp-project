@@ -530,7 +530,7 @@ Others expansions:
 These emacs Local Variables does some export tricks.
 
 # Local Variables:
-# org-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
 # <h2 class=\"author\">
 # Jesper Dangaard Brouer (Red Hat)<br/>
 # Andy Gospodarek (Broadcom)</h2>

@@ -234,7 +234,7 @@ Compare AF_XDP against DPDK performance
 * Emacs tricks
 
 # Local Variables:
-# org-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
 # <h2 class=\"author\">Jesper Dangaard Brouer (Red Hat)<br/></h2>
 # <h3>Data Examples<br/>in org-mode</h3>"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))

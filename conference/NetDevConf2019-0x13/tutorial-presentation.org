@@ -223,7 +223,7 @@ Accent Palette:
  - Yellow #fecb00
 
 # Local Variables:
-# org-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
 # class=\"author\">Jesper Dangaard Brouer<br/>Toke Høiland-Jørgensen</h2>
 # <h3>NetDev 0x13<br/>Prague, March 2019</h3>"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))

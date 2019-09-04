@@ -41,13 +41,17 @@
 (use-package org
   :straight t)
 
-(use-package ox-reveal
+(use-package org-re-reveal
   :straight t
-  :after org)
+  :after org
+  :config
+  (setq org-re-reveal-plugins '(markdown notes zoom)))
 
 (use-package htmlize
   :straight t)
 
+; Make sure we use the versions specified in versions/default.el
+(straight-thaw-versions)
 
 (defun silence-messages (orig-fun &rest r)
   "Silence messages from ORIG-FUN with args R."
@@ -61,4 +65,4 @@
   (let ((enable-local-variables :all))
     (with-current-buffer
         (find-file filename)
-      (org-reveal-export-to-html))))
+      (org-re-reveal-export-to-html))))
