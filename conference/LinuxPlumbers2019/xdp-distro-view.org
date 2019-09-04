@@ -338,6 +338,7 @@ Possible solution: access rights for maps?
   - Can we have XDP passthrough?
   - Can we have XDP offloading from VM to NIC?
   - What about VM migration?
+- Great part of features untested on non-x86_64.
 
 * Slide: User expectation                                            :export:
 
