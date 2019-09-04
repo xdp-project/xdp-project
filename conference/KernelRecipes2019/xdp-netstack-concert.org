@@ -57,6 +57,35 @@ emacs).
 
 *EMPTY*
 
+* Slide: Audience at Kernel Recipes                                  :export:
+
+Other /kernel developers/
+- But for *different kernel sub-systems*
+
+Hopefully you already /heard about XDP/ (eXpress Data Path) */?/* *?* /?/
+- I'll explain why network sub-system created this...
+
+** Slide: Why was XDP needed?                                       :export:
+
+This was about the *kernel networking stack staying relevant*
+ - For emerging use-cases and areas
+
+Linux networking stack assumes layer L4-L7 delivery
+ - Obviously slow when compared to L2-L3 (kernel-bypass) solutions
+
+XDP operate at layers L2-L3
+ - Shows same performance as these L2-L3 kernel-bypass solutions
+
+@@html:<small>@@
+
+The networking OSI layer model:
+ - L2=Ethernet
+ - L3=IPv4/IPv6
+ - L4=TCP/UDP
+ - L7=Applications
+
+@@html:</small>@@
+
 * Slide: Framing XDP                                                 :export:
 
 XDP: /in-kernel/ programmable (eBPF) *layer before netstack*
