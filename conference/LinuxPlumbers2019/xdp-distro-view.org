@@ -221,6 +221,9 @@ Straigthforward: CONFIG_BPF_SYSCALL=y
   - similar to iproute2: no need for a dependency to a particular kernel version
 - clang/llvm with bpf backend
   - BTF support is highly desirable
+- pahole
+  - overloaded with BTF conversion code
+  - perhaps the BTF functionality should be split into a different tool?
 - libbpf
   - part of the kernel source code
   - packageable as a library since kernel v5.1
