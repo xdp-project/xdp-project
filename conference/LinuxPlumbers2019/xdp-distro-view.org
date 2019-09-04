@@ -304,6 +304,49 @@ Problems:
 
 Possible solution: access rights for maps?
 
+* Slide: The pain points: user experience                            :export:
+
+- No readily available solution packaged in distros.
+  - "What? Do I need to be a programmer to use XDP?"
+- tcpdump does not see all packets anymore.
+  - XDP_DROP etc.
+- Interface statistics do not count all packets anymore.
+  - "It must be something on the wire!"
+- XDP programs do not reach the expected speed.
+  - Because XDP generic is used.
+
+* Slide: The pain points: developer experience                       :export:
+
+- Packets can be silently dropped even with correct XDP programs.
+  - What are the available XDP features on the interface?
+- XDP is not powerful enough.
+  - Can't send packets.
+  - Where is a repository with XDP libraries I can use?
+  - Okay, let's use AF_XDP... (later) It's too slow!
+- Verifier not smart enough.
+
+* Slide: The pain points: distro experience                          :export:
+
+- User wants to install these two packages. But both are using XDP!
+- User is using XDP for custom filtering and now installed this package. It is using XDP, too.
+- virtio_net supports XDP but the performance is limited.
+  - Can we have XDP passthrough?
+  - Can we have XDP offloading from VM to NIC?
+  - What about VM migration?
+
+* Slide: User expectation                                            :export:
+
+XDP has strong marketing. Everyone wants to use it.
+
+- There are no ready to use solutions.
+- Not enough features when trying to implement a custom solution.
+- Turning to AF_XDP (because it is "XDP", isn't it?) and resulting disappointment.
+
+Distros need to focus on developers and encourage them to develop XDP based solutions.
+- Need more examples.
+- Need best practices.
+- Need education about limitations.
+
 
 * Slide: The high-level distro view                                  :export:
 
