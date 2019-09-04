@@ -71,7 +71,7 @@ This was about the *kernel networking stack staying relevant*
  - For emerging use-cases and areas
 
 Linux networking stack assumes layer L4-L7 delivery
- - Obviously slow when compared to L2-L3 (kernel-bypass) solutions
+ - Obviously slow when compared to L2-L3 kernel-bypass solutions
 
 XDP operate at layers L2-L3
  - Shows same performance as these L2-L3 kernel-bypass solutions
@@ -85,6 +85,23 @@ The networking OSI layer model:
  - L7=Applications
 
 @@html:</small>@@
+
+** Slide: What is XDP?                                              :export:
+
+@@html:<small>@@
+What kind of monster did you create with XDP?!?
+@@html:</small>@@
+
+XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
+ - /New programmable layer in-front/ of traditional network stack
+ - For L2-L3 use-cases: seeing x10 performance improvements!
+ - Can accelerate *in-kernel* L2-L3 use-cases (e.g. forwarding)
+
+What is /AF_XDP/? (the Address Family XDP socket)
+ - Hybrid *kernel-bypass* facility, move selective frames out of kernel
+ - XDP/eBPF prog filters packets using REDIRECT into AF_XDP socket
+ - Delivers raw L2 frames into userspace
+
 
 * Slide: Framing XDP                                                 :export:
 
