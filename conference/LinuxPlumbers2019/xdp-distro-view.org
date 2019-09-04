@@ -200,7 +200,12 @@ We will also touch related general eBPF topics.
 
 Then we will look in depth into some of the problems.
 
-* Slide: Enabling XDP: kernel side                                   :export:
+* Slide: Enabling XDP                                                :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: Enabling XDP: kernel side                                 :export:
 
 Straigthforward: CONFIG_BPF_SYSCALL=y
 - XDP is always enabled
@@ -212,7 +217,7 @@ Straigthforward: CONFIG_BPF_SYSCALL=y
   - CONFIG_BPF_STREAM_PARSER=y
   - CONFIG_LWTUNNEL_BPF=y
 
-* Slide: Enabling XDP: packages (1/2)                                :export:
+** Slide: Enabling XDP: packages (1/2)                              :export:
 
 - Newest iproute2
 - bpftool
@@ -225,14 +230,14 @@ Straigthforward: CONFIG_BPF_SYSCALL=y
   - overloaded with BTF conversion code
   - perhaps the BTF functionality should be split into a different tool?
 
-* Slide: Enabling XDP: packages (2/2)                                :export:
+** Slide: Enabling XDP: packages (2/2)                              :export:
 
 - libbpf
   - part of the kernel source code
   - packageable as a library since kernel v5.1
   - not much practical experience, yet
 
-* Slide: Enabling XDP: testing                                       :export:
+** Slide: Enabling XDP: testing                                     :export:
 
 - CONFIG_TEST_BPF=m
 - tools/testing/selftests/bpf
@@ -242,7 +247,12 @@ Straigthforward: CONFIG_BPF_SYSCALL=y
   - some samples do not work out of kernel tree
   - not much usable for testing overall
 
-* Slide: eBPF supportability: tools                                  :export:
+* Slide: eBPF supportability                                         :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: eBPF supportability: tools                                :export:
 
 Introspection needed. bpftool provides that.
 - Essential to be installed on *all* systems.
@@ -256,7 +266,7 @@ crash
 - Understands eBPF since v7.2.2.
 - https://github.com/crash-utility/crash
 
-* Slide: eBPF supportability: bug reports                            :export:
+** Slide: eBPF supportability: bug reports                          :export:
 
 The kernel behaves differently with BPF programs loaded.
 
@@ -270,14 +280,14 @@ Distros need to create cheat sheets for users:
 - What to look for if XDP programs are not working as expected.
 - etc.
 
-* Slide: eBPF supportability: audit trail                            :export:
+** Slide: eBPF supportability: audit trail                          :export:
 
 bpftool provides only the current state. The BPF program that caused issues (e.g. packet drops) may not be loaded anymore.
 
 Possible solution: enhancing the audit subsystem.
 - Patches currently stuck due to disagreement between bpf and audit maintainers.
 
-* Slide: eBPF security                                               :export:
+** Slide: eBPF security                                             :export:
 
 Two major areas of possible problems:
 
@@ -289,7 +299,7 @@ Hardening:
 - CONFIG_BPF_JIT_ALWAYS_ON=y to secure against malicious VMs.
 - Unprivileged users may load BPF programs. Is that a problem?
 
-* Slide: Unprivileged BPF                                            :export:
+** Slide: Unprivileged BPF                                          :export:
 
 Considerations:
 - Verifier bugs may be dangerous.
@@ -301,7 +311,7 @@ Turning off unprivileged BPF:
 - No way to set this by default in upstream kernel.
 - Needs to be set in a bootloader. Or use a distro specific patch.
 
-* Slide: Unprivileged BPF                                            :export:
+** Slide: Unprivileged BPF                                          :export:
 
 Problems:
 - Daemons manipulating maps need to be privileged.
@@ -310,7 +320,12 @@ Problems:
 
 Possible solution: access rights for maps?
 
-* Slide: The pain points: user experience                            :export:
+* Slide: XDP pain points                                             :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: The pain points: user experience                          :export:
 
 - No readily available solution packaged in distros.
   - "What? Do I need to be a programmer to use XDP?"
@@ -322,7 +337,7 @@ Possible solution: access rights for maps?
 - XDP programs do not reach the expected speed.
   - Because XDP generic is used.
 
-* Slide: The pain points: developer experience                       :export:
+** Slide: The pain points: developer experience                     :export:
 
 - Packets can be silently dropped with XDP programs that are accepted as correct.
   - Because of using unimplemented features.
@@ -333,7 +348,7 @@ Possible solution: access rights for maps?
   - Okay, let's use AF_XDP... (later) It's too slow!
 - Verifier not smart enough.
 
-* Slide: The pain points: distro experience                          :export:
+** Slide: The pain points: distro experience                        :export:
 
 - User wants to install these two packages. But both are using XDP!
 - User is using XDP for custom filtering and now installed this package. It is using XDP, too.
@@ -346,7 +361,7 @@ Possible solution: access rights for maps?
   - What about VM migration?
 - Great part of features untested on non-x86_64.
 
-* Slide: User expectation                                            :export:
+** Slide: User expectation                                          :export:
 
 XDP has strong marketing. Everyone wants to use it.
 
