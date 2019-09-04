@@ -1,0 +1,127 @@
+# -*- fill-column: 79; -*-
+#+TITLE: XDP closer integration with network stack
+#+AUTHOR: Jesper Dangaard Brouer <hawk@kernel.org>
+#+EMAIL: brouer@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: Kernel Recipes 2019                              :noexport:
+
+This presentation will be given at [[https://kernel-recipes.org/en/2019/][Kernel Recipes 2019]].
+
+Links to talk:
+ - https://kernel-recipes.org/en/2019/talks/
+ - https://kernel-recipes.org/en/2019/xdp-closer-integration-with-network-stack/
+
+** Abstract
+
+XDP (eXpress Data Path) is the new programmable in-kernel fast-path, which is
+placed as a layer before the existing Linux kernel network stack (netstack).
+
+We claim XDP is not kernel-bypass, as it is a layer before and it can easily
+fall-through to netstack. Reality is that it can easily be (ab)used to create a
+kernel-bypass situation, where non of the kernel facilities are used (in form of
+BPF-helpers and in-kernel tables). The main disadvantage with kernel-bypass, is
+the need to re-implement everything, even basic building blocks, like routing
+tables and ARP protocol handling.
+
+It is part of the concept and speed gain, that XDP allows users to avoid calling
+part of the kernel code. Users have the freedom to do kernel-bypass and
+re-implement everything, but the kernel should provide access to more in-kernel
+tables, via BPF-helpers, such that users can leverage other parts of the Open
+Source ecosystem, like router daemons etc.
+
+This talk is about how XDP can work in-concert with netstack, and proposal on
+how we can take this even-further. Crazy ideas like using XDP frames to move SKB
+allocation out of driver code, will also be proposed.
+
+* Colors in slides                                                 :noexport:
+Text colors on slides are chosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation. The prefix
+"Slide:" is only syntax-sugar for the reader (and it removed before export by
+emacs).
+
+* Slide: Outline  :export:
+
+*EMPTY*
+
+* Slide: Audience at Kernel Recipes                                  :export:
+
+Other /kernel developers/
+- But for *different kernel sub-systems*
+
+Hopefully you already /heard about XDP/ (eXpress Data Path) */?/* *?* /?/
+- I'll explain why network sub-system created this...
+
+** Slide: Why was XDP needed?                                       :export:
+
+This was about the *kernel networking stack staying relevant*
+ - For emerging use-cases and areas
+
+Linux networking stack assumes layer L4-L7 delivery
+ - Obviously slow when compared to L2-L3 kernel-bypass solutions
+
+XDP operate at layers L2-L3
+ - Shows same performance as these L2-L3 kernel-bypass solutions
+
+@@html:<small>@@
+
+The networking OSI layer model:
+ - L2=Ethernet
+ - L3=IPv4/IPv6
+ - L4=TCP/UDP
+ - L7=Applications
+
+@@html:</small>@@
+
+** Slide: What is XDP?                                              :export:
+
+@@html:<small>@@
+What kind of monster did we create with XDP?!?
+@@html:</small>@@
+
+XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
+ - /New programmable layer in-front/ of traditional network stack
+   - Read, modify, drop, redirect or pass
+ - For L2-L3 use-cases: seeing x10 performance improvements!
+ - Can accelerate *in-kernel* L2-L3 use-cases (e.g. forwarding)
+
+What is /AF_XDP/? (the Address Family XDP socket)
+ - /Hybrid/ *kernel-bypass* facility
+ - Delivers raw L2 frames into userspace (in SPSC queue)
+
+** Slide: AF_XDP: Used for kernel-bypass?!?                         :export:
+
+@@html:<small>@@
+Did you really say, this can be used for */bypassing the Linux kernel netstack/* ?
+@@html:</small>@@
+
+Sure, build in /freedom/ for *kernel-bypass via AF_XDP*
+- DPDK already have a Poll-Mode driver for AF_XDP
+
+Why is this /better/, than other bypass solutions?
+- Flexible /sharing of NIC resources/, NIC still avail to netstack
+- XDP/eBPF prog filters packets using XDP_REDIRECT into AF_XDP socket
+  - Move *selective* frames out of kernel, no need to reinject
+- /Leverages existing kernel infrastructure/, eco-system and market position
+
+* Emacs end-tricks                                                 :noexport:
+
+# Local Variables:
+# org-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
+# class=\"author\">Jesper Dangaard Brouer<br/>Red Hat</h2>
+# <h3>Kernel Recipes Conf<br/>Paris, Sep 2019</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:

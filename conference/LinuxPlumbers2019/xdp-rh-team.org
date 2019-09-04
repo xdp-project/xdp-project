@@ -1,0 +1,136 @@
+# -*- fill-column: 79; -*-
+#+TITLE: XDP update in 15 minutes
+#+AUTHOR: Jesper Dangaard Brouer and Toke Høiland-Jørgensen
+#+EMAIL: brouer@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+For kernel team meeting at LinuxPlumbersConf 2019 (LPC).
+
+* Colors in slides                                                 :noexport:
+Text colors on slides are chosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation. The prefix
+"Slide:" is only syntax-sugar for the reader (and it removed before export by
+emacs).
+
+
+* Slide: Framing XDP                                                 :export:
+
+@@html:<small>@@
+Compressed and inspirational thoughts on *what is XDP really?*
+@@html:</small>@@
+
+XDP about the *kernel networking stack staying relevant*
+ - Operates at L2-L3 to compete with DPDK, netstack is L4-L7
+
+XDP: /in-kernel/ programmable (eBPF) *layer before netstack*
+ - (AF_XDP is our selective kernel-bypass to userspace)
+
+XDP is not first mover, but we believe XDP is /different and better/
+ - Flexible sharing of NIC resources
+ - /Killer feature/: Integration with Linux kernel
+
+* Slide: Framing: Our LPC talk - "[[https://www.linuxplumbersconf.org/event/4/contributions/460/][the distro view]]"
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Tuesday, 10 Sep 2019, 10:00 O'clock
+
+** Slide: The high-level distro view                                :export:
+
+eBPF *challenges* our normal /perspective/: kernel vs user-space
+
+Capabilities not good enough (*distro root-only*, open daemon attack surface)
+
+As distro; was hoping for /more mature BPF solutions/ (chicken & egg problem?)
+- Lacks community consensus on common libs, build and devel environment
+- Otherwise, too much flexibility risks fragmenting FOSS solutions
+
+BPFtool does BPF /feature probing/, but *this doesn't work with XDP*
+- Current situation without XDP feature check:
+  - Kernel allows users to *attach invalid XDP progs*, giving */silent drops/*
+- /In LPC talk/: Proposing a solution for XDP features
+
+** Slide: Specific XDP issues                                       :export:
+
+*Hard to troubleshoot* XDP without tcpdump-like facility
+- Today, Sysadm/FOSS-user needs to modify BPF prog to debug (unreasonable)
+
+XDP currently only supports *one program per interface*
+- As distro; need to support multiple FOSS projects
+- *Need* to: Establish /common way to "share" XDP hook/
+
+/In LPC talk/: Multiple programs on one interface
+- Will also allow user to /load troubleshoot tcpdump-like program/
+
+* Slide: Easier build and devel environment                          :export:
+
+We want FOSS projects to share build and devel environments
+
+Kernel [[https://github.com/torvalds/linux/tree/master/tools/testing/selftests/bpf/prog_tests][selftests/bpf]] and [[https://github.com/torvalds/linux/tree/master/samples/bpf][samples/bpf]]: *bad starting point*
+
+With XDP focus, we have created a GitHub [[https://github.com/xdp-project/][XDP-project]]
+- Subproject [[https://github.com/xdp-project/xdp-tutorial][XDP-tutorial]] with /easy build and devel environment/
+  - Build and test directly on your laptop via veth and network-namespaces
+  - Recently added tracing examples too
+
+** Slide: Common BPF library: libbpf                                :noexport:
+
+We want to /reduce FOSS fragmentation/.
+
+- Ex: iproute2 has *incompatible ELF-maps format*
+  - WiP: convert iproute2 to use libbpf
+
+Solution:
+- *libbpf*: /promote as distro/ (want others to follow)
+
+* Slide: BPF technology challenges us!                               :export:
+
+#+BEGIN_NOTES
+We might want to skip this slide.
+#+END_NOTES
+
+@@html:<small>@@
+Inspirational thoughts about eBPF...
+@@html:</small>@@
+
+BPF *challenges* normal /separation between kernel and user-space/
+- Running user-space supplied byte-code in kernel-space
+- Fully programmable, super flexible, but also */scary/*
+
+BPF runtime is a /sandbox technology/ - which is why we allow this
+- Puts a lot of *trust in the BPF verifier*
+
+Is this a kind of /micro-kernel facility/?
+- Can it *offers solutions for customers* in areas, where:
+  - Kernel feature development is too slow
+  - Kernel roll-out + reboot takes too long in production
+
+* Slide: The End                                                     :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Next slide deck please...
+
+* Notes
+
+# Local Variables:
+# org-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
+# class=\"author\">Jesper Dangaard Brouer<br/>Toke Høiland-Jørgensen</h2>
+# <h3>Red Hat Kernel Team Meeting</br>Lisbon, Sep 2019</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
