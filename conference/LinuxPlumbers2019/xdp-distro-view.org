@@ -723,12 +723,12 @@ Two options:
 - (2) Do feature probing like bpftool
 
 
-* Topic: BPF security, safety and audit logging                      :export:
+* Topic: BPF security, safety and audit logging                    :noexport:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-** Slide: Current BPF "privileged" level unusable                  :export:
+** Slide: Current BPF "privileged" level unusable
 
 Current BPF only one "privileged" level, root (=CAP_SYS_ADMIN=)
 
@@ -756,7 +756,7 @@ Alexei now also have a [[ https://lore.kernel.org/netdev/20190827205213.456318-1
 - Introducing CAP_BPF and combining with CAP_NET_ADMIN
 - Discussions on also adding CAP_TRACING
 
-** Slide: BPF audit logging                                         :export:
+** Slide: BPF audit logging
 
 */INCOMPLETE SLIDE - PLEASE FIX/*
 
