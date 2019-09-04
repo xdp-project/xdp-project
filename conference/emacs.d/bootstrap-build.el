@@ -1,7 +1,8 @@
 (setq user-emacs-directory (file-name-directory
                             (file-truename (or load-file-name buffer-file-name)))
       make-backup-files nil
-      color-theme-obsolete nil)
+      color-theme-obsolete nil
+      load-prefer-newer t)
 
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
@@ -13,8 +14,12 @@
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
 
-(straight-use-package 'use-package)
 
+(let ((inhibit-message t))
+  (straight-use-package 'auto-compile)
+  (auto-compile-on-load-mode))
+
+(straight-use-package 'use-package)
 
 ; The use of color-theme is deprecated, but couldn't figure out how to make
 ; enable-theme apply in batch mode
@@ -51,7 +56,8 @@
   :straight t)
 
 ; Make sure we use the versions specified in versions/default.el
-(straight-thaw-versions)
+(let ((inhibit-message t))
+  (straight-thaw-versions))
 
 (defun silence-messages (orig-fun &rest r)
   "Silence messages from ORIG-FUN with args R."
