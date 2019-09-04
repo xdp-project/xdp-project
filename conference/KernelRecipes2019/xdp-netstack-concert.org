@@ -89,19 +89,33 @@ The networking OSI layer model:
 ** Slide: What is XDP?                                              :export:
 
 @@html:<small>@@
-What kind of monster did you create with XDP?!?
+What kind of monster did we create with XDP?!?
 @@html:</small>@@
 
 XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
  - /New programmable layer in-front/ of traditional network stack
+   - Read, modify, drop, redirect or pass
  - For L2-L3 use-cases: seeing x10 performance improvements!
  - Can accelerate *in-kernel* L2-L3 use-cases (e.g. forwarding)
 
 What is /AF_XDP/? (the Address Family XDP socket)
- - Hybrid *kernel-bypass* facility, move selective frames out of kernel
- - XDP/eBPF prog filters packets using REDIRECT into AF_XDP socket
- - Delivers raw L2 frames into userspace
+ - /Hybrid/ *kernel-bypass* facility
+ - Delivers raw L2 frames into userspace (in SPSC queue)
 
+** Slide: AF_XDP: Used for kernel-bypass?!?                         :export:
+
+@@html:<small>@@
+Did you really say, this can be used for */bypassing the Linux kernel netstack/* ?
+@@html:</small>@@
+
+Sure, build in /freedom/ for *kernel-bypass via AF_XDP*
+- DPDK already have a Poll-Mode driver for AF_XDP
+
+Why is this /better/, than other bypass solutions?
+- Flexible /sharing of NIC resources/, NIC still avail to netstack
+- XDP/eBPF prog filters packets using XDP_REDIRECT into AF_XDP socket
+  - Move *selective* frames out of kernel, no need to reinject
+- /Leverages existing kernel infrastructure/, eco-system and market position
 
 * Slide: Framing XDP                                                 :export:
 
