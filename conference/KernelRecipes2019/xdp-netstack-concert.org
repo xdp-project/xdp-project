@@ -117,7 +117,7 @@ Why is this /better/, than other bypass solutions?
   - Move *selective* frames out of kernel, no need to reinject
 - /Leverages existing kernel infrastructure/, eco-system and market position
 
-* Slide: How can XDP be (ab)used?
+* Slide: How can XDP be (ab)used?                                    :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -126,7 +126,7 @@ Used or abused?
 - Freedom to bypass-kernel and re-implement everything
 - Or freedom to shoot yourself in the foot?
 
-** Slide: Simple view on XDP speed gains
+** Slide: Simple view on XDP speed gains                            :export:
 
 XDP gain speed from
 - Avoiding memory allocations
