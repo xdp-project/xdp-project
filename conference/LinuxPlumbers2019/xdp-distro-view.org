@@ -366,18 +366,25 @@ Alexei now also have a [[ https://lore.kernel.org/netdev/20190827205213.456318-1
   - */"Okay, let's use AF_XDP..."/* (later) */"It's too slow!"/*
 - Verifier *not smart enough*.
 
-** Slide: Distro experience problems                                 :export:
+** Slide: Distro experience problems (1/2)                           :export:
 
 - User wants to install these /two packages/. But *both* are using XDP!
 - User is using XDP for /custom filtering/. And distro is using XDP, *too*.
   - But */only one XDP program/* per interface is supported.
 - Lack of community consensus on *common libraries*, *build* and *devel environment*.
   - Risk of too much fragmentation, unpolished user experience.
+  - Example: *iproute2* has its own bpf support code.
+    - incompatible ELF map format
+    - WIP: conversion to *libbpf*
+  - Promote *libbpf* as the preferred solution.
+
+** Slide: Distro experience problems (2/2)                           :export:
+
+- Great part of features */untested on non-x86_64/*.
 - virtio_net supports XDP but the *performance* is limited.
   - Can we have /XDP passthrough/?
   - Can we have /XDP offloading/ from VM to NIC?
   - What about *VM migration*?
-- Great part of features */untested on non-x86_64/*.
 
 ** Slide: User expectation                                          :export:
 
@@ -391,6 +398,16 @@ Distros need to focus on /developers/ and encourage them to develop XDP based so
 - Need *more examples*.
 - Need *best practices*.
 - Need education about *limitations*.
+
+** Slide: Examples and best practices                               :export:
+
+Kernel [[https://github.com/torvalds/linux/tree/master/tools/testing/selftests/bpf/prog_tests][selftests/bpf]] and [[https://github.com/torvalds/linux/tree/master/samples/bpf][samples/bpf]]: */bad starting point/*
+
+/XDP tutorial/
+- https://github.com/xdp-project/xdp-tutorial
+- Easy build and devel environment.
+- Easy to try out: uses veth and network name spaces.
+- How to best package it in a distro?
 
 * Slide: Dive in: Multiple XDP programs on a single interface        :export:
 :PROPERTIES:
@@ -744,32 +761,6 @@ Two options:
 - (1) Expose driver feature bits (ethtool? kind of UAPI)
 - (2) Do feature probing like bpftool
 
-
-* Tooling and build environments                                     :export:
-:PROPERTIES:
-:reveal_extra_attr: class="mid-slide"
-:END:
-
-** Slide: Common BPF library: libbpf                                :export:
-
-We want to /reduce fragmentation/.
-
-- Ex: iproute2 has *incompatible ELF-maps format*
-  - WiP: convert iproute2 to use libbpf
-
-Solution:
-- *libbpf*: /promote as distro/ (want others to follow)
-
-** Slide: Easier build and devel environment                        :export:
-
-We want FOSS projects to share build and devel environments
-
-Kernel [[https://github.com/torvalds/linux/tree/master/tools/testing/selftests/bpf/prog_tests][selftests/bpf]] and [[https://github.com/torvalds/linux/tree/master/samples/bpf][samples/bpf]]: *bad starting point*
-
-With XDP focus, we have created a GitHub [[https://github.com/xdp-project/][XDP-project]]
-- Subproject [[https://github.com/xdp-project/xdp-tutorial][XDP-tutorial]] with /easy build and devel environment/
-  - Build and test directly on your laptop via veth and network-namespaces
-  - Recently added tracing examples too
 
 * Notes
 
