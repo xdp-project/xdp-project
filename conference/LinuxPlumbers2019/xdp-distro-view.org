@@ -379,12 +379,13 @@ Distros need to focus on /developers/ and encourage them to develop XDP based so
 - Need *best practices*.
 - Need education about *limitations*.
 
-* Slide: Multiple XDP programs on a single interface                 :export:
+* Slide: Dive in: Multiple XDP programs on a single interface        :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
 
 ** Supporting multiple programs on one interface
+
 XDP currently only supports */one program per interface/*.
 
 - So how to support /multiple functions/ in sequence?
@@ -594,7 +595,7 @@ With kernel support in hook:
 We want /atomic updates/; how to manage read-modify-update races?
 
 
-* Slide: Topic: Missing XDP feature detection                       :export:
+* Slide: Dive in: Missing XDP feature detection                       :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -602,6 +603,8 @@ We want /atomic updates/; how to manage read-modify-update races?
 #+BEGIN_NOTES
 This is a compressed version of Jesper's slides
 #+END_NOTES
+
+** Slide: Builtin versus drivers
 
 XDP features  *dependent on driver support*, which breaks BPF feature "system"
 - BPF-core is always compiled-in
@@ -684,15 +687,16 @@ Possible solutions
   - Force generic-XDP to implement all XDP features (with some fallback)
 
 
-* Slide: Next discussion: Expressing XDP features                    :export:
+* Slide: Discussion: Expressing XDP features                         :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-Next discussion:
+#+BEGIN_NOTES
 - What XDP features need to be expressed?
 - Can verifier detect these features?
   - if not, can users be trusted to supply features?
+#+END_NOTES
 
 ** Slide: Can verifier detect XDP features?                           :export:
 
