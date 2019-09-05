@@ -117,6 +117,24 @@ Why is this /better/, than other bypass solutions?
   - Move *selective* frames out of kernel, no need to reinject
 - /Leverages existing kernel infrastructure/, eco-system and market position
 
+* Slide: How can XDP be (ab)used?
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Used or abused?
+- Freedom to bypass-kernel and re-implement everything
+- Or freedom to shoot yourself in the foot?
+
+** Slide: Simple view on XDP speed gains
+
+XDP gain speed from
+- Avoiding memory allocations
+  - no SKB allocations and init
+- Bulk processing of frames
+- Very early access to frame (in driver code after DMA sync)
+- Ability to skip (large parts) of kernel code
+
 * Emacs end-tricks                                                 :noexport:
 
 # Local Variables:
