@@ -64,7 +64,7 @@ Proposing solutions for:
 - Porting iproute2 to libbpf
 - Unified statistics for XDP & network stack
 - Unifying driver memory handling (page_pool work)
-
+- Move SKB allocations out of drivers (depend meta-data for HW offloads)
 
 * Slide: The End                                                     :export:
 :PROPERTIES:
