@@ -123,7 +123,7 @@ Why is this /better/, than other bypass solutions?
 :END:
 
 Used or abused?
-- Freedom to bypass-kernel and re-implement everything
+- Freedom re-implement everything (when bypassing the kernel)
 - Or freedom to shoot yourself in the foot?
 
 ** Slide: Simple view on XDP speed gains                            :export:
@@ -145,6 +145,23 @@ Skipping code: *Imply skipping features* provided by /network stack/
 /Avoid/ *re-implement features*:
 - Evolve XDP via /BPF-helpers/
 
+** Slide: Evolving XDP via BPF-helpers                               :export:
+
+@@html:<small>@@
+*We should encourage adding helpers instead of duplicating data in BPF maps*
+@@html:</small>@@
+
+Think of XDP as a /software offload layer for the kernel netstack/
+ - Simply setup and use the Linux netstack, but accelerate parts of it with XDP
+
+IP routing good example: /Access routing table from XDP via BPF helpers/ (v4.18)
+ - Let Linux handle routing (daemons) and neighbour lookups
+ - Talk at LPC-2018 (David Ahern): [[http://vger.kernel.org/lpc-networking2018.html#session-1][Leveraging Kernel Tables with XDP]]
+
+Obvious *next target*: /Bridge lookup helper/
+ - Like IP routing: transparent XDP acceleration of bridge forwarding
+   - Fallback for ARP lookups, flooding etc.
+ - Huge potential *performance boost for Linux bridge* use cases!
 
 * Emacs end-tricks                                                 :noexport:
 
