@@ -57,7 +57,8 @@
 
 ; Make sure we use the versions specified in versions/default.el
 (let ((inhibit-message t))
-  (straight-thaw-versions))
+  (straight-thaw-versions)
+  (straight--save-build-cache))
 
 (defun silence-messages (orig-fun &rest r)
   "Silence messages from ORIG-FUN with args R."
