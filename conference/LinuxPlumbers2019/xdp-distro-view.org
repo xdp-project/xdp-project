@@ -228,7 +228,6 @@ Straigthforward: *CONFIG_BPF_SYSCALL=y*
   - BTF support is highly desirable
 - *pahole*
   - overloaded with BTF conversion code
-  - perhaps the BTF functionality should be split into a */different tool/*?
 
 ** Slide: Enabling XDP: packages (2/2)                              :export:
 
@@ -371,6 +370,7 @@ Alexei now also have a [[ https://lore.kernel.org/netdev/20190827205213.456318-1
 - User wants to install these /two packages/. But *both* are using XDP!
 - User is using XDP for /custom filtering/. And distro is using XDP, *too*.
   - But */only one XDP program/* per interface is supported.
+- Great part of features */untested on non-x86_64/*.
 - Lack of community consensus on *common libraries*, *build* and *devel environment*.
   - Risk of too much fragmentation, unpolished user experience.
   - Example: *iproute2* has its own bpf support code.
@@ -380,7 +380,12 @@ Alexei now also have a [[ https://lore.kernel.org/netdev/20190827205213.456318-1
 
 ** Slide: Distro experience problems (2/2)                           :export:
 
-- Great part of features */untested on non-x86_64/*.
+- *libbpf* versioning
+  - When built from the kernel, the package has *the kernel version*.
+  - How much can be relied on [[https://github.com/libbpf/libbpf][libbpf repo on GitHub]]?
+- BTF and *pahole*
+  - perhaps the BTF functionality should be split into a */different tool/*?
+  - kernel build and BTF: *gcc* should generate BTF
 - virtio_net supports XDP but the *performance* is limited.
   - Can we have /XDP passthrough/?
   - Can we have /XDP offloading/ from VM to NIC?
