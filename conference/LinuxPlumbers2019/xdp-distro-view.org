@@ -196,7 +196,7 @@ We will also touch related general eBPF topics.
 - Supportability, bug reports handling
 - Security considerations and hardening
 - User experience and pain points
-- Managing user expectation
+- Managing user expectations
 
 Then we will look in depth into some of the problems.
 
