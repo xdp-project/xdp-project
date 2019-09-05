@@ -277,7 +277,6 @@ body {
   font-family: monospace; }
 
 .reveal pre code {
-  display: block;
   padding: 5px;
   overflow: auto;
   max-height: 27em; /* Relative to font-size of element, but gives 23 lines */
