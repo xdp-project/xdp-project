@@ -235,7 +235,6 @@ Straigthforward: CONFIG_BPF_SYSCALL=y
 - libbpf
   - part of the kernel source code
   - packageable as a library since kernel v5.1
-  - Facebook mirror [[https://github.com/libbpf/libbpf][libbpf on GitHub]] for easier consumption
   - not much practical experience, yet
 
 ** Slide: Enabling XDP: testing                                     :export:
