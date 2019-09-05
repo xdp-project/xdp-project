@@ -128,12 +128,23 @@ Used or abused?
 
 ** Slide: Simple view on XDP speed gains                            :export:
 
-XDP gain speed from
-- Avoiding memory allocations
-  - no SKB allocations and init
-- Bulk processing of frames
-- Very early access to frame (in driver code after DMA sync)
-- Ability to skip (large parts) of kernel code
+XDP gain speed comes from
+- *Avoiding* /memory allocations/
+  - no SKB allocations and init (memset zero 4 cache-lines)
+- /Bulk/ processing of frames
+- Very /early access/ to frame (in driver code *after DMA sync*)
+- Ability to /skip/ (large parts) of kernel /code/
+
+** Slide: Skipping code: Efficient optimization                     :export:
+
+Skipping code: *Imply skipping features* provided by /network stack/
+  - Gave users freedom to e.g. skip netfilter or route-lookup
+  - Users have to re-implement features they actually needed
+    - Sometimes cumbersome via BPF-maps
+
+/Avoid/ *re-implement features*:
+- Evolve XDP via /BPF-helpers/
+
 
 * Emacs end-tricks                                                 :noexport:
 
