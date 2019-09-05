@@ -124,11 +124,11 @@ Used or abused?
 - Freedom re-implement everything (when bypassing the kernel)
 - Or freedom to shoot yourself in the foot?
 
-** Slide: Simple view on XDP speed gains                            :export:
+** Slide: Simple view on how XDP gains speed                        :export:
 
-XDP gain speed comes from
+XDP speed gains comes from
 - *Avoiding* /memory allocations/
-  - no SKB allocations and init (memset zero 4 cache-lines)
+  - no SKB allocations and no-init (memset zero 4 cache-lines)
 - /Bulk/ processing of frames
 - Very /early access/ to frame (in driver code *after DMA sync*)
 - Ability to /skip/ (large parts) of kernel /code/
