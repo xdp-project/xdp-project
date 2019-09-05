@@ -207,42 +207,42 @@ Then we will look in depth into some of the problems.
 
 ** Slide: Enabling XDP: kernel side                                 :export:
 
-Straigthforward: CONFIG_BPF_SYSCALL=y
-- XDP is always enabled
-- Enable AF_XDP: CONFIG_XDP_SOCKETS=y
+Straigthforward: *CONFIG_BPF_SYSCALL=y*
+- XDP is always /enabled/
+- Enable AF_XDP: *CONFIG_XDP_SOCKETS=y*
 - Consider other networking BPF options
-  - CONFIG_CGROUP_BPF=y
-  - CONFIG_NET_ACT_BPF=m
-  - CONFIG_NET_CLS_BPF=m
-  - CONFIG_BPF_STREAM_PARSER=y
-  - CONFIG_LWTUNNEL_BPF=y
+  - *CONFIG_CGROUP_BPF=y*
+  - *CONFIG_NET_ACT_BPF=m*
+  - *CONFIG_NET_CLS_BPF=m*
+  - *CONFIG_BPF_STREAM_PARSER=y*
+  - *CONFIG_LWTUNNEL_BPF=y*
 
 ** Slide: Enabling XDP: packages (1/2)                              :export:
 
-- Newest iproute2
-- bpftool
+- Newest *iproute2*
+- *bpftool*
   - part of the kernel source code
   - but mostly independent
   - similar to iproute2: no need for a dependency to a particular kernel version
-- clang/llvm with bpf backend
+- *clang/llvm* with bpf backend
   - BTF support is highly desirable
-- pahole
+- *pahole*
   - overloaded with BTF conversion code
-  - perhaps the BTF functionality should be split into a different tool?
+  - perhaps the BTF functionality should be split into a */different tool/*?
 
 ** Slide: Enabling XDP: packages (2/2)                              :export:
 
-- libbpf
+- *libbpf*
   - part of the kernel source code
   - packageable as a library since kernel v5.1
   - not much practical experience, yet
 
 ** Slide: Enabling XDP: testing                                     :export:
 
-- CONFIG_TEST_BPF=m
-- tools/testing/selftests/bpf
+- *CONFIG_TEST_BPF=m*
+- *tools/testing/selftests/bpf*
   - cumbersome to build and install
-- samples/bpf
+- *samples/bpf*
   - needs custom installation script
   - some samples do not work out of kernel tree
   - not much usable for testing overall
@@ -254,125 +254,130 @@ Straigthforward: CONFIG_BPF_SYSCALL=y
 
 ** Slide: eBPF supportability: tools                                :export:
 
-Introspection needed. /bpftool/ provides that.
-- Essential to be installed on *all* systems.
+Introspection needed. *bpftool* provides that.
+- Essential to be installed on */all/* systems.
 - But provides only the current state, not the history.
 
-Tool /sosreport/
+*sosreport* tool
 - Calls bpftool since v3.5.1.
 - https://github.com/sosreport/sos
 
-Tool /crash/
+*crash* tool
 - Understands eBPF since v7.2.2.
 - https://github.com/crash-utility/crash
 
 ** Slide: eBPF supportability: bug reports                          :export:
 
-The kernel behaves differently with BPF programs loaded.
+The kernel behaves *differently* with BPF programs loaded.
 
-How hard is to debug misbehaving system with buggy XDP programs loaded?
+How hard is to debug misbehaving system with *buggy XDP* programs loaded?
 
-Need to teach support engineers to look for BPF programs.
+Need to teach support engineers to /look for BPF programs/.
 - But that's the usual thing with any new technology.
 
-Distros need to create cheat sheets for users:
+Distros need to create /cheat sheets/ for users:
 - What to look for if packets are disappearing (XDP, tc, etc.)
 - What to look for if XDP programs are not working as expected.
 - etc.
 
 ** Slide: eBPF supportability: audit trail                          :export:
 
-bpftool provides only the current state. The BPF program that caused issues (e.g. packet drops) may not be loaded anymore.
+*bpftool* provides only */the current state/*. The BPF program that caused issues (e.g. packet drops) *may not be loaded* anymore.
 
-Possible solution: enhancing the audit subsystem.
+/Possible solution:/ enhancing the audit subsystem.
 - Patches currently stuck due to disagreement between bpf and audit maintainers.
 
-** Slide: eBPF security                                             :export:
+* Slide: eBPF security                                               :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: eBPF hardening
 
 Two major areas of possible problems:
 
-1. Spectre class of hardware bugs.
+1. *Spectre* class of hardware bugs.
 
-2. Verifier bugs.
+2. *Verifier* bugs.
 
-Hardening:
-- CONFIG_BPF_JIT_ALWAYS_ON=y to secure against malicious VMs.
-- Unprivileged users may load BPF programs. Is that a problem?
+/Hardening/
+- *CONFIG_BPF_JIT_ALWAYS_ON=y* to secure against malicious VMs.
+- */Unprivileged/* users may load BPF programs. Is that a problem?
 
 ** Slide: Unprivileged BPF                                          :export:
 
-Considerations:
+/Considerations/
 - Verifier bugs may be dangerous.
 - BPF has been used to ease creation of exploits of hardware bugs.
-- BPF developers are considering switching off unprivileged BPF as default.
+- BPF developers are considering *switching off* unprivileged BPF as default.
 
-Turning off unprivileged BPF:
-- kernel.unprivileged_bpf_disabled=1
-- No way to set this by default in upstream kernel.
+/Turning off unprivileged BPF/
+- *kernel.unprivileged_bpf_disabled=1*
+- No way to set this */by default/* in upstream kernel.
 - Needs to be set in a bootloader. Or use a distro specific patch.
 
 ** Slide: Unprivileged BPF                                          :export:
 
-Problems:
-- Daemons manipulating maps need to be privileged.
-- Even when only reading maps.
+*Problems*
+- Daemons manipulating maps need to be */privileged/*.
+- Even when only *reading maps*.
 - Want to limit access to maps owned by other services.
 
-Possible solution: access rights for maps?
+/Possible solution:/ access rights for maps?
 
 * Slide: XDP pain points                                             :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-** Slide: The pain points: user experience                          :export:
+** Slide: User experience problems                                   :export:
 
-- No readily available solution packaged in distros.
-  - "What? Do I need to be a programmer to use XDP?"
-- tcpdump does not see all packets anymore.
+- No *readily available* XDP solution packaged in distros.
+  - */"What? Do I need to be a programmer to use XDP?"/*
+- tcpdump does *not see all packets* anymore.
   - XDP_DROP etc.
-  - There's no tcpdump-like feature for XDP.
-- Interface statistics do not count all packets anymore.
-  - "It must be something on the wire!"
-- XDP programs do not reach the expected speed.
-  - Because XDP generic is used.
+  - There's */no tcpdump-like feature/* for XDP.
+- Interface statistics *do not count all packets* anymore.
+  - */"It must be something on the wire!"/*
+- XDP programs do not reach the *expected speed*.
+  - Because */XDP generic/* is used.
 
-** Slide: The pain points: developer experience                     :export:
+** Slide: Developer experience problems                              :export:
 
-- Packets can be silently dropped with XDP programs that are accepted as correct.
-  - Because of using unimplemented features.
-  - What are the available XDP features on the interface?
-- XDP is not powerful enough.
+- Packets can be *silently dropped* with XDP programs that are accepted as correct.
+  - Because of using */unimplemented features/*.
+  - What are the /available XDP features/ on the interface?
+- XDP is *not powerful enough*.
   - Can't send packets.
-  - Where is a repository with XDP libraries I can use?
-  - Okay, let's use AF_XDP... (later) It's too slow!
-- Verifier not smart enough.
+  - */"Where is a repository with XDP libraries I can use?"/*
+  - */"Okay, let's use AF_XDP..."/* (later) */"It's too slow!"/*
+- Verifier *not smart enough*.
 
-** Slide: The pain points: distro experience                        :export:
+** Slide: Distro experience problems                                 :export:
 
-- User wants to install these two packages. But both are using XDP!
-- User is using XDP for custom filtering and now installed this package. It is using XDP, too.
-  - But only one XDP program per interface is supported.
-- Lack of community consensus on common libraries, build and devel environment.
+- User wants to install these /two packages/. But *both* are using XDP!
+- User is using XDP for /custom filtering/. And distro is using XDP, *too*.
+  - But */only one XDP program/* per interface is supported.
+- Lack of community consensus on *common libraries*, *build* and *devel environment*.
   - Risk of too much fragmentation, unpolished user experience.
-- virtio_net supports XDP but the performance is limited.
-  - Can we have XDP passthrough?
-  - Can we have XDP offloading from VM to NIC?
-  - What about VM migration?
-- Great part of features untested on non-x86_64.
+- virtio_net supports XDP but the *performance* is limited.
+  - Can we have /XDP passthrough/?
+  - Can we have /XDP offloading/ from VM to NIC?
+  - What about *VM migration*?
+- Great part of features */untested on non-x86_64/*.
 
 ** Slide: User expectation                                          :export:
 
-XDP has strong marketing. Everyone wants to use it.
+XDP has /strong marketing/. Everyone wants to use it.
 
-- There are no ready to use solutions.
-- Not enough features when trying to implement a custom solution.
-- Turning to AF_XDP (because it is "XDP", isn't it?) and resulting disappointment.
+- There are *no ready to use* solutions.
+- *Not enough features* when trying to implement a custom solution.
+- Turning to *AF_XDP* (because it is */"XDP", isn't it?/*) and resulting disappointment.
 
-Distros need to focus on developers and encourage them to develop XDP based solutions.
-- Need more examples.
-- Need best practices.
-- Need education about limitations.
+Distros need to focus on /developers/ and encourage them to develop XDP based solutions.
+- Need *more examples*.
+- Need *best practices*.
+- Need education about *limitations*.
 
 * Slide: Multiple XDP programs on a single interface                 :export:
 :PROPERTIES:
