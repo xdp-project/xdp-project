@@ -255,15 +255,15 @@ Straigthforward: CONFIG_BPF_SYSCALL=y
 
 ** Slide: eBPF supportability: tools                                :export:
 
-Introspection needed. bpftool provides that.
+Introspection needed. /bpftool/ provides that.
 - Essential to be installed on *all* systems.
 - But provides only the current state, not the history.
 
-sosreport
+Tool /sosreport/
 - Calls bpftool since v3.5.1.
 - https://github.com/sosreport/sos
 
-crash
+Tool /crash/
 - Understands eBPF since v7.2.2.
 - https://github.com/crash-utility/crash
 
