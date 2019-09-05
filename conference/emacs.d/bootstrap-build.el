@@ -33,7 +33,6 @@
   (color-theme-solarized-dark))
 
 (use-package git :straight t)
-(use-package org-version :requires git :load-path "lisp")
 (use-package org :straight t)
 (use-package htmlize :straight t)
 
