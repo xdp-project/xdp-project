@@ -25,35 +25,21 @@
 ; enable-theme apply in batch mode
 ; Seems I'm not the only one:
 ; https://emacs.stackexchange.com/questions/25009/loading-a-theme-and-fontifying-in-batch-mode
-(use-package color-theme
-  :straight t)
-
+(use-package color-theme :straight t)
 (use-package color-theme-solarized
- :straight (solarized :type git :host github
-                      :repo "tohojo/emacs-color-theme-solarized"
-                      :upstream (:host github
-                                       :repo "sellout/emacs-color-theme-solarized"))
- :config
- (color-theme-solarized-dark))
-
-(use-package git
-  :straight t)
-
-(use-package org-version
-  :requires git
-  :load-path "lisp")
-
-(use-package org
-  :straight t)
-
-(use-package org-re-reveal
-  :straight t
-  :after org
+  :straight (solarized :type git :host github
+                       :repo "tohojo/emacs-color-theme-solarized")
   :config
-  (setq org-re-reveal-plugins '(markdown notes zoom)))
+  (color-theme-solarized-dark))
 
-(use-package htmlize
-  :straight t)
+(use-package git :straight t)
+(use-package org-version :requires git :load-path "lisp")
+(use-package org :straight t)
+(use-package htmlize :straight t)
+
+(use-package org-re-reveal :straight t
+             :config (setq org-re-reveal-plugins '(markdown notes zoom)))
+
 
 ; Make sure we use the versions specified in versions/default.el
 (let ((inhibit-message t))
