@@ -78,6 +78,16 @@ Next slide deck please...
 :reveal_extra_attr: class="mid-slide"
 :END:
 
+** Slide: Easier build and devel environment                        :export:
+
+We want FOSS projects to share build and devel environments
+
+Kernel [[https://github.com/torvalds/linux/tree/master/tools/testing/selftests/bpf/prog_tests][selftests/bpf]] and [[https://github.com/torvalds/linux/tree/master/samples/bpf][samples/bpf]]: *bad starting point*
+
+With XDP focus, we have created a GitHub [[https://github.com/xdp-project/][XDP-project]]
+- Subproject [[https://github.com/xdp-project/xdp-tutorial][XDP-tutorial]] with /easy build and devel environment/
+  - Build and test directly on your laptop via veth and network-namespaces
+  - Recently added tracing examples too
 
 ** Slide: The high-level distro view                                :export:
 
@@ -105,17 +115,6 @@ XDP currently only supports *one program per interface*
 
 /In LPC talk/: Multiple programs on one interface
 - Will also allow user to /load troubleshoot tcpdump-like program/
-
-** Slide: Easier build and devel environment                        :export:
-
-We want FOSS projects to share build and devel environments
-
-Kernel [[https://github.com/torvalds/linux/tree/master/tools/testing/selftests/bpf/prog_tests][selftests/bpf]] and [[https://github.com/torvalds/linux/tree/master/samples/bpf][samples/bpf]]: *bad starting point*
-
-With XDP focus, we have created a GitHub [[https://github.com/xdp-project/][XDP-project]]
-- Subproject [[https://github.com/xdp-project/xdp-tutorial][XDP-tutorial]] with /easy build and devel environment/
-  - Build and test directly on your laptop via veth and network-namespaces
-  - Recently added tracing examples too
 
 ** Slide: Common BPF library: libbpf
 
