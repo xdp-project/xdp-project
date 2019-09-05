@@ -138,7 +138,7 @@ XDP gain speed from
 * Emacs end-tricks                                                 :noexport:
 
 # Local Variables:
-# org-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
 # class=\"author\">Jesper Dangaard Brouer<br/>Red Hat</h2>
 # <h3>Kernel Recipes Conf<br/>Paris, Sep 2019</h3>"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))

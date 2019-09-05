@@ -129,7 +129,7 @@ Next slide deck please...
 * Notes
 
 # Local Variables:
-# org-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
 # class=\"author\">Jesper Dangaard Brouer<br/>Toke Høiland-Jørgensen</h2>
 # <h3>Red Hat Kernel Team Meeting</br>Lisbon, Sep 2019</h3>"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
