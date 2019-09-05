@@ -53,17 +53,15 @@ Only sections with tag ":export:" will end-up in the presentation. The prefix
 "Slide:" is only syntax-sugar for the reader (and it removed before export by
 emacs).
 
-* Slide: Outline  :export:
+* Slide: What will you learn?                                        :export:
 
-*EMPTY*
-
-* Slide: Audience at Kernel Recipes                                  :export:
-
-Other /kernel developers/
+Audience at Kernel Recipes: Other /kernel developers/
 - But for *different kernel sub-systems*
 
 Hopefully you already /heard about XDP/ (eXpress Data Path) */?/* *?* /?/
-- I'll explain why network sub-system created this...
+- I'll *explain why* network sub-system created this...
+- And /future/ *crazy ideas* to extend XDP
+  - hopefully in a way that cooperate more with kernel netstack
 
 ** Slide: Why was XDP needed?                                       :export:
 
@@ -167,7 +165,7 @@ Obvious *next target*: /Bridge lookup helper/
 
 # Local Variables:
 # org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
-# class=\"author\">Jesper Dangaard Brouer<br/>Red Hat</h2>
+# class=\"author\">Jesper Dangaard Brouer<br/>Kernel Developer<br/>Red Hat</h2>
 # <h3>Kernel Recipes Conf<br/>Paris, Sep 2019</h3>"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
 # End:
