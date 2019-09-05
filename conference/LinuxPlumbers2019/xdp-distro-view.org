@@ -395,8 +395,8 @@ Let's look at a couple of examples of how this is done today...
 
 ** Prior art #1: Katran xdp_root
 
-Facebook's [[https://github.com/facebookincubator/katran][Katran LB]] have mechanism for multi-program loading
-- Cooperatively each prog (tail) call remaining prog in root_array
+Facebook's [[https://github.com/facebookincubator/katran][Katran LB]] has a mechanism for multi-program loading
+- Each program cooperatively (tail) calls remaining progs in array
 
 #+begin_src C
 int xdp_root(struct xdp_md *ctx) { // installed on interface
@@ -419,7 +419,7 @@ int xdp_prog_idx0(struct xdp_md *ctx) { // in root_array with idx=0
 
 ** Prior art #2: Cloudflare xdpdump
 
-Cloudflare has a [[https://github.com/cloudflare/xdpcap][xdpcap utility]] that can run after other XDP programs:
+Cloudflare posted a [[https://github.com/cloudflare/xdpcap][xdpcap utility]] that can run after other XDP programs:
 - Instrument your XDP return with tail-call per XDP 'action' code
 
 #+begin_src c
