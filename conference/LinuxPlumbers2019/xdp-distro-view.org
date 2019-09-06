@@ -757,11 +757,13 @@ Verifier can easily detect BPF helpers in use
 
 ** Slide: How to expose XDP features to userspace?                  :export:
 
-Highly prefer verifier detect features
+Highly /prefer/ *verifier detect features*
 - /Pros/: Avoids defining UAPI, thus easier to extend
 - */Cons/*: Userspace cannot easily get XDP feature bits from NIC
 
 Driver needs to express feature bits internally.
+
+How do userspace /see what NIC supports/?
 Two options:
 - (1) Expose driver feature bits (ethtool? kind of UAPI)
 - (2) Do feature probing like bpftool
