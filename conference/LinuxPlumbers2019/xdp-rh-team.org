@@ -42,6 +42,24 @@ XDP is not first mover, but we believe XDP is /different and better/
  - Flexible sharing of NIC resources
  - /Killer feature/: Integration with Linux kernel
 
+** Slide: XDP is a building block                                   :export:
+
+@@html:<small>@@
+It is fundamental to understand
+@@html:</small>@@
+
+/XDP is a component/; a core facility provided by the kernel
+ - Put it together with other components to solve a task
+
+eBPF (incl XDP) is *not a product in itself*
+ - Existing (and new) /Open Source projects will use/ these eBPF components
+
+/Full potential/ comes when
+ - Combining XDP-eBPF with other eBPF-hooks and facilities
+ - To construct a *"networking pipeline"* via kernel components
+ - The [[https://cilium.io/][Cilium]] project is a good example (container L4-L7 policy)
+ - Hoping to steer *ebplane* project direction (Juniper+Intel)
+
 * Slide: LPC talk: "[[https://www.linuxplumbersconf.org/event/4/contributions/460/][XDP: the distro view]]"                            :export:
 
 Issues from distro PoV:
