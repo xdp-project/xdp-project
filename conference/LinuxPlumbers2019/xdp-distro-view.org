@@ -205,6 +205,7 @@ Then we will look in depth into some of the problems.
 :reveal_extra_attr: class="mid-slide"
 :END:
 
+Kernel config, required packages, testing.
 ** Slide: Enabling XDP: kernel side                                 :export:
 
 Straigthforward: *CONFIG_BPF_SYSCALL=y*
@@ -251,6 +252,8 @@ Straigthforward: *CONFIG_BPF_SYSCALL=y*
 :reveal_extra_attr: class="mid-slide"
 :END:
 
+Tools, bug reports, audit trail.
+
 ** Slide: eBPF supportability: tools                                :export:
 
 Introspection needed. *bpftool* provides that.
@@ -290,6 +293,7 @@ Distros need to create /cheat sheets/ for users:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
+Hardening, unprivileged BPF.
 
 ** Slide: eBPF hardening
 
@@ -341,7 +345,7 @@ Alexei now also have a [[ https://lore.kernel.org/netdev/20190827205213.456318-1
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
-
+User, developer, distro problems; expectations and best practices.
 ** Slide: User experience problems                                   :export:
 
 - No *readily available* XDP solution packaged in distros.
@@ -419,6 +423,7 @@ Kernel [[https://github.com/torvalds/linux/tree/master/tools/testing/selftests/b
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
+Can we agree on a common way to do this?
 
 ** Supporting multiple programs on one interface
 
@@ -635,6 +640,7 @@ We want /atomic updates/; how to manage read-modify-update races?
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
+How do we ensure programs will work if loading succeeds?
 
 #+BEGIN_NOTES
 This is a compressed version of Jesper's slides
@@ -727,6 +733,9 @@ Possible solutions
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
+OK, let's suppose we agree on how to check for feature support.
+
+But how do we express the features themselves?
 
 #+BEGIN_NOTES
 - What XDP features need to be expressed?
@@ -769,6 +778,12 @@ Two options:
 - (1) Expose driver feature bits (ethtool? kind of UAPI)
 - (2) Do feature probing like bpftool
 
+* Slide: Questions, comments?                                        :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Or did we get through them all on the way?
 
 * Notes
 
