@@ -189,8 +189,8 @@ emacs).
 
 * Slide: Outline                                                     :export:
 
-In this talk we will give a /distro view on XDP/.
-We will also touch related general eBPF topics.
+In this talk we will give a /distro view on XDP/, and touch on *related general
+eBPF topics*.
 
 - Enabling XDP: kernel config, required packages
 - Supportability, bug reports handling
@@ -198,7 +198,7 @@ We will also touch related general eBPF topics.
 - User experience and pain points
 - Managing user expectations
 
-Then we will look in depth into some of the problems.
+Then we will /*look at some of the problems*/ in depth.
 
 * Slide: Enabling XDP                                                :export:
 :PROPERTIES:
@@ -209,26 +209,26 @@ Kernel config, required packages, testing.
 ** Slide: Enabling XDP: kernel side                                 :export:
 
 Straigthforward: *CONFIG_BPF_SYSCALL=y*
-- XDP is always /enabled/
-- Enable AF_XDP: *CONFIG_XDP_SOCKETS=y*
-- Consider other networking BPF options
-  - *CONFIG_CGROUP_BPF=y*
-  - *CONFIG_NET_ACT_BPF=m*
-  - *CONFIG_NET_CLS_BPF=m*
-  - *CONFIG_BPF_STREAM_PARSER=y*
-  - *CONFIG_LWTUNNEL_BPF=y*
+- XDP is /always enabled/
+- Enable *AF_XDP*: CONFIG_XDP_SOCKETS=y
+- Consider other /*networking BPF options:*/
+  - CONFIG_CGROUP_BPF=y
+  - CONFIG_NET_ACT_BPF=m
+  - CONFIG_NET_CLS_BPF=m
+  - CONFIG_BPF_STREAM_PARSER=y
+  - CONFIG_LWTUNNEL_BPF=y
 
 ** Slide: Enabling XDP: packages (1/2)                              :export:
 
-- Newest *iproute2*
+- Newest /iproute2/
 - *bpftool*
-  - part of the kernel source code
-  - but mostly independent
-  - similar to iproute2: no need for a dependency to a particular kernel version
-- *clang/llvm* with bpf backend
+  - Part of the kernel source code
+  - But mostly independent
+  - Similar to iproute2: no need for a dependency to a particular kernel version
+- /clang/llvm/ with bpf backend
   - BTF support is highly desirable
 - *pahole*
-  - overloaded with BTF conversion code
+  - Overloaded with BTF conversion code
 
 ** Slide: Enabling XDP: packages (2/2)                              :export:
 
@@ -243,11 +243,11 @@ Straigthforward: *CONFIG_BPF_SYSCALL=y*
 
 - *CONFIG_TEST_BPF=m*
 - *tools/testing/selftests/bpf*
-  - cumbersome to build and install
+  - Cumbersome to build and install
 - *samples/bpf*
-  - needs custom installation script
-  - some samples do not work out of kernel tree
-  - not much usable for testing overall
+  - Needs custom installation script
+  - Some samples do not work out of kernel tree
+  - Not really usable for testing overall
 
 * Slide: eBPF supportability                                         :export:
 :PROPERTIES:
@@ -274,7 +274,7 @@ Introspection needed. *bpftool* provides that.
 
 The kernel behaves *differently* with BPF programs loaded.
 
-How hard is to debug misbehaving system with *buggy XDP* programs loaded?
+How hard is it to debug a misbehaving system with *buggy XDP* programs loaded?
 
 Need to teach support engineers to /look for BPF programs/.
 - But that's the usual thing with any new technology.
@@ -359,7 +359,7 @@ User, developer, distro problems; expectations and best practices.
 - Interface statistics *do not count all packets* anymore.
   - */"It must be something on the wire!"/*
 - XDP programs do not reach the *expected speed*.
-  - Because */XDP generic/* is used.
+  - Because */generic XDP/* is used.
 
 ** Slide: Developer experience problems                              :export:
 
@@ -367,7 +367,7 @@ User, developer, distro problems; expectations and best practices.
   - Because of using */unimplemented features/*.
   - What are the /available XDP features/ on the interface?
 - XDP is *not powerful enough*.
-  - Can't send packets.
+  - Can't send or duplicate packets.
   - */"Where is a repository with XDP libraries I can use?"/*
   - */"Okay, let's use AF_XDP..."/* (later) */"performance gotchas!"/*
 - Verifier *not smart enough*.
@@ -375,7 +375,7 @@ User, developer, distro problems; expectations and best practices.
 ** Slide: Distro experience problems (1/2)                           :export:
 
 - User wants to install these /two packages/. But *both* are using XDP!
-- User is using XDP for /custom filtering/. And distro is using XDP, *too*.
+  - Or user is using XDP for /custom filtering/. And distro is using XDP, *too*.
   - But */only one XDP program/* per interface is supported.
 - Great part of features */untested on non-x86_64/*.
 - Lack of community consensus on *common libraries*, *build* and *devel environment*.
@@ -383,7 +383,7 @@ User, developer, distro problems; expectations and best practices.
   - Example: *iproute2* has its own bpf support code.
     - incompatible ELF map format
     - WIP: conversion to *libbpf*
-  - Promote *libbpf* as the preferred solution?
+  - Promote /libbpf/ as the preferred solution?
 
 ** Slide: Distro experience problems (2/2)                           :export:
 
@@ -505,7 +505,7 @@ There are a couple of limitations we would like to overcome:
 - Programs need to /include tail call code/
   - Needs cooperation from program authors
   - Incompatibility between approaches
-  - Breaks if omitted by mistake
+  - Breaks if omitted by mistake (e.g., accidental return)
 - Program order *cannot be changed* without recompilation
 - Sysadmin cannot /*enforce policy*/
   - E.g., always run diagnostics program (such as xdpdump) first
@@ -580,7 +580,7 @@ int bpf_chain_call(ctx, retcode) {
 #+end_src
 
 
-** Implement option #1: userspace only
+** Implementation option #1: userspace only
 
 To do this in userspace (e.g., libbpf), the loader must:
 
@@ -591,7 +591,8 @@ To do this in userspace (e.g., libbpf), the loader must:
 
 /Pros/: No kernel support needed
 
-/*Cons*/: Only enforceable if all loaders comply, *lots* of book-keeping
+/*Cons*/: Only enforceable if all loaders comply, *lots* of book-keeping, can't
+swap map
 
 ** Implementation option #2: Kernel verifier
 
@@ -662,12 +663,12 @@ XDP features  *dependent on driver support*, which breaks BPF feature "system"
 - BPF verifier will /reject/ BPF prog
   - if using a *feature that isn't available in BPF core*
 
-XDP challenges this concept
+XDP challenges this concept.
 
 ** Slide: The XDP available features issue                          :export:
 
 Today: Users cannot know if a device driver supports XDP or not
-- This is the most often asked question
+- This is the question asked most often
 - And people will often */use generic XDP without noticing/*,
   - and complain about performance... this is a support issue.
 
@@ -696,7 +697,7 @@ Solution: /Need something that can reject earlier/
 
 ** Slide: Tech road-block: BPF tail-calls vs attach-time            :export:
 
-Solution#1: Do /feature match/check at XDP driver/ *attach time*
+Solution #1: Do /feature match/check at XDP driver/ *attach time*
 - Reject attach, if prog uses unsupported features
 - */Not possible due to BPF tail-call maps/*
 
@@ -707,7 +708,7 @@ Essentially tail-call maps adds attach "hook" outside driver control
    - with new program using unsupported feature
 How can driver reject this 2nd level map insert?!?
 
-** Slide: Solution#2: BPF load time with ifindex (1/2)              :export:
+** Slide: Solution #2: BPF load time with ifindex (1/2)             :export:
 
 Solution#2: Do /feature match/check at/ *BPF load time*
 - /Supply ifindex/ at *BPF load time* (like HW-offload already does!)
@@ -720,14 +721,14 @@ Solution#2: Do /feature match/check at/ *BPF load time*
 - Limitations: cannot share tail-call maps (any real users?)
 
 - /Opt-in interface/ via supplying ifindex
-  - Have to support not supplying ifindex, due to backwards compatibility
+  - Have to support loading with no ifindex, due to backwards compatibility
 
-** Slide: Solution#2: BPF-load time with ifindex (2/2)              :export:
+** Slide: Solution #2: BPF-load time with ifindex (2/2)             :export:
 
 */Issue-2B/*: *Generic XDP*
 - At BPF load time, don't know if used for /native or generic/ XDP
 
-Generic XDP should support same feature set for all net_devices
+Generic XDP support *should* be independent of net device
 - Still, some XDP features are not supported
   - e.g. cpumap redirect (silent drop)
 
@@ -784,7 +785,7 @@ Driver needs to express feature bits internally.
 
 How do userspace /see what NIC supports/?
 Two options:
-- (1) Expose driver feature bits (ethtool? kind of UAPI)
+- (1) Expose driver feature bits (needs some kind of UAPI; ethtool?)
 - (2) Do feature probing like bpftool
 
 * Slide: Questions, comments?                                        :export:
