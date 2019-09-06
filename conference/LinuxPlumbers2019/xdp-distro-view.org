@@ -233,9 +233,11 @@ Straigthforward: *CONFIG_BPF_SYSCALL=y*
 ** Slide: Enabling XDP: packages (2/2)                              :export:
 
 - *libbpf*
-  - part of the kernel source code
-  - packageable as a library since kernel v5.1
-  - not much practical experience, yet
+  - Part of the kernel source code
+  - Packageable as a library since kernel v5.1
+  - Not much practical experience, yet
+  - Upstream: please /*make vendoring of libbpf optional*/
+    - We really want to /link to the system version!/
 
 ** Slide: Enabling XDP: testing                                     :export:
 
@@ -279,6 +281,7 @@ Need to teach support engineers to /look for BPF programs/.
 
 Distros need to create /cheat sheets/ for users:
 - What to look for if packets are disappearing (XDP, tc, etc.)
+  - WiP: Drop monitor support for XDP
 - What to look for if XDP programs are not working as expected.
 - etc.
 
@@ -418,6 +421,12 @@ Kernel [[https://github.com/torvalds/linux/tree/master/tools/testing/selftests/b
 - Easy build and devel environment.
 - Easy to try out: uses veth and network name spaces.
 - How to best package it in a distro?
+
+/XDP tools/ (planned)
+- https://github.com/xdp-project/xdp-tools
+- Best practices like the tutorial, but easier to re-use
+- Shippable tools, usable out of the box; /please contribute!/
+  - E.g., xdpdump, simple packet filter
 
 * Slide: Dive in: Multiple XDP programs on a single interface        :export:
 :PROPERTIES:
