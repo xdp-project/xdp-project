@@ -362,7 +362,7 @@ Alexei now also have a [[ https://lore.kernel.org/netdev/20190827205213.456318-1
 - XDP is *not powerful enough*.
   - Can't send packets.
   - */"Where is a repository with XDP libraries I can use?"/*
-  - */"Okay, let's use AF_XDP..."/* (later) */"It's too slow!"/*
+  - */"Okay, let's use AF_XDP..."/* (later) */"performance gotchas!"/*
 - Verifier *not smart enough*.
 
 ** Slide: Distro experience problems (1/2)                           :export:
