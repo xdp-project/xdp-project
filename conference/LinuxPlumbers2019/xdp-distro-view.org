@@ -376,11 +376,12 @@ Alexei now also have a [[ https://lore.kernel.org/netdev/20190827205213.456318-1
   - Example: *iproute2* has its own bpf support code.
     - incompatible ELF map format
     - WIP: conversion to *libbpf*
-  - Promote *libbpf* as the preferred solution.
+  - Promote *libbpf* as the preferred solution?
 
 ** Slide: Distro experience problems (2/2)                           :export:
 
-- *libbpf* versioning
+- *libbpf*
+  - API in flux, including functions removal.
   - When built from the kernel, the package has *the kernel version*.
   - How much can be relied on [[https://github.com/libbpf/libbpf][libbpf repo on GitHub]]?
 - BTF and *pahole*
