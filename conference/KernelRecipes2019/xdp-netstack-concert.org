@@ -161,6 +161,27 @@ Obvious *next target*: /Bridge lookup helper/
    - Fallback for ARP lookups, flooding etc.
  - Huge potential *performance boost for Linux bridge* use cases!
 
+* Slide: Understand networking packet data structures                :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+To understand next slides and (XDP) kernel networking
+- Need to know difference between 3 struct's
+- Used for describing and pointing to actual packet data
+
+** Slide: Fundamental struct's                                      :export:
+
+The struct's describing data-frame at different levels
+- /=sk_buff=/ : Good old SKB, allocated from SLAB/kmem_cache (4 cachelines)
+- /=xdp_buff=/ : Used by BPF XDP-prog, allocated on call stack
+- /=xdp_frame=/: xdp_buff info state compressed, used by XDP-redirect
+  - No allocation, placed in top of data-frame
+
+#+BEGIN_NOTES
+Consider if describing xdp_rxq_info is needed?
+#+END_NOTES
+
 * Slide: Evolving XDP: Future ideas                                  :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
