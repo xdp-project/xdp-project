@@ -236,8 +236,6 @@ Straigthforward: *CONFIG_BPF_SYSCALL=y*
   - Part of the kernel source code
   - Packageable as a library since kernel v5.1
   - Not much practical experience, yet
-  - Upstream: please /*make vendoring of libbpf optional*/
-    - We really want to /link to the system version!/
 
 ** Slide: Enabling XDP: testing                                     :export:
 
@@ -373,7 +371,7 @@ User, developer, distro problems; expectations and best practices.
 - Verifier *not smart enough*.
   - It has gotten better, but may still reject valid programs
 
-** Slide: Distro experience problems (1/2)                           :export:
+** Slide: Distro experience problems (1/3)                           :export:
 
 - User wants to install these /two packages/. But *both* are using XDP!
   - Or user is using XDP for /custom filtering/. And distro is using XDP, *too*.
@@ -386,15 +384,19 @@ User, developer, distro problems; expectations and best practices.
     - WIP: conversion to *libbpf*
   - Promote /libbpf/ as the preferred solution?
 
-** Slide: Distro experience problems (2/2)                           :export:
+** Slide: Distro experience problems (2/3)                           :export:
 
 - *libbpf*
   - API in flux, including functions removal.
   - When built from the kernel, the package has *the kernel version*.
   - How much can be relied on [[https://github.com/libbpf/libbpf][libbpf repo on GitHub]]?
+  - Distros need to *link to the system version*. "Vendoring" makes that hard.
 - BTF and *pahole*
   - perhaps the BTF functionality should be split into a */different tool/*?
   - kernel build and BTF: *gcc* should generate BTF
+
+** Slide: Distro experience problems (3/3)                           :export:
+
 - virtio_net supports XDP but the *performance* is limited.
   - Can we have /XDP passthrough/?
   - Can we have /XDP offloading/ from VM to NIC?
