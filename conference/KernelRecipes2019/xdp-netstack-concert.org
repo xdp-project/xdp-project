@@ -225,7 +225,7 @@ Other *potential* offloads, which hardware can do (but not used by SKB):
    - But NIC HW have full parse info avail
 @@html:</small>@@
 
-** Slide: Blocked by missing HW-offloads
+** Slide: Blocked by missing HW-offloads                            :export:
 
 @@html:<small>@@
 SKB alloc outside NIC driver, blocked by missing HW-offloads.
@@ -241,6 +241,15 @@ The big questions are:
 - Where to *store this information?*
 - How to make it /dynamic/?
 
+** Slide: Storing generic offload-info                              :export:
+
+Where to store generic offload-info?
+- To avoid allocation use packet/frame data area
+  - (1) Extend /xdp_frame/: imply top of frame head-room
+  - (2) Use XDP /meta-data/ area: located in-front of payload start
+  - (3) Use tail-room (frame-end): Already used for skb_shared_info GRO
+
+No choice done yet...
 
 * Emacs end-tricks                                                 :noexport:
 
