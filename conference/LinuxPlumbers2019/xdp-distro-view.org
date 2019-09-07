@@ -371,6 +371,7 @@ User, developer, distro problems; expectations and best practices.
   - */"Where is a repository with XDP libraries I can use?"/*
   - */"Okay, let's use AF_XDP..."/* (later) */"performance gotchas!"/*
 - Verifier *not smart enough*.
+  - It has gotten better, but may still reject valid programs
 
 ** Slide: Distro experience problems (1/2)                           :export:
 
