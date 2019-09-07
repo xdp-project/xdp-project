@@ -178,6 +178,10 @@ The struct's describing data-frame at different levels
 - /=xdp_frame=/: xdp_buff info state compressed, used by XDP-redirect
   - No allocation, placed in top of data-frame
 
+At driver level
+- HW specific /"descriptor"/ with info and point to (DMA) data buffer
+  - contains HW-offloads (see later) that driver transfers to SKB
+
 #+BEGIN_NOTES
 Consider if describing xdp_rxq_info is needed?
 #+END_NOTES
@@ -194,6 +198,7 @@ Consider if describing xdp_rxq_info is needed?
 
 Goal: Simplify driver, via creating SKB inside network-core code
 - Happens today via *=xdp_frame=* in both /veth/ and /cpumap/
+- (Slight hickup: Max frame size unknown, lies about skb->truesize)
 
 The =xdp_frame= is placed in top of data-frame (=data_hard_start=)
 - Currently 32-bytes
@@ -203,7 +208,7 @@ Issue: *SKB*'s created this way are /lacking HW-offloads/ like:
 - HW /RX hash/ (=skb_set_hash(hash, type)=)
 - (these are almost always needed... tempted to extend =xdp_frame=)
 
-** Slide: Other HW-offloads
+** Slide: Other HW-offloads                                         :export:
 
 Other /existing/ offloads, used by SKBs, but *not always enabled*
  - /VLAN/ (=__vlan_hwaccel_put_tag()=)
@@ -219,6 +224,23 @@ Other *potential* offloads, which hardware can do (but not used by SKB):
    - RSS-hash can deduce e.g. IPv4/TCP (as frag not marked as TCP)
    - But NIC HW have full parse info avail
 @@html:</small>@@
+
+** Slide: Blocked by missing HW-offloads
+
+@@html:<small>@@
+SKB alloc outside NIC driver, blocked by missing HW-offloads.
+@@html:</br>@@
+The GOAL is to come-up with a Generic Offload Abstraction Layer...
+@@html:</small>@@
+
+Generic and dynamic way to transfer HW-offload info
+- Only enable info when needed
+- Both /made available for SKB creation and XDP programs/
+
+The big questions are:
+- Where to *store this information?*
+- How to make it /dynamic/?
+
 
 * Emacs end-tricks                                                 :noexport:
 
