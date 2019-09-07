@@ -161,6 +161,14 @@ Obvious *next target*: /Bridge lookup helper/
    - Fallback for ARP lookups, flooding etc.
  - Huge potential *performance boost for Linux bridge* use cases!
 
+* Slide: Evolving XDP: Future ideas                                  :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+*Warning*: Next slides about */crazy/* /ideas/
+- This stuff might never get implemented!
+
 * Emacs end-tricks                                                 :noexport:
 
 # Local Variables:
