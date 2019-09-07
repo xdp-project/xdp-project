@@ -166,8 +166,38 @@ Obvious *next target*: /Bridge lookup helper/
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-*Warning*: Next slides about */crazy/* /ideas/
+*Warning*: Next slides about */crazy/* *future* /ideas/
 - This stuff might never get implemented!
+
+* Slide: Move SKB allocations out of NIC drivers                     :export:
+
+Goal: Simplify driver, via creating SKB inside network-core code
+- Happens today via *=xdp_frame=* in both /veth/ and /cpumap/
+
+The =xdp_frame= is placed in top of data-frame (=data_hard_start=)
+- Currently 32-bytes
+
+Issue: *SKB*'s created this way are /lacking HW-offloads/ like:
+- HW /checksum/ info (for =skb->ip_summed= + =skb->csum=)
+- HW /RX hash/ (=skb_set_hash(hash, type)=)
+- (these are almost always needed... tempted to extend =xdp_frame=)
+
+** Slide: Other HW-offloads
+
+Other /existing/ offloads, used by SKBs, but *not always enabled*
+ - /VLAN/ (=__vlan_hwaccel_put_tag()=)
+ - RX /timestamp/
+   - HW =skb_hwtstamps()= (stored in skb_shared_info)
+   - Earlier XDP software timestamp (for =skb->tstamp=)
+ - RX /mark/ (=skb->mark= supported by mlx5)
+
+@@html:<br/><small>@@
+Other *potential* offloads, which hardware can do (but not used by SKB):
+ - Unique u64 /flow identifier/ key (mlx5 HW)
+ - Higher-level protocol header offsets
+   - RSS-hash can deduce e.g. IPv4/TCP (as frag not marked as TCP)
+   - But NIC HW have full parse info avail
+@@html:</small>@@
 
 * Emacs end-tricks                                                 :noexport:
 
