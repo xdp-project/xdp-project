@@ -251,6 +251,17 @@ Where to store generic offload-info?
 
 No choice done yet...
 
+** Slide: Dynamic generic offload-info
+
+Next challenge: How to make this dynamic?
+- Each driver have own format for HW descriptor
+- Hopefully BTF can help here?
+
+Drivers could export BTF description
+- BPF prog wanting to use area, must have matching BTF
+- But how can kernel-code use BTF desc and transfer to SKB fields?
+
+
 * Emacs end-tricks                                                 :noexport:
 
 # Local Variables:
