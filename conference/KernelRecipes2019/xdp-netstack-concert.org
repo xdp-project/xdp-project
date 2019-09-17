@@ -61,7 +61,7 @@ Audience at Kernel Recipes: Other /kernel developers/
 Hopefully you already /heard about XDP/ (eXpress Data Path) */?/* *?* /?/
 - I'll *explain why* network sub-system created this...
 - And /future/ *crazy ideas* to extend XDP
-  - hopefully in a way that cooperate more with kernel netstack
+  - (hopefully) in a way that cooperate more with kernel netstack
 
 ** Slide: Why was XDP needed?                                       :export:
 
@@ -109,7 +109,7 @@ Did you really say, this can be used for */bypassing the Linux kernel netstack/*
 Sure, build in /freedom/ for *kernel-bypass via AF_XDP*
 - DPDK already have a Poll-Mode driver for AF_XDP
 
-Why is this /better/, than other bypass solutions?
+Why is this /better/, than other (bypass) solutions?
 - Flexible /sharing of NIC resources/, NIC still avail to netstack
 - XDP/eBPF prog filters packets using XDP_REDIRECT into AF_XDP socket
   - Move *selective* frames out of kernel, no need to reinject
@@ -180,7 +180,7 @@ The struct's describing data-frame at different levels
 
 At driver level
 - HW specific /"descriptor"/ with info and point to (DMA) data buffer
-  - contains HW-offloads (see later) that driver transfers to SKB
+  - *contains HW-offloads* (see later) that driver transfers to SKB
 
 #+BEGIN_NOTES
 Consider if describing xdp_rxq_info is needed?
@@ -260,6 +260,21 @@ Next challenge: How to make this dynamic?
 Drivers could export BTF description
 - BPF prog wanting to use area, must have matching BTF
 - But how can kernel-code use BTF desc and transfer to SKB fields?
+
+** Slide: Dependency: Handling multi-frame packets
+
+@@html:<small>@@
+SKB alloc outside NIC driver, ALSO need XDP multi-frame handling
+@@html:</small>@@
+
+Multi-frame packets have several use-cases
+- Jumbo-frames
+- TSO (TCP Segmentation Offload)
+- Header split, (L4) headers in first segment, (L7) payload in next
+
+XDP need answer/solution for multi-frame packets
+- To fully move SKB alloc+setup out of NIC drivers
+- Design idea/proposal in XDP-project: [[https://github.com/xdp-project/xdp-project/blob/master/areas/core/xdp-multi-buffer01-design.org][xdp-multi-buffer01-design.org]]
 
 * Slide: Fun with xdp_frame before SKB alloc                         :export:
 :PROPERTIES:
