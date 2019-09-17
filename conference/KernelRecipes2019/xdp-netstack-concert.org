@@ -281,15 +281,48 @@ XDP need answer/solution for multi-frame packets
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-After SKB alloc got moved out of drivers
+*After* SKB alloc gets moved out of drivers
 - What can we now create of crazy stuff?!?
 
 ** Slide: New layer with xdp_frame?
 
-Could we update netstack L2 RX-handler to handle xdp_frame packets?
-
+Could update netstack (L2) RX-handler to handle xdp_frame packets?
 - Bridging
 - Macvlan
+- Bond + Team
+- OpenVSwitch (OVS)
+
+Likely: Need new L2 RX-handler layer
+- To support kernels evolutionary development model
+  - (cannot update every user at once, plus out-of-tree users)
+
+*** Users of RX-handler                                          :noexport:
+
+Grep after "netdev_rx_handler_register":
+#+begin_example
+net/bridge/br_if.c:     err = netdev_rx_handler_register(dev, br_handle_frame, p);
+drivers/net/bonding/bond_main.c:        res = netdev_rx_handler_register(slave_dev, bond_handle_frame,
+drivers/net/bonding/bond_main.c:                slave_dbg(bond_dev, slave_dev, "Error %d calling netdev_rx_handler_register\n", res);
+drivers/net/bonding/bond_main.c:         * before netdev_rx_handler_register is called in which case
+drivers/net/ethernet/qualcomm/rmnet/rmnet_config.c:     rc = netdev_rx_handler_register(real_dev, rmnet_rx_handler, port);
+drivers/net/hyperv/netvsc_drv.c:        ret = netdev_rx_handler_register(vf_netdev,
+drivers/net/ipvlan/ipvlan_main.c:       err = netdev_rx_handler_register(dev, ipvlan_handle_frame, port);
+drivers/net/ipvlan/ipvtap.c:    err = netdev_rx_handler_register(dev, tap_handle_frame, &vlantap->tap);
+drivers/net/macsec.c:           err = netdev_rx_handler_register(real_dev, macsec_handle_frame,
+drivers/net/macvlan.c:  err = netdev_rx_handler_register(dev, macvlan_handle_frame, port);
+drivers/net/macvtap.c:  err = netdev_rx_handler_register(dev, tap_handle_frame, &vlantap->tap);
+drivers/net/team/team.c:        err = netdev_rx_handler_register(port_dev, team_handle_frame,
+drivers/net/wireless/virt_wifi.c:       err = netdev_rx_handler_register(priv->lowerdev, virt_wifi_rx_handler,
+drivers/net/wireless/virt_wifi.c:                       "can't netdev_rx_handler_register: %d\n", err);
+include/linux/netdevice.h: * To register a rx_handler on a net_device, use netdev_rx_handler_register().
+include/linux/netdevice.h:int netdev_rx_handler_register(struct net_device *dev,
+net/core/dev.c: *       netdev_rx_handler_register - register receive handler
+net/core/dev.c:int netdev_rx_handler_register(struct net_device *dev,
+net/core/dev.c:EXPORT_SYMBOL_GPL(netdev_rx_handler_register);
+net/core/failover.c:    err = netdev_rx_handler_register(slave_dev, fops->slave_handle_frame,
+net/hsr/hsr_slave.c:    res = netdev_rx_handler_register(dev, hsr_handle_frame, port);
+net/openvswitch/vport-netdev.c: err = netdev_rx_handler_register(vport->dev, netdev_frame_hook,
+#+end_example
 
 * Emacs end-tricks                                                 :noexport:
 
