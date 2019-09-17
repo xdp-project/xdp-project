@@ -1,0 +1,88 @@
+Design notes on XDP statistics
+
+Statistics to be collected:
+   packets dropped by XDP
+   packets redirected by XDP
+   packets forwarded
+   bytes forwarded
+
+Question: API to export XDP stats?
+1. extend IFLA_STATS_LINK_XSTATS with LINK_XSTATS_TYPE_XDP
+2. ethtool stats API?
+
+
+Perspectives to be considered
+1. program writer / distributor
+   + wants program to be as fast as possible
+   + no unnecessary overhead
+
+2. system integrator / user
+   + wants usability, maintainability and debuggability
+   + hidden operations (e.g., blind packet drops) lead to confusion when an
+     error occurs
+
+The UAPI needs to allow a user (e.g., admin) to *force* XDP statistics to be
+collected. *Force* means a program writer can not opt out, so the preference
+of the administrator takes precedence. A proper implementation means control
+is solely at the discretion of the server admin and should not require a user
+to modify third-party software (e.g., edit scripts that load XDP programs).
+This means an opt-in API that requires action at program load time would
+most likely not fulfill the intent. Further, it might prove useful to allow
+the forced stats collection to be toggled on and off on the fly (i.e., without
+requiring a reload of the programs).
+
+Most discussions to date have focused on XDP statistcs for the netdevices
+representing the physical ports. At least one user has commented on the
+need for statistics for higher level devices - e.g., by vlan on a port
+device. Stats for upper devices require APIs to convert a port netdev and
+a <vlan, dmac> pair to the upper level device. Prototype patches for this
+exist as part of the work to use the fib lookup helper for
+
+Options for collecting statistics
+
+1. Require drivers supporting XDP to call an xdp helper for bumping stats
+
+   The idea here is for core XDP code to export a function that manages
+   stats. It could take netdevice, packet, bytes, and xdp_action as inputs
+   and bumps the relevant counters. The exported function is wrapped in an
+   inline helper that uses a static_key to determine if the actual function
+   should be called. The static_key is controlled by the UAPI that allows
+   an admin to control always on collection (e.g., a sysctl).
+
+     pro: admin can opt-in without any work by program writer
+     con: requires support to be added per driver. Making this a 1-line call
+          should help.
+
+2. Create bpf helpers to increment stats for a given netdev
+
+     pro: fairly easy
+     con: If it requires program writer to call the helper, then how
+          does an admin force stats collection?
+
+3. Stats in xdp_md and auto-generate bpf code
+
+   pro: does not require per-driver code
+   con: Requires user intent to be known at program load time. Does not
+        allow on the fly changing of stats collection.
+        More complicated and runs the risk of rejecting a program by
+        exceeding max instructions.
+
+Implementations in v5.3
+(list is WIP; not complete as of 16-Sept-2019)
+
+0. generic XDP
+   + drops visible from drop monitor (call to kfree_skb)
+
+1. veth
+   + ethtool level stats
+     * packets and bytes processed by xdp programs
+     * XDP drops
+
+2. virtio
+   + ethtool level stats
+     * packets processed by xdp programs
+     * per action: TX, REDIRECT, DROPS
+     * DROP counter includes all error paths in xdp related code
+
+3. tun
+   + XDP_DROP accounted as rx_dropped
