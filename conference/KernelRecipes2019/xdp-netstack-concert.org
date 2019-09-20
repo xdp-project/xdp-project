@@ -254,7 +254,7 @@ Where to store generic offload-info?
 
 No choice done yet...
 
-** Slide: Dynamic generic offload-info
+** Slide: Dynamic generic offload-info                              :export:
 
 Next challenge: How to make this dynamic?
 - Each driver have own format for HW descriptor
@@ -264,7 +264,7 @@ Drivers could export BTF description
 - BPF prog wanting to use area, must have matching BTF
 - But how can kernel-code use BTF desc and transfer to SKB fields?
 
-** Slide: Dependency: Handling multi-frame packets
+** Slide: Dependency: Handling multi-frame packets                  :export:
 
 @@html:<small>@@
 SKB alloc outside NIC driver, ALSO need XDP multi-frame handling
@@ -287,20 +287,24 @@ XDP need answer/solution for multi-frame packets
 *After* SKB alloc gets moved out of drivers
 - What can we now create of crazy stuff?!?
 
-** Slide: New layer with xdp_frame?
+** Slide: General idea for xdp_frame handling                       :export:
+
+Idea: Use xdp_frame for some fast-paths
+- E.g. forwarding could be accelerated (non localhost deliver)
+- Fall-back: Create SKB for slow(er) path
+- Lots of work: adjust functions to work without SKBs
+
+** Slide: New (L2) layer with xdp_frame?                            :export:
 
 Could update netstack (L2) RX-handler to handle xdp_frame packets?
 - Bridging
-- Macvlan
+- Macvlan, ipvlan, macvtap
 - Bond + Team
 - OpenVSwitch (OVS)
 
 Likely: Need new L2 RX-handler layer
 - To support kernels evolutionary development model
   - (cannot update every user at once, plus out-of-tree users)
-
-Idea: Use xdp_frame for fast-path e.g. forwarding
-- Fall-back: Create SKB for slow(er) path
 
 *** Users of RX-handler                                          :noexport:
 
@@ -329,8 +333,6 @@ net/core/failover.c:    err = netdev_rx_handler_register(slave_dev, fops->slave_
 net/hsr/hsr_slave.c:    res = netdev_rx_handler_register(dev, hsr_handle_frame, port);
 net/openvswitch/vport-netdev.c: err = netdev_rx_handler_register(vport->dev, netdev_frame_hook,
 #+end_example
-
-
 
 * Emacs end-tricks                                                 :noexport:
 
