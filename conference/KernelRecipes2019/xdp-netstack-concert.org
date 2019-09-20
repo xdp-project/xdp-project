@@ -334,6 +334,20 @@ net/hsr/hsr_slave.c:    res = netdev_rx_handler_register(dev, hsr_handle_frame, 
 net/openvswitch/vport-netdev.c: err = netdev_rx_handler_register(vport->dev, netdev_frame_hook,
 #+end_example
 
+
+
+* Slide: Summary                                                     :export:
+
+Kernel now have eBPF /programmable network fast-path/
+- that can compete with kernel-bypass speeds
+
+Not finished: Still lots of development work ahead
+- Need to /cooperate more with kernel/ netstack
+  - Create BPF-helpers to access kernel tables
+  - How far can we take this: SKBs outside drivers?
+
+
+
 * Emacs end-tricks                                                 :noexport:
 
 # Local Variables:
