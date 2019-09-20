@@ -335,8 +335,25 @@ net/openvswitch/vport-netdev.c: err = netdev_rx_handler_register(vport->dev, net
 #+end_example
 
 
+* Slide: More practical                                              :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
 
-* Slide: Summary                                                     :export:
+People complain XDP and eBPF is *hard to use*!?
+
+** Slide: XDP-tutorial                                              :export:
+
+Ready to use: XDP Hands-On Tutorial
+- Basically a full build and testlab environment
+
+Simply git clone and run make:
+- https://github.com/xdp-project/xdp-tutorial
+
+Testlab works on your (Linux) laptop
+- via creating =veth= device and network namespace
+
+* Slide: End: Summary                                                :export:
 
 Kernel now have eBPF /programmable network fast-path/
 - that can compete with kernel-bypass speeds
@@ -344,8 +361,7 @@ Kernel now have eBPF /programmable network fast-path/
 Not finished: Still lots of development work ahead
 - Need to /cooperate more with kernel/ netstack
   - Create BPF-helpers to access kernel tables
-  - How far can we take this: SKBs outside drivers?
-
+  - How far can we take this: SKBs outside drivers? realistic goal?
 
 
 * Emacs end-tricks                                                 :noexport:
