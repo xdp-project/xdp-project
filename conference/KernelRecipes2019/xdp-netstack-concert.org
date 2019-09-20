@@ -345,7 +345,7 @@ People complain XDP and eBPF is *hard to use*!?
 ** Slide: XDP-tutorial                                              :export:
 
 Ready to use: XDP Hands-On Tutorial
-- Basically a full build and testlab environment
+- Basically a /full build and testlab environment/
 
 Simply git clone and run make:
 - https://github.com/xdp-project/xdp-tutorial
@@ -363,6 +363,8 @@ Not finished: Still lots of development work ahead
   - Create BPF-helpers to access kernel tables
   - How far can we take this: SKBs outside drivers? realistic goal?
 
+XDP-project coordination:
+- https://github.com/xdp-project/xdp-project
 
 * Emacs end-tricks                                                 :noexport:
 
