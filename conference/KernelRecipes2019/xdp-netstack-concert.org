@@ -137,7 +137,7 @@ XDP speed gains comes from
 
 Skipping code: *Imply skipping features* provided by /network stack/
   - Gave users freedom to e.g. skip netfilter or route-lookup
-  - Users have to re-implement features they actually needed
+  - But users have to re-implement features they actually needed
     - Sometimes cumbersome via BPF-maps
 
 /Avoid/ *re-implement features*:
@@ -167,7 +167,7 @@ Obvious *next target*: /Bridge lookup helper/
 :END:
 
 To understand next slides and (XDP) kernel networking
-- Need to know difference between 3 struct's
+- Need to know difference between some struct's
 - Used for describing and pointing to actual packet data
 
 ** Slide: Fundamental struct's                                      :export:
@@ -178,9 +178,12 @@ The struct's describing data-frame at different levels
 - /=xdp_frame=/: xdp_buff info state compressed, used by XDP-redirect
   - No allocation, placed in top of data-frame
 
-At driver level
-- HW specific /"descriptor"/ with info and point to (DMA) data buffer
+- HW specific /"descriptor"/ with info and pointer to (DMA) data buffer
   - *contains HW-offloads* (see later) that driver transfers to SKB
+
+Exotic details
+- /=skb_shared_info=/ : placed inside data-frame (at end), e.g. GRO multi-frame
+- /=xdp_rxq_info=/ : Static per RX queue info
 
 #+BEGIN_NOTES
 Consider if describing xdp_rxq_info is needed?
