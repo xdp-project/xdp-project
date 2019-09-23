@@ -65,14 +65,14 @@ Hopefully you already /heard about XDP/ (eXpress Data Path) */?/* *?* /?/
 
 ** Slide: Why was XDP needed?                                       :export:
 
-This was about the *kernel networking stack staying relevant*
+This was about the *kernel networking stack* /staying relevant/
  - For emerging use-cases and areas
 
 Linux networking stack assumes layer L4-L7 delivery
  - Obviously slow when compared to L2-L3 kernel-bypass solutions
 
 XDP operate at layers L2-L3
- - Shows same performance as these L2-L3 kernel-bypass solutions
+ - Shows /same performance as these L2-L3 kernel-bypass/ solutions
 
 @@html:<small>@@
 
@@ -149,11 +149,11 @@ Skipping code: *Imply skipping features* provided by /network stack/
 *We should encourage adding helpers instead of duplicating data in BPF maps*
 @@html:</small>@@
 
-Think of XDP as a /software offload layer for the kernel netstack/
+Think of XDP as a /software offload layer/ *for the kernel netstack*
  - Simply setup and use the Linux netstack, but accelerate parts of it with XDP
 
 IP routing good example: /Access routing table from XDP via BPF helpers/ (v4.18)
- - Let Linux handle routing (daemons) and neighbour lookups
+ - Let Linux handle routing (daemons) and neighbour/ARP lookups
  - Talk at LPC-2018 (David Ahern): [[http://vger.kernel.org/lpc-networking2018.html#session-1][Leveraging Kernel Tables with XDP]]
 
 Obvious *next target*: /Bridge lookup helper/
@@ -166,7 +166,7 @@ Obvious *next target*: /Bridge lookup helper/
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-To understand next slides and (XDP) kernel networking
+/To understand next slides/ and (XDP) kernel networking
 - Need to know difference between some struct's
 - Used for describing and pointing to actual packet data
 
@@ -176,7 +176,7 @@ The struct's describing data-frame at different levels
 - /=sk_buff=/ : Good old SKB, allocated from SLAB/kmem_cache (4 cachelines)
 - /=xdp_buff=/ : Used by BPF XDP-prog, allocated on call stack
 - /=xdp_frame=/: xdp_buff info state compressed, used by XDP-redirect
-  - No allocation, placed in top of data-frame
+  - No allocation, placed in top of data-frame (currently 32 bytes)
 
 - HW specific /"descriptor"/ with info and pointer to (DMA) data buffer
   - *contains HW-offloads* (see later) that driver transfers to SKB
@@ -201,15 +201,18 @@ Consider if describing xdp_rxq_info is needed?
 
 Goal: Simplify driver, via creating SKB inside network-core code
 - Happens today via *=xdp_frame=* in both /veth/ and /cpumap/
-- (Slight hickup: Max frame size unknown, lies about skb->truesize)
+- (Slight hickup: Max frame size unknown, thus lie about skb->truesize)
 
-The =xdp_frame= is placed in top of data-frame (=data_hard_start=)
-- Currently 32-bytes
-
-Issue: *SKB*'s created this way are /lacking HW-offloads/ like:
+*/Issue/*: *SKB*'s created this way are /lacking HW-offloads/ like:
 - HW /checksum/ info (for =skb->ip_summed= + =skb->csum=)
 - HW /RX hash/ (=skb_set_hash(hash, type)=)
 - (these are almost always needed... tempted to extend =xdp_frame=)
+
+#+BEGIN_NOTES
+As mentioned earlier:
+The =xdp_frame= is placed in top of data-frame (=data_hard_start=)
+- Currently 32-bytes
+#+END_NOTES
 
 ** Slide: Other HW-offloads                                         :export:
 
@@ -223,7 +226,7 @@ Other /existing/ offloads, used by SKBs, but *not always enabled*
 @@html:<br/><small>@@
 Other *potential* offloads, which hardware can do (but not used by SKB):
  - Unique u64 /flow identifier/ key (mlx5 HW)
- - Higher-level protocol header offsets
+ - Higher-level protocol *header offsets*
    - RSS-hash can deduce e.g. IPv4/TCP (as frag not marked as TCP)
    - But NIC HW have full parse info avail
 @@html:</small>@@
@@ -238,19 +241,20 @@ The GOAL is to come-up with a Generic Offload Abstraction Layer...
 
 Generic and dynamic way to transfer HW-offload info
 - Only enable info when needed
-- Both /made available for SKB creation and XDP programs/
+- */Both/* /made available for/ *SKB creation* /and/ *XDP programs*
 
 The big questions are:
 - Where to *store this information?*
 - How to make it /dynamic/?
+- What else are we missing?
 
 ** Slide: Storing generic offload-info                              :export:
 
-Where to store generic offload-info?
+*Where to store* generic offload-info?
 - To avoid allocation use packet/frame data area
   - (1) Extend /xdp_frame/: imply top of frame head-room
   - (2) Use XDP /meta-data/ area: located in-front of payload start
-  - (3) Use tail-room (frame-end): Already used for skb_shared_info GRO
+  - (3) Use /tail-room/ (frame-end): Already used for skb_shared_info GRO
 
 No choice done yet...
 
@@ -258,11 +262,11 @@ No choice done yet...
 
 Next challenge: How to make this dynamic?
 - Each driver have own format for HW descriptor
-- Hopefully BTF can help here?
+- Hopefully *BTF can help here?*
 
-Drivers could export BTF description
+Drivers could export BTF description of offload-info area
 - BPF prog wanting to use area, must have matching BTF
-- But how can kernel-code use BTF desc and transfer to SKB fields?
+- */But how/* /can kernel-code use BTF desc/ and *transfer to SKB* fields?
 
 ** Slide: Dependency: Handling multi-frame packets                  :export:
 
