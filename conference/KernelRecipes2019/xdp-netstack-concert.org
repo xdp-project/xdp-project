@@ -366,6 +366,25 @@ Not finished: Still lots of development work ahead
 XDP-project coordination:
 - https://github.com/xdp-project/xdp-project
 
+* Bonus: Extra slides                                                :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: The *missing* XDP /transmit/ hook                         :export:
+
+XDP is /currently/ *only* an /RX-hook/
+- Tell people to use TC-BPF egress hook, /we can do better.../
+
+A real XDP /TX hook is needed/, for several reasons
+- Creates symmetry (RX and TX hooks)
+- XDP-redirect /need push-back/flow-control/ mechanism
+  - Bypass qdisc layer: results in (easy) *overflow (HW) TX-queues*
+  - Be careful: *don't re-implement full qdisc layer*
+- Should also run *after normal qdisc* layer TX-queues
+  - Reason: Like BQL, can /choose when qdisc is activated/
+
+
 * Emacs end-tricks                                                 :noexport:
 
 # Local Variables:
