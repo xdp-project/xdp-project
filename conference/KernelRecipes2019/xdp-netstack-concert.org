@@ -279,8 +279,9 @@ Multi-frame packets have several use-cases
 - TSO (TCP Segmentation Offload)
 - Header split, (L4) headers in first segment, (L7) payload in next
 
-XDP need answer/solution for multi-frame packets
+XDP *need* /answer/solution for multi-frame packets/
 - To fully move SKB alloc+setup out of NIC drivers
+  - (SKB use skb_shared_info area to store info on multi-frames)
 - Design idea/proposal in XDP-project: [[https://github.com/xdp-project/xdp-project/blob/master/areas/core/xdp-multi-buffer01-design.org][xdp-multi-buffer01-design.org]]
 
 * Slide: Fun with xdp_frame before SKB alloc                         :export:
@@ -293,20 +294,20 @@ XDP need answer/solution for multi-frame packets
 
 ** Slide: General idea for xdp_frame handling                       :export:
 
-Idea: Use xdp_frame for some fast-paths
+Idea: /Use xdp_frame/ for *some fast-paths*
 - E.g. forwarding could be accelerated (non localhost deliver)
-- Fall-back: Create SKB for slow(er) path
+- /Fall-back/: *Create SKB for slow(er) path*
 - Lots of work: adjust functions to work without SKBs
 
 ** Slide: New (L2) layer with xdp_frame?                            :export:
 
-Could update netstack (L2) RX-handler to handle xdp_frame packets?
+Could update netstack (L2) *RX-handler to handle xdp_frame* packets?
 - Bridging
 - Macvlan, ipvlan, macvtap
 - Bond + Team
 - OpenVSwitch (OVS)
 
-Likely: Need new L2 RX-handler layer
+Likely: Need new L2 RX-handler layer (?)
 - To support kernels evolutionary development model
   - (cannot update every user at once, plus out-of-tree users)
 
@@ -348,7 +349,7 @@ People complain XDP and eBPF is *hard to use*!?
 
 ** Slide: XDP-tutorial                                              :export:
 
-Ready to use: XDP Hands-On Tutorial
+Ready to use: *XDP Hands-On* Tutorial
 - Basically a /full build and testlab environment/
 
 Simply git clone and run make:
@@ -360,10 +361,10 @@ Testlab works on your (Linux) laptop
 * Slide: End: Summary                                                :export:
 
 Kernel now have eBPF /programmable network fast-path/
-- that can compete with kernel-bypass speeds
+- that can now *compete with kernel-bypass* speeds
 
 Not finished: Still lots of development work ahead
-- Need to /cooperate more with kernel/ netstack
+- Need to /cooperate/ *more* /with kernel/ netstack
   - Create BPF-helpers to access kernel tables
   - How far can we take this: SKBs outside drivers? realistic goal?
 
