@@ -369,27 +369,28 @@ Simply git clone and run make:
 Testlab works on your (Linux) laptop
 - via creating =veth= device and network namespace
 
-* Slide: The missing transmit side                                   :export:
+* Slide: The *missing* transmit side                                 :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-XDP is currently RX only
-- We want to change that! - but it's (also)p a big task
+XDP is /currently/ *only* an /RX-hook/
+- We want to change that! - but it's (also) a big task
+
+Tell people to use TC-BPF egress hook, /we can do better.../
 
 ** Slide: The *missing* XDP /transmit/ hook                         :export:
 
-XDP is /currently/ *only* an /RX-hook/
-- Tell people to use TC-BPF egress hook, /we can do better.../
-
 A real XDP /TX hook is needed/, for several reasons
 - Creates symmetry (RX and TX hooks)
-- XDP-redirect /need push-back/flow-control/ mechanism
-  - Bypass qdisc layer: results in (easy) *overflow (HW) TX-queues*
+- XDP-redirect *need* /push-back/flow-control/ mechanism
+  - Too easily *overflow* (HW) *TX-queues* (as qdisc-layer bypassed)
   - Be careful: *don't re-implement full qdisc layer*
-- Should also run *after normal qdisc* layer TX-queues
-  - Reason: Like BQL, can /choose when qdisc is activated/
-  - Driver TX-q based on xdp_frame, allow SKB to be released earlier
+
+Should also run *after normal qdisc* layer TX-queues
+- Reason: Like BQL, can /choose when qdisc is activated/
+  - Allows to implement BQL (Byte-Queue-Limit) as eBPF
+- Driver TX-q based on xdp_frame, allow SKB to be released earlier
 
 * Slide: End: Summary                                                :export:
 
