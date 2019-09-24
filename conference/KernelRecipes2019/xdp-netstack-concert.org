@@ -369,23 +369,13 @@ Simply git clone and run make:
 Testlab works on your (Linux) laptop
 - via creating =veth= device and network namespace
 
-* Slide: End: Summary                                                :export:
-
-Kernel now have eBPF /programmable network fast-path/
-- that can now *compete with kernel-bypass* speeds
-
-Not finished: Still lots of development work ahead
-- Need to /cooperate/ *more* /with kernel/ netstack
-  - Create BPF-helpers to access kernel tables
-  - How far can we take this: SKBs outside drivers? realistic goal?
-
-XDP-project coordination:
-- https://github.com/xdp-project/xdp-project
-
-* Bonus: Extra slides                                                :export:
+* Slide: The missing transmit side                                   :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
+
+XDP is currently RX only
+- We want to change that! - but it's (also)p a big task
 
 ** Slide: The *missing* XDP /transmit/ hook                         :export:
 
@@ -399,7 +389,20 @@ A real XDP /TX hook is needed/, for several reasons
   - Be careful: *don't re-implement full qdisc layer*
 - Should also run *after normal qdisc* layer TX-queues
   - Reason: Like BQL, can /choose when qdisc is activated/
+  - Driver TX-q based on xdp_frame, allow SKB to be released earlier
 
+* Slide: End: Summary                                                :export:
+
+Kernel now have eBPF /programmable network fast-path/
+- that can now *compete with kernel-bypass* speeds
+
+Not finished: Still lots of development work ahead
+- Need to /cooperate/ *more* /with kernel/ netstack
+  - Create BPF-helpers to access kernel tables
+  - How far can we take this: SKBs outside drivers? realistic goal?
+
+XDP-project coordination:
+- https://github.com/xdp-project/xdp-project
 
 * Emacs end-tricks                                                 :noexport:
 
