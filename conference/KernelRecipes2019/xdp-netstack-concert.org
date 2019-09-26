@@ -53,15 +53,20 @@ Only sections with tag ":export:" will end-up in the presentation. The prefix
 "Slide:" is only syntax-sugar for the reader (and it removed before export by
 emacs).
 
-* Slide: What will you learn?                                        :export:
+* Slide: Overview: What will you learn?                              :export:
 
 Audience at Kernel Recipes: Other /kernel developers/
 - But for *different kernel sub-systems*
 
 Hopefully you already /heard about XDP/ (eXpress Data Path) */?/* *?* /?/
 - I'll *explain why* network sub-system created this...
-- And /future/ *crazy ideas* to extend XDP
-  - (hopefully) in a way that /cooperate more with kernel/ netstack
+
+/Future/ *crazy ideas* to extend XDP
+- (hopefully) in a way that /cooperate more with kernel/ netstack
+
+Learn about: kernel network data structures
+
+Give you an easy way to try out /XDP on your laptop/
 
 ** Slide: Why was XDP needed?                                       :export:
 
