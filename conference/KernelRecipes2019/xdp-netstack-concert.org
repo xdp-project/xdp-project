@@ -57,6 +57,7 @@ emacs).
 
 Audience at Kernel Recipes: Other /kernel developers/
 - But for *different kernel sub-systems*
+- Learn about: kernel /network data structures/
 
 Hopefully you already /heard about XDP/ (eXpress Data Path) */?/* *?* /?/
 - I'll *explain why* network sub-system created this...
@@ -64,9 +65,7 @@ Hopefully you already /heard about XDP/ (eXpress Data Path) */?/* *?* /?/
 /Future/ *crazy ideas* to extend XDP
 - (hopefully) in a way that /cooperate more with kernel/ netstack
 
-Learn about: kernel network data structures
-
-Give you an easy way to try out /XDP on your laptop/
+Give you an easy way to try out /XDP and BPF on your laptop/
 
 ** Slide: Why was XDP needed?                                       :export:
 
