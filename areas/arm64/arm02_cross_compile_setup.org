@@ -29,8 +29,29 @@ export CROSS_COMPILE="/home/${USER}/cross-compilers/${VERSION}/bin/aarch64-linux
 make ARCH=arm64 CROSS_COMPILE=$CROSS_COMPILE
 #+END_SRC
 
-Created script: compile_kernel_arm64.sh
+Created compile script: compile_kernel_arm64.sh
  - https://github.com/netoptimizer/prototype-kernel/blob/master/scripts/compile_kernel_arm64.sh
 
-Also created script to push kernel to remove host:
+Also created script to push kernel to remote host:
  - https://github.com/netoptimizer/prototype-kernel/blob/master/scripts/kernel_arm64_push.sh
+
+** Kernel Makefile environment variables
+
+It can be convenient to setup environment variables for cross-compile in the
+current shell. Added file named [[https://github.com/netoptimizer/prototype-kernel/blob/master/scripts/arm64_compile_env.source][arm64_compile_env.source]] that can be used by
+running =source arm64_compile_env.source=.  The file contains:
+
+#+begin_src sh
+# 'source' this script in your shell
+export VERSION=gcc-linaro-7.3.1-2018.05-x86_64_aarch64-linux-gnu
+export CROSS_COMPILE_DIR=/home/${USER}/cross-compilers/${VERSION}
+export CROSS_COMPILE="aarch64-linux-gnu-"
+export ARCH=arm64
+
+export PATH=${CROSS_COMPILE_DIR}/bin:${PATH}
+echo "Cross-compiler in PATH: $PATH"
+#+end_src
+
+The kernel =Makefile= system will pickup these when (particularly =$ARCH=
+and =$CROSS_COMPILE=) when running the regular =make= command.
+
