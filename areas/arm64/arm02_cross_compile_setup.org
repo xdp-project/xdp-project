@@ -30,7 +30,7 @@ make ARCH=arm64 CROSS_COMPILE=$CROSS_COMPILE
 #+END_SRC
 
 Created script: compile_kernel_arm64.sh
- - https://github.com/netoptimizer/prototype-kernel/blob/master/scripts/kernel_arm64_push.sh
+ - https://github.com/netoptimizer/prototype-kernel/blob/master/scripts/compile_kernel_arm64.sh
 
 Also created script to push kernel to remove host:
  - https://github.com/netoptimizer/prototype-kernel/blob/master/scripts/kernel_arm64_push.sh
