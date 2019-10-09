@@ -1,0 +1,11 @@
+#+Title: Benchmarks for Espressobin driver mvneta
+
+This document focus on benchmarking the patchset from Lorenzo Bianconi
+ - [[https://patchwork.ozlabs.org/project/netdev/list/?series=134430&state=%2a][Patchset V1]]
+ - Message-Id: <cover.1570307172.git.lorenzo@kernel.org>
+ - Thread on [[https://lore.kernel.org/netdev/cover.1570307172.git.lorenzo@kernel.org/][lore.kernel.org]]
+
+The patchset adds XDP support to the Marvell driver mvneta.
+
+The benchmark will be performed on a [[https://espressobin.net/][EspressoBin]] board.
+
