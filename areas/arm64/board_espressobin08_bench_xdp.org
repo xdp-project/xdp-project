@@ -79,6 +79,23 @@ The initial benchmarking clearly show, that the primary cost for this
 hardware/driver is due to DMA-sync for device (kernel function
 =dma_direct_sync_single_for_device= and resulting cache invalidation).
 
+The code line that cause this overhead:
+#+begin_src diff
+$ git diff
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index 3e036642257c..ed4a0843cb05 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -1857,6 +1857,7 @@ static int mvneta_rx_refill(struct mvneta_port *pp,
+ 
+        phys_addr = page_pool_get_dma_addr(page) + pp->rx_offset_correction;
+        dma_dir = page_pool_get_dma_dir(rxq->page_pool);
++       // Below: DMA-sync costly: notice big area 'MVNETA_MAX_RX_BUF_SIZE'
+        dma_sync_single_for_device(pp->dev->dev.parent, phys_addr,
+                                   MVNETA_MAX_RX_BUF_SIZE, dma_dir);
+        mvneta_rx_desc_fill(rx_desc, phys_addr, page, rxq);
+#+end_src
+
 ** iptables drop
 
 #+begin_example
