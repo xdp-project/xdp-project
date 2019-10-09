@@ -290,3 +290,83 @@ Perf report:
      0.23%  000  ksoftirqd/0      [k] bq_xmit_all
 #+end_example
 
+* Experiment: NO DMA sync to device
+
+Testing the overhead of the DMA-sync for device =dma_sync_single_for_device=
+via simply commenting the code out.  Like this:
+
+#+begin_src diff
+t/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index ed4a0843cb05..75b206036511 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -1858,8 +1858,8 @@ static int mvneta_rx_refill(struct mvneta_port *pp,
+        phys_addr = page_pool_get_dma_addr(page) + pp->rx_offset_correction;
+        dma_dir = page_pool_get_dma_dir(rxq->page_pool);
+        // Below: DMA-sync costly: notice too big area 'MVNETA_MAX_RX_BUF_SIZE'
+-       dma_sync_single_for_device(pp->dev->dev.parent, phys_addr,
+-                                  MVNETA_MAX_RX_BUF_SIZE, dma_dir);
++//     dma_sync_single_for_device(pp->dev->dev.parent, phys_addr,
++//                                MVNETA_MAX_RX_BUF_SIZE, dma_dir);
+        mvneta_rx_desc_fill(rx_desc, phys_addr, page, rxq);
+ 
+        return 0;
+#+end_src
+
+
+#+begin_example
+root@espressobin:~/samples/bpf# ./xdp1 3
+proto 0:     608377 pkt/s
+proto 0:     607360 pkt/s
+proto 0:     607625 pkt/s
+proto 0:     607455 pkt/s
+proto 0:     607368 pkt/s
+proto 0:     607460 pkt/s
+#+end_example
+
+Performance difference is HUGH:
+- Before: 421419 pps -- (1/421419*10^9) = 2373 ns
+- Now   : 607460 pps -- (1/607460*10^9) = 1646 ns
+- Diff  : 186041 pps --                    727 ns
+
+The size of MVNETA_MAX_RX_BUF_SIZE = 3520 bytes
+- 3520 / 64 = 55 cachelines
+- Cost per cacheline(?): 727 ns / 55 = 13.22 ns (that seems too low?)
+
+Perf result for No-DMA-sync: XDP_DROP
+#+begin_example
+# Overhead  CPU  Command          Symbol
+# ........  ...  ...............  ...................................
+#
+    48.82%  000  ksoftirqd/0      [k] mvneta_poll
+    10.45%  000  ksoftirqd/0      [k] __pi___inval_dcache_area
+     9.38%  000  ksoftirqd/0      [k] 0xffff8000000ae574
+     9.02%  000  ksoftirqd/0      [k] __xdp_return
+     2.21%  000  ksoftirqd/0      [k] page_pool_alloc_pages
+     2.13%  000  ksoftirqd/0      [k] dma_direct_sync_single_for_cpu
+     2.08%  000  ksoftirqd/0      [k] __page_pool_put_page
+     1.82%  000  ksoftirqd/0      [k] percpu_array_map_lookup_elem
+     1.35%  000  ksoftirqd/0      [k] arch_sync_dma_for_cpu
+     1.27%  000  ksoftirqd/0      [k] __softirqentry_text_start
+     1.22%  000  ksoftirqd/0      [k] xdp_mem_id_cmp
+     1.05%  000  ksoftirqd/0      [k] __rcu_read_unlock
+     0.94%  000  ksoftirqd/0      [k] __rcu_read_lock
+     0.87%  000  ksoftirqd/0      [k] xdp_return_buff
+     0.70%  000  ksoftirqd/0      [k] xdp_mem_id_hashfn
+     0.54%  000  ksoftirqd/0      [k] rcu_qs
+     0.26%  000  ksoftirqd/0      [k] rcu_softirq_qs
+#+end_example
+
+** No-DMA-sync: iptables raw-drop
+
+Drop via iptables:
+- =iptables -t raw -I PREROUTING -p udp --dport 9 -j DROP=
+
+#+begin_example
+root@espressobin:~/samples/bpf# nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    175990             0.0
+IpExtInOctets                   8095770            0.0
+IpExtInNoECTPkts                175994             0.0
+#+end_example
+
