@@ -38,17 +38,11 @@ reports.
 See why in Kernel-Recipes 2019 talk:
 - [[https://kernel-recipes.org/en/2019/talks/no-nmi-no-problem-implementing-arm64-pseudo-nmi/][Implementing Arm64 Pseudo-NMI]]
 
-* Initial benchmark notes
+* Initial benchmark: Identify DMA sync cost
 
-#+begin_example
-root@espressobin:~/samples/bpf# ./xdp1 3
-proto 0:      79541 pkt/s
-proto 0:     424113 pkt/s
-proto 0:     423844 pkt/s
-proto 0:     423888 pkt/s
-proto 0:     423892 pkt/s
-proto 0:     423399 pkt/s
-#+end_example
+The initial benchmarking clearly show, that the primary cost for this
+hardware/driver is due to DMA-sync for device (kernel function
+=dma_direct_sync_single_for_device= and resulting cache invalidation).
 
 ** iptables drop
 
@@ -61,17 +55,26 @@ IpExtInOctets                   6953544            0.0
 IpExtInNoECTPkts                151165             0.0
 #+end_example
 
-Perf report
+Perf report for iptables-raw drop:
 #+begin_example
 #
 # Samples: 35K of event 'cycles:ppp'
 # Event count (approx.): 8632918197
 #
-# Overhead  CPU  Command          Symbol                                       
-# ........  ...  ...............  .............................................
+# Overhead  CPU  Command          Symbol
+# ........  ...  ...............  .....................................
 #
     18.89%  000  ksoftirqd/0      [k] mvneta_poll
     12.29%  000  ksoftirqd/0      [k] __pi___inval_dcache_area
+            |
+            ---__pi___inval_dcache_area
+                   |--9.69%--dma_direct_sync_single_for_device
+                   |          mvneta_rx_refill.isra.74
+                   |          mvneta_poll
+                   |          net_rx_action
+                    --2.61%--dma_direct_sync_single_for_cpu
+                              mvneta_poll
+
      5.80%  000  ksoftirqd/0      [k] __netif_receive_skb_core
      4.36%  000  ksoftirqd/0      [k] ipt_do_table
      4.01%  000  ksoftirqd/0      [k] eth_type_trans
@@ -110,3 +113,57 @@ Perf report
      0.59%  000  ksoftirqd/0      [k] __netif_receive_skb
 #+end_example
 
+** XDP_DROP via xdp1
+
+#+begin_example
+root@espressobin:~/samples/bpf# ./xdp1 3
+proto 0:      27797 pkt/s
+proto 0:     421419 pkt/s
+proto 0:     421444 pkt/s
+proto 0:     421393 pkt/s
+proto 0:     421440 pkt/s
+proto 0:     421184 pkt/s
+#+end_example
+
+Perf report during xdp1 dropping ALL packets:
+#+begin_example
+perf report --sort cpu,comm,symbol --no-children --stdio -g none
+# Samples: 16K of event 'cycles:ppp'
+# Event count (approx.): 3976182320
+#
+# Overhead  CPU  Command          Symbol
+# ........  ...  ...............  .............................................
+#
+    32.96%  000  ksoftirqd/0      [k] mvneta_poll
+    26.88%  000  ksoftirqd/0      [k] __pi___clean_dcache_area_poc
+            |
+            ---__pi___clean_dcache_area_poc
+               dma_direct_sync_single_for_device
+               mvneta_rx_refill.isra.74
+               mvneta_poll
+               net_rx_action
+
+     7.29%  000  ksoftirqd/0      [k] 0xffff8000000b04d4  (<-- BPF-prog)
+     7.09%  000  ksoftirqd/0      [k] __pi___inval_dcache_area
+            |
+            ---__pi___inval_dcache_area
+               dma_direct_sync_single_for_cpu
+               mvneta_poll
+               net_rx_action
+
+     5.82%  000  ksoftirqd/0      [k] __xdp_return
+     2.49%  000  ksoftirqd/0      [k] mvneta_rx_refill.isra.74
+     1.43%  000  ksoftirqd/0      [k] dma_direct_sync_single_for_cpu
+     1.40%  000  ksoftirqd/0      [k] __page_pool_put_page
+     1.29%  000  ksoftirqd/0      [k] dma_direct_sync_single_for_device
+     1.25%  000  ksoftirqd/0      [k] page_pool_alloc_pages
+     1.23%  000  ksoftirqd/0      [k] __softirqentry_text_start
+     1.08%  000  ksoftirqd/0      [k] percpu_array_map_lookup_elem
+     0.95%  000  ksoftirqd/0      [k] arch_sync_dma_for_device
+     0.93%  000  ksoftirqd/0      [k] arch_sync_dma_for_cpu
+     0.74%  000  ksoftirqd/0      [k] __rcu_read_unlock
+     0.61%  000  ksoftirqd/0      [k] xdp_mem_id_cmp
+     0.60%  000  ksoftirqd/0      [k] __rcu_read_lock
+     0.57%  000  ksoftirqd/0      [k] xdp_return_buff
+     0.40%  000  ksoftirqd/0      [k] xdp_mem_id_hashfn
+#+end_example
