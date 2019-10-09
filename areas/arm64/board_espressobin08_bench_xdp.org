@@ -23,9 +23,10 @@ In flux Lorenzo GitHub tree with mvneta developement is here:
 - https://github.com/LorenzoBianconi/net-next/tree/mvneta-devel
 
 More stable tree with patches I've tested:
-- TODO create branch on
+- Kernel.org git tree:
 - https://git.kernel.org/pub/scm/linux/kernel/git/hawk/net-next-xdp.git/
-- xdp_mvneta01-bench
+- Branch: xdp_mvneta01-bench
+- [[https://git.kernel.org/pub/scm/linux/kernel/git/hawk/net-next-xdp.git/log/?h=xdp_mvneta01-bench][link to branch]]
 
 * Review notes: Issues with patchset/code
 
