@@ -27,4 +27,11 @@ More stable tree with patches I've tested:
 - https://git.kernel.org/pub/scm/linux/kernel/git/hawk/net-next-xdp.git/
 - xdp_mvneta01
 
+* Initial benchmark notes
 
+#+begin_example
+root@espressobin:~/samples/bpf# ./xdp1 3
+proto 0:     420389 pkt/s
+proto 0:     421554 pkt/s
+proto 0:     421760 pkt/s
+#+end_example
