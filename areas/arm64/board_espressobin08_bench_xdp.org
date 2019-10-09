@@ -1,4 +1,8 @@
+# -*- fill-column: 76; -*-
 #+Title: Benchmarks for Espressobin driver mvneta
+#+AUTHOR: Jesper Dangaard Brouer
+#+EMAIL: brouer@redhat.com
+#+OPTIONS: ^:nil
 
 This document focus on benchmarking the patchset from Lorenzo Bianconi
  - [[https://patchwork.ozlabs.org/project/netdev/list/?series=134430&state=%2a][Patchset V1]]
@@ -8,4 +12,19 @@ This document focus on benchmarking the patchset from Lorenzo Bianconi
 The patchset adds XDP support to the Marvell driver mvneta.
 
 The benchmark will be performed on a [[https://espressobin.net/][EspressoBin]] board.
+
+* Code being tested
+
+Due to some adjustment to patchset V1, that involved DMA-sync to-device,
+which is *VERY* expensive on this board, I've decided to create a separate
+branch on a git tree (under my control), to keep this reproducible.
+
+In flux Lorenzo GitHub tree with mvneta developement is here:
+- https://github.com/LorenzoBianconi/net-next/tree/mvneta-devel
+
+More stable tree with patches I've tested:
+- TODO create branch on
+- https://git.kernel.org/pub/scm/linux/kernel/git/hawk/net-next-xdp.git/
+- xdp_mvneta01
+
 
