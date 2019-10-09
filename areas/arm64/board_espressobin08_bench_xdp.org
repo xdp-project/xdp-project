@@ -27,15 +27,6 @@ More stable tree with patches I've tested:
 - https://git.kernel.org/pub/scm/linux/kernel/git/hawk/net-next-xdp.git/
 - xdp_mvneta01
 
-* Initial benchmark notes
-
-#+begin_example
-root@espressobin:~/samples/bpf# ./xdp1 3
-proto 0:     420389 pkt/s
-proto 0:     421554 pkt/s
-proto 0:     421760 pkt/s
-#+end_example
-
 * Extra: Config settings
 
 Enable kernel config setting: =CONFIG_ARM64_PSEUDO_NMI=
@@ -47,4 +38,75 @@ reports.
 See why in Kernel-Recipes 2019 talk:
 - [[https://kernel-recipes.org/en/2019/talks/no-nmi-no-problem-implementing-arm64-pseudo-nmi/][Implementing Arm64 Pseudo-NMI]]
 
+* Initial benchmark notes
+
+#+begin_example
+root@espressobin:~/samples/bpf# ./xdp1 3
+proto 0:      79541 pkt/s
+proto 0:     424113 pkt/s
+proto 0:     423844 pkt/s
+proto 0:     423888 pkt/s
+proto 0:     423892 pkt/s
+proto 0:     423399 pkt/s
+#+end_example
+
+** iptables drop
+
+#+begin_example
+espressobin:~# iptables -t raw -I PREROUTING -p udp --dport 9 -j DROP
+root@espressobin:~# nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    151169             0.0
+IpExtInOctets                   6953544            0.0
+IpExtInNoECTPkts                151165             0.0
+#+end_example
+
+Perf report
+#+begin_example
+#
+# Samples: 35K of event 'cycles:ppp'
+# Event count (approx.): 8632918197
+#
+# Overhead  CPU  Command          Symbol                                       
+# ........  ...  ...............  .............................................
+#
+    18.89%  000  ksoftirqd/0      [k] mvneta_poll
+    12.29%  000  ksoftirqd/0      [k] __pi___inval_dcache_area
+     5.80%  000  ksoftirqd/0      [k] __netif_receive_skb_core
+     4.36%  000  ksoftirqd/0      [k] ipt_do_table
+     4.01%  000  ksoftirqd/0      [k] eth_type_trans
+     3.71%  000  ksoftirqd/0      [k] get_page_from_freelist
+     2.83%  000  ksoftirqd/0      [k] dev_gro_receive
+     2.44%  000  ksoftirqd/0      [k] ip_rcv_core.isra.17
+     1.71%  000  ksoftirqd/0      [k] free_unref_page
+     1.61%  000  ksoftirqd/0      [k] kmem_cache_alloc
+     1.58%  000  ksoftirqd/0      [k] skb_release_data
+     1.57%  000  ksoftirqd/0      [k] kmem_cache_free
+     1.53%  000  ksoftirqd/0      [k] __netif_receive_skb_one_core
+     1.51%  000  ksoftirqd/0      [k] edsa_rcv
+     1.37%  000  ksoftirqd/0      [k] netif_receive_skb_internal
+     1.28%  000  ksoftirqd/0      [k] __page_pool_put_page
+     1.21%  000  ksoftirqd/0      [k] udp_mt
+     1.18%  000  ksoftirqd/0      [k] __alloc_pages_nodemask
+     1.15%  000  ksoftirqd/0      [k] dsa_switch_rcv
+     1.12%  000  ksoftirqd/0      [k] __rcu_read_unlock
+     1.09%  000  ksoftirqd/0      [k] ktime_get_with_offset
+     1.06%  000  ksoftirqd/0      [k] __rcu_read_lock
+     1.01%  000  ksoftirqd/0      [k] free_unref_page_prepare.part.77
+     1.00%  000  ksoftirqd/0      [k] bpf_skb_load_helper_16
+     0.99%  000  ksoftirqd/0      [k] build_skb
+     0.96%  000  ksoftirqd/0      [k] dma_direct_map_page
+     0.87%  000  ksoftirqd/0      [k] slabinfo_write
+     0.87%  000  ksoftirqd/0      [k] mvneta_rx_refill.isra.74
+     0.86%  000  ksoftirqd/0      [k] ip_rcv
+     0.85%  000  ksoftirqd/0      [k] page_frag_free
+     0.83%  000  ksoftirqd/0      [k] __build_skb
+     0.76%  000  ksoftirqd/0      [k] __local_bh_enable_ip
+     0.71%  000  ksoftirqd/0      [k] memmove
+     0.69%  000  ksoftirqd/0      [k] page_pool_alloc_pages
+     0.68%  000  ksoftirqd/0      [k] __page_pool_clean_page
+     0.62%  000  ksoftirqd/0      [k] netif_receive_skb
+     0.61%  000  ksoftirqd/0      [k] __page_pool_alloc_pages_slow
+     0.59%  000  ksoftirqd/0      [k] __netif_receive_skb
+#+end_example
 
