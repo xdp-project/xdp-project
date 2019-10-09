@@ -35,3 +35,16 @@ proto 0:     420389 pkt/s
 proto 0:     421554 pkt/s
 proto 0:     421760 pkt/s
 #+end_example
+
+* Extra: Config settings
+
+Enable kernel config setting: =CONFIG_ARM64_PSEUDO_NMI=
+
+I've not setup the kernel parameter "irqchip.gicv3_pseudo_nmi" to 1, but I
+want to have the option to enable this, as this allow for better perf
+reports.
+
+See why in Kernel-Recipes 2019 talk:
+- [[https://kernel-recipes.org/en/2019/talks/no-nmi-no-problem-implementing-arm64-pseudo-nmi/][Implementing Arm64 Pseudo-NMI]]
+
+
