@@ -296,7 +296,7 @@ Testing the overhead of the DMA-sync for device =dma_sync_single_for_device=
 via simply commenting the code out.  Like this:
 
 #+begin_src diff
-t/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
 index ed4a0843cb05..75b206036511 100644
 --- a/drivers/net/ethernet/marvell/mvneta.c
 +++ b/drivers/net/ethernet/marvell/mvneta.c
@@ -370,3 +370,171 @@ IpExtInOctets                   8095770            0.0
 IpExtInNoECTPkts                175994             0.0
 #+end_example
 
+* Experiment: 1536 bytes DMA sync to device
+
+This experiment change the size of the DMA sync to device to be 1536 bytes,
+the usual Ethernet MTU aligned to 64 bytes.
+
+The git diff:
+#+begin_src diff
+$ git diff
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index ed4a0843cb05..7c5bfdf429c4 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -1859,7 +1859,9 @@ static int mvneta_rx_refill(struct mvneta_port *pp,
+        dma_dir = page_pool_get_dma_dir(rxq->page_pool);
+        // Below: DMA-sync costly: notice too big area 'MVNETA_MAX_RX_BUF_SIZE'
+        dma_sync_single_for_device(pp->dev->dev.parent, phys_addr,
+-                                  MVNETA_MAX_RX_BUF_SIZE, dma_dir);
++                                  //MVNETA_MAX_RX_BUF_SIZE,
++                                  1536 /* 24x64 */,
++                                  dma_dir);
+        mvneta_rx_desc_fill(rx_desc, phys_addr, page, rxq);
+ 
+        return 0;
+#+end_src
+
+** XDP_DROP: with 1536 bytes DMA sync
+
+#+begin_example
+root@espressobin:~/samples/bpf# ./xdp1 3 
+proto 0:     479068 pkt/s
+proto 0:     479874 pkt/s
+proto 0:     479837 pkt/s
+proto 0:     479968 pkt/s
+proto 0:     479936 pkt/s
+proto 0:     479936 pkt/s
+#+end_example
+
+Performance difference to full DMA-sync (3520 bytes) is:
+- Before: 421419 pps -- (1/421419*10^9) = 2373 ns
+- Now   : 479936 pps -- (1/479936*10^9) = 2084 ns
+- Diff  :  58517 pps -- 2373-2084       =  289 ns
+
+New DMA-sync size is 1536. As mentioned above the previous size were
+MVNETA_MAX_RX_BUF_SIZE = 3520 bytes. This is a reduction of (3520-1536) =
+1984 bytes.
+
+The size reduction 1984 bytes:
+- 1984 / 64 = 31 cachelines
+- Reduced cost per cacheline: 289 ns / 31 = 9.32 ns
+- Hmm... this does not correlate with above 13.22 ns
+
+Going from above zero-DMA sync to 1536 bytes
+- Zero-sync: 607460 pps -- (1/607460*10^9) = 1646 ns
+- 1536-sync: 479936 pps -- (1/479936*10^9) = 2084 ns
+- Diff     : 127524 pps --                 =  438 ns
+- 438 / 24 cachelines = 18.25 ns cost per cacheline(?)
+- Hmm... cannot conclude or correlate on this result
+
+#+begin_example
+# Samples: 16K of event 'cycles:ppp'
+# Event count (approx.): 3992737701
+#
+# Overhead  CPU  Command          Symbol
+# ........  ...  ...............  ................................................
+#
+    37.71%  000  ksoftirqd/0      [k] mvneta_poll
+    16.69%  000  ksoftirqd/0      [k] __pi___clean_dcache_area_poc
+     7.84%  000  ksoftirqd/0      [k] __pi___inval_dcache_area
+     7.71%  000  ksoftirqd/0      [k] 0xffff8000000b0d2c  (BPF-prog)
+     6.92%  000  ksoftirqd/0      [k] __xdp_return
+     2.86%  000  ksoftirqd/0      [k] mvneta_rx_refill.isra.74
+     1.73%  000  ksoftirqd/0      [k] dma_direct_sync_single_for_device
+     1.68%  000  ksoftirqd/0      [k] __page_pool_put_page
+     1.56%  000  ksoftirqd/0      [k] dma_direct_sync_single_for_cpu
+     1.47%  000  ksoftirqd/0      [k] page_pool_alloc_pages
+     1.39%  000  ksoftirqd/0      [k] percpu_array_map_lookup_elem
+     1.13%  000  ksoftirqd/0      [k] __softirqentry_text_start
+     1.08%  000  ksoftirqd/0      [k] arch_sync_dma_for_device
+     0.97%  000  ksoftirqd/0      [k] arch_sync_dma_for_cpu
+     0.84%  000  ksoftirqd/0      [k] xdp_mem_id_cmp
+     0.76%  000  ksoftirqd/0      [k] __rcu_read_unlock
+     0.73%  000  ksoftirqd/0      [k] __rcu_read_lock
+     0.67%  000  ksoftirqd/0      [k] xdp_return_buff
+     0.52%  000  ksoftirqd/0      [k] xdp_mem_id_hashfn
+#+end_example
+
+** XDP_REDIRECT: with 1536 bytes DMA sync
+
+#+begin_example
+# ./xdp_redirect_map 3 3 
+input: 3 output: 3
+Kernel error message: XDP program already attached
+WARN: link set xdp fd failed on 3
+map[0] (vports) = 4, map[1] (map) = 5, map[2] (count) = 0
+ifindex 3:     201397 pkt/s
+ifindex 3:     284291 pkt/s
+ifindex 3:     284412 pkt/s
+ifindex 3:     284384 pkt/s
+ifindex 3:     284418 pkt/s
+#+end_example
+
+Performance difference is:
+- Before: 263334 pps -- (1/263334*10^9) = 3798 ns
+- Now   : 284418 pps -- (1/284418*10^9) = 3516 ns
+- Diff  :  21084 pps -- (3798-3516)     =  282 ns
+
+This correlate well with above XDP_DROP reduction diff which were 289 ns.
+
+Perf report XDP_REDIRECT with 1536 bytes DMA sync
+#+begin_example
+# Samples: 16K of event 'cycles:ppp'
+# Event count (approx.): 3968126744
+#
+# Overhead  CPU  Command          Symbol
+# ........  ...  ...............  .............................................
+#
+    22.90%  000  ksoftirqd/0      [k] mvneta_poll
+    17.07%  000  ksoftirqd/0      [k] __pi___clean_dcache_area_poc
+            |
+            ---__pi___clean_dcache_area_poc
+               |
+               |--10.19%--dma_direct_sync_single_for_device
+               |          mvneta_rx_refill.isra.74
+               |          mvneta_poll
+               |          net_rx_action
+               |          __softirqentry_text_start
+               |          run_ksoftirqd
+               |          smpboot_thread_fn
+               |          kthread
+               |          ret_from_fork
+               |
+                --6.89%--dma_direct_map_page
+                          mvneta_xdp_submit_frame.part.80
+                          mvneta_xdp_xmit
+                          bq_xmit_all
+
+    10.70%  000  ksoftirqd/0      [k] mvneta_txq_bufs_free.isra.78
+     4.87%  000  ksoftirqd/0      [k] 0xffff8000000b467c
+     4.82%  000  ksoftirqd/0      [k] __pi___inval_dcache_area
+     3.85%  000  ksoftirqd/0      [k] __xdp_return
+     2.89%  000  ksoftirqd/0      [k] mvneta_xdp_submit_frame.part.80
+     2.62%  000  ksoftirqd/0      [k] dev_map_enqueue
+     2.20%  000  ksoftirqd/0      [k] xdp_return_frame
+     2.02%  000  ksoftirqd/0      [k] mvneta_rx_refill.isra.74
+     1.92%  000  ksoftirqd/0      [k] dma_direct_sync_single_for_cpu
+     1.77%  000  ksoftirqd/0      [k] page_pool_alloc_pages
+     1.76%  000  ksoftirqd/0      [k] dma_direct_map_page
+     1.52%  000  ksoftirqd/0      [k] xdp_do_redirect
+     1.45%  000  ksoftirqd/0      [k] __page_pool_put_page
+     1.40%  000  ksoftirqd/0      [k] arch_sync_dma_for_device
+     1.35%  000  ksoftirqd/0      [k] bpf_xdp_redirect_map
+     1.27%  000  ksoftirqd/0      [k] __lock_text_start
+     1.20%  000  ksoftirqd/0      [k] arch_sync_dma_for_cpu
+     0.87%  000  ksoftirqd/0      [k] dma_direct_sync_single_for_device
+     0.80%  000  ksoftirqd/0      [k] dma_direct_unmap_page
+     0.74%  000  ksoftirqd/0      [k] mvneta_xdp_xmit
+     0.66%  000  ksoftirqd/0      [k] percpu_array_map_lookup_elem
+     0.65%  000  ksoftirqd/0      [k] net_rx_action
+     0.64%  000  ksoftirqd/0      [k] __softirqentry_text_start
+     0.60%  000  ksoftirqd/0      [k] _raw_write_lock_irqsave
+     0.59%  000  ksoftirqd/0      [k] _raw_spin_lock
+     0.57%  000  ksoftirqd/0      [k] __rcu_read_lock
+     0.56%  000  ksoftirqd/0      [k] __dev_map_lookup_elem
+     0.55%  000  ksoftirqd/0      [k] bq_xmit_all
+     0.52%  000  ksoftirqd/0      [k] __rcu_read_unlock
+     0.50%  000  ksoftirqd/0      [k] xdp_mem_id_cmp
+     0.32%  000  ksoftirqd/0      [k] xdp_mem_id_hashfn
+#+end_example
