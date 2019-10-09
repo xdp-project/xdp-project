@@ -25,7 +25,41 @@ In flux Lorenzo GitHub tree with mvneta developement is here:
 More stable tree with patches I've tested:
 - TODO create branch on
 - https://git.kernel.org/pub/scm/linux/kernel/git/hawk/net-next-xdp.git/
-- xdp_mvneta01
+- xdp_mvneta01-bench
+
+* Review notes: Issues with patchset/code
+
+** Wrong stats
+
+The stats accounting is wrong. Other drivers also gets this wrong, and are
+inconsistent. Upstream have not fully agree on the semantics.  Thus,
+claiming it is "wrong" might be too harsh.
+
+*** Stats-issue-1: XDP_DROP are invisible
+
+Usually drivers (e.g. ixgbe + i40e) will still keep track of XDP_DROP frames
+and count them as RX-frames in net_device stats, as XDP is a software drop,
+and other counters deeper in network stack will not increment, which should
+give enough info. The drivers that don't account as regular RX, will usually
+have an ethtool stats.
+
+During XDP_DROP (via =xdp1=), this drivers ethtool stats look like:
+#+begin_example
+Show adapter(s) (eth0) statistics (ONLY that changed!)
+Ethtool(eth0    ) stat:       959198 (        959,198) <= frames_65_to_127_octets /sec
+Ethtool(eth0    ) stat:       959199 (        959,199) <= good_frames_received /sec
+Ethtool(eth0    ) stat:     69062313 (     69,062,313) <= good_octets_received /sec
+Ethtool(eth0    ) stat:       959243 (        959,243) <= p00_hist_65_127bytes /sec
+Ethtool(eth0    ) stat:     69065516 (     69,065,516) <= p00_out_octets /sec
+Ethtool(eth0    ) stat:       959243 (        959,243) <= p00_out_queue_0 /sec
+Ethtool(eth0    ) stat:       959243 (        959,243) <= p00_out_unicast /sec
+Ethtool(eth0    ) stat:       537866 (        537,866) <= rx_discard /sec
+#+end_example
+
+The packet generator doesn't send faster than 959Kpps.
+It's possible to deduce the XDP_DROP rate via subtraction:
+- 959199-537866 = 421333 pps
+
 
 * Extra: Config settings
 
@@ -167,3 +201,6 @@ perf report --sort cpu,comm,symbol --no-children --stdio -g none
      0.57%  000  ksoftirqd/0      [k] xdp_return_buff
      0.40%  000  ksoftirqd/0      [k] xdp_mem_id_hashfn
 #+end_example
+
+
+
