@@ -203,5 +203,73 @@ perf report --sort cpu,comm,symbol --no-children --stdio -g none
      0.40%  000  ksoftirqd/0      [k] xdp_mem_id_hashfn
 #+end_example
 
+** XDP_REDIRECT
 
+Doing redirect out same interface:
+#+begin_example
+root@espressobin:~/samples/bpf# ./xdp_redirect_map 3 3
+input: 3 output: 3
+Kernel error message: XDP program already attached
+WARN: link set xdp fd failed on 3
+map[0] (vports) = 4, map[1] (map) = 5, map[2] (count) = 0
+ifindex 3:     212760 pkt/s
+ifindex 3:     263269 pkt/s
+ifindex 3:     263348 pkt/s
+ifindex 3:     263334 pkt/s
+#+end_example
+
+Check if packets are getting transmitted, although only via stats:
+#+begin_example
+sar -n DEV 2 100
+Average:        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s     %ifutil
+Average:           lo      0.00      0.00      0.00      0.00        0.00
+Average:        bond0      0.00      0.00      0.00      0.00        0.00
+Average:         eth0 263049.67 263050.67  17468.14  17468.21       14.31
+Average:          wan      0.00      0.00      0.00      0.00        0.00
+Average:         lan0      0.00      0.00      0.00      0.00        0.00
+Average:         lan1      0.00      0.00      0.00      0.00        0.00
+#+end_example
+
+Perf report:
+#+begin_example
+# Samples: 16K of event 'cycles:ppp'
+# Event count (approx.): 3971147150
+#
+# Overhead  CPU  Command          Symbol
+# ........  ...  ...............  .............................................
+#
+    19.37%  000  ksoftirqd/0      [k] mvneta_poll
+    17.23%  000  ksoftirqd/0      [k] mvneta_txq_bufs_free.isra.78
+    13.92%  000  ksoftirqd/0      [k] __pi___clean_dcache_area_poc
+     6.44%  000  ksoftirqd/0      [k] __xdp_return
+     4.09%  000  ksoftirqd/0      [k] __pi___inval_dcache_area
+     4.05%  000  ksoftirqd/0      [k] 0xffff8000000b0c70
+     3.11%  000  ksoftirqd/0      [k] xdp_return_frame
+     2.58%  000  ksoftirqd/0      [k] __page_pool_put_page
+     2.57%  000  ksoftirqd/0      [k] dev_map_enqueue
+     2.51%  000  ksoftirqd/0      [k] dma_direct_sync_single_for_cpu
+     1.72%  000  ksoftirqd/0      [k] __lock_text_start
+     1.68%  000  ksoftirqd/0      [k] mvneta_xdp_submit_frame.part.80
+     1.47%  000  ksoftirqd/0      [k] mvneta_rx_refill.isra.74
+     1.41%  000  ksoftirqd/0      [k] dma_direct_unmap_page
+     1.38%  000  ksoftirqd/0      [k] arch_sync_dma_for_cpu
+     1.17%  000  ksoftirqd/0      [k] xdp_do_redirect
+     1.10%  000  ksoftirqd/0      [k] bpf_xdp_redirect_map
+     1.00%  000  ksoftirqd/0      [k] __rcu_read_unlock
+     0.95%  000  ksoftirqd/0      [k] _raw_write_lock_irqsave
+     0.88%  000  ksoftirqd/0      [k] page_pool_alloc_pages
+     0.88%  000  ksoftirqd/0      [k] dma_direct_map_page
+     0.87%  000  ksoftirqd/0      [k] _raw_spin_lock
+     0.81%  000  ksoftirqd/0      [k] __rcu_read_lock
+     0.75%  000  ksoftirqd/0      [k] arch_sync_dma_for_device
+     0.72%  000  ksoftirqd/0      [k] percpu_array_map_lookup_elem
+     0.64%  000  ksoftirqd/0      [k] __dev_map_lookup_elem
+     0.64%  000  ksoftirqd/0      [k] xdp_mem_id_cmp
+     0.57%  000  ksoftirqd/0      [k] dma_direct_sync_single_for_device
+     0.56%  000  ksoftirqd/0      [k] net_rx_action
+     0.53%  000  ksoftirqd/0      [k] __softirqentry_text_start
+     0.51%  000  ksoftirqd/0      [k] xdp_mem_id_hashfn
+     0.32%  000  ksoftirqd/0      [k] mvneta_xdp_xmit
+     0.23%  000  ksoftirqd/0      [k] bq_xmit_all
+#+end_example
 
