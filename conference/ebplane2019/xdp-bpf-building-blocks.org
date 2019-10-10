@@ -15,6 +15,37 @@
 
 This presentation will be given at Junipers HQ in Sunnyvale, Oct 21st 2019.
 
+** Abstract
+
+The ebplane project is in an early startup phase. Thus, use-cases and what the
+technology is planned to be used for exactly, are still not well defined.
+
+The ebplane project have a clear interest in leveraging eBPF technology within
+computer networking area. The two most successfully eBPF networking hooks in
+the Linux kernel are XDP (eXpress Data Path) and TC-BPF (Traffic Control).
+
+This presentation serves as an introduction to the BPF network technologies,
+with a focus on XDP and TC. Given the lack of clear use-cases, the presentation
+will generalise and introduce the technology in form of describing the building
+blocks available.
+
+Understanding the building blocks and their limitations are actually essential
+for the success of the project. As requires thinking differently when
+developing an "application" with BPF. The key insight is that you are not
+developing a new "application" e.g. data plane from scratch. Instead you are
+modifying the behaviour of an existing system (the Linux kernel), to do what
+you want, via injecting code snippets at different hooks.
+
+Q: How can we talk about gaps, when use-cases are undefined?
+
+The BPF+XDP technology are under active development, which is both good and
+bad. The bad news is that there are likely gaps for e.g. developing a data
+plane. But the good news is that we can address these gaps, given upstream
+kernel maintainers are participating. The presentation will cover some of these
+gaps, and explain how BPF can be extended. With a little clever thinking, some
+of these gaps can be addressed by doing fall-back to kernel network stack, for
+slow(er) code-path handling.
+
 
 * Colors in slides                                                 :noexport:
 Text colors on slides are chosen via org-mode italic/bold high-lighting:
