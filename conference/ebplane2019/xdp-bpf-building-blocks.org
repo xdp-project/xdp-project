@@ -46,6 +46,9 @@ gaps, and explain how BPF can be extended. With a little clever thinking, some
 of these gaps can be addressed by doing fall-back to kernel network stack, for
 slow(er) code-path handling.
 
+** Agenda planning
+
+https://pad.sfconservancy.org/p/ebplane-20191021-agenda
 
 * Colors in slides                                                 :noexport:
 Text colors on slides are chosen via org-mode italic/bold high-lighting:
