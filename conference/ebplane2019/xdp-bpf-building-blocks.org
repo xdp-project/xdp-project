@@ -1,0 +1,42 @@
+# -*- fill-column: 79; -*-
+#+TITLE: Introduction to: XDP and BPF building blocks
+#+AUTHOR: Jesper Dangaard Brouer <brouer@redhat.com>
+#+EMAIL: brouer@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: ebplane 2019                                     :noexport:
+
+This presentation will be given at Junipers HQ in Sunnyvale, Oct 21st 2019.
+
+
+* Colors in slides                                                 :noexport:
+Text colors on slides are chosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation. The prefix
+"Slide:" is only syntax-sugar for the reader (and it removed before export by
+emacs).
+
+* Slide: Overview: What will you learn?                              :export:
+
+EMPTY SLIDE
+
+* Emacs end-tricks                                                 :noexport:
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
+# class=\"author\">Jesper Dangaard Brouer<br/>Kernel Developer<br/>Red Hat</h2>
+# <h3>ebplane hosted by Juniper<br/>USA, Sunnyvale, Oct 2019</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
