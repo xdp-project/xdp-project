@@ -30,11 +30,13 @@ will generalise and introduce the technology in form of describing the building
 blocks available.
 
 Understanding the building blocks and their limitations are actually essential
-for the success of the project. As requires thinking differently when
+for the success of the project. As it requires thinking differently when
 developing an "application" with BPF. The key insight is that you are not
 developing a new "application" e.g. data plane from scratch. Instead you are
 modifying the behaviour of an existing system (the Linux kernel), to do what
-you want, via injecting code snippets at different hooks.
+you want, via injecting code snippets at different hooks, that are only event
+based. The BPF code snippets are by default stateless, but can obtain state and
+change runtime behaviour via BPF-maps.
 
 Q: How can we talk about gaps, when use-cases are undefined?
 
@@ -45,6 +47,12 @@ kernel maintainers are participating. The presentation will cover some of these
 gaps, and explain how BPF can be extended. With a little clever thinking, some
 of these gaps can be addressed by doing fall-back to kernel network stack, for
 slow(er) code-path handling.
+
+If timer permits, we will also present some of the planned extensions to XDP
+and BPF.
+
+Q: Should we have close to the "code" section? Where we e.g. describe some of
+the fundamental data structures?
 
 ** Agenda planning
 
