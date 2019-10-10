@@ -538,3 +538,161 @@ Perf report XDP_REDIRECT with 1536 bytes DMA sync
      0.50%  000  ksoftirqd/0      [k] xdp_mem_id_cmp
      0.32%  000  ksoftirqd/0      [k] xdp_mem_id_hashfn
 #+end_example
+
+* Experiment: faster XDP_DROP
+
+Current patchset uses =xdp_return_buff= in XDP_DROP code-path, instead of
+=page_pool_recycle_direct(rxq->page_pool, page)=.
+
+The problem with =xdp_return_buff()= is that it does a "full" lookup from
+the mem.id (=xdp_buff->xdp_rxq_info->mem.id=) to find the "allocator" pointer
+in this case the =page_pool= pointer. Here in the driver we already have
+access to the stable allocator page_pool pointer via struct mvneta_rx_queue
+=rxq->page_pool=.
+
+Experiment code change git diff:
+#+begin_src diff
+$ git diff
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index ed4a0843cb05..4fb7b6eb22d9 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -1858,8 +1858,8 @@ static int mvneta_rx_refill(struct mvneta_port *pp,
+        phys_addr = page_pool_get_dma_addr(page) + pp->rx_offset_correction;
+        dma_dir = page_pool_get_dma_dir(rxq->page_pool);
+        // Below: DMA-sync costly: notice too big area 'MVNETA_MAX_RX_BUF_SIZE'
+-       dma_sync_single_for_device(pp->dev->dev.parent, phys_addr,
+-                                  MVNETA_MAX_RX_BUF_SIZE, dma_dir);
++//     dma_sync_single_for_device(pp->dev->dev.parent, phys_addr,
++//                                MVNETA_MAX_RX_BUF_SIZE, dma_dir)
+        mvneta_rx_desc_fill(rx_desc, phys_addr, page, rxq);
+ 
+        return 0;
+@@ -2081,7 +2081,7 @@ mvneta_xdp_xmit(struct net_device *dev, int num_frame,
+ 
+ static int
+ mvneta_run_xdp(struct mvneta_port *pp, struct bpf_prog *prog,
+-              struct xdp_buff *xdp)
++              struct xdp_buff *xdp, struct mvneta_rx_queue *rxq)
+ {
+        u32 ret, act = bpf_prog_run_xdp(prog, xdp);
+ 
+@@ -2112,10 +2112,14 @@ mvneta_run_xdp(struct mvneta_port *pp, struct bpf_prog *prog,
+        case XDP_ABORTED:
+                trace_xdp_exception(pp->dev, prog, act);
+                /* fall through */
+-       case XDP_DROP:
++       case XDP_DROP: {
++               struct page *page = virt_to_head_page(xdp->data);
++
++               page_pool_recycle_direct(rxq->page_pool, page);
+                ret = MVNETA_XDP_CONSUMED;
+-               xdp_return_buff(xdp);
++               // xdp_return_buff(xdp);
+                break;
++               }
+        }
+ 
+        return ret;
+@@ -2160,7 +2164,7 @@ mvneta_swbm_rx_frame(struct mvneta_port *pp,
+        if (xdp_prog) {
+                u32 ret;
+ 
+-               ret = mvneta_run_xdp(pp, xdp_prog, &xdp);
++               ret = mvneta_run_xdp(pp, xdp_prog, &xdp, rxq);
+                if (ret == MVNETA_XDP_REDIR ||
+                    ret == MVNETA_XDP_TX)
+                        mvneta_update_stats(pp, 1, xdp.data_end - xdp.data,
+#+end_src
+
+** XDP_DROP: with page_pool_recycle_direct
+
+Result XDP_DROP via samples/bpf/xdp1
+#+begin_example
+root@espressobin:~/samples/bpf# ./xdp1 3 
+proto 0:     698619 pkt/s
+proto 0:     695690 pkt/s
+proto 0:     695632 pkt/s
+proto 0:     695461 pkt/s
+proto 0:     695579 pkt/s
+#+end_example
+
+Given this ALSO disabled the DMA-sync, it should be compared to the
+zero-sync performance.
+- Zero-sync: 607460 pps -- (1/607460*10^9) = 1646 ns
+- Now      : 695461 pps -- (1/695461)*10^9 = 1438 ns
+- Diff     :  88001 pps --                 =  208 ns
+
+
+The perf report symbols have decreased a lot:
+#+begin_example
+# Samples: 16K of event 'cycles:ppp'
+# Event count (approx.): 3931584629
+#
+# Overhead  CPU  Command         Symbol
+# ........  ...  ..............  ......................................
+#
+    57.31%  000  ksoftirqd/0     [k] mvneta_poll
+    12.21%  000  ksoftirqd/0     [k] 0xffff8000000b0088
+    11.67%  000  ksoftirqd/0     [k] __pi___inval_dcache_area
+     2.80%  000  ksoftirqd/0     [k] dma_direct_sync_single_for_cpu
+     2.55%  000  ksoftirqd/0     [k] __page_pool_put_page
+     2.11%  000  ksoftirqd/0     [k] page_pool_alloc_pages
+     1.78%  000  ksoftirqd/0     [k] percpu_array_map_lookup_elem
+     1.72%  000  ksoftirqd/0     [k] __softirqentry_text_start
+     1.49%  000  ksoftirqd/0     [k] arch_sync_dma_for_cpu
+     0.32%  000  ksoftirqd/0     [k] rcu_softirq_qs
+     0.31%  000  ksoftirqd/0     [k] net_rx_action
+     0.30%  000  ksoftirqd/0     [k] 0xffff8000000b01ec
+     0.27%  000  ksoftirqd/0     [k] rcu_qs
+#+end_example
+
+Perf stat, show low 0.27 insn per cycle, which is disappointing:
+#+begin_example
+perf stat -C0 -r 3 sleep 1
+root@espressobin:~/samples/bpf# perf stat -C0 -r 3 sleep 1
+
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+    1004.44 msec cpu-clock          #    1.000 CPUs utilized    ( +-  0.00% )
+          5      context-switches   #    4.648 M/sec            ( +- 57.14% )
+          0      cpu-migrations     #    0.000 K/sec
+          0      page-faults        #    0.000 K/sec
+ 1004416732      cycles             # 1000415.072 GHz           ( +-  0.00% )
+  267246942      instructions       #    0.27  insn per cycle   ( +-  0.01% )
+   20612533      branches           # 20530411.355 M/sec        ( +-  0.00% )
+     227425      branch-misses      #    1.10% of all branches  ( +-  0.27% )
+
+ 1.00456320 +- 0.00000735 seconds time elapsed  ( +-  0.00% )
+#+end_example
+
+The 0.27 instructions per cycle is disappointing, as we can see, the CPU
+runs at 1000MHz, but is in-principle operating at 267 MHz.  I was hoping to
+see more efficiency with this very simple workload.
+
+There are 227,425 branch-misses, but with a packet rate of 695,461 pps, then
+there is only a branch-misses for every 3rd packet (695461/227425 = 3.05).
+The number of observed (20,612,533) branches is a little high for this
+constrained workload, 384 per packet (267246942/695461).
+
+The workload is extremely small and should not activate many functions, as
+can be seen in perf report above.  We hope/expect that the instruction cache
+can contain the workload.
+
+#+begin_example
+# perf stat -C0 -r 3 -e L1-icache-load -e L1-icache-load-misses -e L1-dcache-loads -e L1-dcache-load-misses sleep 1
+
+ Performance counter stats for 'CPU(s) 0' (3 runs):
+
+  156084164   L1-icache-load                                       ( +-  0.00% )
+     241615   L1-icache-load-misses  # 0.15% of all L1-icache hits ( +-  0.07% )
+   95235780   L1-dcache-loads                                      ( +-  0.00% )
+    3062412   L1-dcache-load-misses  # 3.22% of all L1-dcache hits ( +-  0.03% )
+
+  1.0044705 +- 0.0000496 seconds time elapsed  ( +-  0.00% )
+#+end_example
+
+The 241615 L1-icache-load-misses is less-than the 695461 packets per sec.
+The total 156084164 L1-icache-load per packet is (156084164/695461) 224
+loads, of 64 bytes each (64*224) gives 14336 bytes.  Thus, it does look like
+instruction cache does fit.
