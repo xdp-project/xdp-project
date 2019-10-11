@@ -76,9 +76,10 @@ Only sections with tag ":export:" will end-up in the presentation. The prefix
 "Slide:" is only syntax-sugar for the reader (and it removed before export by
 emacs).
 
-* Slide: Overview: What will you learn?                              :export:
+* Slide: Overview: What will you learn?                            :noexport:
 
 EMPTY SLIDE
+- Need to "finish" slide-deck before doing overview slide
 
 * Slide: The 'ebplane' project                                       :export:
 
@@ -92,12 +93,27 @@ This presentation: /eBPF technology level setting/
 - Designing with eBPF requires slightly different thinking...
   - essential for success of this project
 
+** Slide: Different design thinking: High level overview            :export:
+
+*/Wrong thinking/*: Designing new data plane *from scratch*
+
+Key insight#1: /Modifying behaviour of existing system/ (Linux kernel)
+- Via injecting /code snippets/ at different *hooks*
+- BPF code snippets are *event-based* and by default stateless
+- Obtain state and change runtime behaviour via shared BPF-*maps*
+
+Key insight#2: /Only load code when actually needed/
+- The fastest code is code that doesn't run (or even loaded)
+- Design system to *only load code relevant to user* configured use-case
+- E.g. don't implement generic parser to handle every know protocol
+  - instead create parser specific to users need/config
+
 * Slide: Basic introduction and understanding of eBPF                :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-/Level setting slides for eBPF technology/
+*Technical:* /Level setting slides for eBPF technology/
 
 Basic introduction and understanding of BPF
 - eBPF bytecode
