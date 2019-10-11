@@ -235,6 +235,24 @@ XDP speed gains comes from
 - Very /early access/ to frame (in driver code *after DMA sync*)
 - Ability to */skip/ (large parts) of kernel /code/*
 
+** Slide: Skipping code: Efficient optimization                     :export:
+
+@@html:<small>@@
+/Encourage adding helpers instead of duplicating data in BPF maps/
+@@html:</small>@@
+
+Skipping code: *Imply skipping features* provided by /network stack/
+- Gave users freedom to e.g. skip netfilter or route-lookup
+- But users have to re-implement features they actually needed
+  - Sometimes cumbersome via BPF-maps
+
+/Avoid/ *re-implement features*:
+- Evolve XDP via /BPF-helpers/ that can lookup in kernel tables
+- Example of BPF-helpers avail today for XDP:
+  - FIB routing lookup
+  - Socket lookup
+
+
 * Emacs end-tricks                                                 :noexport:
 
 # Local Variables:
