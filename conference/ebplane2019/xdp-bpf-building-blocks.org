@@ -161,7 +161,7 @@ Please userspace apps: *Everybody should use this library*
   * cause incompatible ELF object, if using eBPF maps
   * (plan to converting iproute2 to use libbpf)
 
-** Slide: eBPF concepts: /context/, /maps/ and /helpers/
+** Slide: eBPF concepts: /context/, /maps/ and /helpers/            :export:
 
 Each eBPF runtime event hook gets a *pointer to a* /context/ struct
 - BPF bytecode has access to context (read/write limited)
@@ -173,6 +173,67 @@ The BPF program itself is *stateless*
 
 /BPF helpers/ are used for
 - Calling kernel functions, to obtain info/state from kernel
+
+
+* Slide: Introducing XDP                                             :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+ebplane: leverage eBPF technology for networking
+- One option is /XDP (eXpress Data Path)/
+  - When targeting *network layers L2-L3*
+  - L4 use-cases comes with some caveats
+
+** Slide: Framing XDP                                             :noexport:
+#+BEGIN_NOTES
+SKIP THIS SLIDE - content covered in next slides
+#+END_NOTES
+
+XDP: new /in-kernel programmable/ (eBPF) *layer before netstack*
+ - Similar speeds as DPDK
+XDP ensures that *Linux networking stays relevant*
+ - Operates at L2-L3, netstack is L4-L7
+XDP is not first mover, but we believe XDP is /different and better/
+ - /Killer feature/: Integration with Linux kernel
+ - Flexible sharing of NIC resources
+
+** Slide: What is XDP?                                              :export:
+
+XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
+ - /New programmable layer in-front/ of traditional network stack
+   - Read, modify, drop, redirect or pass
+ - For L2-L3 use-cases: seeing x10 performance improvements!
+   - Similar speeds as DPDK
+ - Can accelerate *in-kernel* L2-L3 use-cases (e.g. forwarding)
+
+What is /AF_XDP/? (the Address Family XDP socket)
+ - /Hybrid/ *kernel-bypass* facility via XDP_REDIRECT filter
+ - Delivers raw L2 frames into userspace (in SPSC queue)
+
+** Slide: What makes XDP different and better?                      :export:
+
+*Not bypass*, but /in-kernel fast-path/
+
+The killer feature of XDP is integration with Linux kernel,
+ - Leverages existing kernel infrastructure, eco-system and market position
+ - Programmable flexibility via eBPF sandboxing (kernel infra)
+ - Flexible sharing of NIC resources between Linux and XDP
+ - Cooperation with netstack via eBPF-helpers and fallback-handling
+ - No need to reinject packets (unlike bypass solutions)
+
+/AF_XDP/ for /flexible/ *kernel bypass*
+ - Cooperate with use-cases needing fast raw frame access in userspace
+ - While leveraging existing kernel NIC drivers
+
+** Slide: Simple view on how XDP gains speed                        :export:
+
+XDP speed gains comes from
+- *Avoiding* /memory allocations/
+  - no SKB allocations and no-init (memset zero 4 cache-lines)
+- /Bulk/ processing of frames
+- Very /early access/ to frame (in driver code *after DMA sync*)
+- Ability to */skip/ (large parts) of kernel /code/*
 
 * Emacs end-tricks                                                 :noexport:
 
