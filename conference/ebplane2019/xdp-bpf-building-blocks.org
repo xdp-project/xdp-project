@@ -58,6 +58,12 @@ the fundamental data structures?
 
 https://pad.sfconservancy.org/p/ebplane-20191021-agenda
 
+** Other material
+
+Juniper slides:
+https://docs.google.com/presentation/d/1JHrl8PlLyVRSMvtF8OUa3BW3GcRf4a3Kx2CPw2g7tJg/edit?ts=5d542a23#slide=id.p
+
+
 * Colors in slides                                                 :noexport:
 Text colors on slides are chosen via org-mode italic/bold high-lighting:
  - /italic/ = /green/
@@ -73,6 +79,18 @@ emacs).
 * Slide: Overview: What will you learn?                              :export:
 
 EMPTY SLIDE
+
+* Slide: The 'ebplane' project                                       :export:
+
+The ebplane project: *early startup phase*
+- Initial presentation title: [[https://docs.google.com/presentation/d/1JHrl8PlLyVRSMvtF8OUa3BW3GcRf4a3Kx2CPw2g7tJg/edit?ts=5d542a23#slide=id.p]["Universal Data Plane Proposal"]]
+  - Show interest in /leveraging eBPF technology for networking/
+- /*Yet to be defined*/: use-cases and network-layers to target
+
+This presentation: /eBPF technology level setting/
+- /Building blocks/ and their *limitations*
+- Designing with eBPF requires slightly different thinking...
+  - essential for success of this project
 
 * Slide: Basic introduction and understanding of eBPF                :export:
 :PROPERTIES:
