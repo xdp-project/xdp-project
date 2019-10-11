@@ -121,11 +121,7 @@ Basic introduction and understanding of BPF
   * compiler storing it in ELF-format
   * loading this into the Linux kernel
 
-
 ** Slide: eBPF bytecode and kernel hooks                            :export:
-
-XDP 'just' one Linux kernel hook that can run eBPF-bytecode
-- Many more eBPF hooks (tracepoint, all function calls via kprobe)
 
 The eBPF bytecode is:
 - /Generic Instruction Set/ Architecture (ISA) with C-calling convention
@@ -133,7 +129,11 @@ The eBPF bytecode is:
 - Designed to *run in the Linux kernel*
   * It is */not a kernel module/*
   * It is a *sandbox* technology; BPF verfier ensures code safety
-  * Kernel provides an /eBPF runtime/ environment, via BPF /helper calls/
+  * Kernel provides /eBPF runtime/ environment, via BPF /helper calls/
+
+Different Linux kernel /hooks/ run eBPF-bytecode, /event/ triggered
+- Two hooks of special interest XDP and TC-BPF
+- Many more eBPF hooks (tracepoint, all function calls via kprobe)
 
 ** Slide: Compiling restricted-C to eBPF into ELF                   :export:
 
@@ -159,20 +159,20 @@ Please userspace apps: *Everybody should use this library*
 - */Unfortunately/* several loaders exists
 - Worst case is iproute2 have its own
   * cause incompatible ELF object, if using eBPF maps
-  * (plans for converting to libbpf)
+  * (plan to converting iproute2 to use libbpf)
 
-** Slide: eBPF concepts: context, maps and helpers
+** Slide: eBPF concepts: /context/, /maps/ and /helpers/
 
-Each eBPF runtime event hook gets a *pointer to a context* struct
+Each eBPF runtime event hook gets a *pointer to a* /context/ struct
 - BPF bytecode has access to context (read/write limited)
   * verifier may adjust the bytecode for safety
 
-The BPF program itself is stateless
-- /Concept eBPF maps/ can be used to create state, and "config"
+The BPF program itself is *stateless*
+- /Concept eBPF maps/ can be used to *create state* and *"config"*
 - Maps are basically /key = value/ construct
 
-BPF helpers are used for
-- calling kernel functions, to obtain info/state from kernel
+/BPF helpers/ are used for
+- Calling kernel functions, to obtain info/state from kernel
 
 * Emacs end-tricks                                                 :noexport:
 
