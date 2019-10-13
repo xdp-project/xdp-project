@@ -252,6 +252,18 @@ Skipping code: *Imply skipping features* provided by /network stack/
   - FIB routing lookup
   - Socket lookup
 
+* Notes
+
+** Topic: XDP building blocks
+
+XDP actions and cooperation
+
+see: http://people.netfilter.org/hawk/presentations/KernelRecipes2018/XDP_Kernel_Recipes_2018.pdf
+
+
+** Topic: How to test XDP
+
+
 
 * Emacs end-tricks                                                 :noexport:
 
