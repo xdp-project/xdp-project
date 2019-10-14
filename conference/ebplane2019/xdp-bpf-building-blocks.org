@@ -252,6 +252,27 @@ Skipping code: *Imply skipping features* provided by /network stack/
   - FIB routing lookup
   - Socket lookup
 
+* Designing with BPF for XDP+TC                                      :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Examples of designing with BPF
+
+** Slide: Design protocol parser with BPF for XDP/TC                :export:
+
+Background: XDP/TC metadata area placed in-front packet headers (32 Bytes)
+- Communication channel between XDP-tail-calls, and into TC-BPF hook
+
+Split BPF program parser step into standalone BPF program
+- Output is parse-info with header types and offsets
+- Parse-info is stored in XDP/TC metadata area (in-front packet headers)
+
+Tail-call next BPF prog, have access to metadata area
+- Due to verifier, prog getting parse-info still need some bounds-check
+
+Advantage: Parser prog can be replaced by hardware
+
 * Notes
 
 ** Topic: XDP building blocks
@@ -262,8 +283,6 @@ see: http://people.netfilter.org/hawk/presentations/KernelRecipes2018/XDP_Kernel
 
 
 ** Topic: How to test XDP
-
-
 
 * Emacs end-tricks                                                 :noexport:
 
