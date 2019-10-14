@@ -252,6 +252,27 @@ Skipping code: *Imply skipping features* provided by /network stack/
   - FIB routing lookup
   - Socket lookup
 
+** Slide: XDP actions and cooperation                               :export:
+
+@@html:<small>@@
+What are the basic XDP building blocks you can use?
+@@html:</small>@@
+
+BPF programs return an action or verdict, for XDP 5-actions:
+- XDP_ /DROP/,  XDP_ /PASS/,  XDP_ /TX/,  XDP_ /ABORTED/,  XDP_ /REDIRECT/
+
+Ways to /cooperate with network stack/
+- Pop/push or /modify headers/: *Change RX-handler* kernel use
+  * e.g. handle protocol unknown to running kernel
+
+- Can /propagate/ 32Bytes /meta-data/ from XDP stage to network stack
+  * TC (clsbpf) hook can use meta-data, e.g. set SKB mark
+
+- /XDP_REDIRECT/ *map* special, can choose where netstack "starts/begin"
+  * CPUMAP redirect start netstack on remote CPU
+  * veth redirect start inside container
+
+
 * Slide: Overall design                                              :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
