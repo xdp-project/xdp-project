@@ -273,10 +273,13 @@ Ways to /cooperate with network stack/
   * veth redirect start inside container
 
 
-* Slide: Overall design                                              :export:
+* Slide: Design perspective                                          :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
+
+Higher level: Design perspective
+- from a /BPF view point/
 
 ** Slide: BPF view on: data-plane and control-plane                 :export:
 
@@ -303,7 +306,7 @@ kABI = Kernel Application Binary Interface
 
 Distro's spend */many/* resources maintaining kABI compatibility
 - to satisfy *out-of-tree kernel modules*, calling kernel API / structs
-- e.g. contrail [[https://tungsten.io/opencontrail-is-now-tungsten-fabric/][tungsten fabric]] hook into Kernel RX-handler (L2)
+- e.g. [[https://tungsten.io/opencontrail-is-now-tungsten-fabric/][tungsten]] contrail-vrouter [[https://github.com/Juniper/contrail-vrouter/blob/master/linux/vr_host_interface.c#L1154][kernel module]] hook into RX-handler (L2)
 
 BPF /offer way-out/, with some *limits* due to security/safety:
 - /Fully programmable/ hooks points (restricted-C, not Turing complete)
