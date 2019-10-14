@@ -272,6 +272,10 @@ Ways to /cooperate with network stack/
   * CPUMAP redirect start netstack on remote CPU
   * veth redirect start inside container
 
+* Slide: Introducing TC-BPF
+#+BEGIN_NOTES
+TODO ADD CONTENTS!!!!
+#+END_NOTES
 
 * Slide: Design perspective                                          :export:
 :PROPERTIES:
@@ -432,7 +436,33 @@ Specifically for: *Protocol parsing* "module"
 
 ** Topic: XDP redirect into containers
 
+Containers are in-many-use-case better handled via TC-BPF
+
+** Topic: XDP redirect into Guest-VM
+
 ** Topic: How to test XDP
+
+** Topic: IP-fragmentation
+
+** Topic: Introduce TC-BPF hook
+
+** Topic: Broadcast and multicast
+
+Cloning packets in XDP is not currently possible
+
+XDP: Sending to multiple destination; not supported
+- Simple idea: Broadcast via redirect "send" to ALL port in devmap
+- Multicast via creating devmap for multicast groups
+
+Alternative is to fallback
+- let either: netstack or TC-BPF hook handle broadcast/multicast
+
+** Topic: Missing XDP egress hook
+
+In localhost/container delivery use-case: tunnel/overlay-network
+- Encap headers need to be added by TC-BPF egress hook
+
+
 
 * Emacs end-tricks                                                 :noexport:
 
