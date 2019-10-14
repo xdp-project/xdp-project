@@ -430,12 +430,6 @@ Specifically for: *Protocol parsing* "module"
 
 * Notes
 
-** Topic: XDP building blocks
-
-XDP actions and cooperation
-
-see: http://people.netfilter.org/hawk/presentations/KernelRecipes2018/XDP_Kernel_Recipes_2018.pdf
-
 ** Topic: XDP redirect into containers
 
 ** Topic: How to test XDP
