@@ -252,6 +252,7 @@ Skipping code: *Imply skipping features* provided by /network stack/
   - FIB routing lookup
   - Socket lookup
 
+
 * Designing with BPF for XDP+TC                                      :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
@@ -273,6 +274,16 @@ Tail-call next BPF prog, have access to metadata area
 
 Advantage: Parser prog can be replaced by hardware
 
+** Notes                                                          :noexport:
+
+Cover idea of only loading code needed
+- relates to generation a smaller parser BPF-prog
+- BPF gave us ability to be non-monolithic
+- Use BPF ability to be non-monolithic
+
+** Slide: Design to load less-code
+
+
 * Notes
 
 ** Topic: XDP building blocks
@@ -281,6 +292,7 @@ XDP actions and cooperation
 
 see: http://people.netfilter.org/hawk/presentations/KernelRecipes2018/XDP_Kernel_Recipes_2018.pdf
 
+** Topic: XDP redirect into containers
 
 ** Topic: How to test XDP
 
