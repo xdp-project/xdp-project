@@ -260,10 +260,8 @@ Skipping code: *Imply skipping features* provided by /network stack/
 ** Slide: BPF view on: data-plane and control-plane                 :export:
 
 @@html:<small>@@
-Relating BPF networking to traditional control- and data-plane design
+/This covers both XDP and TC networking hooks/
 @@html:</small>@@
-
-This covers both XDP and TC networking hooks
 
 *Data-plane*: /inside kernel/, split into:
 - Kernel-core: Fabric in charge of moving packets quickly
@@ -271,10 +269,30 @@ This covers both XDP and TC networking hooks
   * Policy logic decide *action* (e.g. pass/drop/redirect)
   * Read/write access to packet
 
-*Control-plane*: is in /userspace/
+*Control-plane*: in /userspace/
 - Userspace load eBPF program
 - Can /control program via/ changing /BPF maps/
 - Everything goes through /bpf system call/
+
+** Slide: BPF changing the kABI landscape
+
+@@html:<small>@@
+kABI = Kernel Application Binary Interface
+@@html:</small>@@
+
+Distro's spend */many/* resources maintaining kABI compatibility
+- to satisfy *out-of-tree kernel modules*, calling kernel API / structs
+- e.g. contrail [[https://tungsten.io/opencontrail-is-now-tungsten-fabric/][tungsten fabric]] hook into Kernel RX-handler (L2)
+
+BPF /offer way-out/, with some *limits* due to security/safety:
+- /Fully programmable/ hooks points (restricted-C, not Turing complete)
+- Access *sandboxed* e.g. via context struct and BPF-helpers available
+- Possible policy *actions limited by hook*
+
+Userspace "control-plane" API tied to userspace app (not kernel API)
+
+In-principle: BPF-instruction set and BPF-helpers are still kABI
+
 
 * Designing with BPF for XDP+TC                                      :export:
 :PROPERTIES:
