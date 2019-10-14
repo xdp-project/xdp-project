@@ -336,15 +336,20 @@ Tail-call next BPF prog, have access to metadata area
 
 Advantage: Parser prog can be replaced by hardware
 
-** Notes                                                          :noexport:
+** Slide: Design to load less-code                                  :export:
 
-Cover idea of only loading code needed
-- relates to generation a smaller parser BPF-prog
-- BPF gave us ability to be non-monolithic
-- Use BPF ability to be non-monolithic
+Generic netstack is also slow because
+- Need to handle every known protocol (cannot fit in Inst-Cache)
 
-** Slide: Design to load less-code
+BPF give ability to runtime change and load new code
+- The 'ebplane' design should take advantage of this
 
+Specifically for: Protocol parsing "module"
+- Don't create huge BPF-prog that can parse everything
+- Idea: Domain Specific Language (maybe P4) for BPF-prog parsing step
+  * Users describe protocols relevant for them, and parse-info struct
+  * Make sure this can also be compiled for HW targets
+  * Result: smaller BPF-prog for parsing (less Instruction-Cache usage)
 
 * Notes
 
