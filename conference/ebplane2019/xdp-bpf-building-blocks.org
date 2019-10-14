@@ -252,6 +252,29 @@ Skipping code: *Imply skipping features* provided by /network stack/
   - FIB routing lookup
   - Socket lookup
 
+* Slide: Overall design                                              :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: BPF view on: data-plane and control-plane                 :export:
+
+@@html:<small>@@
+Relating BPF networking to traditional control- and data-plane design
+@@html:</small>@@
+
+This covers both XDP and TC networking hooks
+
+*Data-plane*: /inside kernel/, split into:
+- Kernel-core: Fabric in charge of moving packets quickly
+- In-kernel eBPF program:
+  * Policy logic decide *action* (e.g. pass/drop/redirect)
+  * Read/write access to packet
+
+*Control-plane*: is in /userspace/
+- Userspace load eBPF program
+- Can /control program via/ changing /BPF maps/
+- Everything goes through /bpf system call/
 
 * Designing with BPF for XDP+TC                                      :export:
 :PROPERTIES:
