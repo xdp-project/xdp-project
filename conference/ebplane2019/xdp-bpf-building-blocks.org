@@ -327,11 +327,11 @@ Examples of designing with BPF
 Background: XDP/TC metadata area placed in-front packet headers (32 Bytes)
 - Communication channel between XDP-tail-calls, and into TC-BPF hook
 
-Split BPF program parser step into standalone BPF program
-- Output is parse-info with header types and offsets
-- Parse-info is stored in XDP/TC metadata area (in-front packet headers)
+Split BPF-prog /parser-step/ into standalone BPF-prog
+- Output is *parse-info with header types and offsets*
+- Parse-info is /stored in XDP/TC metadata area/ (in-front packet headers)
 
-Tail-call next BPF prog, have access to metadata area
+*Tail-call next BPF-prog*, have /access to metadata/ area
 - Due to verifier, prog getting parse-info still need some bounds-check
 
 Advantage: Parser prog can be replaced by hardware
@@ -339,17 +339,17 @@ Advantage: Parser prog can be replaced by hardware
 ** Slide: Design to load less-code                                  :export:
 
 Generic netstack is also slow because
-- Need to handle every known protocol (cannot fit in Inst-Cache)
+- Need to *handle every known protocol* (cannot fit in Instruction-Cache)
 
-BPF give ability to runtime change and load new code
+BPF give ability to /runtime change and load new code/
 - The 'ebplane' design should take advantage of this
 
-Specifically for: Protocol parsing "module"
+Specifically for: *Protocol parsing* "module"
 - Don't create huge BPF-prog that can parse everything
 - Idea: Domain Specific Language (maybe P4) for BPF-prog parsing step
-  * Users describe protocols relevant for them, and parse-info struct
-  * Make sure this can also be compiled for HW targets
-  * Result: smaller BPF-prog for parsing (less Instruction-Cache usage)
+  * Users /describe protocols/ relevant for them, and /parse-info struct/
+  * *Result*: /smaller BPF-prog for parsing/ (less Instruction-Cache usage)
+  * (Make sure this can also be compiled for HW targets)
 
 * Notes
 
