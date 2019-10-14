@@ -317,6 +317,80 @@ Userspace "control-plane" API tied to userspace app (not kernel API)
 
 In-principle: BPF-instruction set and BPF-helpers are still kABI
 
+** Deep-dive: contrail-vrouter [[https://github.com/Juniper/contrail-vrouter/blob/master/linux/vr_host_interface.c#L1154][kernel module]]                      :noexport:
+#+BEGIN_NOTES
+Not for slide-deck = noexport
+#+END_NOTES
+
+Code-analysis of vrouter Linux kernel module (out-of-tree)
+- Notice project renamed to [[https://tungsten.io/opencontrail-is-now-tungsten-fabric/][Tungsten fabric]] ([[https://github.com/tungstenfabric/][GitHub home]])
+- but found kernel module under GitHub [[https://github.com/Juniper/contrail-vrouter][Juniper/contrail-vrouter]]
+
+Taking a deep-dive into: contrail-vrouter code
+- https://github.com/Juniper/contrail-vrouter
+
+They are basically hooking into the Linux kernel RX-handler, network L2 level.
+
+See/follow: netdev_rx_handler_register() which call/register their code:
+- vhost_rx_handler
+- [[https://github.com/Juniper/contrail-vrouter/blob/master/linux/vr_host_interface.c#L1154][linux_rx_handler]]
+- Or via their: linux_pkt_dev_init() can also register
+  - pkt_gro_dev_rx_handler
+  - pkt_rps_dev_rx_handler
+
+They have their own 'vr_packet' data-struct, that is max 48-bytes and stored in
+SKB "CB" field (skb->cb).
+
+#+begin_src C
+/*
+ * NOTE: Please do not add any more fields without ensuring
+ * that the size is <= 48 bytes in 64 bit systems.
+ */
+struct vr_packet {
+    unsigned char *vp_head;
+    struct vr_interface *vp_if;
+    struct vr_nexthop *vp_nh;
+    unsigned short vp_data;
+    unsigned short vp_tail;
+    unsigned short vp_len;
+    unsigned short vp_end;
+    unsigned short vp_network_h;
+    unsigned short vp_flags;
+    unsigned short vp_inner_network_h;
+    unsigned char vp_cpu;
+    unsigned char vp_type;
+    unsigned char vp_ttl;
+    unsigned char vp_queue;
+    unsigned char vp_priority:4,
+                  vp_notused:4;
+};
+#+end_src
+
+Recommend looking at [[https://github.com/Juniper/contrail-vrouter/blob/master/linux/vr_host_interface.c#L938][linux_get_packet()]] to see how an SKB is converted into a
+struct vr_packet, via storing it into =skb->cb= area. When they pass-along
+their vr_packet, then can get back to the SKB via container_of tricks.
+
+#+begin_src C
+static inline struct sk_buff *
+vp_os_packet(struct vr_packet *pkt)
+{
+    return CONTAINER_OF(cb, struct sk_buff, pkt);
+}
+#+end_src
+
+They end-up consuming the packet via calling indirect function call vif_rx():
+#+begin_src C
+    ret = vif->vif_rx(vif, pkt, vlan_id);
+    if (!ret)
+        ret = RX_HANDLER_CONSUMED;
+#+end_src
+
+In the vif_rx function can e.g. be assigned to:
+- (vr_interface.c) eth_rx
+- (vr_interface.c) vhost_rx
+
+End up calling: vr_fabric_input ([[https://github.com/Juniper/contrail-vrouter/blob/master/dp-core/vr_datapath.c][dp-core/vr_datapath.c]])
+
 
 * Designing with BPF for XDP+TC                                      :export:
 :PROPERTIES:
