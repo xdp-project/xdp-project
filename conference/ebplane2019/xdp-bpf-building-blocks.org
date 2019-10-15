@@ -283,6 +283,10 @@ ebplane: leverage eBPF technology for networking
 ** Slide: What is TC-BPF?                                           :export:
 #+BEGIN_NOTES
 Q: What module to promote act_bpf or cls_bpf ?
+
+Two program types:
+	case BPF_PROG_TYPE_SCHED_CLS:
+	case BPF_PROG_TYPE_SCHED_ACT:
 #+END_NOTES
 
 The Linux /TC (Traffic Control)/ system have some BPF-hook points
@@ -461,12 +465,15 @@ Containers are in-many-use-case better handled via TC-BPF
 
 ** Topic: Introduce TC-BPF hook
 
-TC-BPF have a DA (Direct Access) mode which is faster
+TC-BPF also (like XDP) have "direct access" mode to packet-data
 - But access limited to memory-linear part of packet-data
 - Thus, how much is accessible depending on how SKB were created
 
-XDP also used DA mode, but force drivers to use memory model
+XDP also have direct access, but force drivers to use memory model
 - Requiring packet-data to be delivered "memory-linear" (in physical mem)
+
+The TC 'da' option stand for 'direct-action' mode
+- Meaning, BPF-prog will directly return the TC-action code (TC_ACT_*) 
 
 *** TC-BPF code notes
 
