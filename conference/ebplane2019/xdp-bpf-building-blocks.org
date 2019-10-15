@@ -290,13 +290,26 @@ Two program types:
 	case BPF_PROG_TYPE_SCHED_ACT:
 #+END_NOTES
 
-The Linux /TC (Traffic Control)/ system have some BPF-hook points
+The Linux /TC/ [[https://docs.cilium.io/en/v1.6/bpf/#tc-traffic-control][(Traffic Control)]] layer have some BPF-hook points
 - In *TC filter* 'classify' step: both /ingress/ and /egress/
 
 Operates on SKB context object (struct __sk_buff)
-- Pros: netstack collaboration easier, rich access to SKB features
-- Pros: easier L4, and (via sockmap) even L7 filtering in-kernel
-- Cons: Slower than XDP due to SKB alloc+init and no-bulking
+- /Pros/: netstack collaboration easier, rich access to SKB features
+- /Pros/: easier L4, and (via sockmap) even L7 filtering in-kernel
+- /Pros/: more BPF-helpers available
+- */Cons/*: Slower than XDP due to SKB alloc+init and no-bulking
+
+** Slide: TC-BPF actions or verdicts  :export:
+
+TC-BPF progs are usually used in 'direct-action' (da) mode
+- Similar to XDP, BPF-prog will directly return TC-action code ([[https://elixir.bootlin.com/linux/v5.4-rc1/source/include/uapi/linux/pkt_cls.h#L32][TC_ACT_*]])
+
+[[https://docs.cilium.io/en/v1.6/bpf/#tc-traffic-control][BPF (cls_bpf) semantic]] for some of the avail TC_ACT_* codes:
+- TC_ACT_ /OK/: pass SKB onwards (and set skb->tc_index)
+- TC_ACT_ /UNSPEC/: multi-prog case, continue to next BPF-prog
+- TC_ACT_ /SHOT/: drop SKB (kfree_skb) and inform caller NET_XMIT_DROP
+- TC_ACT_ /STOLEN/: drop SKB (consume_skb()) inform NET_XMIT_SUCCESS
+- TC_ACT_ /REDIRECT/: redirect packet to another net_device (bpf_redirect())
 
 
 * Slide: Design perspective                                          :export:
