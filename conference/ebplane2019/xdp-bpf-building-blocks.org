@@ -272,10 +272,23 @@ Ways to /cooperate with network stack/
   * CPUMAP redirect start netstack on remote CPU
   * veth redirect start inside container
 
-* Slide: Introducing TC-BPF
+* Slide: Introducing TC-BPF                                          :export:
+
+ebplane: leverage eBPF technology for networking
+- Another option are /TC (Traffic Control)/ BPF-hooks
+  - When targeting *network layers L4-L7*
+  - L2-L3 are of-cause still possible
+
+
+** Slide: What is TC-BPF?                                           :export:
 #+BEGIN_NOTES
-TODO ADD CONTENTS!!!!
+Q: What module to promote act_bpf or cls_bpf ?
 #+END_NOTES
+
+The Linux /TC (Traffic Control)/ system have some BPF-hook points
+- In *TC filter* 'classify' step: both /ingress/ and /egress/
+
+
 
 * Slide: Design perspective                                          :export:
 :PROPERTIES:
