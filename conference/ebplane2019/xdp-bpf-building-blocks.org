@@ -273,17 +273,18 @@ Ways to /cooperate with network stack/
   * veth redirect start inside container
 
 * Slide: Introducing TC-BPF                                          :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
 
 ebplane: leverage eBPF technology for networking
 - Another option are /TC (Traffic Control)/ BPF-hooks
   - When targeting *network layers L4-L7*
   - L2-L3 are of-cause still possible
 
-
 ** Slide: What is TC-BPF?                                           :export:
 #+BEGIN_NOTES
 Q: What module to promote act_bpf or cls_bpf ?
-
 Two program types:
 	case BPF_PROG_TYPE_SCHED_CLS:
 	case BPF_PROG_TYPE_SCHED_ACT:
@@ -292,6 +293,10 @@ Two program types:
 The Linux /TC (Traffic Control)/ system have some BPF-hook points
 - In *TC filter* 'classify' step: both /ingress/ and /egress/
 
+Operates on SKB context object (struct __sk_buff)
+- Pros: netstack collaboration easier, rich access to SKB features
+- Pros: easier L4, and (via sockmap) even L7 filtering in-kernel
+- Cons: Slower than XDP due to SKB alloc+init and no-bulking
 
 
 * Slide: Design perspective                                          :export:
@@ -473,7 +478,7 @@ XDP also have direct access, but force drivers to use memory model
 - Requiring packet-data to be delivered "memory-linear" (in physical mem)
 
 The TC 'da' option stand for 'direct-action' mode
-- Meaning, BPF-prog will directly return the TC-action code (TC_ACT_*) 
+- Meaning, BPF-prog will directly return the TC-action code (TC_ACT_*)
 
 *** TC-BPF code notes
 
