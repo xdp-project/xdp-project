@@ -292,6 +292,7 @@ Two program types:
 
 The Linux /TC/ [[https://docs.cilium.io/en/v1.6/bpf/#tc-traffic-control][(Traffic Control)]] layer have some BPF-hook points
 - In *TC filter* 'classify' step: both /ingress/ and /egress/
+- /Scalable/: runs outside TC-root lock (with preempt disabled + RCU read-side)
 
 Operates on SKB context object (struct __sk_buff)
 - /Pros/: netstack collaboration easier, rich access to SKB features
@@ -311,7 +312,7 @@ TC-BPF progs are usually used in 'direct-action' (da) mode
 - TC_ACT_ /STOLEN/: drop SKB (consume_skb()) inform NET_XMIT_SUCCESS
 - TC_ACT_ /REDIRECT/: redirect packet to another net_device (bpf_redirect())
 
-** Slide: TC-BPF access to packet-data memory
+** Slide: TC-BPF access to packet-data memory                       :export:
 
 TC-BPF also (like XDP) have /direct access to packet-data/ (read: /fast/)
 - But access limited to memory-linear part of packet-data
@@ -321,6 +322,15 @@ TC-BPF also (like XDP) have /direct access to packet-data/ (read: /fast/)
 XDP also have direct access, but *force drivers to use memory model*
 - Requiring packet-data to be delivered "memory-linear" (in physical mem)
 
+** Slide: Cooperation between XDP and TC-BPF                        :export:
+
+*XDP and TC-BPF* can both run and *collaborate* via:
+- /Shared BPF-maps/ as state or config
+- XDP /metadata/ (in-front of packet) avail to TC-BPF (as already mentioned)
+- TC function as /fallback layer for XDP/
+
+XDP is *lacking TX hook*
+- For now, /TC egress BPF hooks/ have solved use-cases
 
 * Slide: Design perspective                                          :export:
 :PROPERTIES:
