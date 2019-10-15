@@ -128,7 +128,7 @@ The eBPF bytecode is:
   * Read: the eBPF assembly language
 - Designed to *run in the Linux kernel*
   * It is */not a kernel module/*
-  * It is a *sandbox* technology; BPF verfier ensures code safety
+  * It is a *sandbox technology*; BPF verfier ensures code safety
   * Kernel provides /eBPF runtime/ environment, via BPF /helper calls/
 
 Different Linux kernel /hooks/ run eBPF-bytecode, /event/ triggered
@@ -265,8 +265,8 @@ Ways to /cooperate with network stack/
 - Pop/push or /modify headers/: *Change RX-handler* kernel use
   * e.g. handle protocol unknown to running kernel
 
-- Can /propagate/ 32Bytes /meta-data/ from XDP stage to network stack
-  * TC (clsbpf) hook can use meta-data, e.g. set SKB mark
+- Can /propagate/ 32Bytes /metadata/ from XDP stage to network stack
+  * TC (cls_bpf) hook can use metadata, e.g. set SKB mark
 
 - /XDP_REDIRECT/ *map* special, can choose where netstack "starts/begin"
   * CPUMAP redirect start netstack on remote CPU
@@ -314,7 +314,7 @@ Distro's spend */many/* resources maintaining kABI compatibility
 
 BPF /offer way-out/, with some *limits* due to security/safety:
 - /Fully programmable/ hooks points (restricted-C, not Turing complete)
-- Access *sandboxed* e.g. via context struct and BPF-helpers available
+- *Access sandboxed* e.g. via context struct and BPF-helpers available
 - Possible policy *actions limited by hook*
 
 Userspace "control-plane" API tied to userspace app (not kernel API)
@@ -405,8 +405,10 @@ Examples of designing with BPF
 
 ** Slide: Design protocol parser with BPF for XDP/TC                :export:
 
-Background: XDP/TC metadata area placed in-front packet headers (32 Bytes)
-- Communication channel between XDP-tail-calls, and into TC-BPF hook
+@@html:<small>@@
+Background: XDP/TC metadata area placed in-front packet headers (32 Bytes).
+Works as communication channel between XDP-tail-calls, and into TC-BPF hook
+@@html:</small>@@
 
 Split BPF-prog /parser-step/ into standalone BPF-prog
 - Output is *parse-info with header types and offsets*
@@ -445,6 +447,79 @@ Containers are in-many-use-case better handled via TC-BPF
 ** Topic: IP-fragmentation
 
 ** Topic: Introduce TC-BPF hook
+
+TC-BPF have a DA (Direct Access) mode which is faster
+- But access limited to memory-linear part of packet-data
+- Thus, how much is accessible depending on how SKB were created
+
+XDP also used DA mode, but force drivers to use memory model
+- Requiring packet-data to be delivered "memory-linear" (in physical mem)
+
+*** TC-BPF code notes
+
+Follow entry code for TC-BPF 'ingress' hook:
+- sch_handle_ingress() call tcf_classify()
+- that finds and call cls_bpf_classify() in net/sched/cls_bpf.c
+
+Return action codes (TC_ACT_*) avail/used in sch_handle_ingress()
+#+begin_src C
+switch (tcf_classify(skb, miniq->filter_list, &cl_res, false)) {
+	case TC_ACT_OK:
+	case TC_ACT_RECLASSIFY:
+		skb->tc_index = TC_H_MIN(cl_res.classid);
+		break;
+	case TC_ACT_SHOT:
+		mini_qdisc_qstats_cpu_drop(miniq);
+		kfree_skb(skb);
+		return NULL;
+	case TC_ACT_STOLEN:
+	case TC_ACT_QUEUED:
+	case TC_ACT_TRAP:
+		consume_skb(skb);
+		return NULL;
+	case TC_ACT_REDIRECT:
+		/* skb_mac_header check was done by cls/act_bpf, so
+		 * we can safely push the L2 header back before
+		 * redirecting to another netdev
+		 */
+		__skb_push(skb, skb->mac_len);
+		skb_do_redirect(skb);
+		return NULL;
+	case TC_ACT_CONSUMED:
+		return NULL;
+	default:
+		break;
+	}
+#+end_src
+
+Verify that/how TC-BPF gets DA (Direct Access) only to memory-linear part of
+packet data from the SKB.
+
+In cls_bpf_classify() the BPF-prog invocation happens via =BPF_PROG_RUN=, and
+prior to each =BPF_PROG_RUN= the function bpf_compute_data_pointers() are
+called.  It is responsible for computing the memory-linear part:
+
+#+begin_src C
+/* Compute the linear packet data range [data, data_end) which
+ * will be accessed by various program types (cls_bpf, act_bpf,
+ * lwt, ...). Subsystems allowing direct data access must (!)
+ * ensure that cb[] area can be written to when BPF program is
+ * invoked (otherwise cb[] save/restore is necessary).
+ */
+static inline void bpf_compute_data_pointers(struct sk_buff *skb)
+{
+	struct bpf_skb_data_end *cb = (struct bpf_skb_data_end *)skb->cb;
+
+	BUILD_BUG_ON(sizeof(*cb) > FIELD_SIZEOF(struct sk_buff, cb));
+	cb->data_meta = skb->data - skb_metadata_len(skb);
+	cb->data_end  = skb->data + skb_headlen(skb);
+}
+#+end_src
+
+The important part is =skb_headlen(skb)= that return the length of "main
+buffer" that is pointed to by =skb->data=. That means it does not account for
+data in fragmented parts, e.g. =frags= or =flag_list=.
+
 
 ** Topic: Broadcast and multicast
 
