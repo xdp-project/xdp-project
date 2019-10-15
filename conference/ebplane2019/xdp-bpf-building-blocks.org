@@ -311,6 +311,16 @@ TC-BPF progs are usually used in 'direct-action' (da) mode
 - TC_ACT_ /STOLEN/: drop SKB (consume_skb()) inform NET_XMIT_SUCCESS
 - TC_ACT_ /REDIRECT/: redirect packet to another net_device (bpf_redirect())
 
+** Slide: TC-BPF access to packet-data memory
+
+TC-BPF also (like XDP) have /direct access to packet-data/ (read: /fast/)
+- But access limited to memory-linear part of packet-data
+- Thus, how much is accessible *depending on how SKB were created*
+- BPF-helper bpf_skb_pull_data() can be used, but very expensive
+
+XDP also have direct access, but *force drivers to use memory model*
+- Requiring packet-data to be delivered "memory-linear" (in physical mem)
+
 
 * Slide: Design perspective                                          :export:
 :PROPERTIES:
@@ -482,13 +492,6 @@ Containers are in-many-use-case better handled via TC-BPF
 ** Topic: IP-fragmentation
 
 ** Topic: Introduce TC-BPF hook
-
-TC-BPF also (like XDP) have "direct access" mode to packet-data
-- But access limited to memory-linear part of packet-data
-- Thus, how much is accessible depending on how SKB were created
-
-XDP also have direct access, but force drivers to use memory model
-- Requiring packet-data to be delivered "memory-linear" (in physical mem)
 
 The TC 'da' option stand for 'direct-action' mode
 - Meaning, BPF-prog will directly return the TC-action code (TC_ACT_*)
