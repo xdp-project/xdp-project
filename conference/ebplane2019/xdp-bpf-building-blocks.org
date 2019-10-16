@@ -389,7 +389,7 @@ XDP also have direct access, but *force drivers to use memory model*
 *XDP and TC-BPF* can both run and *collaborate* via:
 - /Shared BPF-maps/ as state or config
 - XDP /metadata/ (in-front of packet) avail to TC-BPF (as already mentioned)
-- TC function as /fallback layer for XDP/
+- TC-BPF can function as /fallback layer for XDP/
 
 XDP is *lacking TX hook*
 - For now, /TC egress BPF hooks/ have solved use-cases
@@ -621,22 +621,27 @@ XDP: Sending to /multiple destination/; *not supported*
 Alternative is to fallback
 - Let either: netstack or TC-BPF hook handle broadcast/multicast
 
-** Slide: *Gaps:* Missing XDP egress hook
-
 ** Slide: *Gaps:* Multi-buffer packets
 
 ** Slide: *Gaps:* Getting XDP driver features
+
+** Slide: *Gaps:* Missing XDP egress hook                        :noexport:
+#+BEGIN_NOTES
+Already mention as side-note earlier
+- in "Slide: Cooperation between XDP and TC-BPF"
+#+END_NOTES
 
 
 * Notes
 
 ** Topic: XDP redirect into Guest-VM
 
+Makes sense: Using XDP for Guest-VM redirect
+- Allow skipping overhead of Host-OS network stack
+
 ** Topic: How to test XDP
 
-** Topic: IP-fragmentation
-
-** Topic: Introduce TC-BPF hook
+** Notes for: TC-BPF hook
 
 The TC 'da' option stand for 'direct-action' mode
 - Meaning, BPF-prog will directly return the TC-action code (TC_ACT_*)
@@ -710,7 +715,8 @@ data in fragmented parts, e.g. =frags= or =flag_list=.
 
 ** Topic: Missing XDP egress hook
 
-In localhost/container delivery use-case: tunnel/overlay-network
+In localhost/container use-cases: tunnel/overlay-network
+- XDP could decap headers, but
 - Encap headers need to be added by TC-BPF egress hook
 
 
