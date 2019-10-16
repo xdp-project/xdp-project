@@ -571,6 +571,8 @@ XDP operate on raw Ethernet frames (L2)
 
 ** Slide: *Gaps:* Multi-buffer packets
 
+** Slide: *Gaps:* Getting XDP driver features
+
 
 * Notes
 
