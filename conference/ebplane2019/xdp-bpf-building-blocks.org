@@ -301,6 +301,23 @@ Need to be /combined with BPF-helper calls/, *two variants*
 What is going on?
 - Using *redirect maps is a HUGE performance boost*, why!?
 
+** Slide: Redirect using BPF-maps is novel
+@@html:<small>@@
+/Why is it so brilliant to use BPF-maps for redirecting?/
+@@html:</small>@@
+
+Named "redirect" as more generic, than "forwarding"
+- Tried to simplify changes needed in drivers, process per packet
+
+First trick: *Hide* /RX bulking/ *from driver* code via BPF-map
+- BPF-helper setup map+index, driver call xdp_do_redirect() pickup map
+- Map store frame in temporary store (curr bulk per 16 frames)
+- End of driver NAPI poll "flush" - call xdp_do_flush_map()
+- Extra performance benefit: from delaying expensive NIC tailptr/doorbell
+
+Second trick: *invent* /new types of redirects/ easy
+- Without changing any driver code! - Hopefully last XDP action code
+
 * Slide: Introducing TC-BPF                                          :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
