@@ -562,8 +562,19 @@ Explicitly covering known gaps
 
 ** Slide: *Gaps:* IP-fragmentation not handled                      :export:
 
-XDP operate on raw Ethernet frames (L2)
-- IP defragmentation happens at Transport Layer (L4)
+Issue: (L3) IP-fragments doesn't contain (L4) port numbers (e.g. TCP/UDP)
+- Challenge UDP-tunnels and L4 load-balancers
+
+Both XDP and TC-BPF doesn't do IP-defrag
+- IP-defrag happens later at Transport Layer (L4)
+
+As TC-BPF works with SKBs, would be possible to
+- Extend with BPF-helper to do the IP-defrag
+  - Not enough demand to get this implemented
+
+In-practice: People configure MTU to avoid IP-fragmentation
+
+Alternative: Fallback to network stack to handle IP-defrag
 
 ** Slide: *Gaps:* XDP broadcast and multicast                       :export:
 
