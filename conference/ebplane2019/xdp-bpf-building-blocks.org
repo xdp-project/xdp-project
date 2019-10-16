@@ -272,6 +272,13 @@ Ways to /cooperate with network stack/
   * CPUMAP redirect start netstack on remote CPU
   * veth redirect start inside container
 
+** Slide: XDP redirect
+#+BEGIN_NOTES
+ebplane project will VERY likely need XDP_REDIRECT
+- Need to introduce this feature
+- AND also point out value of "map" redirect
+#+END_NOTES
+
 * Slide: Introducing TC-BPF                                          :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
