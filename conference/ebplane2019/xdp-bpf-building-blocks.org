@@ -551,6 +551,25 @@ Specifically for: *Protocol parsing* "module"
   * *Result*: /smaller BPF-prog for parsing/ (less Instruction-Cache usage)
   * (Make sure this can also be compiled for HW targets)
 
+* Slide: Containers
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Relating XDP and TC-BPF to containers
+
+** Slide: TC-BPF for containers
+
+Containers are in most cases /better handled via TC-BPF/
+- Have to *allocate SKB anyway* to delivery in container
+
+/Advanced use-case/ are possible with TC-BPF, like
+- Allows for L4-L7 /policy enforcement for microservices/
+- See [[https://blog.cloudflare.com/sockmap-tcp-splicing-of-the-future/][CloudFlare blogpost]]: via [[https://lwn.net/Articles/731133/][sockmap]] + [[https://www.kernel.org/doc/Documentation/networking/strparser.txt][strparser]]
+
+The [[https://cilium.io/][Cilium project]] have already demonstrated this is doable
+- Even fully integrated with Kubernetes CNI
+
 
 * Slide: Pitfalls and gaps                                           :export:
 :PROPERTIES:
