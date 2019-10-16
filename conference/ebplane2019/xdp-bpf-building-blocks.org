@@ -551,24 +551,39 @@ Specifically for: *Protocol parsing* "module"
   * *Result*: /smaller BPF-prog for parsing/ (less Instruction-Cache usage)
   * (Make sure this can also be compiled for HW targets)
 
-* Slide: Containers
+* Slide: Containers                                                  :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-Relating XDP and TC-BPF to containers
+Relating /XDP/ and /TC-BPF/ to *Containers*
 
-** Slide: TC-BPF for containers
+** Slide: TC-BPF for containers                                     :export:
 
 Containers are in most cases /better handled via TC-BPF/
-- Have to *allocate SKB anyway* to delivery in container
+- Have to *allocate SKB anyway* for delivery in container
 
 /Advanced use-case/ are possible with TC-BPF, like
 - Allows for L4-L7 /policy enforcement for microservices/
 - See [[https://blog.cloudflare.com/sockmap-tcp-splicing-of-the-future/][CloudFlare blogpost]]: via [[https://lwn.net/Articles/731133/][sockmap]] + [[https://www.kernel.org/doc/Documentation/networking/strparser.txt][strparser]]
+- Kernel level proxy service, also handling TLS/HTTPS via [[https://github.com/torvalds/linux/commit/d04fb13c9fcdad8][ktls+sockmap]]
 
 The [[https://cilium.io/][Cilium project]] have already demonstrated this is doable
 - Even fully integrated with Kubernetes CNI
+
+** Slide: XDP for containers                                        :export:
+
+In-general XDP redirect into Container doesn't make sense
+- veth driver support redirect, but will *just create SKB later*
+  - why not just take the SKB alloc overhead up-front?
+
+XDP-redirect into veth, *only make sense if re-redirecting*
+- E.g. veth might not be final destination
+- Could call this /service chaining containers/
+
+Imagine: /Packaging L2-L3 appliances as/ *containers*
+- Like Suricata for inline Intrusion Prevention (IPS)
+- Virtual IP-router or firewall appliance
 
 
 * Slide: Pitfalls and gaps                                           :export:
@@ -614,10 +629,6 @@ Alternative is to fallback
 
 
 * Notes
-
-** Topic: XDP redirect into containers
-
-Containers are in-many-use-case better handled via TC-BPF
 
 ** Topic: XDP redirect into Guest-VM
 
