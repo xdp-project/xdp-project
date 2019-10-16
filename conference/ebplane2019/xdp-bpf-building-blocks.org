@@ -621,7 +621,18 @@ XDP: Sending to /multiple destination/; *not supported*
 Alternative is to fallback
 - Let either: netstack or TC-BPF hook handle broadcast/multicast
 
-** Slide: *Gaps:* Multi-buffer packets
+** Slide: *Gaps:* XDP doesn't handle multi-buffer packets           :export:
+
+This limit XDP max packet size
+- /XDP max MTU: 3520 bytes/ (page_size(4096) - headroom(256) - shinfo(320))
+
+/Multi-frame/ packets have several /use-cases/
+- *Jumbo-frames* (larger than 3520 bytes)
+- *TSO* (TCP Segmentation Offload)
+- *Header split*, (L4) headers in first segment, (L7) payload in next
+
+XDP proposal for multi-frame packets
+- Design idea/proposal in XDP-project: [[https://github.com/xdp-project/xdp-project/blob/master/areas/core/xdp-multi-buffer01-design.org][xdp-multi-buffer01-design.org]]
 
 ** Slide: *Gaps:* Getting XDP driver features
 
