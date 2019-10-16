@@ -719,6 +719,14 @@ In localhost/container use-cases: tunnel/overlay-network
 - XDP could decap headers, but
 - Encap headers need to be added by TC-BPF egress hook
 
+** Topic: Perf ring-buffer
+
+BPF-helper: bpf_perf_event_output
+
+** Topic: XDP tcpdump
+
+There are several examples of 'xdpdump' tools
+- Simulate tcpdump like behavior via perf ring-buffer
 
 
 * Emacs end-tricks                                                 :noexport:
