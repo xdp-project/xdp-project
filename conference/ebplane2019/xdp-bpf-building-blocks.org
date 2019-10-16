@@ -76,11 +76,6 @@ Only sections with tag ":export:" will end-up in the presentation. The prefix
 "Slide:" is only syntax-sugar for the reader (and it removed before export by
 emacs).
 
-* Slide: Overview: What will you learn?                            :noexport:
-
-EMPTY SLIDE
-- Need to "finish" slide-deck before doing overview slide
-
 * Slide: The 'ebplane' project                                       :export:
 
 The ebplane project: *early startup phase*
