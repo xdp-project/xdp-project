@@ -301,7 +301,7 @@ Need to be /combined with BPF-helper calls/, *two variants*
 What is going on?
 - Using *redirect maps is a HUGE performance boost*, why!?
 
-** Slide: Redirect using BPF-maps is novel
+** Slide: Redirect using BPF-maps is novel                          :export:
 @@html:<small>@@
 /Why is it so brilliant to use BPF-maps for redirecting?/
 @@html:</small>@@
@@ -317,6 +317,22 @@ First trick: *Hide* /RX bulking/ *from driver* code via BPF-map
 
 Second trick: *invent* /new types of redirects/ easy
 - Without changing any driver code! - Hopefully last XDP action code
+
+** Slide: Redirect map types
+@@html:<small>@@
+*Note: Using redirect maps require extra setup step in userspace*
+@@html:</small>@@
+
+The /"devmap"/: BPF_MAP_TYPE_DEVMAP + BPF_MAP_TYPE_DEVMAP_HASH
+- Contains net_devices, userspace adds them via *ifindex into map-index* as value
+
+The /"cpumap"/: BPF_MAP_TYPE_CPUMAP
+- Allow redirecting RAW xdp frames to remote CPU - *map-index is CPU#*
+  - SKB is created on remote CPU, and normal network stack "starts"
+
+/AF_XDP/ - /"xskmap"/: BPF_MAP_TYPE_XSKMAP
+- Allow redirect RAW xdp frames into userspace - *map-index usually RXq#*
+  - via new Address Family socket type: AF_XDP
 
 * Slide: Introducing TC-BPF                                          :export:
 :PROPERTIES:
