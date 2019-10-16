@@ -300,7 +300,7 @@ Operates on SKB context object (struct __sk_buff)
 - /Pros/: more BPF-helpers available
 - */Cons/*: Slower than XDP due to SKB alloc+init and no-bulking
 
-** Slide: TC-BPF actions or verdicts  :export:
+** Slide: TC-BPF actions or verdicts                                :export:
 
 TC-BPF progs are usually used in 'direct-action' (da) mode
 - Similar to XDP, BPF-prog will directly return TC-action code ([[https://elixir.bootlin.com/linux/v5.4-rc1/source/include/uapi/linux/pkt_cls.h#L32][TC_ACT_*]])
@@ -488,6 +488,27 @@ Specifically for: *Protocol parsing* "module"
   * Users /describe protocols/ relevant for them, and /parse-info struct/
   * *Result*: /smaller BPF-prog for parsing/ (less Instruction-Cache usage)
   * (Make sure this can also be compiled for HW targets)
+
+
+* Slide: Pitfalls and gaps                                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Explicitly covering known gaps
+- when leveraging eBPF technology for networking
+
+** Slide: *Gaps:* IP-fragmentation not handled                      :export:
+
+XDP operate on raw Ethernet frames (L2)
+- IP defragmentation happens at Transport Layer (L4)
+
+** Slide: *Gaps:* XDP broadcast and multicast
+
+** Slide: *Gaps:* Missing XDP egress hook
+
+** Slide: *Gaps:* Multi-buffer packets
+
 
 * Notes
 
