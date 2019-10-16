@@ -636,7 +636,15 @@ XDP proposal for multi-frame packets
 
 ** Slide: *Gaps:* Getting XDP driver features
 
+BPF core reject loading BPF-prog using features kernel don't have
+- Features can be probed via cmdline: bpftool feature probe
 
+XDP features *also* depend on driver code
+- If native-XDP can load, usually XDP_DROP + ABORTED + PASS works
+- XDP_REDIRECT not supported by all drivers, cannot detect this
+  * At runtime packets dropped and kernel-log contains WARN_ONCE
+
+Work in-progress covered at [[https://linuxplumbersconf.org/event/4/contributions/460/][LPC2019]] talk: [[http://people.netfilter.org/hawk/presentations/LinuxPlumbers2019/xdp-distro-view.pdf][XDP: the Distro View]]
 
 ** Slide: *Gaps:* Missing XDP egress hook                        :noexport:
 #+BEGIN_NOTES
