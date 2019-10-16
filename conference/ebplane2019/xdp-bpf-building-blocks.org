@@ -625,12 +625,28 @@ Alternative is to fallback
 
 ** Slide: *Gaps:* Getting XDP driver features
 
+
+
 ** Slide: *Gaps:* Missing XDP egress hook                        :noexport:
 #+BEGIN_NOTES
 Already mention as side-note earlier
 - in "Slide: Cooperation between XDP and TC-BPF"
 #+END_NOTES
 
+
+* Slide: End: Summary                                              :export:
+
+Kernel now have eBPF /programmable network fast-path/
+- that can now *compete with kernel-bypass* speeds
+
+FOSS community needs projects like 'ebplane'
+- to build projects and products with this technology
+
+Hopefully this presentation gave enough information
+- in form of /building blocks/ and *known limitations*
+
+XDP-project coordination:
+- https://github.com/xdp-project/xdp-project
 
 * Notes
 
