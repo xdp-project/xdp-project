@@ -272,12 +272,34 @@ Ways to /cooperate with network stack/
   * CPUMAP redirect start netstack on remote CPU
   * veth redirect start inside container
 
-** Slide: XDP redirect
+* Slide: XDP redirect                                                :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+/ebplane/ very likely *need* /redirect feature/
+- XDP /redirect/ is an *advanced feature*
+  * Requires some explain to fully grasp why map variant is novel
+
 #+BEGIN_NOTES
 ebplane project will VERY likely need XDP_REDIRECT
 - Need to introduce this feature
 - AND also point out value of "map" redirect
 #+END_NOTES
+
+** Slide: Basic: XDP action XDP_REDIRECT                            :export:
+
+XDP action code XDP_ /REDIRECT/
+- In basic form: Redirecting RAW frames out another net_device via ifindex
+- Egress driver: implement ndo_xdp_xmit (and ndo_xdp_flush)
+
+Need to be /combined with BPF-helper calls/, *two variants*
+- Different performance (single CPU core numbers, 10G Intel ixgbe)
+- Using helper: *bpf_redirect*     =  *7.5 Mpps*
+- Using helper: /bpf_redirect_map/ = /13.0 Mpps/
+
+What is going on?
+- Using *redirect maps is a HUGE performance boost*, why!?
 
 * Slide: Introducing TC-BPF                                          :export:
 :PROPERTIES:
