@@ -90,7 +90,7 @@ This presentation: /eBPF technology level setting/
 
 ** Slide: Different design thinking: High level overview            :export:
 
-*/Wrong thinking/*: Designing new data plane *from scratch*
+*/Wrong approach/*: Designing new data plane *from scratch*
 
 Key insight #1: /Modify behaviour of existing system/ (Linux kernel)
 - Via injecting /code snippets/ at different *hooks*
@@ -212,10 +212,11 @@ What is /AF_XDP/? (the Address Family XDP socket)
 
 The killer feature of XDP is integration with Linux kernel,
  - Leverages existing kernel infrastructure, eco-system and market position
- - Programmable flexibility via eBPF sandboxing (kernel infra)
- - Flexible sharing of NIC resources between Linux and XDP
+ - /Programmable flexibility/ via eBPF sandboxing (kernel infra)
+ - Flexible /sharing of NIC resources/ between Linux and XDP
+ - /Kernel maintains NIC drivers/, easy to deploy everywhere
  - Cooperation with netstack via eBPF-helpers and fallback-handling
- - No need to reinject packets (unlike bypass solutions)
+ - /No need to reinject packets/ (unlike bypass solutions)
 
 /AF_XDP/ for /flexible/ *kernel bypass*
  - Cooperate with use-cases needing fast raw frame access in userspace
