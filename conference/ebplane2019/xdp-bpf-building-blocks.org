@@ -80,7 +80,7 @@ emacs).
 
 The ebplane project: *early startup phase*
 - Initial presentation title: [[https://docs.google.com/presentation/d/1JHrl8PlLyVRSMvtF8OUa3BW3GcRf4a3Kx2CPw2g7tJg/edit?ts=5d542a23#slide=id.p]["Universal Data Plane Proposal"]]
-  - Show interest in /leveraging eBPF technology for networking/
+  - Shows interest in /leveraging eBPF technology for networking/
 - /*Yet to be defined*/: use-cases and network-layers to target
 
 This presentation: /eBPF technology level setting/
@@ -92,68 +92,68 @@ This presentation: /eBPF technology level setting/
 
 */Wrong thinking/*: Designing new data plane *from scratch*
 
-Key insight#1: /Modifying behaviour of existing system/ (Linux kernel)
+Key insight #1: /Modify behaviour of existing system/ (Linux kernel)
 - Via injecting /code snippets/ at different *hooks*
 - BPF code snippets are *event-based* and by default stateless
 - Obtain state and change runtime behaviour via shared BPF-*maps*
 
-Key insight#2: /Only load code when actually needed/
-- The fastest code is code that doesn't run (or even loaded)
+Key insight #2: /Only load code when actually needed/
+- The fastest code is code that doesn't run (or even gets loaded)
 - Design system to *only load code relevant to user* configured use-case
-- E.g. don't implement generic parser to handle every know protocol
-  - instead create parser specific to users need/config
+- E.g. don't implement generic parser to handle every known protocol
+  - instead create parser specific to user's need/config
 
 * Slide: Basic introduction and understanding of eBPF                :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-*Technical:* /Level setting slides for eBPF technology/
+*Technical:* /Getting up to speed on eBPF technology/
 
 Basic introduction and understanding of BPF
 - eBPF bytecode
 - Compiling restricted-C to eBPF
-  * compiler storing it in ELF-format
-  * loading this into the Linux kernel
+  * compiler stores this in ELF-format
+  * which can be loaded into the Linux kernel
 
 ** Slide: eBPF bytecode and kernel hooks                            :export:
 
 The eBPF bytecode is:
-- /Generic Instruction Set/ Architecture (ISA) with C-calling convention
+- /Generic Instruction Set/ Architecture (ISA) with C calling convention
   * Read: the eBPF assembly language
 - Designed to *run in the Linux kernel*
   * It is */not a kernel module/*
   * It is a *sandbox technology*; BPF verfier ensures code safety
   * Kernel provides /eBPF runtime/ environment, via BPF /helper calls/
 
-Different Linux kernel /hooks/ run eBPF-bytecode, /event/ triggered
-- Two hooks of special interest XDP and TC-BPF
-- Many more eBPF hooks (tracepoint, all function calls via kprobe)
+Different Linux kernel /hooks/ run eBPF bytecode, /event/ triggered
+- Two hooks of special interest: XDP and TC-BPF
+- Many more eBPF hooks (tracepoints, all function calls via kprobe)
 
 ** Slide: Compiling restricted-C to eBPF into ELF                   :export:
 
 /LLVM compiler/ has an eBPF backend (to */avoid writing eBPF assembly/* by hand)
-- Write *Restricted C* -- some limits imposed by sandbox BPF-verfier
+- Write *Restricted C* -- some limits imposed by sandbox BPF-verifier
 
-Compiler produces an standard ELF "executable" file
+Compiler produces a standard ELF "executable" file
 - Cannot execute this file directly, as the eBPF runtime is inside the kernel
-- Need our *own ELF loader* that can:
+- Need an *ELF loader* that can:
   * Extract the eBPF bytecode and eBPF maps
-  * Do ELF relocation of eBPF maps references in bytecode
+  * Do ELF relocation of eBPF map references in bytecode
   * Create/load eBPF maps and bytecode into kernel
-- *Attaching to hook is separate* step
+- *Attaching to hook is a separate* step
 
 ** Slide: Recommend using libbpf                                    :export:
 
 Recommend using /libbpf/ as the *ELF loader for eBPF*
 - libbpf is /part of Linux kernel tree/
 - Facebook fortunately *exports* this to https://github.com/libbpf
-  * XDP-tutorial git repo, use [[https://github.com/libbpf/libbpf][libbpf]] as git-submodule
+  * XDP-tutorial git repo, uses [[https://github.com/libbpf/libbpf][libbpf]] as git-submodule
 
 Please userspace apps: *Everybody should use this library*
 - */Unfortunately/* several loaders exists
-- Worst case is iproute2 have its own
-  * cause incompatible ELF object, if using eBPF maps
+- Worst case is iproute2 has its own
+  * causes incompatible ELF object, if using eBPF maps
   * (plan to converting iproute2 to use libbpf)
 
 ** Slide: eBPF concepts: /context/, /maps/ and /helpers/            :export:
@@ -163,7 +163,7 @@ Each eBPF /runtime event hook/ gets a *pointer to a* /context/ struct
   * verifier may adjust the bytecode for safety
 
 The BPF program itself is *stateless*
-- /Concept eBPF maps/ can be used to *create state* and *"config"*
+- /eBPF maps/ can be used to *create state* and *"config"*
 - Maps are basically /key = value/ construct
 
 /BPF helpers/ are used for
@@ -175,10 +175,10 @@ The BPF program itself is *stateless*
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-ebplane: leverage eBPF technology for networking
+ebplane: how to leverage eBPF technology for networking
 - One option is /XDP (eXpress Data Path)/
   - When targeting *network layers L2-L3*
-  - L4 use-cases comes with some caveats
+  - L4 use-cases come with some caveats
 
 ** Slide: Framing XDP                                             :noexport:
 #+BEGIN_NOTES
@@ -219,18 +219,18 @@ The killer feature of XDP is integration with Linux kernel,
 
 /AF_XDP/ for /flexible/ *kernel bypass*
  - Cooperate with use-cases needing fast raw frame access in userspace
- - No kernel reinject, instead choose before doing XDP_REDIRECT
+ - No kernel reinject, instead choose destination before doing XDP_REDIRECT
 
 ** Slide: Simple view on how XDP gains speed                        :export:
 
-XDP speed gains comes from
+XDP speed gains come from
 - *Avoiding* /memory allocations/
-  - no SKB allocations and no-init (memset zero 4 cache-lines)
+  - no SKB allocations and no-init (only =memset(0)= of 4 cache-lines)
 - /Bulk/ processing of frames
-- Very /early access/ to frame (in driver code *after DMA sync*)
+- Very /early access/ to frame (in driver code *right after DMA sync*)
 - Ability to */skip/ (large parts) of kernel /code/*
 
-** Slide: Skipping code: Efficient optimization                     :export:
+** Slide: Skipping code: Efficient optimisation                     :export:
 
 @@html:<small>@@
 /Encourage adding helpers instead of duplicating data in BPF maps/
@@ -241,9 +241,9 @@ Skipping code: *Imply skipping features* provided by /network stack/
 - But users have to re-implement features they actually needed
   - Sometimes cumbersome via BPF-maps
 
-/Avoid/ *re-implement features*:
-- Evolve XDP via /BPF-helpers/ that can lookup in kernel tables
-- Example of BPF-helpers avail today for XDP:
+To /avoid/ *re-implementing features*:
+- Evolve XDP via /BPF helpers/ that can do lookups in kernel tables
+- Example of BPF-helpers available today for XDP:
   - FIB routing lookup
   - Socket lookup
 
@@ -253,28 +253,28 @@ Skipping code: *Imply skipping features* provided by /network stack/
 What are the basic XDP building blocks you can use?
 @@html:</small>@@
 
-BPF programs return an action or verdict, for XDP 5-actions:
+BPF programs return an action or verdict, for XDP there are 5:
 - XDP_ /DROP/,  XDP_ /PASS/,  XDP_ /TX/,  XDP_ /ABORTED/,  XDP_ /REDIRECT/
 
 Ways to /cooperate with network stack/
 - Pop/push or /modify headers/: *Change RX-handler* kernel use
   * e.g. handle protocol unknown to running kernel
 
-- Can /propagate/ 32Bytes /metadata/ from XDP stage to network stack
+- Can /propagate/ 32 bytes of /metadata/ from XDP stage to network stack
   * TC (cls_bpf) hook can use metadata, e.g. set SKB mark
 
 - /XDP_REDIRECT/ *map* special, can choose where netstack "starts/begin"
-  * CPUMAP redirect start netstack on remote CPU
-  * veth redirect start inside container
+  * CPUMAP redirect starts netstack on remote CPU
+  * veth redirect starts inside container
 
 * Slide: XDP redirect                                                :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-/ebplane/ very likely *need* /redirect feature/
+/ebplane/ very likely *needs* /redirect feature/
 - XDP /redirect/ is an *advanced feature*
-  * Requires some explain to fully grasp why map variant is novel
+  * Requires some explanation to fully grasp why map variant is novel
 
 #+BEGIN_NOTES
 ebplane project will VERY likely need XDP_REDIRECT
@@ -286,7 +286,7 @@ ebplane project will VERY likely need XDP_REDIRECT
 
 XDP action code XDP_ /REDIRECT/
 - In basic form: Redirecting RAW frames out another net_device via ifindex
-- Egress driver: implement ndo_xdp_xmit (and ndo_xdp_flush)
+- Egress driver: must implement ndo_xdp_xmit (and ndo_xdp_flush)
 
 Need to be /combined with BPF-helper calls/, *two variants*
 - Different performance (single CPU core numbers, 10G Intel ixgbe)
@@ -294,7 +294,7 @@ Need to be /combined with BPF-helper calls/, *two variants*
 - Using helper: /bpf_redirect_map/ = /13.0 Mpps/
 
 What is going on?
-- Using *redirect maps is a HUGE performance boost*, why!?
+- Using *redirect maps gives a HUGE performance boost*, why!?
 
 ** Slide: Redirect using BPF-maps is novel                          :export:
 @@html:<small>@@
@@ -305,9 +305,9 @@ Named "redirect" as more generic, than "forwarding"
 - Tried to simplify changes needed in drivers, process per packet
 
 First trick: *Hide* /RX bulking/ *from driver* code via BPF-map
-- BPF-helper setup map+index, driver call xdp_do_redirect() pickup map
-- Map store frame in temporary store (curr bulk per 16 frames)
-- End of driver NAPI poll "flush" - call xdp_do_flush_map()
+- BPF-helper just sets map+index, driver then calls xdp_do_redirect() to read it
+- Map stores frame in temporary store (curr bulk per 16 frames)
+- End of driver NAPI poll "flush" - calls xdp_do_flush_map()
 - Extra performance benefit: from delaying expensive NIC tailptr/doorbell
 
 Second trick: *invent* /new types of redirects/ easy
@@ -319,14 +319,14 @@ Second trick: *invent* /new types of redirects/ easy
 @@html:</small>@@
 
 The /"devmap"/: BPF_MAP_TYPE_DEVMAP + BPF_MAP_TYPE_DEVMAP_HASH
-- Contains net_devices, userspace adds them via *ifindex into map-index* as value
+- Contains net_devices, userspace adds them using *ifindex as map value*
 
 The /"cpumap"/: BPF_MAP_TYPE_CPUMAP
 - Allow redirecting RAW xdp frames to remote CPU - *map-index is CPU#*
   - SKB is created on remote CPU, and normal network stack "starts"
 
 /AF_XDP/ - /"xskmap"/: BPF_MAP_TYPE_XSKMAP
-- Allow redirect RAW xdp frames into userspace - *map-index usually RXq#*
+- Allows redirect of RAW xdp frames into userspace - *map-index usually RXq#*
   - via new Address Family socket type: AF_XDP
 
 * Slide: Introducing TC-BPF                                          :export:
@@ -335,9 +335,9 @@ The /"cpumap"/: BPF_MAP_TYPE_CPUMAP
 :END:
 
 ebplane: leverage eBPF technology for networking
-- Another option are /TC (Traffic Control)/ BPF-hooks
+- Another option is using /TC (Traffic Control)/ BPF-hooks
   - When targeting *network layers L4-L7*
-  - L2-L3 are of-cause still possible
+  - L2-L3 are of course still possible
 
 ** Slide: What is TC-BPF?                                           :export:
 #+BEGIN_NOTES
@@ -347,7 +347,7 @@ Two program types:
 	case BPF_PROG_TYPE_SCHED_ACT:
 #+END_NOTES
 
-The Linux /TC/ [[https://docs.cilium.io/en/v1.6/bpf/#tc-traffic-control][(Traffic Control)]] layer have some BPF-hook points
+The Linux /TC/ [[https://docs.cilium.io/en/v1.6/bpf/#tc-traffic-control][(Traffic Control)]] layer has some BPF-hook points
 - In *TC filter* 'classify' step: both /ingress/ and /egress/
 - /Scalable/: runs outside TC-root lock (with preempt disabled + RCU read-side)
 
@@ -362,7 +362,7 @@ Operates on SKB context object (struct __sk_buff)
 TC-BPF progs are usually used in 'direct-action' (da) mode
 - Similar to XDP, BPF-prog will directly return TC-action code ([[https://elixir.bootlin.com/linux/v5.4-rc1/source/include/uapi/linux/pkt_cls.h#L32][TC_ACT_*]])
 
-[[https://docs.cilium.io/en/v1.6/bpf/#tc-traffic-control][BPF (cls_bpf) semantic]] for some of the avail TC_ACT_* codes:
+[[https://docs.cilium.io/en/v1.6/bpf/#tc-traffic-control][BPF (cls_bpf) semantic]] for some of the available TC_ACT_* codes:
 - TC_ACT_ /OK/: pass SKB onwards (and set skb->tc_index)
 - TC_ACT_ /UNSPEC/: multi-prog case, continue to next BPF-prog
 - TC_ACT_ /SHOT/: drop SKB (kfree_skb) and inform caller NET_XMIT_DROP
@@ -371,23 +371,23 @@ TC-BPF progs are usually used in 'direct-action' (da) mode
 
 ** Slide: TC-BPF access to packet-data memory                       :export:
 
-TC-BPF also (like XDP) have /direct access to packet-data/ (read: /fast/)
+TC-BPF also (like XDP) has /direct access to packet-data/ (read: /fast/)
 - But access limited to memory-linear part of packet-data
-- Thus, how much is accessible *depending on how SKB were created*
+- Thus, how much is accessible *depends on how SKB were created*
 - BPF-helper bpf_skb_pull_data() can be used, but very expensive
 
-XDP also have direct access, but *force drivers to use memory model*
-- Requiring packet-data to be delivered "memory-linear" (in physical mem)
+XDP also has direct access, but *forces drivers to use specific memory model*
+- Requires packet-data to be delivered "memory-linear" (in physical mem)
 
 ** Slide: Cooperation between XDP and TC-BPF                        :export:
 
 *XDP and TC-BPF* can both run and *collaborate* via:
-- /Shared BPF-maps/ as state or config
-- XDP /metadata/ (in-front of packet) avail to TC-BPF (as already mentioned)
+- /Shared BPF maps/ as state or config
+- XDP /metadata/ (in front of packet) available to TC-BPF (as already mentioned)
 - TC-BPF can function as /fallback layer for XDP/
 
 XDP is *lacking TX hook*
-- For now, /TC egress BPF hooks/ have solved use-cases
+- For now, /TC egress BPF hooks/ have solved these use-cases
 
 * Slide: Design perspective                                          :export:
 :PROPERTIES:
@@ -410,7 +410,7 @@ Higher level: Design perspective
   * Read/write access to packet
 
 *Control-plane*: in /userspace/
-- Userspace load eBPF program
+- Userspace loads eBPF program
 - Can /control program via/ changing /BPF maps/
 - Everything goes through /bpf system call/
 
@@ -420,18 +420,18 @@ Higher level: Design perspective
 kABI = Kernel Application Binary Interface
 @@html:</small>@@
 
-Distro's spend */many/* resources maintaining kABI compatibility
+Distros spend */a lot of/* resources maintaining kABI compatibility
 - to satisfy *out-of-tree kernel modules*, calling kernel API / structs
 - e.g. [[https://tungsten.io/opencontrail-is-now-tungsten-fabric/][tungsten]] contrail-vrouter [[https://github.com/Juniper/contrail-vrouter/blob/master/linux/vr_host_interface.c#L1154][kernel module]] hook into RX-handler (L2)
 
-BPF /offer way-out/, with some *limits* due to security/safety:
+BPF /offers a way out/, with some *limits* due to security/safety:
 - /Fully programmable/ hooks points (restricted-C, not Turing complete)
 - *Access sandboxed* e.g. via context struct and BPF-helpers available
 - Possible policy *actions limited by hook*
 
 Userspace "control-plane" API tied to userspace app (not kernel API)
 
-In-principle: BPF-instruction set and BPF-helpers are still kABI
+In principle: BPF-instruction set and BPF-helpers are still kABI
 
 ** Deep-dive: contrail-vrouter [[https://github.com/Juniper/contrail-vrouter/blob/master/linux/vr_host_interface.c#L1154][kernel module]]                      :noexport:
 #+BEGIN_NOTES
@@ -526,17 +526,17 @@ Split BPF-prog /parser-step/ into standalone BPF-prog
 - Output is *parse-info with header types and offsets*
 - Parse-info is /stored in XDP/TC metadata area/ (in-front packet headers)
 
-*Tail-call next BPF-prog*, have /access to metadata/ area
-- Due to verifier, prog getting parse-info still need some bounds-check
+*Tail-call next BPF-prog*, which has /access to metadata/ area
+- Due to verifier, prog getting parse-info still need some bounds checking
 
 Advantage: Parser prog can be replaced by hardware
 
 ** Slide: Design to load less-code                                  :export:
 
 Generic netstack is also slow because
-- Need to *handle every known protocol* (cannot fit in Instruction-Cache)
+- Needs to *handle every known protocol* (cannot fit in Instruction-Cache)
 
-BPF give ability to /runtime change and load new code/
+BPF gives ability to /runtime change and load new code/
 - The 'ebplane' design should take advantage of this
 
 Specifically for: *Protocol parsing* "module"
@@ -563,16 +563,16 @@ Containers are in most cases /better handled via TC-BPF/
 - See [[https://blog.cloudflare.com/sockmap-tcp-splicing-of-the-future/][CloudFlare blogpost]]: via [[https://lwn.net/Articles/731133/][sockmap]] + [[https://www.kernel.org/doc/Documentation/networking/strparser.txt][strparser]]
 - Kernel level proxy service, also handling TLS/HTTPS via [[https://github.com/torvalds/linux/commit/d04fb13c9fcdad8][ktls+sockmap]]
 
-The [[https://cilium.io/][Cilium project]] have already demonstrated this is doable
+The [[https://cilium.io/][Cilium project]] has already demonstrated this is doable
 - Even fully integrated with Kubernetes CNI
 
 ** Slide: XDP for containers                                        :export:
 
-In-general XDP redirect into Container doesn't make sense
+In general: XDP redirect into container doesn't make sense
 - veth driver support redirect, but will *just create SKB later*
   - why not just take the SKB alloc overhead up-front?
 
-XDP-redirect into veth, *only make sense if re-redirecting*
+XDP-redirect into veth, *only makes sense if re-redirecting*
 - E.g. veth might not be final destination
 - Could call this /service chaining containers/
 
@@ -592,16 +592,16 @@ Explicitly covering known gaps
 ** Slide: *Gaps:* IP-fragmentation not handled                      :export:
 
 Issue: (L3) IP-fragments doesn't contain (L4) port numbers (e.g. TCP/UDP)
-- Challenge UDP-tunnels and L4 load-balancers
+- Challenge for UDP tunnels and L4 load-balancers
 
-Both XDP and TC-BPF doesn't do IP-defrag
+Neither XDP nor TC-BPF do IP-defrag
 - IP-defrag happens later at Transport Layer (L4)
 
 As TC-BPF works with SKBs, would be possible to
 - Extend with BPF-helper to do the IP-defrag
   - Not enough demand to get this implemented
 
-In-practice: People configure MTU to avoid IP-fragmentation
+In practice: People configure MTU to avoid IP-fragmentation
 
 Alternative: Fallback to network stack to handle IP-defrag
 
@@ -611,17 +611,17 @@ Cloning packets in XDP is not currently possible
 
 XDP: Sending to /multiple destination/; *not supported*
 - Simple idea: Broadcast via redirect "send" to ALL port in devmap
-- Multicast via creating devmap for multicast groups
+- Multicast via creating a devmap per multicast group
 
 Alternative is to fallback
 - Let either: netstack or TC-BPF hook handle broadcast/multicast
 
 ** Slide: *Gaps:* XDP doesn't handle multi-buffer packets           :export:
 
-This limit XDP max packet size
+This limits XDP max packet size
 - /XDP max MTU: 3520 bytes/ (page_size(4096) - headroom(256) - shinfo(320))
 
-/Multi-frame/ packets have several /use-cases/
+/Multi-frame/ packets have several /use cases/
 - *Jumbo-frames* (larger than 3520 bytes)
 - *TSO* (TCP Segmentation Offload)
 - *Header split*, (L4) headers in first segment, (L7) payload in next
@@ -634,7 +634,7 @@ XDP proposal for multi-frame packets
 BPF core reject loading BPF-prog using features kernel don't have
 - Features can be probed via cmdline: bpftool feature probe
 
-XDP features *also* depend on driver code
+XDP features *also* depends on driver code
 - If native-XDP can load, usually XDP_DROP + ABORTED + PASS works
 - XDP_REDIRECT not supported by all drivers, cannot detect this
   * At runtime packets dropped and kernel-log contains WARN_ONCE
@@ -643,7 +643,7 @@ Work in-progress covered at [[https://linuxplumbersconf.org/event/4/contribution
 
 ** Slide: *Gaps:* Missing XDP egress hook                        :noexport:
 #+BEGIN_NOTES
-Already mention as side-note earlier
+Already mentioned as side-note earlier
 - in "Slide: Cooperation between XDP and TC-BPF"
 #+END_NOTES
 
@@ -660,7 +660,7 @@ Status on XDP and BPF communities
 XDP developer community:
 - Part of Linux kernel, under both [[mailto:netdev@vger.kernel.org][netdev]] and [[mailto:bpf@vger.kernel.org][bpf]] subsystems
 - BPF developers also coordinate under [[https://www.iovisor.org/][IOvisor]] (LF-project)
-- [[https://github.com/xdp-project/xdp-project][XDP-project]] keep track of work items
+- [[https://github.com/xdp-project/xdp-project][XDP-project]] keeps track of work items
 
 /XDP users/: Community and resources
 - Mailing list for newbies: [[mailto:xdp-newbies@vger.kernel.org][xdp-newbies@vger.kernel.org]]
