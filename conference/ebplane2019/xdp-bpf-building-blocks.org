@@ -426,7 +426,7 @@ Distros spend */a lot of/* resources maintaining kABI compatibility
 - e.g. [[https://tungsten.io/opencontrail-is-now-tungsten-fabric/][tungsten]] contrail-vrouter [[https://github.com/Juniper/contrail-vrouter/blob/master/linux/vr_host_interface.c#L1154][kernel module]] hook into RX-handler (L2)
 
 BPF /offers a way out/, with some *limits* due to security/safety:
-- /Fully programmable/ hooks points (restricted-C, not Turing complete)
+- /Fully programmable/ hooks points (restricted-C)
 - *Access sandboxed* e.g. via context struct and BPF-helpers available
 - Possible policy *actions limited by hook*
 
