@@ -648,6 +648,22 @@ Already mentioned as side-note earlier
 - in "Slide: Cooperation between XDP and TC-BPF"
 #+END_NOTES
 
+* Topic: How to test XDP and BPF programs                            :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: How to test XDP                                           :export:
+
+After veth got native-XDP support (v4.20), easiest test is
+- Writing scripts that setup veth namespaces for testing
+- Example: kernel/[[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/testing/selftests/bpf/test_xdp_vlan.sh][tools/testing/selftests/bpf/test_xdp_vlan.sh]]
+
+Alternative use [[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/lib/bpf/bpf.c#L519-L541][bpf_prog_test_run()]] ([[https://lore.kernel.org/netdev/20170331044543.4075183-1-ast@fb.com/][bpf-syscall BPF_PROG_TEST_RUN]])
+- Instead of attach: "run" loaded BPF-prog with bpf_prog_test_run()
+  - Provide constructed packet data input + output buffer
+- Example: kernel/[[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/testing/selftests/bpf/prog_tests/xdp.c][tools/testing/selftests/bpf/prog_tests/xdp.c]]
+  - Hint: [[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/testing/selftests/bpf/test_progs.c#L160][pkt_v4]] and [[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/testing/selftests/bpf/test_progs.c#L169][pkt_v6]] defined in [[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/testing/selftests/bpf/test_progs.c#L160-L175][tools/testing/selftests/bpf/test_progs.c]]
 
 * Slide: XDP community                                               :export:
 :PROPERTIES:
@@ -693,19 +709,6 @@ XDP-project coordination:
 
 Makes sense: Using XDP for Guest-VM redirect
 - Allow skipping overhead of Host-OS network stack
-
-** Slide: How to test XDP                                           :export:
-
-After veth got native-XDP support (v4.20), easiest test is
-- Writing scripts that setup veth namespaces for testing
-- Example: kernel/[[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/testing/selftests/bpf/test_xdp_vlan.sh][tools/testing/selftests/bpf/test_xdp_vlan.sh]]
-
-Alternative use [[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/lib/bpf/bpf.c#L519-L541][bpf_prog_test_run()]] ([[https://lore.kernel.org/netdev/20170331044543.4075183-1-ast@fb.com/][bpf-syscall BPF_PROG_TEST_RUN]])
-- Instead of attach: "run" loaded BPF-prog with bpf_prog_test_run()
-  - Provide constructed packet data input+output
-- Example: kernel/[[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/testing/selftests/bpf/prog_tests/xdp.c][tools/testing/selftests/bpf/prog_tests/xdp.c]]
-  - Hint: [[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/testing/selftests/bpf/test_progs.c#L160][pkt_v4]] and [[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/testing/selftests/bpf/test_progs.c#L169][pkt_v6]] defined in [[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/testing/selftests/bpf/test_progs.c#L160-L175][tools/testing/selftests/bpf/test_progs.c]]
-
 
 * Notes
 ** Notes for: TC-BPF hook
