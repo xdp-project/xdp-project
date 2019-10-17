@@ -630,7 +630,7 @@ This limits XDP max packet size
 XDP proposal for multi-frame packets
 - Design idea/proposal in XDP-project: [[https://github.com/xdp-project/xdp-project/blob/master/areas/core/xdp-multi-buffer01-design.org][xdp-multi-buffer01-design.org]]
 
-** Slide: *Gaps:* Getting XDP driver features
+** Slide: *Gaps:* Getting XDP driver features                       :export:
 
 BPF core reject loading BPF-prog using features kernel don't have
 - Features can be probed via cmdline: bpftool feature probe
@@ -689,12 +689,12 @@ XDP-project coordination:
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-** Topic: XDP redirect into Guest-VM
+** Topic: XDP redirect into Guest-VM                                :export:
 
 Makes sense: Using XDP for Guest-VM redirect
 - Allow skipping overhead of Host-OS network stack
 
-** Slide: How to test XDP
+** Slide: How to test XDP                                           :export:
 
 After veth got native-XDP support (v4.20), easiest test is
 - Writing scripts that setup veth namespaces for testing
@@ -704,6 +704,7 @@ Alternative use [[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/lib/bpf/
 - Instead of attach: "run" loaded BPF-prog with bpf_prog_test_run()
   - Provide constructed packet data input+output
 - Example: kernel/[[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/testing/selftests/bpf/prog_tests/xdp.c][tools/testing/selftests/bpf/prog_tests/xdp.c]]
+  - Hint: [[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/testing/selftests/bpf/test_progs.c#L160][pkt_v4]] and [[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/testing/selftests/bpf/test_progs.c#L169][pkt_v6]] defined in [[https://github.com/torvalds/linux/blob/v5.4-rc3/tools/testing/selftests/bpf/test_progs.c#L160-L175][tools/testing/selftests/bpf/test_progs.c]]
 
 
 * Notes
