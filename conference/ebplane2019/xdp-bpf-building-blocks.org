@@ -642,7 +642,7 @@ XDP features *also* depends on driver code
 
 Work in-progress covered at [[https://linuxplumbersconf.org/event/4/contributions/460/][LPC2019]] talk: [[http://people.netfilter.org/hawk/presentations/LinuxPlumbers2019/xdp-distro-view.pdf][XDP: the Distro View]]
 
-** Slide: *Gaps:* Missing XDP egress hook                        :noexport:
+** Slide: *Gaps:* Missing XDP egress hook                         :noexport:
 #+BEGIN_NOTES
 Already mentioned as side-note earlier
 - in "Slide: Cooperation between XDP and TC-BPF"
@@ -695,7 +695,7 @@ XDP developer community:
   - Simply git clone and run make: https://github.com/xdp-project/xdp-tutorial
 - Cilium maintains official: [[https://docs.cilium.io/en/v1.6/bpf/][BPF and XDP Reference Guide]]
 
-* Slide: End: Summary                                              :export:
+* Slide: End: Summary                                                :export:
 
 Kernel now have eBPF /programmable network fast-path/
 - that can now *compete with kernel-bypass* speeds
