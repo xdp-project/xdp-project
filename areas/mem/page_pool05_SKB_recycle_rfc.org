@@ -72,6 +72,6 @@ In any case we should use PG_owner_priv_1 to mark the page and track down
 packets that were freed prior to unmapping their DMA (DMA leaks) regardless
 of what we use as our recycle 'trigger'.
 
-* Future idea coalescing tricks
 In the split page support scenarios if we coalesce frags into a single page 
-we can return it to the pool much faster
+we can return it to the pool much faster.
+Assume we have 2 skb's that the net
