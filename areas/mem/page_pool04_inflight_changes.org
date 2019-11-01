@@ -2,10 +2,13 @@
 #+Title: Change page_pool handling in-flight frames during shutdown
 #+OPTIONS: ^:nil
 
-* Background
+This is related to work done in [[file:page_pool03_shutdown_inflight.org]],
+which have been accepted in upstream kernels.
 
 As pointed out by Jonathan Lemon, we have to fix the page_pool shutdown
 mechanism, when wanting page_pool for SKB-recycling.
+
+* Background - design issue in shutdown
 
 The current page_pool shutdown have a design problem, it assumes that if the
 page_pool have pages 'inflight' for more that 120 sec, then it's a bug. It
