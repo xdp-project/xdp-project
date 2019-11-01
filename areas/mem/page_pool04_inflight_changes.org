@@ -72,5 +72,9 @@ Date:   Tue Jun 18 15:05:53 2019 +0200
     Signed-off-by: David S. Miller <davem@davemloft.net>
 #+end_example
 
-TODO investigate if we can just revert this...
+** Investigated if we can just revert this.
+
+Assessment is that might be useful to keep around the periodic warning, but
+e.g. after 5 minutes.  This can help us spot bugs, where inflight packets
+never reach zero, indicating some kind of leak.
 
