@@ -1,0 +1,42 @@
+# -*- fill-column: 76; -*-
+#+Title: Change page_pool handling in-flight frames during shutdown
+#+OPTIONS: ^:nil
+
+* Background
+
+As pointed out by Jonathan Lemon, we have to fix the page_pool shutdown
+mechanism, when wanting page_pool for SKB-recycling.
+
+The current page_pool shutdown have a design problem, it assumes that if the
+page_pool have pages 'inflight' for more that 120 sec, then it's a bug. It
+frees and removes the page_pool object from the mem_id lookup system, and
+catch pages returned 'late', does a simple put_page() and leaks the DMA
+mapping (note: same code even without page_pool DMA-mapping, to catch this
+before we start using it for DMA),
+
+Once we start to use page_pool for SKBs with recycling, then the 120 sec max
+time for outstanding 'inflight' packets are bogus. SKBs can sit in a socket
+queue for an undetermined amount of time. (Should be easy to reproduce, with
+UDP socket without any userspace program consuming packets).
+
+I've been trying to come up with a solution, that does not hurt the
+page_pool fast-path. The idea is that we simply have to accept, that the
+page_pool object have to stay alive as long as it has 'inflight' pages.
+Thus, once a page_pool on 'death-row', the trigger point is pages being
+returned, that will check if 'inflight' have reached zero, and free the
+object for real.
+
+** Lost Catch-bug-feature
+
+With above design, we also loose one bug catching feature. I've used the
+timeout feature to catch bugs, where the 'inflight' count never reach zero,
+due to some driver bug, that use page_pool wrong. E.g. can easily happen in
+drivers, doing put_page in error handling cases.
+
+Maybe we should discuss this in another thread, but I want us to think about
+debugging and troubleshooting tools for page_pool. Due to the performance
+requirement, we need to add these kind of facilities without slowing down
+normal operation. I've look at using tracepoint to provide troubleshooting
+mechanisms, it does introduce a small overhead when activating a tracepoint,
+but when not troubleshooting the overhead is zero.  I've started writing
+[[https://github.com/xdp-project/xdp-project/blob/master/areas/mem/bpftrace/][bpftrace tools here]], but for now there is only a single tool.
