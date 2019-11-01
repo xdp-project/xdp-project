@@ -78,3 +78,26 @@ Assessment is that might be useful to keep around the periodic warning, but
 e.g. after 5 minutes.  This can help us spot bugs, where inflight packets
 never reach zero, indicating some kind of leak.
 
+Another advantage of having a work-queue to periodically flush the
+page_pool, was to avoid adding extra checks to fast-path code, about
+page_pool being in a shutdown state.
+
+
+* Potential bug?
+
+I think, I might have spotted a potential bug in the shutdown phase, or at
+least something that can be made more safe/robust during shutdown.
+
+During page_pool shutdown it is a requirement that driver alloc RX-side have
+been disconnected, to make sure it cannot consume from the alloc cache. This
+allows shutdown to flush the alloc cache.
+
+During page_pool shutdown pages can still be inflight. This means producers
+can still be returning pages to the page_pool object. All the producers left
+MUST not use the 'allow_direct' flag (call __page_pool_recycle_direct). If
+some driver broke that rule, it can result in very difficult to catch bugs.
+
+One way to avoid this during shutdown, is to block the alloc cache by (after
+flushing it) pretend that it is full, by setting pool->alloc.count equal to
+max size PP_ALLOC_CACHE_SIZE.  Further more we can poison last entry to
+catch users still allocating from it.
