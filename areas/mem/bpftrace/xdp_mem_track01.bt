@@ -1,0 +1,72 @@
+#!/usr/local/bin/bpftrace
+/*
+ * xdp_mem_track01 - Catch when XDP mem_model unreg see inflight packets/pages
+ *
+ * In certain cases when unregistring a page_pool allocator via the
+ * kernels xdp_rxq_info_unreg() / xdp_rxq_info_unreg_mem_model() call,
+ * then there can still be inflight packets/pages. The purpose is to
+ * catch these cases, to make sure this code path is activated.
+ */
+
+BEGIN {
+	printf("Tracking XDP memory allocator connect+disconnect\n");
+	@types[0] = "PAGE_SHARED";
+	@types[1] = "PAGE_ORDER0";
+	@types[2] = "PAGE_POOL";
+	@types[3] = "ZERO_COPY";
+}
+
+tracepoint:xdp:mem_connect {
+	$id        = args->mem_id;
+	$page_pool = args->allocator;
+	$type      = args->mem_type;
+	$type_str  = @types[$type];
+
+	time();
+	printf("%s: type:%s mem.id:%d 0x%lX\n",
+	       probe, $type_str, $id, $page_pool);
+
+	@active_mem_ids[$id] = nsecs;
+}
+
+tracepoint:xdp:mem_disconnect {
+	$id        = args->mem_id;
+	$page_pool = args->allocator;
+	$type      = args->mem_type;
+	$type_str  = @types[$type];
+
+	$cnt = args->disconnect_cnt;
+	$safe_to_remove = args->safe_to_remove;
+
+	time(); /* Used as event marker */
+
+	$time_ms = 0;
+	if (@active_mem_ids[$id]) {
+		$time_ms = (nsecs - @active_mem_ids[$id]) / 1000000;
+	}
+
+	if ($safe_to_remove == 0) {
+		printf("%s: type:%s mem.id=%d NOT-safe_to_remove:%d (*HIT*)\n",
+		       probe, $type_str, $id, $safe_to_remove);
+		/* Track here as xdp:mem_connect didn't see connect */
+		if ($time_ms == 0) {
+			@active_mem_ids[$id] = nsecs;
+		}
+		/* Print mem IDs that hit not-safe-to-remove */
+		@test_case_hit[$id, $time_ms] = $cnt;
+	} else {
+		delete(@active_mem_ids[$id]);
+	}
+
+	if ($cnt > 1) {
+		printf("%s: type:%s mem.id=%d re-sched(%d) safe_to_remove:%d\n",
+		       probe, $type_str, $id, $cnt, $safe_to_remove);
+	}
+
+	printf("%s: type:%s mem.id:%d 0x%lX safe_to_remove:%d (lived %d ms)\n",
+	       probe, $type_str, $id,  $page_pool, $safe_to_remove, $time_ms);
+}
+
+END {
+	clear(@types);
+}
