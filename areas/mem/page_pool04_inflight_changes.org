@@ -82,6 +82,24 @@ Another advantage of having a work-queue to periodically flush the
 page_pool, was to avoid adding extra checks to fast-path code, about
 page_pool being in a shutdown state.
 
+* Patchset descriptions
+
+** Patch1: xdp: revert forced mem allocator removal for page_pool
+
+Forced removal of XDP mem allocator, specifically related to page_pool,
+turned out to be a wrong approach. Special thanks to Jonathan Lemon for
+convincing me. This patch is revert the force part of commit d956a048cd3f
+(“xdp: force mem allocator removal and periodic warning”).
+
+It is much better to provide a guarantee that page_pool object stays valid
+until 'inflight' pages reach zero, making it safe to remove.
+
+We keep the periodic warning via a work-queue, but increased interval to
+5-minutes. The reason is to have a way to catch bugs, where inflight
+pages/packets never reach zero, indicating some kind of leak. These kind of
+bugs have been observed while converting drivers over to use page_pool API.
+
+
 
 * Potential bug?
 
