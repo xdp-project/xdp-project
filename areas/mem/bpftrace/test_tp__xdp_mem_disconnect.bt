@@ -1,5 +1,6 @@
-#!/usr/bin/bpftrace
+#!/usr/local/bin/bpftrace
 #include <linux/types.h>
+//#include <sys/types.h>
 
 struct xdp_mem_info {
 	u32 type; /* enum xdp_mem_type, but known size type */
@@ -34,9 +35,9 @@ tracepoint:xdp:mem_disconnect {
 		printf("%s: mem.id=%d re-scheduled", probe, $idA);
 	}
 
-	if (args->force == 1) {
-		printf("%s: mem.id=%d FORCE shutdown", probe, $idA);
-	}
+//	if (args->force == 1) {
+//		printf("%s: mem.id=%d FORCE shutdown", probe, $idA);
+//	}
 
 	$page_pool = args->allocator;
 	// $page_pool = $xa->allocator;
