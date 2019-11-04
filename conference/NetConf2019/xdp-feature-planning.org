@@ -1,19 +1,19 @@
 # -*- fill-column: 79; -*-
 #+TITLE: XDP feature planning
-#+AUTHOR: Toke Høiland-Jørgensen
+#+AUTHOR: Toke Høiland-Jørgensen <toke@redhat.com>
 #+EMAIL: toke@redhat.com
 #+REVEAL_THEME: redhat
 #+REVEAL_TRANS: linear
 #+REVEAL_MARGIN: 0
-#+REVEAL_EXTRA_JS: { src: './reveal.js/js/custom-netconf.js'}
-#+REVEAL_EXTRA_CSS: ./reveal.js/css/custom-adjust-logo.css
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
 #+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
 #+OPTIONS: reveal_width:1600 reveal_height:900
 #+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
 
-* For conference: Lund Linux Con 2019
+* For conference: NetConf 2019
 
-This presentation will be given at Netconf 2019.
+This presentation will be given at [[http://vger.kernel.org/netconf2019.html][Netconf 2019]].
 
 * Export/generate presentation
 
@@ -73,12 +73,107 @@ Colors are choosen via org-mode italic/bold high-lighting:
  - *bold*   = *yellow*
  - */italic-bold/* = red
 
+* Slide: The xdp-project repository                                  :export:
+
+- We've created a [[https://github.com/xdp-project/xdp-project][GitHub repository]] for XDP feature planning
+- The [[https://github.com/xdp-project/xdp-tutorial][XDP tutorial]] lives in the same GitHub org
+- Goal of this discussion:
+  - Make you all /aware of its existence/ and how it works
+  - Give a *short overview* of what's in there
+  - Get some /*feedback*/
+  - Hopefully get (some of) you to /contribute/ :)
+
+* Slide: Contents of the xdp-project repo                            :export:
+Org-mode files describing various aspects of XDP planning
+
+- =xdp-project.org= - /general/ TODO entries
+- Areas: =areas/*.org=
+  - Top-level .org files: *TODO items* for tracking projects
+  - Subdirs: More detailed /*notes*/, performance numbers, etc.
+  - Current areas:
+    #+ATTR_HTML: :style columns: 2;
+    - =cpumap.org=
+    - =drivers.org=
+    - =mem.org=
+    - =ovs.org=
+    - =xdp_flowcache.org=
+    - =xdp-tutorial.org=
+- Conferences: /Slides/ for XDP talks at various conferences
+  - Including this one :)
+
+** Slide: Repo logic for each file                                  :export:
+
+- Top-level "/projects/"
+  - A "project" is any TODO with sub-TODOs
+  - Use TODO-keyword =NEXT= for *"immediate"* tasks
+  - Ex: Project: "Handling XDP_REDIRECT failures"
+
+- Projects categorised in three (somewhat fluid) /categories/:
+
+  - "Current high-priority tasks" - tag =@short=
+  - "Important medium-term tasks" - tag =@medium=
+  - "Longer-term preliminary plans" - tag =@long=
+
+* Slide: Why have this repo at all?                                  :export:
+
+- /External/ documentation of progress, known issues, feature plan
+  - Somewhere to point users and PHBs
+- *Internal* tracking of our own work + ensuring follow-up
+  - I am the self-assigned "cat herder"
+- Make it possible to /*plan and prioritise*/, at least a bit
+
+
+** Slide: Why org-mode?                                             :export:
+- Really powerful /query + project management/ tool.
+  - Can pull out agenda views (demo?)
+- Originates from *Emacs* world, but also has a =vim= implementation
+- But you can also just /*treat them as text files*/!
+  - Jesper and I will do the project management work
+
+See =org-setup.el= if you do want to give it a shot in Emacs
+
+* Slide: Current short-term projects                                 :export:
+
+- Consistency for statistics with XDP
+- Better ndo_xdp_xmit resource management
+- XDP feature flags
+- Handling XDP_REDIRECT failures
+
+** Current medium-term projects
+
+(This is most of them, so not all fit on one slide)
+
+- Usability of programs in samples/bpf
+- Exposing more kernel data structures through helpers
+- Expanding XDP_REDIRECT support to more drivers
+- Adding XDP support to new drivers
+- xdp-tutorial for tracepoints project
+- Layer-2 bridging helper
+- Metadata from hardware
+- Implementing page_pool return-hook via SKB
+- XDP-tutorial ideas for assignments/examples
+
+** Current long-term projects
+- Various cpumap features
+- XDP flowcache project
+- XDP-tutorial misc assignments
+- Generic XDP fixes
+
+* Slide: Discussion points / action items                            :export:
+
+- Is this useful for anyone else?
+  - Is there any way we can make it /more/ useful?
+  - E.g., HTML "reports" of various sorts?
+- Please *add anything you are working on* / would like to see
+  - Pull requests, patches, or just send me an email
+  - Doesn't /*have to*/ be something you want to work on (but it helps)
 
 * Emacs tricks
 
 # Local Variables:
-# org-reveal-title-slide: "<h1 class=\"title\">%t</h1>
-# <h2 class=\"author\">Toke Høiland-Jørgensen (Red Hat)<br/></h2>
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# <h2 class=\"author\">Toke Høiland-Jørgensen (Red Hat)<br/>
+# Jesper Dangaard Brouer (Red Hat)<br/></h2>
 # <h3>Netconf<br/>Boston, June 2019</h3>"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
 # End:

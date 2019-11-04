@@ -1,0 +1,168 @@
+# -*- fill-column: 76; -*-
+#+Title: XDP multi buffer design
+
+This document is a serious attempt to find a way to support multi-buffer
+packets with XDP. With the important criteria of not hurting performance of
+the single-buffer per packet design.
+
+Keywords: xdp vs. jumbo-frame, TSO/LRO, packet header split
+
+* Why XDP don't have multi-buffer support
+
+XDP is designed for maximum performance, which is why certain driver-level
+use-cases were not supported, like multi-buffer packets (like jumbo-frames).
+As it e.g. complicated the driver RX-loop and memory model handling.
+
+The single buffer per packet design, is also tied into eBPF Direct-Access
+(DA) to packet data, which can only be allowed if the packet memory is in
+contiguous memory.  This DA feature is essential for XDP performance.
+
+* Use-cases for multi-buffer
+
+What are the use-cases for multi-buffer packets:
+- Jumbo-frames
+- Packet header split
+- TSO/LRO
+
+* Proposal#1: XDP only access first-buffer
+
+The eBPF Direct-Access (DA) feature is essential for performance. Thus, we
+don't want to add an abstraction layer, that transparently gives XDP
+BPF-prog access to payload across multiple buffers.
+
+One way forward is to define that XDP only get access to the first packet
+buffer, and it cannot see subsequent buffers.
+
+We likely need to extend xdp_buff or xdp_md (the XDP bpf context) with some
+indication that this is a multi-buffer packets, as this is needed by
+internal helpers (see later) and might be useful for XDP-developer (e.g.
+return XDP_PASS for these kind of frames).
+
+* XDP multi-buffer extensions and complications
+
+How and what do we need to extend the XDP data structured with to handle
+multi-buffer packets?
+
+** XDP tail adjust
+
+The BPF XDP helper named: =bpf_xdp_adjust_tail= change length of the packet.
+Currently it can only shrink the packet (but we need to extended it to allow
+extending the tail, as e.g IPSEC and DNS-cache needs this).
+
+With multi-buffer XDP packets (and proposal#1) then this adjust tail helper
+becomes problematic.
+
+Wouldn't it be easier to disallow a BPF-prog with this helper, when
+driver have configured multi-buffer?  Or will it be too restrictive,
+if jumbo-frame is very uncommon and only enabled because switch infra
+could not be changed.
+
+Perhaps it is better to let bpf_xdp_adjust_tail() fail runtime?
+
+*** Use-cases for adjust tail
+
+Use-cases that need to adjust tail of packet:
+
+- ICMP replies directly from XDP need to shorten packet tail, but
+  this use-case doesn't use fragments. See [[https://github.com/torvalds/linux/blob/master/samples/bpf/xdp_adjust_tail_kern.c][bpf-sample]].
+
+- IPsec need to add/extend packet tail for [[http://vger.kernel.org/netconf2019_files/xfrm_xdp.pdf][IPset-trailer]], again
+  unlikely that this needs fragments(?). (This use-case convinced me
+  that we need to add extend-tail support to bpf_xdp_adjust_tail)
+
+- DNS or memcached replies directly from XDP, need to extend packet
+  tail, to have room for reply. (It would be interesting to allow larger
+  replies, but I'm not sure we should ever support that).
+
+** XDP access to full packet length?
+
+We likely need to provide the full packet length to XDP core and also
+XDP-developer. The use-case for XDP-developers is validating the length of
+the packet against what packet headers claim.
+
+But if we need to know the full length, when the first-buffer is processed.
+Then realize that this affect the drivers RX-loop, because then we need to
+"collect" all the buffers before we can know the length (although some HW
+provide this in first descriptor).
+
+We likely have to change drivers RX-loop anyhow, as XDP_TX and XDP_REDIRECT
+will also need to "collect" all buffers before the packet can be forwarded.
+(Although this could potentially happen later in driver loop when it
+meet/find the End-Of-Packet descriptor bit).
+
+** Storage space for multi-buffer references/segments
+
+A multi-buffer packet consist of several frame segments. The data structure
+used for holding these packet buffers/segments also needs to be discussed.
+
+To describe each segment we need a pointer (to the page or data start),
+offset and length. There are (at-least) two existing kernel data structures
+that have such a layout, =bio_vec= and =skb_frag_t= (aka =skb_frag_struct=).
+
+Layout of =skb_frag_struct=:
+#+begin_src C
+$ pahole -C skb_frag_struct vmlinux
+struct skb_frag_struct {
+	struct {
+		struct page * p;                         /*     0     8 */
+	} page;                                          /*     0     8 */
+	__u32                      page_offset;          /*     8     4 */
+	__u32                      size;                 /*    12     4 */
+
+	/* size: 16, cachelines: 1, members: 3 */
+	/* last cacheline: 16 bytes */
+};
+#+end_src
+
+Layout of =bio_vec=:
+#+begin_src C
+$ pahole -C bio_vec vmlinux
+struct bio_vec {
+	struct page              * bv_page;              /*     0     8 */
+	unsigned int               bv_len;               /*     8     4 */
+	unsigned int               bv_offset;            /*    12     4 */
+
+	/* size: 16, cachelines: 1, members: 3 */
+	/* last cacheline: 16 bytes */
+};
+#+end_src
+
+The skb_frag_t would be most obvious, as we already have to write this when
+creating an SKB, in =skb_shared_info= area. Which layout looks like this:
+
+#+begin_src C
+$ pahole -C skb_shared_info vmlinux
+struct skb_shared_info {
+	__u8                       __unused;             /*     0     1 */
+	__u8                       meta_len;             /*     1     1 */
+	__u8                       nr_frags;             /*     2     1 */
+	__u8                       tx_flags;             /*     3     1 */
+	short unsigned int         gso_size;             /*     4     2 */
+	short unsigned int         gso_segs;             /*     6     2 */
+	struct sk_buff     * frag_list;                  /*     8     8 */
+	struct skb_shared_hwtstamps hwtstamps;           /*    16     8 */
+	unsigned int               gso_type;             /*    24     4 */
+	u32                        tskey;                /*    28     4 */
+	atomic_t                   dataref;              /*    32     0 */
+
+	/* XXX 8 bytes hole, try to pack */
+
+	void *                     destructor_arg;       /*    40     8 */
+	skb_frag_t                 frags[17];            /*    48   272 */
+
+	/* size: 320, cachelines: 5, members: 13 */
+	/* sum members: 312, holes: 1, sum holes: 8 */
+};
+#+end_src
+
+The problem is also that size of these structs (16 bytes) per
+buffer/segment, and we likely need to support 17 segments, as this need to
+be compatible with SKBs, which result in a size of 272 bytes.
+
+One idea: is that we simply use the same memory area, that we have to store
+skb_shared_info into. As this allow us to get the SKB setup for free, when
+doing XDP_PASS or when doing SKB alloc after XDP_REDIRECT.
+
+Side-note: There have been suggestion before, to unify =bio_vec= and
+=skb_frag_t= (see [[https://lore.kernel.org/netdev/20190501041757.8647-1-willy@infradead.org/][here]])
+

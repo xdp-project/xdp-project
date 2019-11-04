@@ -1,0 +1,211 @@
+# -*- fill-column: 79; -*-
+#+TITLE: Design XDP feature detection for less error prone User eXperience
+#+AUTHOR: Jesper Dangaard Brouer <brouer@redhat.com>
+#+EMAIL: brouer@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: './reveal.js/js/redhat.js'}
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: NetConf 2019
+
+This presentation will be given at [[http://vger.kernel.org/netconf2019.html][Netconf 2019]].
+
+* Export/generate presentation
+
+This presentation is written in org-mode and exported to reveal.js HTML format.
+The org-mode :export: tag determines what headlines/section are turned into
+slides for the presentation.
+
+** Setup for org-mode export to reveal.js
+First, install the ox-reveal emacs package.
+
+Package: ox-reveal git-repo and install instructions:
+https://github.com/yjwen/org-reveal
+
+** Export to HTML reveal.js
+
+After installing ox-reveal emacs package, export to HTML reveal.js format via
+keyboard shortcut: =C-c C-e R R=
+
+The variables at document end ("Local Variables") will set up the title slide
+and filter the "Slide:" prefix from headings; Emacs will ask for permission to
+load them, as they will execute code.
+
+** Export to PDF
+
+The presentations can be converted to PDF format.  Usually the reveal.js when
+run as a webserver under nodejs, have a printer option for exporting to PDF via
+print to file, but we choose not run this builtin webserver.
+
+Alternatively we found a tool called 'decktape', for exporting HTML pages to
+PDF: https://github.com/astefanutti/decktape
+
+The 'npm install' command:
+
+ $ npm install decktape
+
+After this the =decktape= command should be avail. If the npm install failed,
+then it's possible to run the decktape.js file direct from the git-repo via the
+=node= command:
+
+#+begin_src bash
+$ node ~/git/decktape/decktape.js \
+    -s 1600x900 -p 100 --chrome-arg=--no-sandbox \
+     xdp-feature-detection.html \
+     xdp-feature-detection.pdf
+#+end_src
+
+The size is set to get slide text to fit on the page. And -p 100 makes it go
+faster.
+
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation.
+
+Colors are choosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Slide: The XDP available features issue                            :export:
+
+Users cannot know if a device driver support XDP or not
+- This is the most often asked question
+- And people will often use XDP-generic without noticing,
+  - and complain about performance... this is a support issue.
+
+Real /users/ requesting this:
+- /Suricata config/ want to query for XDP-support, else fallback to BPF-TC
+- /VM-migration/ want to query for XDP-support, else need to abort migration
+
+Original argument: Drivers *MUST support all XDP-features*
+  - Thus, there is not reason to expose feature bits
+  - This was *never true*, and e.g. very few drivers support redirect
+
+* Slide: What is the real issue?                                     :export:
+
+Simply exposing feature XDP to userspace, doesn't solve the real issue
+- Real issue: *too easy to misconfigure*
+- How to get users to check features before attach (API didn't prev exist)
+
+Kernel *allows* users to attach XDP bpf_prog
+- that use *features that driver doesn't implement*
+- cause */silent drops/* (debug via tracepoints)
+
+We want something that can /reject earlier/
+- at BPF-load or XDP-attach time
+
+* Slide: Original plan (didn't work): Hide feature check             :export:
+
+Wanted to /detect XDP features/ via analysing *return codes* used by program
+- */Not possible/* because map value (register) can be a return value
+- Could still detect XDP_REDIRECT feature, as it needs a helper call
+
+Explicit /supply XDP features/ used, when *attaching* bpf_prog to a device
+- */Not possible/* due to BPF *tail-call* maps (=BPF_MAP_TYPE_PROG_ARRAY=)
+- Driver attach =ndo_bpf= is bypassed, on map insert in tail-call map
+- as map insert becomes second level XDP attach
+- E.g. XDP using tail-calls, driver is unaware of map inserts
+- E.g. verifying on attach, require traversing levels of tail-calls
+
+One option left: Associate ifindex with bpf_prog *at load time* (like HW-offload)
+- See /later slide/ for challenges and pitfalls...
+
+* Slide: Internal kernel API                                         :export:
+
+Should likely use net_device NDO (Network Device Operation) call =ndo_bpf=
+- for query (or testing) supported XDP features
+- API kept between driver and kernel-core
+
+* Slide: External userspace API                                      :export:
+
+Add a userspace API to query features
+- Netlink?
+- Ethtool?
+
+If BPF /load time/ check is possible
+- This could be the userspace API, which is a probe-API
+- Similar to '=bpftool feature=' command that probe-loads BPF-progs
+
+* Slide: BPF-load time ifindex binding (possible???)                 :export:
+
+General idea (like HW-offload): /Supply ifindex/ at *BPF load time*
+
+Our old nemesis: *tail-call* maps
+- Case#1: ifindex bound XDP-prog use tail-call (map)
+  - Issue: what stops adding non-ifindex XDP-prog to this tail-call-map?
+- Case#2: Can NIC-A XDP-prog tail-call XDP-prog bound to NIC-B?
+- Solution(?): Bind tail-call map to ifindex? (on first insert)
+
+Pitfall: *Generic-XDP*
+- At BPF load time, don't know if used for /native or generic/-XDP
+  - (1) supply more info than ifindex?
+  - (2) let ifindex imply native-XDP?
+
+* Slide: Can verifier detect XDP features?                           :export:
+
+Either need to /supply features/ (more input than =ifindex=)
+- *Or* verifier needs to be able to /detect features/
+
+Verifier *detection strategy*, to deduce XDP features in-use
+- If XDP return code comes from register/map
+  - then assume all XDP-return codes in use
+- Except: can remove XDP_REDIRECT if redirect-helper isn't used
+
+(Came up yesterday)
+- verifier knows helpers used. e.g. =bpf_xdp_adjust_tail=
+- With jumbo-frames, driver want to know if adjust-tail is used
+
+* Slide: End                                                         :export:
+
+Disclaimer
+- These slides are only design ideas and suggestions
+- Non of this is actually implemented
+
+Main purpose was getting a discussion going
+- which were hopefully successful...
+
+* Slide: Extra slides                                                :export:
+
+Below extra slide
+- with details if people want to discuss these
+
+* Slide: Code details: XDP-feature                                   :export:
+
+Open Question: How do we express XDP-features?
+ - Drivers need to know about their features (simply bits? enough?)
+
+Code details, extending the =ndo_bpf= commands:
+#+begin_src C
+struct netdev_bpf {  /* from: include/linux/netdevice.h */
+	enum bpf_netdev_command command;
+	union {
+		/* XDP_QUERY_PROG, XDP_QUERY_PROG_HW */
+		struct {
+			u32 prog_id;
+			/* flags with which program was installed */
+			u32 prog_flags;
+		};
+		/* XDP_QUERY_FEATURES */
+		struct {
+			u64 flags;
+		};
+	[...]
+	};
+};
+#+end_src
+
+* Emacs tricks
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# <h2 class=\"author\">Toke Høiland-Jørgensen (Red Hat)<br/>
+# Jesper Dangaard Brouer (Red Hat)<br/></h2>
+# <h3>Netconf<br/>Boston, June 2019</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:

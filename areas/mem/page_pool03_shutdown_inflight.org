@@ -279,7 +279,7 @@ Reorg order of patches, such that mlx5 and cpumap fixes appear before
 introducing in-flight handling. API page_pool_release_page introduced
 earlier.
 
-** Cover letter V1
+** Cover letter V1 + V2
 
 xdp: page_pool fixes and in-flight accounting
 
@@ -301,7 +301,7 @@ ahead, before we can lift this restriction.
 This patchset change the page_pool API to be more strict, as in-flight page
 accounting is added.
 
-Stg mail command:
+Stg mail command V1:
 #+begin_example
 stg mail --edit-cover --version="net-next v1" --to meup \
  --to netdev \
@@ -314,6 +314,21 @@ stg mail --edit-cover --version="net-next v1" --to meup \
 Message-ID: <156045046024.29115.11802895015973488428.stgit@firesoul>
 
 Link: https://lore.kernel.org/netdev/156045046024.29115.11802895015973488428.stgit@firesoul/
+
+Stg mail command V2:
+#+begin_example
+stg mail --edit-cover --version="net-next v2" --to meup \
+ --to netdev \
+ --to ilias --to toke --to tariq \
+ --cc ivan.khoronzhuk@linaro.org --cc grygorii.strashko@ti.com \
+ --cc mcroce@redhat.com --cc toshiaki.makita1@gmail.com \
+ 01-net-page_pool-add-helper1..fix-device-refcnt
+#+end_example
+
+Link: https://lore.kernel.org/netdev/156086304827.27760.11339786046465638081.stgit@firesoul
+
+https://patchwork.ozlabs.org/project/netdev/list/?series=114508&state=%2a
+
 
 ** cpumap issue and fix
 

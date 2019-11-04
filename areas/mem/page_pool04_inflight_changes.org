@@ -1,0 +1,128 @@
+# -*- fill-column: 76; -*-
+#+Title: Change page_pool handling in-flight frames during shutdown
+#+OPTIONS: ^:nil
+
+This is related to work done in [[file:page_pool03_shutdown_inflight.org]],
+which have been accepted in upstream kernels.
+
+As pointed out by Jonathan Lemon, we have to fix the page_pool shutdown
+mechanism, when wanting page_pool for SKB-recycling.
+
+* Background - design issue in shutdown
+
+The current page_pool shutdown have a design problem, it assumes that if the
+page_pool have pages 'inflight' for more that 120 sec, then it's a bug. It
+frees and removes the page_pool object from the mem_id lookup system, and
+catch pages returned 'late', does a simple put_page() and leaks the DMA
+mapping (note: same code even without page_pool DMA-mapping, to catch this
+before we start using it for DMA),
+
+Once we start to use page_pool for SKBs with recycling, then the 120 sec max
+time for outstanding 'inflight' packets are bogus. SKBs can sit in a socket
+queue for an undetermined amount of time. (Should be easy to reproduce, with
+UDP socket without any userspace program consuming packets).
+
+I've been trying to come up with a solution, that does not hurt the
+page_pool fast-path. The idea is that we simply have to accept, that the
+page_pool object have to stay alive as long as it has 'inflight' pages.
+Thus, once a page_pool on 'death-row', the trigger point is pages being
+returned, that will check if 'inflight' have reached zero, and free the
+object for real.
+
+** Lost Catch-bug-feature
+
+With above design, we also loose one bug catching feature. I've used the
+timeout feature to catch bugs, where the 'inflight' count never reach zero,
+due to some driver bug, that use page_pool wrong. E.g. can easily happen in
+drivers, doing put_page in error handling cases.
+
+Maybe we should discuss this in another thread, but I want us to think about
+debugging and troubleshooting tools for page_pool. Due to the performance
+requirement, we need to add these kind of facilities without slowing down
+normal operation. I've look at using tracepoint to provide troubleshooting
+mechanisms, it does introduce a small overhead when activating a tracepoint,
+but when not troubleshooting the overhead is zero.  I've started writing
+[[https://github.com/xdp-project/xdp-project/blob/master/areas/mem/bpftrace/][bpftrace tools here]], but for now there is only a single tool.
+
+* Upstream patch with issue
+
+The main patch that caused this issue is:
+- d956a048cd3f ("xdp: force mem allocator removal and periodic warning")
+- link: https://git.kernel.org/torvalds/c/d956a048cd3f
+
+#+begin_example
+commit d956a048cd3fc1ba154101a1a50fb37950081ff6
+Author: Jesper Dangaard Brouer <brouer@redhat.com>
+Date:   Tue Jun 18 15:05:53 2019 +0200
+
+    xdp: force mem allocator removal and periodic warning
+    
+    If bugs exists or are introduced later e.g. by drivers misusing the API,
+    then we want to warn about the issue, such that developer notice. This patch
+    will generate a bit of noise in form of periodic pr_warn every 30 seconds.
+    
+    It is not nice to have this stall warning running forever. Thus, this patch
+    will (after 120 attempts) force disconnect the mem id (from the rhashtable)
+    and free the page_pool object. This will cause fallback to the put_page() as
+    before, which only potentially leak DMA-mappings, if objects are really
+    stuck for this long. In that unlikely case, a WARN_ONCE should show us the
+    call stack.
+    
+    Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+#+end_example
+
+** Investigated if we can just revert this.
+
+Assessment is that might be useful to keep around the periodic warning, but
+e.g. after 5 minutes.  This can help us spot bugs, where inflight packets
+never reach zero, indicating some kind of leak.
+
+Another advantage of having a work-queue to periodically flush the
+page_pool, was to avoid adding extra checks to fast-path code, about
+page_pool being in a shutdown state.
+
+* Patchset descriptions
+
+** Patch1: xdp: revert forced mem allocator removal for page_pool
+
+Forced removal of XDP mem allocator, specifically related to page_pool,
+turned out to be a wrong approach. Special thanks to Jonathan Lemon for
+convincing me. This patch is revert the force part of commit d956a048cd3f
+(“xdp: force mem allocator removal and periodic warning”).
+
+It is much better to provide a guarantee that page_pool object stays valid
+until 'inflight' pages reach zero, making it safe to remove.
+
+We keep the periodic warning via a work-queue, but increased interval to
+5-minutes. The reason is to have a way to catch bugs, where inflight
+pages/packets never reach zero, indicating some kind of leak. These kind of
+bugs have been observed while converting drivers over to use page_pool API.
+
+Details on when to crash the kernel. If page_pool API is misused and
+somehow __page_pool_free() is invoked while there are still inflight
+frames, then (like before) a WARN() is triggered and not a BUG(). This can
+potentially lead to use-after-free, which we try to catch via poisoning the
+page_pool object memory with some NULL pointers. Doing it this way,
+pinpoint both the driver (likely) prematurely freeing page_pool via WARN(),
+and crash-dump for inflight page/packet show who to blame for late return.
+
+
+* Potential bug?
+
+I think, I might have spotted a potential bug in the shutdown phase, or at
+least something that can be made more safe/robust during shutdown.
+
+During page_pool shutdown it is a requirement that driver alloc RX-side have
+been disconnected, to make sure it cannot consume from the alloc cache. This
+allows shutdown to flush the alloc cache.
+
+During page_pool shutdown pages can still be inflight. This means producers
+can still be returning pages to the page_pool object. All the producers left
+MUST not use the 'allow_direct' flag (call __page_pool_recycle_direct). If
+some driver broke that rule, it can result in very difficult to catch bugs.
+
+One way to avoid this during shutdown, is to block the alloc cache by (after
+flushing it) pretend that it is full, by setting pool->alloc.count equal to
+max size PP_ALLOC_CACHE_SIZE.  Further more we can poison last entry to
+catch users still allocating from it.

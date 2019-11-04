@@ -1,0 +1,419 @@
+# -*- fill-column: 79; -*-
+#+TITLE: XDP closer integration with network stack
+#+AUTHOR: Jesper Dangaard Brouer <hawk@kernel.org>
+#+EMAIL: brouer@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: Kernel Recipes 2019                              :noexport:
+
+This presentation will be given at [[https://kernel-recipes.org/en/2019/][Kernel Recipes 2019]].
+
+Links to talk:
+ - https://kernel-recipes.org/en/2019/talks/
+ - https://kernel-recipes.org/en/2019/xdp-closer-integration-with-network-stack/
+
+** Abstract
+
+XDP (eXpress Data Path) is the new programmable in-kernel fast-path, which is
+placed as a layer before the existing Linux kernel network stack (netstack).
+
+We claim XDP is not kernel-bypass, as it is a layer before and it can easily
+fall-through to netstack. Reality is that it can easily be (ab)used to create a
+kernel-bypass situation, where non of the kernel facilities are used (in form of
+BPF-helpers and in-kernel tables). The main disadvantage with kernel-bypass, is
+the need to re-implement everything, even basic building blocks, like routing
+tables and ARP protocol handling.
+
+It is part of the concept and speed gain, that XDP allows users to avoid calling
+part of the kernel code. Users have the freedom to do kernel-bypass and
+re-implement everything, but the kernel should provide access to more in-kernel
+tables, via BPF-helpers, such that users can leverage other parts of the Open
+Source ecosystem, like router daemons etc.
+
+This talk is about how XDP can work in-concert with netstack, and proposal on
+how we can take this even-further. Crazy ideas like using XDP frames to move SKB
+allocation out of driver code, will also be proposed.
+
+* Colors in slides                                                 :noexport:
+Text colors on slides are chosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation. The prefix
+"Slide:" is only syntax-sugar for the reader (and it removed before export by
+emacs).
+
+* Slide: Overview: What will you learn?                              :export:
+
+Audience at Kernel Recipes: Other /kernel developers/
+- But for *different kernel sub-systems*
+- Learn about: kernel /network data structures/
+
+Hopefully you already /heard about XDP/ (eXpress Data Path) */?/* *?* /?/
+- I'll *explain why* network sub-system created this...
+
+/Future/ *crazy ideas* to extend XDP
+- (hopefully) in a way that /cooperate more with kernel/ netstack
+
+Give you an easy way to try out /XDP and BPF on your laptop/
+
+** Slide: Why was XDP needed?                                       :export:
+
+This was about the *kernel networking stack* /staying relevant/
+ - For emerging use-cases and areas
+
+Linux networking stack assumes layer L4-L7 delivery
+ - Obviously slow when compared to L2-L3 kernel-bypass solutions
+
+XDP operate at layers L2-L3
+ - Shows /same performance as these L2-L3 kernel-bypass/ solutions
+
+@@html:<small>@@
+
+The networking OSI layer model:
+ - L2=Ethernet
+ - L3=IPv4/IPv6
+ - L4=TCP/UDP
+ - L7=Applications
+
+@@html:</small>@@
+
+** Slide: What is XDP?                                              :export:
+
+@@html:<small>@@
+What kind of monster did we create with XDP?!?
+@@html:</small>@@
+
+XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
+ - /New programmable layer in-front/ of traditional network stack
+   - Read, modify, drop, redirect or pass
+ - For L2-L3 use-cases: seeing x10 performance improvements!
+ - Can accelerate *in-kernel* L2-L3 use-cases (e.g. forwarding)
+
+What is /AF_XDP/? (the Address Family XDP socket)
+ - /Hybrid/ *kernel-bypass* facility
+ - Delivers raw L2 frames into userspace (in SPSC queue)
+
+** Slide: AF_XDP: Used for kernel-bypass?!?                         :export:
+
+@@html:<small>@@
+Did you really say, this can be used for */bypassing the Linux kernel netstack/* ?
+@@html:</small>@@
+
+Sure, build in /freedom/ for *kernel-bypass via AF_XDP*
+- DPDK already have a Poll-Mode driver for AF_XDP
+
+Why is this /better/, than other (bypass) solutions?
+- Flexible /sharing of NIC resources/, NIC still avail to netstack
+- XDP/eBPF prog filters packets using XDP_REDIRECT into AF_XDP socket
+  - Move *selective* frames out of kernel, /no need to reinject/
+- /Leverages existing kernel infrastructure/, eco-system and market position
+
+* Slide: How can XDP be (ab)used?                                    :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Used or abused?
+- Freedom re-implement everything (when bypassing the kernel)
+- Or freedom to shoot yourself in the foot?
+
+** Slide: Simple view on how XDP gains speed                        :export:
+
+XDP speed gains comes from
+- *Avoiding* /memory allocations/
+  - no SKB allocations and no-init (memset zero 4 cache-lines)
+- /Bulk/ processing of frames
+- Very /early access/ to frame (in driver code *after DMA sync*)
+- Ability to */skip/ (large parts) of kernel /code/*
+
+** Slide: Skipping code: Efficient optimization                     :export:
+
+Skipping code: *Imply skipping features* provided by /network stack/
+  - Gave users freedom to e.g. skip netfilter or route-lookup
+  - But users have to re-implement features they actually needed
+    - Sometimes cumbersome via BPF-maps
+
+/Avoid/ *re-implement features*:
+- Evolve XDP via /BPF-helpers/
+
+** Slide: Evolving XDP via BPF-helpers                               :export:
+
+@@html:<small>@@
+*We should encourage adding helpers instead of duplicating data in BPF maps*
+@@html:</small>@@
+
+Think of XDP as a /software offload layer/ *for the kernel netstack*
+ - Simply setup and use the Linux netstack, but accelerate parts of it with XDP
+
+IP routing good example: /Access routing table from XDP via BPF helpers/ (v4.18)
+ - Let Linux handle routing (daemons) and neighbour/ARP lookups
+ - Talk at LPC-2018 (David Ahern): [[http://vger.kernel.org/lpc-networking2018.html#session-1][Leveraging Kernel Tables with XDP]]
+
+Obvious *next target*: /Bridge lookup helper/
+ - Like IP routing: transparent XDP acceleration of bridge forwarding
+   - Fallback for ARP lookups, flooding etc.
+ - Huge potential *performance boost for Linux bridge* use cases!
+
+* Slide: Understand networking packet data structures                :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+/To understand next slides/ and (XDP) kernel networking
+- Need to know difference between some struct's
+- Used for describing and pointing to actual packet data
+
+** Slide: Fundamental struct's                                      :export:
+
+The struct's describing data-frame at different levels
+- /=sk_buff=/ : Good old SKB, allocated from SLAB/kmem_cache (4 cachelines)
+- /=xdp_buff=/ : Used by BPF XDP-prog, allocated on call stack
+- /=xdp_frame=/: xdp_buff info state compressed, used by XDP-redirect
+  - No allocation, placed in top of data-frame (currently 32 bytes)
+
+- HW specific /"descriptor"/ with info and pointer to (DMA) data buffer
+  - *contains HW-offloads* (see later) that driver transfers to SKB
+
+Exotic details
+- /=skb_shared_info=/ : placed inside data-frame (at end), e.g. GRO multi-frame
+- /=xdp_rxq_info=/ : Static per RX queue info
+
+#+BEGIN_NOTES
+Consider if describing xdp_rxq_info is needed?
+#+END_NOTES
+
+* Slide: Evolving XDP: Future ideas                                  :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+*Warning*: Next slides about */crazy/* *future* /ideas/
+- This stuff might never get implemented!
+
+* Slide: Move SKB allocations out of NIC drivers                     :export:
+
+Goal: Simplify driver, via creating SKB inside network-core code
+- Happens today via *=xdp_frame=* in both /veth/ and /cpumap/
+- (Slight hickup: Max frame size unknown, thus lie about skb->truesize)
+
+*/Issue/*: *SKB*'s created this way are /lacking HW-offloads/ like:
+- HW /checksum/ info (for =skb->ip_summed= + =skb->csum=)
+- HW /RX hash/ (=skb_set_hash(hash, type)=)
+- (these are almost always needed... tempted to extend =xdp_frame=)
+
+#+BEGIN_NOTES
+As mentioned earlier:
+The =xdp_frame= is placed in top of data-frame (=data_hard_start=)
+- Currently 32-bytes
+#+END_NOTES
+
+** Slide: Other HW-offloads                                         :export:
+
+Other /existing/ offloads, used by SKBs, but *not always enabled*
+ - /VLAN/ (=__vlan_hwaccel_put_tag()=)
+ - RX /timestamp/
+   - HW =skb_hwtstamps()= (stored in skb_shared_info)
+   - Earlier XDP software timestamp (for =skb->tstamp=)
+ - RX /mark/ (=skb->mark= supported by mlx5)
+
+@@html:<br/><small>@@
+Other *potential* offloads, which hardware can do (but not used by SKB):
+ - Unique u64 /flow identifier/ key (mlx5 HW)
+ - Higher-level protocol *header offsets*
+   - RSS-hash can deduce e.g. IPv4/TCP (as frag not marked as TCP)
+   - But NIC HW have full parse info avail
+@@html:</small>@@
+
+** Slide: Blocked by missing HW-offloads                            :export:
+
+@@html:<small>@@
+SKB alloc outside NIC driver, blocked by missing HW-offloads.
+@@html:</br>@@
+The GOAL is to come-up with a Generic Offload Abstraction Layer...
+@@html:</small>@@
+
+Generic and dynamic way to transfer HW-offload info
+- Only enable info when needed
+- */Both/* /made available for/ *SKB creation* /and/ *XDP programs*
+
+The big questions are:
+- Where to *store this information?*
+- How to make it /dynamic/?
+- What else are we missing?
+
+** Slide: Storing generic offload-info                              :export:
+
+*Where to store* generic offload-info?
+- To avoid allocation use packet/frame data area
+  - (1) Extend /xdp_frame/: imply top of frame head-room
+  - (2) Use XDP /meta-data/ area: located in-front of payload start
+  - (3) Use /tail-room/ (frame-end): Already used for skb_shared_info GRO
+
+No choice done yet...
+
+** Slide: Dynamic generic offload-info                              :export:
+
+Next challenge: How to make this dynamic?
+- Each driver have own format for HW descriptor
+- Hopefully *BTF can help here?*
+
+Drivers could export BTF description of offload-info area
+- BPF prog wanting to use area, must have matching BTF
+- */But how/* /can kernel-code use BTF desc/ and *transfer to SKB* fields?
+
+** Slide: Dependency: Handling multi-frame packets                  :export:
+
+@@html:<small>@@
+SKB alloc outside NIC driver, ALSO need XDP multi-frame handling
+@@html:</small>@@
+
+Multi-frame packets have several use-cases
+- Jumbo-frames
+- TSO (TCP Segmentation Offload)
+- Header split, (L4) headers in first segment, (L7) payload in next
+
+XDP *need* /answer/solution for multi-frame packets/
+- To fully move SKB alloc+setup out of NIC drivers
+  - (SKB use skb_shared_info area to store info on multi-frames)
+- Design idea/proposal in XDP-project: [[https://github.com/xdp-project/xdp-project/blob/master/areas/core/xdp-multi-buffer01-design.org][xdp-multi-buffer01-design.org]]
+
+* Slide: Fun with xdp_frame before SKB alloc                         :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+*After* SKB alloc gets moved out of drivers
+- What can we now create of crazy stuff?!?
+
+** Slide: General idea for xdp_frame handling                       :export:
+
+Idea: /Use xdp_frame/ for *some fast-paths*
+- E.g. forwarding could be accelerated (non localhost deliver)
+- /Fall-back/: *Create SKB for slow(er) path*
+- Lots of work: adjust functions to work without SKBs
+
+** Slide: New (L2) layer with xdp_frame?                            :export:
+
+Could update netstack (L2) *RX-handler to handle xdp_frame* packets?
+- Bridging
+- Macvlan, ipvlan, macvtap
+- Bond + Team
+- OpenVSwitch (OVS)
+
+Likely: Need new L2 RX-handler layer (?)
+- To support kernels evolutionary development model
+  - (cannot update every user at once, plus out-of-tree users)
+
+*** Users of RX-handler                                          :noexport:
+
+Grep after "netdev_rx_handler_register":
+#+begin_example
+net/bridge/br_if.c:     err = netdev_rx_handler_register(dev, br_handle_frame, p);
+drivers/net/bonding/bond_main.c:        res = netdev_rx_handler_register(slave_dev, bond_handle_frame,
+drivers/net/bonding/bond_main.c:                slave_dbg(bond_dev, slave_dev, "Error %d calling netdev_rx_handler_register\n", res);
+drivers/net/bonding/bond_main.c:         * before netdev_rx_handler_register is called in which case
+drivers/net/ethernet/qualcomm/rmnet/rmnet_config.c:     rc = netdev_rx_handler_register(real_dev, rmnet_rx_handler, port);
+drivers/net/hyperv/netvsc_drv.c:        ret = netdev_rx_handler_register(vf_netdev,
+drivers/net/ipvlan/ipvlan_main.c:       err = netdev_rx_handler_register(dev, ipvlan_handle_frame, port);
+drivers/net/ipvlan/ipvtap.c:    err = netdev_rx_handler_register(dev, tap_handle_frame, &vlantap->tap);
+drivers/net/macsec.c:           err = netdev_rx_handler_register(real_dev, macsec_handle_frame,
+drivers/net/macvlan.c:  err = netdev_rx_handler_register(dev, macvlan_handle_frame, port);
+drivers/net/macvtap.c:  err = netdev_rx_handler_register(dev, tap_handle_frame, &vlantap->tap);
+drivers/net/team/team.c:        err = netdev_rx_handler_register(port_dev, team_handle_frame,
+drivers/net/wireless/virt_wifi.c:       err = netdev_rx_handler_register(priv->lowerdev, virt_wifi_rx_handler,
+drivers/net/wireless/virt_wifi.c:                       "can't netdev_rx_handler_register: %d\n", err);
+include/linux/netdevice.h: * To register a rx_handler on a net_device, use netdev_rx_handler_register().
+include/linux/netdevice.h:int netdev_rx_handler_register(struct net_device *dev,
+net/core/dev.c: *       netdev_rx_handler_register - register receive handler
+net/core/dev.c:int netdev_rx_handler_register(struct net_device *dev,
+net/core/dev.c:EXPORT_SYMBOL_GPL(netdev_rx_handler_register);
+net/core/failover.c:    err = netdev_rx_handler_register(slave_dev, fops->slave_handle_frame,
+net/hsr/hsr_slave.c:    res = netdev_rx_handler_register(dev, hsr_handle_frame, port);
+net/openvswitch/vport-netdev.c: err = netdev_rx_handler_register(vport->dev, netdev_frame_hook,
+#+end_example
+
+
+
+** Slide: Transport layer XDP                                     :export:
+
+XDP operate at /L2/ (Eth) or /L3/ (IP)
+ - Tom Herbert (coined XDP) proposed [[https://www.spinics.net/lists/netdev/msg407537.html][Transport-layer XDP]] = *L4* (TCP/UDP)
+   - To gain /performance/ it *need* to operate on /xdp_frame/'s
+   - For many fast-path TCP/UDP use-cases, SKB is pure overhead
+     - Much simpler xdp_frame will be sufficient
+     - Let special cases fall-through, alloc+init full SKB
+
+
+* Slide: More practical                                              :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+People complain XDP and eBPF is *hard to use*!?
+
+** Slide: XDP-tutorial                                              :export:
+
+Ready to use: *XDP Hands-On* Tutorial
+- Basically a /full build and testlab environment/
+
+Simply git clone and run make:
+- https://github.com/xdp-project/xdp-tutorial
+
+Testlab works on your (Linux) laptop
+- via creating =veth= device and network namespace
+
+* Slide: The *missing* transmit side                                 :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+XDP is /currently/ *only* an /RX-hook/
+- We want to change that! - but it's (also) a big task
+
+Tell people to use TC-BPF egress hook, /we can do better.../
+
+** Slide: The *missing* XDP /transmit/ hook                         :export:
+
+A real XDP /TX hook is needed/, for several reasons
+- Creates symmetry (RX and TX hooks)
+- XDP-redirect *need* /push-back/flow-control/ mechanism
+  - Too easily *overflow* (HW) *TX-queues* (as qdisc-layer bypassed)
+  - Be careful: *don't re-implement full qdisc layer*
+
+Should also run *after normal qdisc* layer TX-queues
+- Reason: Like BQL, can /choose when qdisc is activated/
+  - Allows to implement BQL (Byte-Queue-Limit) as eBPF
+- Driver TX-q based on xdp_frame, allow SKB to be released earlier
+
+* Slide: End: Summary                                                :export:
+
+Kernel now have eBPF /programmable network fast-path/
+- that can now *compete with kernel-bypass* speeds
+
+Not finished: Still lots of development work ahead
+- Need to /cooperate/ *more* /with kernel/ netstack
+  - Create BPF-helpers to access kernel tables
+  - How far can we take this: SKBs outside drivers? realistic goal?
+
+XDP-project coordination:
+- https://github.com/xdp-project/xdp-project
+
+* Emacs end-tricks                                                 :noexport:
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
+# class=\"author\">Jesper Dangaard Brouer<br/>Kernel Developer<br/>Red Hat</h2>
+# <h3>Kernel Recipes Conf<br/>Paris, Sep 2019</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:

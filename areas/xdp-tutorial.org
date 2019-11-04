@@ -78,7 +78,12 @@ and troubleshooting XDP. E.g. see the kernel/samples/bpf program xdp_monitor
 xdp_monitor (and other trace samples) use another ELF loader than libbpf
 (the samples local [[https://github.com/torvalds/linux/blob/master/samples/bpf/bpf_load.c][bpf_load.c]]), which we want to move people way from.
 
-*** NEXT xdp-tutorial: add tracepoint examples for reading XDP tracepoints
+*** DONE xdp-tutorial: add tracepoint examples for reading XDP tracepoints
+CLOSED: [2019-07-31 Wed 16:11]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-07-31 Wed 16:11]
+:END:
+(This was merged as part of [[https://github.com/xdp-project/xdp-tutorial/pull/42][PR#42]])
 
 Work in progress by Jiri Olsa:
 https://github.com/olsajiri/xdp-tutorial/tree/tracing
@@ -97,7 +102,12 @@ consider upstreaming to libbpf are placed in [[https://github.com/xdp-project/xd
 Another consideration: We should promote using raw_tracepoints for BPF as it
 have much less overhead for getting info that BPF need.
 
-*** TODO xdp-tutorial: relate tracing to other assignments
+*** DONE xdp-tutorial: relate tracing to other assignments
+CLOSED: [2019-07-31 Wed 16:16]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-07-31 Wed 16:16]
+:END:
+(This was merged as part of [[https://github.com/xdp-project/xdp-tutorial/pull/42][PR#42]])
 
 When building up tracing assignments relate this to other parts of tutorial.
 
@@ -105,6 +115,17 @@ We can already relate this to other assignments. The assignment [[https://github
 how to use perf record + script with tracepoint event =xdp:xdp_exception=.
 And basic04 program have a "xdp_abort" section program, that can trigger
 this tracepoint.
+
+*** DONE xdp-tutorial: fix bugs for raw_tracepoints
+CLOSED: [2019-08-09 Fri 20:48]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-08-09 Fri 20:48]
+:END:
+
+The [[https://github.com/xdp-project/xdp-tutorial/pull/42][PR#42]] contained some bugs for [[https://github.com/xdp-project/xdp-tutorial/tree/master/tracing02-xdp-monitor][tracing02-xdp-monitor]].
+The bug is tracked by [[https://github.com/xdp-project/xdp-tutorial/issues/48][issue#48]].
+
+Deadline: This must be fixed before talk at [[https://bornhack.dk/bornhack-2019/program/#/event/xdp-hands-on-tutorial][Bornhack]].
 
 ** TODO xdp-tutorial: selftests project
 
@@ -124,4 +145,11 @@ Update basic04 xdp_stats via XDP-id
 
 *** TODO XDP-tutorial: drawing and desc of veth-testlab
 *** TODO Best practices for using multiple programs on the same interface
+
+*** TODO Tutorial for debugging and introspection
+
+Things like
+
+- Drop monitor (when that lands)
+- How to monitor what a running eBPF program is doing
 

@@ -185,6 +185,56 @@ We are probably going to need feature flags for XDP after all. There are use
 cases (e.g. Surricata, VM migration) that will want to know what to expect
 from the system before committing to loading an XDP program.
 
+*** DONE Submit LPC network track talk about: XDP feature detection
+CLOSED: [2019-07-31 Wed 17:10]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-07-31 Wed 17:10]
+:END:
+Title:
+- Improving the XDP User eXperience: via feature detection
+
+Abstract:
+#+begin_quote
+The most common asked question is: Does my NIC support XDP, and our current
+answer is read the source code. We really need to come up with a better
+answer.
+
+The real issue is that users can attach an XDP bpf_prog to a drivers that
+use features the driver doesn't implement, which cause silent drops. Or user
+doesn't notice, that NIC loading fallback to generic-XDP, which is first
+discovered when observing lower performance, or worse not all features are
+supported with generic-XDP, resulting in unexpected packet drops.
+
+BPF feature detection, recently added to bpftool, is based on probing the
+BPF-core by loading BPF-programs using individual features (notice BPF load
+time, not attaching it).
+
+Even if your BPF loader doesn't use feature probing, it will notice if
+loaded on a incompatible kernel. As an BPF-prog using something the kernel
+BPF-core doesn't support will get rejected at load-time, before you attach
+the BPF-prog.
+
+This doesn't work for XDP, as features vary on a per driver basis. Currently
+an XDP BPF-prog isn't aware of that driver it will get used on, until driver
+attach-time. Unfortunately, due to BPF tail-calls, we cannot use the driver
+attach-time hook to check for compatibility (given new XDP BPF-progs can be
+indirectly "attached" via tail-call map inserts).
+
+In this talk, we will investigate the possibilities of doing XDP feature
+check at BPF load-time, by assigning an ifindex to the BPF-prog. The ground
+work have already been laid by XDP hardware offload, which already need
+ifindex at BPF load-time (to perform BPF byte-code translation into NIC
+compatible code).
+
+The open question are:
+- Can the verifier detect/deduce XDP feature in use, for us?
+- How does drivers express/expose XDP features?
+- Are features more than XDP return codes, like meta-data support?
+- How does this interact with generic-XDP?
+- How to expose this to userspace? (to answer does NIC support XDP)
+- How to handle tail-call map inserts?
+#+end_quote
+
 *** NEXT Propose a driver API to communicate feature flags
 
 - Daniel: Needs to go through driver BPF ndo
@@ -209,12 +259,22 @@ going to fail. This means that programs end up doing things like using
 duplicate maps for checking if a redirect map entry exists, or to packets
 being silently dropped.
 
-*** NEXT Allow lookups in devmap/cpumap
+*** DONE Allow lookups in devmap/cpumap
+CLOSED: [2019-06-29 Sat 18:24]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-06-29 Sat 18:24]
+:END:
 
 Return pointer to same ID as we insert, just copy it to a scratch space
 first.
 
-*** NEXT Make bpf_redirect_map() check map contents
+Merged as [[https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/commit/?id=0cdbb4b09a0658b72c563638d476113aadd91afb][0cdbb4b09a0]].
+
+*** DONE Make bpf_redirect_map() check map contents
+CLOSED: [2019-06-29 Sat 18:25]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-06-29 Sat 18:25]
+:END:
 
 If we simply make the redirect_map() helper check that something exists in
 that position in the map, we at least catch the case where a map entry is
@@ -232,12 +292,32 @@ This makes it easy to implement "defer to stack on error" type programs,
 Mellanox drivers turn a failure in xdp_do_redirect() into an ABORTED action,
 other drivers do not.
 
+Merged as [[https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/commit/?id=43e74c0267a35d6f5127218054b2d80c7fe801f5][43e74c0267a3]].
+
+*** NEXT In samples/bpf: use that bpf_redirect_map() can check map content
+
+Toke's patchset for allowing reading redirect maps were accepted upstream,
+and also the fallback return codes if map index were unpopulated.  BUT the
+samples/bpf programs does not take advantage of this. Task is to update
+samples/bpf to demonstrate these new features.
+
+*** NEXT Retire bpf_redirect() helper
+
+Rather than extending the bpf_redirect() helper to use hidden maps, it is
+probably better to document it as deprecated and point users to use the
+bpf_redirect_map() helper.
+
 *** TODO What happens if redirect fails even though TX resources are available?
 
 Even with the above, we can still get failures if, e.g., TX ring runs out of
 space. We can't really handle this by return, so what should we do instead?
 Maybe just defer this to [[id:24faae01-542b-4882-9f7a-5ab283e657b0][XDP hook at TX]].
 
+*** TODO Add selftests for devmaps
+[2019-08-09 Fri 20:51]
+[[notmuch:id:CAADnVQLY3CUe3hdDMvEc3QiM6gLd6fEVy9vwDc38wpY4_wajxQ@mail.gmail.com][Email from Alexei Starovoitov: Re: [PATCH bpf-next v5 0/6] xdp: Add devmap_hash map type]]
+*** TODO REDIRECT_MAP idx type - what happens with namespace moving?
+[2019-05-13 Mon 14:03]
 * Important medium-term tasks                                       :@medium:
 
 These are tasks that are important to fix in the medium term, but that are
@@ -255,7 +335,12 @@ unfriendly. #1 they use raw ifindex'es as input + output. #2 the pkt/s
 number count RX packets, not TX'ed packets which can be dropped silently.
 Red Hat QA, got very confused by #2.
 
-*** NEXT Change sample programs to accept ifnames as well as indexes
+*** DONE Change sample programs to accept ifnames as well as indexes
+CLOSED: [2019-06-25 Tue 13:32]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-06-25 Tue 13:32]
+:END:
+Fixed by https://patchwork.ozlabs.org/patch/1121683/
 
 *** NEXT Add TX counters to redirect samples/bpf programs
 
@@ -319,10 +404,16 @@ components (via selftests).
 Since driver =veth= got native-XDP support, we have an opportunity for
 writing selftests that cover both generic-XDP and native-XDP.
 
-*** TODO bpf-selftest: improve XDP VLAN selftests
+*** NEXT bpf-selftest: improve XDP VLAN selftests
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-08-02 Fri 14:02]
+:END:
 
 *Assignment* is to improve the selftest shell-script to test both
 generic-XDP and native-XDP (for veth driver).
+
+In-progress:
+- [[https://patchwork.ozlabs.org/project/netdev/list/?series=122796&state=%2a][Patchset V1]]
 
 XDP add/remove VLAN headers have a selftest in =tools/testing/selftests/bpf/=
 in files =test_xdp_vlan.c= and =test_xdp_vlan.sh=. This test was developed
@@ -431,11 +522,16 @@ happens through kernel helpers. We already have routing, but we will need
 more helpers.
 
 *** NEXT Layer-2 bridging helper
+:PROPERTIES:
+:ID:       2e026d1b-d1a1-4fd4-8097-08991cbb8fec
+:END:
 
 The obvious next step is a l2 bridging helper that mirrors the l3 routing
 one. Should be fairly straight forward to implement.
 
 **** TODO What to do about broadcast/multicast?
+
+See [[id:7e5439f6-7603-4df6-8164-7d2bc5dcd8c3][Handling multicast]] below.
 
 *** TODO Connection/flow tracking
 
@@ -475,10 +571,79 @@ in eBPF. These include:
 - Hash value
 - Flow designator
 - Higher-level protocol header offsets
+- Timestamps
 
 **** TODO Needs BTF-based metadata
 To express this in a vendor-neutral way, we probably need to depend on the
 [[id:25240998-2037-4ebf-befe-c0d0fdacb9c7][BTF-based metadata for XDP]]
+
+** TODO Improvements to XDP_REDIRECT
+
+*** TODO Handling multicast
+:PROPERTIES:
+:ID:       7e5439f6-7603-4df6-8164-7d2bc5dcd8c3
+:END:
+We want to be able to REDIRECT a packet to multiple interfaces in order to
+implement multicast. Relevant for the [[id:2e026d1b-d1a1-4fd4-8097-08991cbb8fec][Layer-2 bridging helper]].
+
+From the discussion at netconf2019 ([[id:92b4926b-cce4-4199-bf99-efc1e4c342be][see slides]]), we probably want to
+implement it by:
+
+- Using a map-in-map (or map flag) to designate a group of egress interfaces
+  (put multiple ifaces into a map and send to all of them in one operation).
+
+- Just copy the packet rather than try to do clever refcnt stuff for
+  multi-xmit.
+
+As a first pass, we probably want to implement a simple multi-xmit, and
+leave off the possibility for the eBPF program to modify the packet between
+destinations.
+
+*** TODO Queueing and QoS
+
+[[id:6581cd98-c2f8-4244-a4db-b0a5922647c2][See slide for discussion at netconf2019]].
+
+There is currently no queueing in XDP_REDIRECT, apart from the bulking queue
+used in the devmaps. This means that rate transitions can't be handled
+properly (e.g., redirect 100Gbps->10Gbps).
+
+To fix this, we would need to allow queueing of some sort. Options:
+
+- Allow user to define a queueing structure as part of the TXQ setup
+- Create the low-level hooks necessary for eBPF-programmable queueing
+- Have some kind of "intermediate queueing structure" that can be a redirect
+  target, does queueing, and can forward packets on afterwards
+
+** TODO Multi-buffer XDP (aka. jumbo-frames)
+
+As described in the design document
+[[file:areas/core/xdp-multi-buffer01-design.org]] we need to come up with a
+serious attempt at supporting multi-buffer XDP handling. The term
+multi-buffer covers the uses cases: jumbo-frames, TSO/LRO, packet header
+split.
+
+Add TODO steps here to move this forward.
+
+*** DONE Start upstream discussion on multi-buffer
+CLOSED: [2019-07-03 Wed 13:15]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-07-03 Wed 13:15]
+:END:
+Link to upstream discussion:
+https://lore.kernel.org/netdev/20190626103829.5360ef2d@carbon/
+
+*** TODO Create plan to move forward with initial constraints
+
+As [[https://lore.kernel.org/netdev/CA+FuTSfKnhv9rr=cDa_4m7Dd9qkEm_oabDfyvH0T0sM+fQTU=w@mail.gmail.com/][Willem points out]]:
+As long as we don't arrive at a design that cannot be extended with
+those features later.
+
+*** TODO Find driver developers that will participate in multi-buffer work
+
+We need some developers that have an actual use-case for this multi-buffer
+feature, and also buy-in from some driver team, else this sub-project will
+not see any progress.  The Amazon guys seems to have a interest.
+
 
 * Longer-term preliminary plans                                       :@long:
 
@@ -515,7 +680,7 @@ investigated.
 Maybe write a tuning doc as well?
 
 WAIT status as this is low priority for now.
-** TODO Generic XDP
+** TODO Generic XDP fixes
 Various fixes that should be fixed in generic XDP eventually
 
 *** TODO Bulking for redirect maps

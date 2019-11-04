@@ -1,0 +1,343 @@
+# -*- fill-column: 79; -*-
+#+TITLE: SKB creation outside drivers: using metadata and HW-offloads?
+#+AUTHOR: Jesper Dangaard Brouer <brouer@redhat.com>
+#+EMAIL: brouer@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: NetConf 2019
+
+This presentation will be given at [[http://vger.kernel.org/netconf2019.html][Netconf 2019]].
+
+* Export/generate presentation
+
+This presentation is written in org-mode and exported to reveal.js HTML format.
+The org-mode :export: tag determines what headlines/section are turned into
+slides for the presentation.
+
+** Setup for org-mode export to reveal.js
+First, install the ox-reveal emacs package.
+
+Package: ox-reveal git-repo and install instructions:
+https://github.com/yjwen/org-reveal
+
+** Export to HTML reveal.js
+
+After installing ox-reveal emacs package, export to HTML reveal.js format via
+keyboard shortcut: =C-c C-e R R=
+
+The variables at document end ("Local Variables") will set up the title slide
+and filter the "Slide:" prefix from headings; Emacs will ask for permission to
+load them, as they will execute code.
+
+** Export to PDF
+
+The presentations can be converted to PDF format.  Usually the reveal.js when
+run as a webserver under nodejs, have a printer option for exporting to PDF via
+print to file, but we choose not run this builtin webserver.
+
+Alternatively we found a tool called 'decktape', for exporting HTML pages to
+PDF: https://github.com/astefanutti/decktape
+
+The 'npm install' command:
+
+ $ npm install decktape
+
+After this the =decktape= command should be avail. If the npm install failed,
+then it's possible to run the decktape.js file direct from the git-repo via the
+=node= command:
+
+#+begin_src bash
+$ node ~/git/decktape/decktape.js \
+    -s 1600x900 -p 100 --chrome-arg=--no-sandbox \
+     xdp-metadata-discussion.html \
+     xdp-metadata-discussion.pdf
+#+end_src
+
+The size is set to get slide text to fit on the page. And -p 100 makes it go
+faster.
+
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation.
+
+* Colors examples                                                  :noexport:
+Colors are choosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+
+* Slide: Framing XDP                                                 :export:
+
+XDP: /in-kernel/ programmable (eBPF) *layer before netstack*
+ - (AF_XDP is our selective kernel-bypass to userspace)
+XDP ensures that *Linux networking stays relevant*
+ - Operates at L2-L3, netstack is L4-L7
+XDP is not first mover, but we believe XDP is /different and better/
+ - Flexible sharing of NIC resources
+ - /Killer feature/: Integration with Linux kernel
+   - This talk is about extending this integration further
+
+* Slide: Move SKB allocations out of NIC drivers                     :export:
+
+Goal: Simplify driver, via creating SKB inside network-core code
+- Happens today via *=xdp_frame=* in both /veth/ and /cpumap/
+
+The =xdp_frame= is placed in top of data-frame (=data_hard_start=)
+- Currently 32-bytes
+
+Issue: *SKB*'s created this way are /lacking HW-offloads/ like:
+- HW /checksum/ info (for =skb->ip_summed= + =skb->csum=)
+- HW /RX hash/ (=skb_set_hash(hash, type)=)
+- (these are almost always needed... tempted to extend =xdp_frame=)
+
+** Slide: Other HW-offloads
+
+Other /existing/ offloads, used by SKBs, but *not always enabled*
+ - /VLAN/ (=__vlan_hwaccel_put_tag()=)
+ - RX /timestamp/
+   - HW =skb_hwtstamps()= (stored in skb_shared_info)
+   - Earlier XDP software timestamp (for =skb->tstamp=)
+ - RX /mark/ (=skb->mark= supported by mlx5)
+
+@@html:<br/><small>@@
+Other *potential* offloads, which hardware can do (but not used by SKB):
+ - Unique u64 /flow identifier/ key (mlx5 HW)
+ - Higher-level protocol header offsets
+   - RSS-hash can deduce e.g. IPv4/TCP (as frag not marked as TCP)
+   - But NIC HW have full parse info avail
+@@html:</small>@@
+
+* Slide: The holy-grail for HW-offloads                             :export:
+
+@@html:<small>@@
+The GOAL is to come-up with a Generic Offload Abstraction Layer...
+@@html:</small>@@
+
+Generic and dynamic way to transfer HW-offload info
+- Only enable info when needed
+- Both /made available for SKB creation and XDP programs/
+
+The big questions are:
+- Where to *store this information?*
+- How to make it /dynamic/?
+
+* Slide: Simple static solution                                      :export:
+
+@@html:<small>@@
+The simple solution that isn't as dynamic as we want...
+@@html:</small>@@
+
+Have drivers send along *extra struct with info* to =xdp_do_redirect()=
+- Use info-struct when calling =convert_to_xdp_frame()=
+
+Drivers have to *fill-out* info-struct *every time*
+- Driver basically transfer /info from descriptor/ to info-struct
+- All drivers have to agree on struct layout
+
+The *XDP-prog don't have access to info-struct*
+- As =xdp_do_redirect()= happens after XDP-prog runs
+  - (could be solved by also giving info-struct to XDP-prog)
+
+** Slide: Use NIC frame descriptor directly? (No)                   :export:
+
+@@html:<small>@@
+This came up before... why not give NIC frame descriptor directly to BPF?
+@@html:</small>@@
+
+Why can't we use frame descriptor directly?
+- Very compact bit format and union overloaded
+  - Even if possible to describe via BTF
+  - Prog to *decode too specific to vendor* HW (+ revision)
+- *HW revisions have erratas* (e.g. ixgbe csum invalid in one HW rev)
+  - A driver translation function should handle/hide this
+- With cpumap xdp_frame is /read on remote CPU/, descriptor not-valid
+
+* Slide: Where to store the offload info?                            :export:
+
+At least /info-struct/ should be /described via BTF/
+
+Instead of separate info-struct, *store* /info-struct/ *in data-frame area*?
+- Two options:
+  - Use XDP *metadata area* (already avail to XDP)
+  - Use areas "inside" xdp_frame (or dynamic area after xdp_frame ends)
+    - not curr avail to XDP (as =xdp_frame= is created after XDP-prog ran)
+
+Note: Cannot store info-struct inside =xdp_rxq_info=
+- Because not a per frame data-structure, and xdp_frame use bulk processing
+
+** Slide: Background: What is XDP-metadata area?                    :export:
+
+@@html:<small>@@
+Background slide, what do we have today...
+@@html:</small>@@
+
+XDP have 32 bytes *metadata* in front of payload (=xdp_buff->data_meta=)
+ - XDP tail-calls can read this (transfer info between tail-calls)
+ - TC eBPF (cls_bpf) can read this, and update SKB fields
+   - E.g. save XDP lookup and use in TC eBPF hook
+ - *AF_XDP* raw frames have this /metadata avail in front of payload/
+
+* Slide: Safe to allow XDP to update offload info?                   :export:
+
+Can we allow XDP to update offload info area?
+- Happens before SKB field update
+- Are there any *safety issues?* (kernel netstack stability)
+- XDP could potentially fix HW-offload fields
+
+Likely need some boundary checks
+- Especially for higher-level protocol header offsets
+
+Can verifier tell us
+- if XDP prog changed metadata area?
+
+* Slide: Lacking knowledge about BTF                                 :export:
+
+When info-struct is described via BTF
+- Can kernel code understand BTF and act dynamically???
+  - In =convert_to_xdp_frame()= code
+  - And in xdp_frame to SKB update fields code?
+
+Hack: if driver knows order struct-members can appear in
+- Walk BTF format and create bitmap with enabled members
+- When member is matched, increment iterator with member size
+- (Fear this is slow, due to data dependency on iterator)
+
+* Slide: Driver call-back function                                   :export:
+
+/Driver/ fill-out "info-struct", thus /knows layout/
+- xdp_frame to SKB conversion, use /driver/ *call-back to update SKB fields*?
+
+One step further
+- Could driver *call-back* be a /BPF-prog/, that update SKB fields?
+
+* Slide: How to configure driver for this?                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Next challenge: What is the interface for configuring this?
+- Extending =ndo_bpf= seems obvious
+- But there is a dependency between
+  - info-struct, driver populate, and SKB-update call-back
+  - If XDP-prog use BTF-metadata layout
+    - how to handle (or lock) BTF-layout changes runtime
+
+* Slide: Driver static approach                                      :export:
+
+Steps for static driver
+- /Step#A/: Driver define *static info-struct* for metadata area
+  - Create BTF-format (via macros) and register with BPF (?)
+  - Adjust =xdp_buff->data_meta= with info-struct size
+- /Step#B/: Driver function *populates metadata with offloads* from descriptor
+  - It knows about HW offloads curr enabled, revisions and quirks
+- *XDP-prog* is called (how does user get BTF-format?)
+- /Step#C/: Driver static SKB-update *call-back*
+  - Via XDP-redirect (either cpumap or veth) call-back is invoked with SKB
+
+** Slide: More dynamic approach                                     :export:
+
+Same steps: /Step#A/ + /Step#B/
+- /Step#A/: Driver defines static *info-struct* for metadata area
+  - Create BTF-format (via macros) and register with BPF
+- /Step#B/: Driver function *populates metadata with offloads* from descriptor
+
+Dynamic BPF call-back
+- /Step#C/: Driver SKB-update call-back is a *BPF-prog*
+- Validation trick:
+ - This SKB-update BPF-prog, must have /map named 'metadata'/
+ - map must have *BTF-format that matches driver* BTF-format
+   - checked on attach via =ndo_bpf=, else reject
+
+* Slide: When to enable populate metadata                            :export:
+
+The populate metadata function is *not enabled by default*
+- Driver creates real BPF-map with BTF-format for metadata (as value)
+  - (Key is driver "id" for this map, allow for more maps per driver)
+- Add =ndo_bpf= /query for metadata-map/, return map-fd
+  - Both XDP-prog and SKB-update prog can use map
+
+Trigger to *enable/disable*, when /map-user gets attached/detached/
+- (1) =ndo_bpf= attach SKB-update BPF-prog that uses this map,
+- and/or when (2) =ndo_bpf= XDP-prog being attached (that uses map)
+  - Both cases, check BTF-format match or reject attach
+- The *map-refcnt*, determines when to /disable/ populate metadata again
+
+** Slide: Selecting metadata layouts                                :export:
+
+/Driver/ can have *multiple metadata-maps*
+- Identified via /map-key as id/
+- (the map-value define metadata layout via BTF-format)
+- Each map (likely) have *different driver populate function* associated
+
+
+* Slide: End                                                         :export:
+
+Disclaimer
+- These slides are only design ideas and suggestions
+- Non of this is actually implemented
+
+Main purpose was getting a discussion going
+- which were hopefully successful...
+
+* Slides: Extra                                                      :export:
+
+** Slide: Layout of xdp_frame                                       :export:
+
+@@html:<small>@@
+If layout needs to be discussed...
+@@html:</small>@@
+
+#+begin_src C
+struct xdp_frame {
+	void *                     data;                 /*     0     8 */
+	u16                        len;                  /*     8     2 */
+	u16                        headroom;             /*    10     2 */
+	u16                        metasize;             /*    12     2 */
+	/* XXX 2 bytes hole, try to pack */
+	struct xdp_mem_info        mem;                  /*    16     8 */
+	struct net_device *        dev_rx;               /*    24     8 */
+
+	/* size: 32, cachelines: 1, members: 6 */
+	/* sum members: 30, holes: 1, sum holes: 2 */
+	/* last cacheline: 32 bytes */
+};
+#+end_src
+
+** Slide: Layout of xdp_buff                                        :export:
+
+@@html:<small>@@
+If layout needs to be discussed...
+@@html:</small>@@
+
+#+begin_src C
+struct xdp_buff {
+	void *                     data;                 /*     0     8 */
+	void *                     data_end;             /*     8     8 */
+	void *                     data_meta;            /*    16     8 */
+	void *                     data_hard_start;      /*    24     8 */
+	long unsigned int          handle;               /*    32     8 */
+	struct xdp_rxq_info *      rxq;                  /*    40     8 */
+
+	/* size: 48, cachelines: 1, members: 6 */
+	/* last cacheline: 48 bytes */
+};
+#+end_src
+
+* Emacs tricks
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# <h2 class=\"author\">Toke Høiland-Jørgensen (Red Hat)<br/>
+# Jesper Dangaard Brouer (Red Hat)<br/></h2>
+# <h3>Netconf<br/>Boston, June 2019</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:

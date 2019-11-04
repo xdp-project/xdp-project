@@ -1,0 +1,69 @@
+# -*- fill-column: 76; -*-
+#+Title: Improvements to xdp_fwd sample
+#+Options: ^:nil
+
+This document contains notes and patch desc for improvements to
+xdp_fwd sample from the kernel tree.
+
+* Initial patchset
+
+** COVER-LETTER: bpf: improvements to xdp_fwd sample
+
+V3: Hopefully fixed all issues point out by Yonghong Song
+
+V2: Addressed issues point out by Yonghong Song
+ - Please ACK patch 2/3 again
+ - Added ACKs and reviewed-by to other patches
+
+This patchset is focused on improvements for XDP forwarding sample
+named xdp_fwd, which leverage the existing FIB routing tables as
+described in LPC2018[1] talk by David Ahern.
+
+The primary motivation is to illustrate how Toke's recent work
+improves usability of XDP_REDIRECT via lookups in devmap. The other
+patches are to help users understand the sample.
+
+I have more improvements to xdp_fwd, but those might requires changes
+to libbpf.  Thus, sending these patches first as they are isolated.
+
+[1] http://vger.kernel.org/lpc-networking2018.html#session-1
+
+#+begin_src shell
+stg mail --prefix="bpf-next" -e --cc meup \
+ --to netdev --to daniel --to alexei \
+ --cc dsahern@gmail.com --cc a.s.protopopov@gmail.com \
+ --cc xdp-newbies \
+xdp_fwd_map_name..return_codes
+#+end_src
+
+#+begin_src shell
+stg mail --prefix="bpf-next v2" -e --cc meup \
+ --to netdev --to daniel --to alexei \
+ --cc dsahern@gmail.com --cc a.s.protopopov@gmail.com \
+ --cc toke --cc ys114321@gmail.com \
+xdp_fwd_map_name..return_codes
+#+end_src
+
+#+begin_src shell
+stg mail --prefix="bpf-next v3" -e --cc meup \
+ --to netdev --to daniel --to alexei \
+ --cc dsahern@gmail.com --cc a.s.protopopov@gmail.com \
+ --cc toke --cc ys114321@gmail.com \
+xdp_fwd_map_name..return_codes
+#+end_src
+
+V3: https://patchwork.ozlabs.org/project/netdev/list/?series=124041&state=%2a
+
+
+** Patch: samples/bpf: make xdp_fwd more practically usable
+
+samples/bpf: make xdp_fwd more practically usable via devmap lookup
+
+This address the TODO in samples/bpf/xdp_fwd_kern.c, which points out
+that the chosen egress index should be checked for existence in the
+devmap. This can now be done via taking advantage of Toke's work in
+commit 0cdbb4b09a06 ("devmap: Allow map lookups from eBPF").
+
+This change makes xdp_fwd more practically usable, as this allows for
+a mixed environment, where IP-forwarding fallback to network stack, if
+the egress device isn't configured to use XDP.

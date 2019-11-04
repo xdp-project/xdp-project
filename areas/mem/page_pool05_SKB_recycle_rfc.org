@@ -1,0 +1,73 @@
+# -*- fill-column: 76; -*-
+#+Title: Implementing page_pool return-hook via SKB
+#+OPTIONS: ^:nil
+
+
+* Basic idea
+Initial design ideas can be found at [[file:page_pool02_SKB_return_callback.org]]
+* New RFC patchset(ongoing work)
+This patchset corresponds to:
+ - Git tree: https://github.com/xdp-project/bpf-next
+ - Branch: [[https://github.com/apalos/bpf-next/commits/rfc_06_recycle][rfc_06_recycle]]
+
+The main difference between this patchset and the original RFC is that the
+place were we store xdp_mem_info has changed. Instead of using 4 bytes on
+the skb, we store the information on page->private. This allowed us to
+recycle skb->data and skb fragments that followed in shinfo. 
+
+Note here that on the original version we only tried to match that
+page->private had mem_info.type == MEM_TYPE_PAGE_POOL in order to
+recycle so storing the info on the page was needed.
+This was not safe since other netstack functions use page->private
+(i.e skb_copy_ubufs()). In order to avoid this we introduced a new bit in
+the skb, called pp_recycle. Since we now pass the skb->pp_recycle bit into 
+__skb_frag_unref() to trigger recycling, we could add xdp_mem_info back into
+the skb instead of the page->private.
+
+Both free related functions in skb_free_head() and __skb_frag_unref() are
+intercepted and if the skb is marked for recycle, we are trying to return
+the page into the pool, without unmapping the associated DMA addresses.
+
+** pp_recycle semantics
+On skb cloning we replicate the pp_recycle bit on the clone, since we have no
+idea if the original skb or it's clone will be freed first.
+
+In order for this to work all skb fragments must be allocated via page_pool
+and the driver must use build_skb to construct the skb it passes on the
+network stack. Any driver that decides to set the pp_recycle bit must make
+sure the skb holds a page_pool allocated skb->data
+
+*** What can go wrong if this doesn't happen:
+ - The pp_recycle bit on the skb gets set when marking fragments for
+   recycling. (skb_mark_for_recycle should NEVER be used on skb->head that are
+   not allocate via page_pool).
+   Since pp_recycle lives in the initial skb, we'll try to recycle it. The
+   xdp_mem_info of the slab allocated skb won't match (again as long as the
+   driver writer has not wrongly used skb_mark_for_recycle). The skb will be freed
+   normally and the fragments (which will will match both the pp_recycle bit
+   and the xdp_mem_info) will be properly recycled. A WARN_ON will be displayed
+   for the slab allocated skb.
+ - In order to prevent coalescing of skb's that hold slab allocated data +
+   page_pool data an if statement has been added which prevents that from
+   happening. Both skb (from, to) should have their pp_recycle bit value
+   equal to allow coalescing. 
+   If we don't do that we'll try to recycle memory that does not belong to
+   page_pool and we'll crash.
+* Different ideas on skb marking
+Right now we are using an skb bit for that. This is nice because the overhead
+on the free path is going to be minimal, since the bit we need to access for
+our recycling decisions is probably already in cache. 
+Using a single bit in the skb has an implication though. We rely on that bit
+to recycle skb and fragments and have to check validity of that bit in
+skb_try_coalesce() (and maybe other places we missed)
+
+We could use a page flag to trigger the recycling (PG_owner_priv_1 in
+page-flags.h looks like a good candidate). This will in general be 'safer'
+since each page will have it's own recycle 'trigger' and we won't have to
+check all the corner cases were netstack packs skb->data (i.e coalescing)
+This would slow down the free path though since it's an extra cache line
+access per packet to retrieve the information.
+
+In any case we should use PG_owner_priv_1 to mark the page and track down
+packets that were freed prior to unmapping their DMA (DMA leaks) regardless
+of what we use as our recycle 'trigger'.

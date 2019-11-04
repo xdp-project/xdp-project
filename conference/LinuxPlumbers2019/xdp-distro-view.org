@@ -1,0 +1,839 @@
+# -*- fill-column: 79; -*-
+#+TITLE: XDP: the Distro View
+#+AUTHOR: Jiri Benc, Jesper Dangaard Brouer and Toke Høiland-Jørgensen
+#+EMAIL: jbenc@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+This is currently notes for the LinuxPlumbersConf 2019 (LPC) presentation (see
+title), and perhaps the slide deck (depending on Jiri Benc's preferences for
+formatting tools).
+
+https://www.linuxplumbersconf.org/event/4/contributions/460/
+
+* Abstracts and presentation merge background
+
+The LPC technical committee asked us (Jiri, Jesper and Toke) to merge our talks
+into Jiri Benc's more generic XDP talk. Thus, the assignment in this doc it to
+perform this merger.  Below is listed the abstracts from the three talks, such
+that we can easier merge these.
+
+** Main abstract: XDP the Distro View (Jiri)
+
+Title: XDP: the Distro View
+Author: Jiri Benc
+
+It goes without saying that XDP is wanted more and more by everyone. Of course,
+the Linux distributions want to bring to users what they want and need. Even
+better if it can be delivered in a polished package with as few surprises as
+possible: receiving bug reports stemming from users' misunderstanding and from
+their wrong expectations does not make good experience neither for the users
+nor for the distro developers.
+
+XDP presents interesting challenges to distros: from the initial enablement
+(what config options to choose) and security considerations, through user
+supportability (packets "mysteriously" disappearing, tcpdump not seeing
+everything), through future extension (what happens after XDP is embraced by
+different tools, some of those being part of the distro, how that should
+interact with users' XDP programs?), to more high level questions, such as user
+perception ("how comes my super-important use case cannot be implemented using
+XDP?").
+
+Some of those challenges are long solved, some are in progress or have good
+workarounds, some of them are yet unsolved. Some of those are solely the
+distro's responsibility, some of them need to be addressed upstream. The talk
+will present the challenges of enabling XDP in a distro. While it will also
+mention the solved ones, its main focus are the problems currently unsolved or
+in progress. We'll present some ideas and welcome discussion about possible
+solutions using the current infrastructure and about future directions.
+
+** Abstract#2: Improving the XDP User eXperience: via feature detection (Jesper)
+Title: Improving the XDP User eXperience: via feature detection
+Author: Jesper Dangaard Brouer
+
+The most common asked question is: "Does my NIC support XDP", and our current
+answer is read the source code. We really need to come up with a better answer.
+
+The real issue is that users can attach an XDP bpf_prog to a drivers that use
+features the driver doesn't implement, which cause silent drops. Or user
+doesn't notice, that NIC loading fallback to generic-XDP, which is first
+discovered when observing lower performance, or worse not all features are
+supported with generic-XDP, resulting in unexpected packet drops.
+
+BPF feature detection, recently added to bpftool, is based on probing the
+BPF-core by loading BPF-programs using individual features (notice BPF load
+time, not attaching it). Even if your BPF loader doesn't use feature probing,
+it will notice if loaded on a incompatible kernel. As an BPF-prog using
+something the kernel BPF-core doesn't support will get rejected at load-time,
+before you attach the BPF-prog.
+
+This doesn't work for XDP, as features vary on a per driver basis. Currently an
+XDP BPF-prog isn't aware of that driver it will get used on, until driver
+attach-time. Unfortunately, due to BPF tail-calls, we cannot use the driver
+attach-time hook to check for compatibility (given new XDP BPF-progs can be
+indirectly "attached" via tail-call map inserts).
+
+In this talk, we will investigate the possibilities of doing XDP feature check
+at BPF load-time, by assigning an ifindex to the BPF-prog. The ground work have
+already been laid by XDP hardware offload, which already need ifindex at BPF
+load-time (to perform BPF byte-code translation into NIC compatible code).
+
+The open question are:
+- Can the verifier detect/deduce XDP feature in use, for us?
+- How does drivers express/expose XDP features?
+- Are features more than XDP return codes, like meta-data support?
+- How does this interact with generic-XDP?
+- How to expose this to userspace? (to answer does NIC support XDP)
+- How to handle tail-call map inserts?
+
+** Abstract#3: Unified semantics for multiple XDP programs on a single interface (Toke)
+
+Title: Unified semantics for multiple XDP programs on a single interface
+Author: Toke Høiland-Jørgensen
+
+XDP currently only supports loading a single program on each physical
+interface. This is a limitation in cases where multiple functions need to run
+on the same interface, for instance a packet filter followed by a forwarding
+program. When all programs are written by the same person or group, this can be
+solved by cooperative tail-calling between programs, and we have seen several
+variations on this scheme already. However, this does not solve the case where
+programs written by different people need to cooperate on the same interface,
+e.g., if a system administrator wants to use two different third-party software
+packages that both offer XDP support. As XDP support becomes more prevalent, we
+expect this issue to become more urgent, and so we want to discuss what we can
+do to solve this in the upstream community.
+
+As part of this discussion we would like to collect the requirements people
+have for chaining programs today. Can we agree on a common set of semantics
+that will work for all the current and expected future use cases? Assuming we
+can, is it then enough to define a common API for cooperative tail calling
+(possibly supported by libbpf), or do we need kernel support to enforce
+cooperation?
+
+* Export/generate presentation
+
+** Setup for org export to reveal.js
+First, install the ox-reveal emacs package.
+
+Package: ox-reveal git-repo and install instructions:
+https://github.com/yjwen/org-reveal
+
+To export hit =C-c C-e R R=, then open .html file to view slideshow.
+
+The variables at document end ("Local Variables") will set up the title slide
+and filter the "Slide:" prefix from headings; Emacs will ask for permission to
+load them, as they will execute code.
+
+** Export to PDF
+
+The conference requires presentations to be delivered in PDF format.  Usually
+the reveal.js when run as a webserver under nodejs, have a printer option for
+exporting to PDF vai print to file, but we choose not run this builtin
+webserver.
+
+Alternatively I found a tool called 'decktape', for exporting HTML pages to
+PDF: https://github.com/astefanutti/decktape
+
+The 'npm install' failed on my system:
+
+ $ npm install decktape
+
+But (after running npm update) I can start the decktape.js file direct via
+the 'node' command.
+
+ $ node ~/git/decktape/decktape.js slides.html slides.pdf
+
+This is the command needed on Arch - size is set to get slide text to fit on
+the page. -p 100 makes it go faster.
+
+$ decktape -s 1600x900 -p 100 --chrome-arg=--no-sandbox slides.html slides.pdf
+
+
+
+* Colors in slides                                                 :noexport:
+Text colors on slides are chosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Notes - brainstorm
+
+Unsolved issues:
+- eBPF audit
+- Safety of verifier
+- Controls of eBPF capabilities (like updating maps for unpriv users)
+- Multiple XDP programs + debugability
+- Feature detection
+- Managing expectations for XDP
+  - Switching: Cloning
+  - Ready-to-run XDP programs
+
+BPF ELF-loaders
+- reduce fragmentation, limit number of BPF-ELF-loaders
+- libbpf: promote as distro (want others to follow)
+- libbpf vs. iproute2
+  - problematic iproute2 have incompatible ELF-maps format
+
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation. The prefix
+"Slide:" is only syntax-sugar for the reader (and it removed before export by
+emacs).
+
+* Slide: Outline                                                     :export:
+
+In this talk we will give a /distro view on XDP/, and touch on *related general
+eBPF topics*.
+
+- Enabling XDP: kernel config, required packages
+- Supportability, bug reports handling
+- Security considerations and hardening
+- User experience and pain points
+- Managing user expectations
+
+Then we will /*look at some of the problems*/ in depth.
+
+* Slide: Enabling XDP                                                :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Kernel config, required packages, testing.
+** Slide: Enabling XDP: kernel side                                 :export:
+
+Straigthforward: *CONFIG_BPF_SYSCALL=y*
+- XDP is /always enabled/
+- Enable *AF_XDP*: CONFIG_XDP_SOCKETS=y
+- Consider other /*networking BPF options:*/
+  - CONFIG_CGROUP_BPF=y
+  - CONFIG_NET_ACT_BPF=m
+  - CONFIG_NET_CLS_BPF=m
+  - CONFIG_BPF_STREAM_PARSER=y
+  - CONFIG_LWTUNNEL_BPF=y
+
+** Slide: Enabling XDP: packages (1/2)                              :export:
+
+- Newest /iproute2/
+- *bpftool*
+  - Part of the kernel source code
+  - But mostly independent
+  - Similar to iproute2: no need for a dependency to a particular kernel version
+- /clang/llvm/ with bpf backend
+  - BTF support is highly desirable
+- *pahole*
+  - Overloaded with BTF conversion code
+
+** Slide: Enabling XDP: packages (2/2)                              :export:
+
+- *libbpf*
+  - Part of the kernel source code
+  - Packageable as a library since kernel v5.1
+  - Not much practical experience, yet
+
+** Slide: Enabling XDP: testing                                     :export:
+
+- *CONFIG_TEST_BPF=m*
+- *tools/testing/selftests/bpf*
+  - Cumbersome to build and install
+- *samples/bpf*
+  - Needs custom installation script
+  - Some samples do not work out of kernel tree
+  - Not really usable for testing overall
+
+* Slide: eBPF supportability                                         :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Tools, bug reports, audit trail.
+
+** Slide: eBPF supportability: tools                                :export:
+
+Introspection needed. *bpftool* provides that.
+- Essential to be installed on */all/* systems.
+- But provides only the current state, not the history.
+
+*sosreport* tool
+- Calls bpftool since v3.5.1.
+- https://github.com/sosreport/sos
+
+*crash* tool
+- Understands eBPF since v7.2.2.
+- https://github.com/crash-utility/crash
+
+** Slide: eBPF supportability: bug reports                          :export:
+
+The kernel behaves *differently* with BPF programs loaded.
+
+How hard is it to debug a misbehaving system with *buggy XDP* programs loaded?
+
+Need to teach support engineers to /look for BPF programs/.
+- But that's the usual thing with any new technology.
+
+Distros need to create /cheat sheets/ for users:
+- What to look for if packets are disappearing (XDP, tc, etc.)
+  - WiP: Drop monitor support for XDP
+- What to look for if XDP programs are not working as expected.
+- etc.
+
+** Slide: eBPF supportability: audit trail                          :export:
+
+*bpftool* provides only */the current state/*. The BPF program that caused issues (e.g. packet drops) *may not be loaded* anymore.
+
+/Possible solution:/ enhancing the audit subsystem.
+- Patches currently stuck due to disagreement between bpf and audit maintainers.
+
+* Slide: eBPF security                                               :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+Hardening, unprivileged BPF.
+
+** Slide: eBPF hardening
+
+Two major areas of possible problems:
+
+1. *Spectre* class of hardware bugs.
+
+2. *Verifier* bugs.
+
+/Hardening/
+- *CONFIG_BPF_JIT_ALWAYS_ON=y* to secure against malicious VMs.
+- */Unprivileged/* users may load BPF programs. Is that a problem?
+
+** Slide: Unprivileged BPF (1/2)                                    :export:
+
+/Considerations/
+- Verifier bugs may be dangerous.
+- BPF has been used to ease creation of exploits of hardware bugs.
+- BPF developers are considering *switching off* unprivileged BPF as default.
+
+/Turning off unprivileged BPF/
+- *kernel.unprivileged_bpf_disabled=1*
+- No way to set this */by default/* in upstream kernel.
+- Needs to be set in a bootloader. Or use a distro specific patch.
+
+** Slide: Unprivileged BPF (2/2)                                    :export:
+
+*Problems*
+- Daemons manipulating maps need to be */privileged/*.
+- Even when only *reading maps*.
+- Want to limit access to maps owned by other services.
+
+/Possible solution:/ access rights for maps?
+- Proposed by Andy Lutomirski
+
+*** Notes to Slide: Unprivileged BPF                             :noexport:
+
+We are very interested in Andy Lutomirski upstream proposal and appreciate his
+effort. See his proposal: https://t.co/WIhsdN2PoJ
+
+We also find Daniel Borkmanns [[https://lore.kernel.org/bpf/98fee747-795a-ff10-fa98-10ddb5afcc03@iogearbox.net/][idea for several CAP_BPF type sub-policies]]
+interesting.
+
+Alexei now also have a [[ https://lore.kernel.org/netdev/20190827205213.456318-1-ast@kernel.org/T/#u][code proposal]]
+- Introducing CAP_BPF and combining with CAP_NET_ADMIN
+- Discussions on also adding CAP_TRACING
+
+* Slide: XDP pain points                                             :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+User, developer, distro problems; expectations and best practices.
+** Slide: User experience problems                                   :export:
+
+- No *readily available* XDP solution packaged in distros.
+  - */"What? Do I need to be a programmer to use XDP?"/*
+- tcpdump does *not see all packets* anymore.
+  - XDP_DROP etc.
+  - There's */no tcpdump-like feature/* for XDP.
+- Interface statistics *do not count all packets* anymore.
+  - */"It must be something on the wire!"/*
+- XDP programs do not reach the *expected speed*.
+  - Because */generic XDP/* is used.
+
+** Slide: Developer experience problems                              :export:
+
+- Packets can be *silently dropped* with XDP programs that are accepted as correct.
+  - Because of using */unimplemented features/*.
+  - What are the /available XDP features/ on the interface?
+- XDP is *not powerful enough*.
+  - Can't send or duplicate packets.
+  - */"Where is a repository with XDP libraries I can use?"/*
+  - */"Okay, let's use AF_XDP..."/* (later) */"performance gotchas!"/*
+- Verifier *not smart enough*.
+  - It has gotten better, but may still reject valid programs
+
+** Slide: Distro experience problems (1/3)                           :export:
+
+- User wants to install these /two packages/. But *both* are using XDP!
+  - Or user is using XDP for /custom filtering/. And distro is using XDP, *too*.
+  - But */only one XDP program/* per interface is supported.
+- Great part of features */untested on non-x86_64/*.
+- Lack of community consensus on *common libraries*, *build* and *devel environment*.
+  - Risk of too much fragmentation, unpolished user experience.
+  - Example: *iproute2* has its own bpf support code.
+    - incompatible ELF map format
+    - WIP: conversion to *libbpf*
+  - Promote /libbpf/ as the preferred solution?
+
+** Slide: Distro experience problems (2/3)                           :export:
+
+- *libbpf*
+  - API in flux, including functions removal.
+  - When built from the kernel, the package has *the kernel version*.
+  - How much can be relied on [[https://github.com/libbpf/libbpf][libbpf repo on GitHub]]?
+  - Distros need to *link to the system version*. "Vendoring" makes that hard.
+- BTF and *pahole*
+  - perhaps the BTF functionality should be split into a */different tool/*?
+  - kernel build and BTF: *gcc* should generate BTF
+
+** Slide: Distro experience problems (3/3)                           :export:
+
+- virtio_net supports XDP but the *performance* is limited.
+  - Can we have /XDP passthrough/?
+  - Can we have /XDP offloading/ from VM to NIC?
+  - What about *VM migration*?
+
+** Slide: User expectation                                          :export:
+
+XDP has /strong marketing/. Everyone wants to use it.
+
+- There are *no ready to use* solutions.
+- *Not enough features* when trying to implement a custom solution.
+- Turning to *AF_XDP* (because it is */"XDP", isn't it?/*) and resulting disappointment.
+
+Distros need to focus on /developers/ and encourage them to develop XDP based solutions.
+- Need *more examples*.
+- Need *best practices*.
+- Need education about *limitations*.
+
+** Slide: Examples and best practices                               :export:
+
+Kernel [[https://github.com/torvalds/linux/tree/master/tools/testing/selftests/bpf/prog_tests][selftests/bpf]] and [[https://github.com/torvalds/linux/tree/master/samples/bpf][samples/bpf]]: */bad starting point/*
+
+/XDP tutorial/
+- https://github.com/xdp-project/xdp-tutorial
+- Easy build and devel environment.
+- Easy to try out: uses veth and network name spaces.
+- How to best package it in a distro?
+
+/XDP tools/ (planned)
+- https://github.com/xdp-project/xdp-tools
+- Best practices like the tutorial, but easier to re-use
+- Shippable tools, usable out of the box; /please contribute!/
+  - E.g., xdpdump, simple packet filter
+
+* Slide: Dive in: Multiple XDP programs on a single interface        :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+Can we agree on a common way to do this?
+
+** Supporting multiple programs on one interface
+
+XDP currently only supports */one program per interface/*.
+
+- So how to support /multiple functions/ in sequence?
+- Driving factors:
+  - Debugging: Enable XDP and still be able to handle the support calls
+  - Composability: User-defined XDP programs combined with packaged ones
+    - E.g.: Run custom filtering, then XDP-enabled Suricata
+
+- Today, multiple programs only possible through *cooperative tail calls*
+  - Implemented differently across projects
+
+Let's look at a couple of examples of how this is done today...
+
+** Prior art #1: Katran xdp_root
+
+Facebook's [[https://github.com/facebookincubator/katran][Katran LB]] has a mechanism for multi-program loading
+- Each program cooperatively (tail) calls remaining progs in array
+
+#+begin_src C
+int xdp_root(struct xdp_md *ctx) { // installed on interface
+  for (__u32 i = 0; i < ROOT_ARRAY_SIZE; i++) {
+    bpf_tail_call(ctx, &root_array, i); // doesn't return when it succeeds
+  }
+  return XDP_PASS;
+}
+int xdp_prog_idx0(struct xdp_md *ctx) { // in root_array with idx=0
+  for (__u32 i = 1; i < ROOT_ARRAY_SIZE; i++) { // start at 1!
+    bpf_tail_call(ctx, &root_array, i); // doesn't return when it succeeds
+  }
+  return XDP_PASS;
+}
+#+end_src
+
+/Pros/: Supports multiple programs with one map
+
+/*Cons*/: Programs need to know their place in the sequence, no per-action hooks
+
+** Prior art #2: Cloudflare xdpdump
+
+Cloudflare posted a [[https://github.com/cloudflare/xdpcap][xdpcap utility]] that can run after other XDP programs:
+- Instrument your XDP return with tail-call per XDP 'action' code
+
+#+begin_src c
+struct bpf_map_def xdpcap_hook =  {
+	.type = BPF_MAP_TYPE_PROG_ARRAY,
+	.key_size = sizeof(int), .value_size = sizeof(int),
+	.max_entries = 5 // one entry for each XDP action
+};
+int xdpcap_exit(struct xdp_md *ctx, void *hook_map, enum xdp_action action) {
+    bpf_tail_call(ctx, hook_map, action); // doesn't return if it succeeds
+    return action; // reached only if above tail-call failed (no prog installed)
+}
+
+int xdp_main(struct xdp_md *ctx) {  // program installed on interface
+	return xdpcap_exit(ctx, &xdpcap_hook, XDP_PASS);
+}
+#+end_src
+
+/Pros/: Different hook program per exit XDP 'action' code
+
+/*Cons*/: Programs must include helper, needs one map per chain call
+
+** Limitations of current approaches
+
+There are a couple of limitations we would like to overcome:
+
+- Programs need to /include tail call code/
+  - Needs cooperation from program authors
+  - Incompatibility between approaches
+  - Breaks if omitted by mistake (e.g., accidental return)
+- Program order *cannot be changed* without recompilation
+- Sysadmin cannot /*enforce policy*/
+  - E.g., always run diagnostics program (such as xdpdump) first
+
+** Chain calling: design goals
+
+High-level goal: execute multiple eBPF programs in a single XDP hook.
+
+With the following features:
+
+1. /Arbitrary execution order/
+  - Must be possible to change the order dynamically
+  - Execution chain can depend on program return code
+2. Should work *without modifying the programs* themselves
+
+** Chain calling: Essential ideas
+
+1. Per-interface data structure to define program sequence
+   - Lookup /current program ID/ and *return code* and get next program
+   - Can be implemented with BPF maps
+   - Similar to *prior art #2*, but one map for whole call chain
+
+2. Add a /hook at program return/:
+     - Either by rewriting program return instructions
+     - Or by hooking into =bpf_prog_run_xdp()= in the kernel
+
+** Chain-calling: example execution flow
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_HTML: :class figure figure-bg
+[[file:figures/XDP-chain-calls.svg]]
+
+** Chain calling: Call sequence lookup helper
+
+The chain call lookup /could be/ implemented like this:
+
+#+begin_src c
+struct chain_call_lookup {
+    unsigned int prog_id;
+    unsigned int return_code;
+};
+
+int bpf_chain_call(ctx, retcode) {
+  void *map = get_chain_call_map(ctx.ifindex);
+  if (map) {
+     struct chain_call_lookup key = {
+       .prog_id = ctx.prog_id,
+       .return_code = retcode
+     };
+     bpf_tail_call(ctx, map, &key); // doesn't return if successful
+  }
+  return retcode;
+}
+#+end_src
+
+** Chain calling: Call sequence lookup helper #2
+
+The chain call lookup /could also be/ implemented like this:
+
+#+begin_src c
+int bpf_chain_call(ctx, retcode) {
+  void *map = get_chain_call_map(ctx.ifindex);
+  if (map) {
+     void *inner_map = bpf_map_lookup(map, &ctx.prog_id);
+     if (inner_map)
+       bpf_tail_call(ctx, inner_map, &retcode); // doesn't return if successful
+  }
+  return retcode;
+}
+#+end_src
+
+
+** Implementation option #1: userspace only
+
+To do this in userspace (e.g., libbpf), the loader must:
+
+1. Define =bpf_chain_call()= as bpf func
+2. Create+pin outer map per ifindex
+3. Populate map as XDP programs are loaded (key by prog tag?)
+4. Rewrite RETURN instructions to call =bpf_chain_call()= before loading prog
+
+/Pros/: No kernel support needed
+
+/*Cons*/: Only enforceable if all loaders comply, *lots* of book-keeping, can't
+swap map
+
+** Implementation option #2: Kernel verifier
+
+In the kernel verifier:
+
+1. Define =bpf_chain_call()= as BPF helper
+2. Verifier rewrites return instructions to helper calls
+3. Userspace populates per-ifindex call sequence map
+
+/Pros/: Enforceable systemwide, uses existing tail call infrastructure
+
+/*Cons*/: More code in already complex verifier
+
+** Implementation option #3: bpf_prog_run_xdp()
+
+With kernel support in hook:
+
+1. Make =bpf_chain_call()= a regular function
+2. Call it before returning from =bpf_prog_run_xdp()=
+3. Userspace populates per-ifindex call sequence map
+
+/Pros/: Enforceable systemwide, no new verifier code
+
+/*Cons*/: Multiple BPF invocations instead of tail calls, another check in fast path
+
+** Chain-calling: Updating the call sequence
+
+- Simple updates: *linked-list like* operations (map stays the same)
+
+#+begin_src sh
+# Insert after id 3
+  --> id = load(prog.o);
+  --> map_update(map, {3, PASS}, id) # atomic update
+# Insert before id 2
+  --> id = load(prog.o);
+  --> map_update(map, {id, PASS}, 2); # no effect on chain sequence
+  --> map_update(map, {1, PASS}, id); # atomic update
+#+end_src
+
+- More complex operations: /*replace the whole thing*/
+
+#+begin_src sh
+# Replace ID 3 with new program
+  --> id = load(prog.o); map = new_map();
+  --> map_update(map, {1, PASS}, 2);
+  --> map_update(map, {1, TX}, id);
+  --> map_update(map, {2, PASS}, id);
+  --> xdp_attach(eth0, 1, map, FORCE); # atomic replace
+#+end_src
+
+We want /atomic updates/; how to manage read-modify-update races?
+
+
+* Slide: Dive in: Missing XDP feature detection                       :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+How do we ensure programs will work if loading succeeds?
+
+#+BEGIN_NOTES
+This is a compressed version of Jesper's slides
+#+END_NOTES
+
+** Slide: Builtin versus drivers
+
+XDP features  *dependent on driver support*, which breaks BPF feature "system"
+- BPF-core is always compiled-in
+- BPF verifier will /reject/ BPF prog
+  - if using a *feature that isn't available in BPF core*
+
+XDP challenges this concept.
+
+** Slide: The XDP available features issue                          :export:
+
+Today: Users cannot know if a device driver supports XDP or not
+- This is the question asked most often
+- And people will often */use generic XDP without noticing/*,
+  - and complain about performance... this is a support issue.
+
+Real /users/ requesting this:
+- /Suricata config/ want to query for XDP support, else fallback to BPF-TC
+- /VM migration/ want to query for XDP support, else need to abort migration
+
+Original argument: Drivers *MUST support all XDP features*
+  - Thus, there is no reason to expose feature bits
+  - This was *never true*, and e.g. very few drivers support redirect
+
+** Slide: What is the real issue?!?                                 :export:
+
+Simply exposing feature XDP to userspace, doesn't solve the real issue
+- Real issue: *too easy to misconfigure*
+- How to get users to check features before attach? (unlikely to happen)
+
+Real issue: Kernel *allows* users to attach XDP program
+- that uses *features the driver doesn't implement*
+- causes */silent drops/* (only way to debug is tracepoints)
+
+Solution: /Need something that can reject earlier/
+- at /BPF load/ *or* /XDP attach/ *time*
+- BPF verifier rejects at BPF load time (doesn't see attach operation)
+  * (if using a feature that isn't available in BPF core)
+
+** Slide: Tech road-block: BPF tail-calls vs attach-time            :export:
+
+Solution #1: Do /feature match/check at XDP driver/ *attach time*
+- Reject attach, if prog uses unsupported features
+- */Not possible due to BPF tail-call maps/*
+
+Essentially tail-call maps adds attach "hook" outside driver control
+1. Driver XDP prog tail-calls into prog map
+2. Tail-prog calls into another (2nd level) prog map
+3. Later 2nd level map is updated
+   - with new program using unsupported feature
+How can driver reject this 2nd level map insert?!?
+
+** Slide: Solution #2: BPF load time with ifindex (1/2)             :export:
+
+Solution#2: Do /feature match/check at/ *BPF load time*
+- /Supply ifindex/ at *BPF load time* (like HW-offload already does!)
+
+*/Issue-2A/*: what if /ifindex bound XDP-prog/ uses */tail-call map/*
+- How to check features of programs inserted into tail-call map?
+- Solution-2A: *Bind tail-call map to ifindex*
+  - And on tail-call map insert, BPF prog must be ifindex bound too
+  - Require: bound prog, must only use bound tail-map (same ifindex)
+- Limitations: cannot share tail-call maps (any real users?)
+
+- /Opt-in interface/ via supplying ifindex
+  - Have to support loading with no ifindex, due to backwards compatibility
+
+** Slide: Solution #2: BPF-load time with ifindex (2/2)             :export:
+
+*/Issue-2B/*: *Generic XDP*
+- At BPF load time, don't know if used for /native or generic/ XDP
+
+Generic XDP support *should* be independent of net device
+- Still, some XDP features are not supported
+  - e.g. cpumap redirect (silent drop)
+
+Possible solutions
+- Option(1) supply more info than ifindex?
+  - Annoying for API perspective
+- Option(2) let ifindex imply native XDP?
+  - Force generic-XDP to implement all XDP features (with some fallback)
+
+
+* Slide: Discussion: Expressing XDP features                         :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+OK, let's suppose we agree on how to check for feature support.
+
+But how do we express the features themselves?
+
+#+BEGIN_NOTES
+- What XDP features need to be expressed?
+- Can verifier detect these features?
+  - if not, can users be trusted to supply features?
+#+END_NOTES
+
+** Slide: Can verifier detect XDP features?                           :export:
+
+Either need to /supply features/ (more input than =ifindex=)
+- *Or* verifier needs to be able to /detect features/
+
+Verifier *detection strategy*, to deduce XDP features in use
+- If XDP return code comes from register/map
+  - then assume all XDP return codes in use
+- Except: can remove XDP_REDIRECT if redirect helper isn't used
+  - And assume remaining codes are in use
+
+** Slide: What kind of XDP features to express?                     :export:
+
+Obvious feature: XDP return codes in use
+
+Some /BPF helpers/ can *depend on driver feature*
+- /=bpf_xdp_adjust_meta()=/ depend on driver feature
+  * Today fails at runtime (we can do better!)
+- /=bpf_xdp_adjust_tail()=/ relevant to know for multi-buffer support
+
+Verifier can easily detect BPF helpers in use
+
+** Slide: How to expose XDP features to userspace?                  :export:
+
+Highly /prefer/ *verifier detect features*
+- /Pros/: Avoids defining UAPI, thus easier to extend
+- */Cons/*: Userspace cannot easily get XDP feature bits from NIC
+
+Driver needs to express feature bits internally.
+
+How do userspace /see what NIC supports/?
+Two options:
+- (1) Expose driver feature bits (needs some kind of UAPI; ethtool?)
+- (2) Do feature probing like bpftool
+
+* Slide: Questions, comments?                                        :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Or did we get through them all on the way?
+
+* Notes
+
+** Org-mode hints
+
+https://orgmode.org/manual/Quoting-HTML-tags.html#Quoting-HTML-tags
+
+** Colors from Red Hat guide lines
+
+Red Hat Colors:
+
+ - Red Hat Red #cc0000
+ - Medium Red #a30000
+ - Dark Red #820000
+
+None of these red colors fit with baggrond color:
+ - Using red 65% #ff4d4d
+ - Found via: https://www.w3schools.com/colors/colors_picker.asp
+
+Secondary Palette:
+
+ - Dark Blue #004153
+ - Medium Blue #4e9fdd
+ - Light Blue #5bc6e8
+ - Lighter Blue #a3dbe8
+
+Accent Palette:
+
+ - Purple #3b0083
+ - Orange #ec7a08
+ - Green #7ab800
+ - Turquoise #007a87
+ - Yellow #fecb00
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
+# class=\"author\">Jiri Benc<br/>Jesper Dangaard Brouer<br/>Toke Høiland-Jørgensen</h2>
+# <h3>Linux Plumbers Conference<br/>Lisbon, Sep 2019</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:

@@ -1,0 +1,427 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created by diasvg.py -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="18.119293cm"
+   height="9.5996265cm"
+   viewBox="41.441 28.396 36.539056 22.166635"
+   version="1.1"
+   id="svg929"
+   sodipodi:docname="XDP-chain-calls.svg"
+   inkscape:version="0.92.4 5da689c313, 2019-01-14">
+  <metadata
+     id="metadata935">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs933" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1280"
+     inkscape:window-height="1404"
+     id="namedview931"
+     showgrid="false"
+     fit-margin-top="0.1"
+     fit-margin-left="0.1"
+     fit-margin-right="0.1"
+     fit-margin-bottom="0.1"
+     inkscape:zoom="1.2281351"
+     inkscape:cx="242.16519"
+     inkscape:cy="125.3052"
+     inkscape:window-x="1080"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg929" />
+  <rect
+     x="45.344631"
+     y="31.256723"
+     width="7.2480001"
+     height="1.9"
+     id="rect815"
+     style="fill:#ffffff;stroke:none;stroke-width:0" />
+  <rect
+     x="45.344631"
+     y="31.256723"
+     width="7.2480001"
+     height="1.9"
+     id="rect817"
+     style="fill:none;stroke:#000000;stroke-width:0.1" />
+  <text
+     x="48.968628"
+     y="32.400723"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text819"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:middle;fill:#000000">XDP prog id:1</text>
+  <line
+     x1="48.946629"
+     y1="29.448725"
+     x2="48.962631"
+     y2="30.769724"
+     id="line821"
+     style="stroke:#000000;stroke-width:0.1" />
+  <polygon
+     points="50.74,30.525 50.988,30.397 50.745,30.9 50.488,30.403 "
+     id="polygon823"
+     style="fill:#000000;stroke:none;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polygon
+     points="50.74,30.525 50.988,30.397 50.745,30.9 50.488,30.403 "
+     id="polygon825"
+     style="fill:none;stroke:#000000;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <text
+     x="46.761631"
+     y="29.234724"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text827"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">XDP hook start</text>
+  <polyline
+     points="50.746,32.912 50.746,33.962 44.869,33.962 44.869,36.683 45.432,36.683 "
+     id="polyline829"
+     style="fill:none;stroke:#000000;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polygon
+     points="45.432,36.683 45.307,36.433 45.807,36.683 45.307,36.933 "
+     id="polygon831"
+     style="fill:#000000;stroke:none;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polygon
+     points="45.432,36.683 45.307,36.433 45.807,36.683 45.307,36.933 "
+     id="polygon833"
+     style="fill:none;stroke:#000000;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <text
+     x="42.410629"
+     y="37.303722"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text835"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:end;fill:#000000">On</text>
+  <text
+     x="42.410629"
+     y="38.103725"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text837"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:end;fill:#000000">program</text>
+  <text
+     x="42.410629"
+     y="38.903725"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text839"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:end;fill:#000000">return</text>
+  <rect
+     x="46.38063"
+     y="44.382725"
+     width="7.2480001"
+     height="1.9"
+     id="rect841"
+     style="fill:#ffffff;stroke:none;stroke-width:0" />
+  <rect
+     x="46.38063"
+     y="44.382725"
+     width="7.2480001"
+     height="1.9"
+     id="rect843"
+     style="fill:none;stroke:#000000;stroke-width:0.1" />
+  <text
+     x="50.004631"
+     y="45.526726"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text845"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:middle;fill:#000000">XDP prog id:2</text>
+  <rect
+     x="46.38063"
+     y="48.381725"
+     width="7.2480001"
+     height="1.9"
+     id="rect847"
+     style="fill:#ffffff;stroke:none;stroke-width:0" />
+  <rect
+     x="46.38063"
+     y="48.381725"
+     width="7.2480001"
+     height="1.9"
+     id="rect849"
+     style="fill:none;stroke:#000000;stroke-width:0.1" />
+  <text
+     x="50.004631"
+     y="49.525723"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text851"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:middle;fill:#000000">XDP prog id:3</text>
+  <polyline
+     points="67.767,41.378 67.767,43.063 51.782,43.063 51.782,43.651 "
+     id="polyline853"
+     style="fill:none;stroke:#000000;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polygon
+     points="51.782,43.651 52.032,43.526 51.782,44.026 51.532,43.526 "
+     id="polygon855"
+     style="fill:#000000;stroke:none;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polygon
+     points="51.782,43.651 52.032,43.526 51.782,44.026 51.532,43.526 "
+     id="polygon857"
+     style="fill:none;stroke:#000000;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polyline
+     points="67.767,41.378 67.767,43.063 60.475,43.063 60.475,47.161 51.782,47.161 51.782,47.650 "
+     id="polyline859"
+     style="fill:none;stroke:#000000;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polygon
+     points="51.782,47.65 52.032,47.525 51.782,48.025 51.532,47.525 "
+     id="polygon861"
+     style="fill:#000000;stroke:none;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polygon
+     points="51.782,47.65 52.032,47.525 51.782,48.025 51.532,47.525 "
+     id="polygon863"
+     style="fill:none;stroke:#000000;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polyline
+     points="48.158,45.088 44.869,45.088 44.869,39.889 45.432,39.889 "
+     id="polyline865"
+     style="fill:none;stroke:#000000;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polygon
+     points="45.432,39.889 45.307,39.639 45.807,39.889 45.307,40.139 "
+     id="polygon867"
+     style="fill:#000000;stroke:none;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polygon
+     points="45.432,39.889 45.307,39.639 45.807,39.889 45.307,40.139 "
+     id="polygon869"
+     style="fill:none;stroke:#000000;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polygon
+     points="67.767,41.378 64.84,38.29 67.767,35.201 70.693,38.29 "
+     id="polygon871"
+     style="fill:#ffffff;stroke:none;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polygon
+     points="67.767,41.378 64.84,38.29 67.767,35.201 70.693,38.29 "
+     id="polygon873"
+     style="fill:none;stroke:#000000;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <text
+     x="65.989632"
+     y="38.328724"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text875"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:middle;fill:#000000">Found</text>
+  <text
+     x="65.989632"
+     y="39.128723"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text877"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:middle;fill:#000000">next ID?</text>
+  <rect
+     x="72.351631"
+     y="37.184723"
+     width="8.0270004"
+     height="2.7"
+     id="rect879"
+     style="fill:#ffffff;stroke:none;stroke-width:0" />
+  <rect
+     x="72.351631"
+     y="37.184723"
+     width="8.0270004"
+     height="2.7"
+     id="rect881"
+     style="fill:none;stroke:#000000;stroke-width:0.1" />
+  <text
+     x="76.364632"
+     y="38.328724"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text883"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:middle;fill:#000000">END</text>
+  <text
+     x="76.364632"
+     y="39.128723"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text885"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:middle;fill:#000000">Return last retcode</text>
+  <line
+     x1="68.96563"
+     y1="38.534725"
+     x2="71.864632"
+     y2="38.534725"
+     id="line887"
+     style="stroke:#000000;stroke-width:0.1" />
+  <polygon
+     points="73.642,38.29 73.517,38.04 74.017,38.29 73.517,38.54 "
+     id="polygon889"
+     style="fill:#000000;stroke:none;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polygon
+     points="73.642,38.29 73.517,38.04 74.017,38.29 73.517,38.54 "
+     id="polygon891"
+     style="fill:none;stroke:#000000;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <text
+     x="70.156631"
+     y="38.154724"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text893"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">No</text>
+  <line
+     x1="59.195629"
+     y1="38.530724"
+     x2="62.576626"
+     y2="38.533726"
+     id="line895"
+     style="stroke:#000000;stroke-width:0.1" />
+  <polygon
+     points="64.354,38.289 64.229,38.039 64.729,38.29 64.228,38.539 "
+     id="polygon897"
+     style="fill:#000000;stroke:none;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polygon
+     points="64.354,38.289 64.229,38.039 64.729,38.29 64.228,38.539 "
+     id="polygon899"
+     style="fill:none;stroke:#000000;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <text
+     x="64.211456"
+     y="42.963135"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text901"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">Yes</text>
+  <polyline
+     points="48.158,49.087 44.534,49.087 44.534,38.286 45.432,38.286 "
+     id="polyline903"
+     style="fill:none;stroke:#000000;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polygon
+     points="45.432,38.286 45.307,38.036 45.807,38.286 45.307,38.536 "
+     id="polygon905"
+     style="fill:#000000;stroke:none;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <polygon
+     points="45.432,38.286 45.307,38.036 45.807,38.286 45.307,38.536 "
+     id="polygon907"
+     style="fill:none;stroke:#000000;stroke-width:0.1"
+     transform="translate(-1.777368,0.24472306)" />
+  <path
+     d="m 44.141632,35.324723 h 15.054 v 6.412 c -3.011,-1.069 -4.516,-1.069 -7.527,0 -3.011,1.068 -4.516,1.068 -7.527,0 v -6.412"
+     id="path909"
+     inkscape:connector-curvature="0"
+     style="fill:#ffffff;stroke:none;stroke-width:0.1" />
+  <path
+     d="m 44.141632,35.324723 h 15.054 v 6.412 c -3.011,-1.069 -4.516,-1.069 -7.527,0 -3.011,1.068 -4.516,1.068 -7.527,0 v -6.412"
+     id="path911"
+     inkscape:connector-curvature="0"
+     style="fill:none;stroke:#000000;stroke-width:0.1" />
+  <text
+     x="44.81863"
+     y="36.450726"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text913"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">Program sequence map (eth0)</text>
+  <text
+     x="44.81863"
+     y="38.050724"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text915"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">(prog id:1, ret:PASS) → next id:2</text>
+  <text
+     x="44.81863"
+     y="38.850723"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text917"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">(prog id:1, ret:TX) → next id:3</text>
+  <text
+     x="44.81863"
+     y="39.650723"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text919"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">(prog id:2, ret:PASS) → next id:3</text>
+  <text
+     x="44.81863"
+     y="40.450726"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text921"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">(prog id:3, ret:DROP) → (not found)</text>
+  <text
+     x="44.81863"
+     y="41.250725"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text923"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">...</text>
+  <text
+     x="50.509628"
+     y="43.021725"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text925"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">Tail call</text>
+  <text
+     x="50.51963"
+     y="47.083725"
+     font-size="0.80"
+     font-style="normal"
+     font-weight="400"
+     id="text927"
+     style="font-style:normal;font-weight:400;font-size:0.80000001px;font-family:sans;text-anchor:start;fill:#000000">Tail call</text>
+</svg>

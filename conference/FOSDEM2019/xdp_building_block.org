@@ -422,7 +422,7 @@ AF_XDP bound to */single RX-queue id/* (for SPSC performance reasons)
 * Emacs tricks
 
 # Local Variables:
-# org-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
 # <h2 class=\"author\">Jesper Dangaard Brouer (Red Hat)<br/>
 # Magnus Karlsson (Intel)<br/></h2>
 # <h3>FOSDEM 2019<br/>Brussels, Feb 2019</h3>"
