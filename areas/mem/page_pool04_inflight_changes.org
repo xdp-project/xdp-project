@@ -107,6 +107,18 @@ page_pool object memory with some NULL pointers. Doing it this way,
 pinpoint both the driver (likely) prematurely freeing page_pool via WARN(),
 and crash-dump for inflight page/packet show who to blame for late return.
 
+** patch2: page_pool: make inflight returns more robust via blocking alloc cache
+
+When requesting page_pool shutdown, it's a requirement that consumer
+RX-side have been disconnected, but __page_pool_request_shutdown() keeps
+emptying RX alloc cache each time. Producers can still be inflight, but
+they MUST NOT return pages into RX alloc cache. Thus, it should only be
+necessary once.
+
+This patch only empty RX alloc cache once and then block alloc cache. The
+alloc cache is blocked via pretending it is full, and then also poisoning
+the last element. This blocks producers from using fast-path, and consumer
+(which is not allowed) will see a NULL pointer.
 
 * Potential bug?
 
