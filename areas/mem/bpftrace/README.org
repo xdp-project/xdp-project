@@ -12,4 +12,4 @@ These scripts depend on bpftrace features in versions higher than v0.9.2.
 As of this writing, no official version above v0.9.2, have been released.
 Thus, you have to [[https://github.com/iovisor/bpftrace/blob/master/INSTALL.md][install latest bpftrace]] GitHub version.
 
-We provide a local quick-guide here: file:INSTALL.oro
+We provide a local quick-guide here: [[file:INSTALL.oro]]
