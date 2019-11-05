@@ -7,6 +7,9 @@
  * then there can still be inflight packets/pages. The purpose is to
  * catch these cases, to make sure this code path is activated.
  *
+ * NIC driver developers converting their driver to use page_pool, should
+ * use this script to verify, they don't leak pages.
+ *
  * Extended version of xdp_mem_track01:
  * - Extract inflight counters via page_pool tracepoint
  *
