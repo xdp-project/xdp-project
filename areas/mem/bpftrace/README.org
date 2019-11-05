@@ -1,0 +1,7 @@
+# -*- fill-column: 76; -*-
+#+Title: Tracing tools based on bpftrace
+#+OPTIONS: ^:nil
+
+This directory contains some tracing tools based on [[https://github.com/iovisor/bpftrace][bpftrace]], which is a
+high-level tracing language for Linux eBPF.
+
