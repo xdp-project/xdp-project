@@ -68,5 +68,7 @@ tracepoint:xdp:mem_disconnect {
 }
 
 END {
-	clear(@types);
+	/* Default bpftrace will print all remaining maps at END */
+	clear(@types); /* Avoid printing @types table */
 }
+
