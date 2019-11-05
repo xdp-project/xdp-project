@@ -1,0 +1,56 @@
+# -*- fill-column: 76; -*-
+#+Title: Installing bpftrace and manage with stow
+#+OPTIONS: ^:nil
+
+The bpftrace official compile from git-tree guide is [[https://github.com/iovisor/bpftrace/blob/master/INSTALL.md#generic-build-process][here]].
+
+This document is mostly a guide, howto make =cmake= install the files under
+=/usr/local/stow/=, to ease management of different versions via [[https://www.gnu.org/software/stow/][GNU stow]].
+
+* Guide: Step-by-step
+
+** Clone git-repo
+
+#+begin_src sh
+git clone https://github.com/iovisor/bpftrace
+#+end_src
+
+** Compile and install
+
+Control the =cmake= install path via =CMAKE_INSTALL_PREFIX=.
+
+Regarding 'stow', consider creating direcory =/usr/local/stow/= with write
+permissions for your own user (or admin group), and restrict write
+permissions for =/usr/local/= as this prevents =make install= to install
+files outside the =CMAKE_INSTALL_PREFIX= path.
+
+Start in git repository directory:
+
+#+begin_src sh
+mkdir build ; cd build ;
+cmake -DCMAKE_INSTALL_PREFIX=/usr/local/stow/bpftrace-git01 ..
+make
+make install
+#+end_src
+
+** Use stow
+
+The bpftrace binaries have been installed into direcory
+=/usr/local/stow/bpftrace-git01= (from above procedure).
+
+As =/usr/local/= is a system-wide location, we want to keep track and be
+able to "uninstall" software installed in this location. For this task we
+use the tool called 'stow' (official [[https://www.gnu.org/software/stow/][GNU project]]).
+
+For symlink "installing" bpftrace this is the procedure:
+#+begin_src sh
+cd /usr/local/stow/
+sudo stow bpftrace-git01
+#+end_src
+
+For symlink "uninstall":
+#+begin_src sh
+cd /usr/local/stow/
+sudo stow -D bpftrace-git01
+#+end_src
+
