@@ -1,0 +1,110 @@
+#!/usr/local/bin/bpftrace
+/*
+ * xdp_mem_track02 - Catch when XDP mem_model unreg see inflight packets/pages
+ *
+ * In certain cases when unregistring a page_pool allocator via the
+ * kernels xdp_rxq_info_unreg() / xdp_rxq_info_unreg_mem_model() call,
+ * then there can still be inflight packets/pages. The purpose is to
+ * catch these cases, to make sure this code path is activated.
+ *
+ * Extended version of xdp_mem_track01:
+ * - Extract inflight counters via page_pool tracepoint
+ *
+ */
+
+BEGIN {
+	printf("Tracking XDP memory allocator connect+disconnect\n");
+	@types[0] = "PAGE_SHARED";
+	@types[1] = "PAGE_ORDER0";
+	@types[2] = "PAGE_POOL";
+	@types[3] = "ZERO_COPY";
+}
+
+tracepoint:xdp:mem_connect {
+	$id        = args->mem_id;
+	$page_pool = args->allocator;
+	$type      = args->mem_type;
+	$type_str  = @types[$type];
+
+	time();
+	printf("%s: type:%s mem.id:%d 0x%lX\n",
+	       probe, $type_str, $id, $page_pool);
+
+	@active_mem_ids[$id] = nsecs;
+}
+
+tracepoint:xdp:mem_disconnect {
+	$id        = args->mem_id;
+	$page_pool = args->allocator;
+	$type      = args->mem_type;
+	$type_str  = @types[$type];
+
+	$cnt = args->disconnect_cnt;
+	$safe_to_remove = args->safe_to_remove;
+
+	time(); /* Used as event marker */
+
+	$time_ms = 0;
+	if (@active_mem_ids[$id]) {
+		$time_ms = (nsecs - @active_mem_ids[$id]) / 1000000;
+	}
+
+	if ($safe_to_remove == 0) {
+		printf("%s: type:%s mem.id=%d NOT-safe_to_remove:%d (*HIT*)\n",
+		       probe, $type_str, $id, $safe_to_remove);
+		/* Track here as xdp:mem_connect didn't see connect */
+		if ($time_ms == 0) {
+			@active_mem_ids[$id] = nsecs;
+		}
+
+		/* Tracepoint page_pool_inflight is triggered just before.
+		 * Transfer info via maps @pp_stat_* to this tracepoint.
+		 */
+		$pp = (uint64)$page_pool; /* type-case didn't make difference */
+		$inflight = @pp_stat_inflight[$pp];
+		$hold     = @pp_stat_hold[$pp];
+		$release  = @pp_stat_release[$pp];
+
+		printf("%s: type:%s mem.id=%d inflight:%d (hold:%d release:%d)\n",
+		       probe, $type_str, $id, $inflight, $hold, $release);
+
+		/* Print mem IDs that hit not-safe-to-remove */
+		@test_case_hit[$id, $cnt, $time_ms] = $inflight;
+
+	} else {
+		delete(@active_mem_ids[$id]);
+	}
+
+	if ($cnt > 1) {
+		printf("%s: type:%s mem.id=%d re-sched(%d) safe_to_remove:%d\n",
+		       probe, $type_str, $id, $cnt, $safe_to_remove);
+	}
+
+	printf("%s: type:%s mem.id:%d 0x%lX safe_to_remove:%d (lived %d ms)\n",
+	       probe, $type_str, $id,  $page_pool, $safe_to_remove, $time_ms);
+}
+
+tracepoint:page_pool:page_pool_inflight {
+	$page_pool = args->pool;
+	$inflight  = args->inflight;
+	$hold      = args->hold;
+	$release   = args->release;
+
+	/* Challenge is that 'mem_id' is unknown to page_pool object.
+	 * Thus, identifier is page_pool pointer in map.
+	 */
+	if ($inflight > 0) {
+		printf("%s: pp:0x%lX inflight:%d (hold:%d release:%d)\n",
+		       probe, $page_pool, $inflight, $hold, $release);
+
+		$pp = (uint64)$page_pool; /* type-case necessary here */
+		@pp_stat_inflight[$pp] = $inflight;
+		@pp_stat_hold[$pp]     = $hold;
+		@pp_stat_release[$pp]  = $release;
+	}
+}
+
+END {
+	/* Default bpftrace will print all remaining maps at END */
+	clear(@types); /* Avoid printing @types table */
+}
