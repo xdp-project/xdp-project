@@ -122,6 +122,8 @@ the last element. This blocks producers from using fast-path, and consumer
 
 * Potential bug?
 
+*Update*: below issue should be addressed in patch2.
+
 I think, I might have spotted a potential bug in the shutdown phase, or at
 least something that can be made more safe/robust during shutdown.
 
