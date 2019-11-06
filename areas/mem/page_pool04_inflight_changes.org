@@ -84,6 +84,37 @@ page_pool being in a shutdown state.
 
 * Patchset descriptions
 
+** Cover-letter
+
+Subj: Change XDP lifetime guarantees for page_pool objects
+
+This patchset change XDP lifetime guarantees for page_pool objects
+(registered via the xdp_rxq_info_reg_mem_model API). The new guarantee
+is that page_pool objects stay valid (are not free'ed) until all
+inflight pages are returned.
+
+It was commit d956a048cd3f (“xdp: force mem allocator removal and
+periodic warning”) that introduce the force removal of page_pool
+objects (after 120 second). While working on extending page_pool
+recycling to cover SKBs[1], we[2] realized that this force removal
+approach was a mistake.
+
+Note, patches are based on-top of Saeed's page_pool NUMA changes.
+
+[1] https://github.com/xdp-project/xdp-project/tree/master/areas/mem
+[2] we == Ilias, Jonathan, Tariq, Saeed and me
+
+*** stg mail
+
+Commands used for stg-mail:
+
+#+begin_src sh
+stg mail --prefix="RFC-offlist v2" -e --cc meup \
+ --cc lemon --cc ilias --cc tariq --cc saeed \
+ --cc toke --cc matteo --cc lore \
+ xdp-revert-forced-mem..block-alloc-cache
+#+end_src
+
 ** Patch1: xdp: revert forced mem allocator removal for page_pool
 
 Forced removal of XDP mem allocator, specifically related to page_pool,
@@ -106,6 +137,8 @@ potentially lead to use-after-free, which we try to catch via poisoning the
 page_pool object memory with some NULL pointers. Doing it this way,
 pinpoint both the driver (likely) prematurely freeing page_pool via WARN(),
 and crash-dump for inflight page/packet show who to blame for late return.
+
+Fixes: d956a048cd3f (“xdp: force mem allocator removal and periodic warning”)
 
 ** patch2: page_pool: make inflight returns more robust via blocking alloc cache
 
