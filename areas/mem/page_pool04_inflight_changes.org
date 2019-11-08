@@ -111,7 +111,7 @@ Commands used for stg-mail:
 #+begin_src sh
 stg mail --prefix="RFC-offlist v2" -e --cc meup \
  --cc lemon --cc ilias --cc tariq --cc saeed \
- --cc toke --cc matteo --cc lore \
+ --cc tokerh --cc matteo --cc lore \
  xdp-revert-forced-mem..block-alloc-cache
 #+end_src
 
@@ -143,15 +143,16 @@ Fixes: d956a048cd3f (“xdp: force mem allocator removal and periodic warning”
 ** patch2: page_pool: make inflight returns more robust via blocking alloc cache
 
 When requesting page_pool shutdown, it's a requirement that consumer
-RX-side have been disconnected, but __page_pool_request_shutdown() keeps
-emptying RX alloc cache each time. Producers can still be inflight, but
-they MUST NOT return pages into RX alloc cache. Thus, it should only be
-necessary once.
+RX-side have been disconnected, but __page_pool_request_shutdown()
+have a loop that empty RX alloc cache each time. Producers can still
+be inflight, but they MUST NOT return pages into RX alloc cache. Thus,
+the RX alloc cache MUST remain empty after the first clearing, else it
+is considered a bug. Lets make it more clear this is only cleared once.
 
-This patch only empty RX alloc cache once and then block alloc cache. The
-alloc cache is blocked via pretending it is full, and then also poisoning
-the last element. This blocks producers from using fast-path, and consumer
-(which is not allowed) will see a NULL pointer.
+This patch only empty RX alloc cache once and then block alloc cache.
+The alloc cache is blocked via pretending it is full, and then also
+poisoning the last element. This blocks producers from using fast-path,
+and consumer (which is not allowed) will see a NULL pointer.
 
 * Potential bug?
 
