@@ -226,3 +226,76 @@ rx_queue_index    3:sum 22,359,842
 #+end_src
 
 Calc: (1/22359831-1/22188213)*10^9 = -0.3459 ns
+
+** bpftrace measurement tool output
+
+Repeating test of patchset and monitor that the testcase of activating
+work-queue does happen. The specific test run is xdp_redirect_map from
+mlx5 (100G) into ixgbe (10G) driver, and causing an error case, where
+ixgbe driver is repeatably resetting itself, causing it to flush its
+TX queue slightly later than mlx5 driver unregister the page_pool,
+when unloading XDP program.
+
+The output is from script: [[file:bpftrace/xdp_mem_track02.bt][xdp_mem_track02.bt]]
+- in https://github.com/xdp-project/xdp-project/tree/master/areas/mem/bpftrace
+
+#+begin_example
+18:32:47
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id:19 0xFFFF88881DAEF800 safe_to_remove:1 (lived 8732 ms)
+18:32:47
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id:20 0xFFFF88881DAE9800 safe_to_remove:1 (lived 8732 ms)
+18:32:47
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id:21 0xFFFF88881DAEA000 safe_to_remove:1 (lived 8732 ms)
+18:32:47
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id:22 0xFFFF88881DAE9000 safe_to_remove:1 (lived 8732 ms)
+18:32:47
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id:23 0xFFFF888818AE5000 safe_to_remove:1 (lived 8732 ms)
+18:32:47
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id:24 0xFFFF8888514F8000 safe_to_remove:1 (lived 8732 ms)
+18:32:59
+tracepoint:xdp:mem_connect: type:PAGE_POOL mem.id:31 0xFFFF88882BD70000
+18:32:59
+tracepoint:xdp:mem_connect: type:PAGE_POOL mem.id:32 0xFFFF88887D836800
+18:32:59
+tracepoint:xdp:mem_connect: type:PAGE_POOL mem.id:33 0xFFFF88887C8A5800
+18:32:59
+tracepoint:xdp:mem_connect: type:PAGE_POOL mem.id:34 0xFFFF88884F873000
+18:32:59
+tracepoint:xdp:mem_connect: type:PAGE_POOL mem.id:35 0xFFFF88884F870800
+18:32:59
+tracepoint:xdp:mem_connect: type:PAGE_POOL mem.id:36 0xFFFF88884F870000
+18:32:59
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id:25 0xFFFF88881A8D7800 safe_to_remove:1 (lived 12105 ms)
+18:32:59
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id:26 0xFFFF88881A8D4000 safe_to_remove:1 (lived 12105 ms)
+18:32:59
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id:27 0xFFFF88881A8D2800 safe_to_remove:1 (lived 12105 ms)
+tracepoint:page_pool:page_pool_inflight: pp:0xFFFF888848D59800 inflight:511 (hold:1982 release:1471)
+18:32:59
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id=28 NOT-safe_to_remove:0 (*HIT*)
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id=28 inflight:511 (hold:1982 release:1471)
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id:28 0xFFFF888848D59800 safe_to_remove:0 (lived 12106 ms)
+18:32:59
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id:29 0xFFFF888848D5E000 safe_to_remove:1 (lived 12106 ms)
+18:32:59
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id:30 0xFFFF888848D5A000 safe_to_remove:1 (lived 12107 ms)
+18:33:00
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id=28 re-sched(2) safe_to_remove:1
+tracepoint:xdp:mem_disconnect: type:PAGE_POOL mem.id:28 0xFFFF888848D59800 safe_to_remove:1 (lived 13125 ms)
+^C
+
+@active_mem_ids[31]: 262480223701
+@active_mem_ids[32]: 262482165027
+@active_mem_ids[33]: 262483959614
+@active_mem_ids[34]: 262485769530
+@active_mem_ids[35]: 262487541744
+@active_mem_ids[36]: 262489362487
+
+@pp_stat_hold[-131356057823232]: 1982
+
+@pp_stat_inflight[-131356057823232]: 511
+
+@pp_stat_release[-131356057823232]: 1471
+
+@test_case_hit[28, 1, 12106]: 511
+#+end_example
