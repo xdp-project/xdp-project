@@ -96,20 +96,24 @@ inflight pages are returned.
 It was commit d956a048cd3f (“xdp: force mem allocator removal and
 periodic warning”) that introduce the force removal of page_pool
 objects (after 120 second). While working on extending page_pool
-recycling to cover SKBs[1], we[2] realized that this force removal
+recycling to cover SKBs[1], we[2] realised that this force removal
 approach was a mistake.
 
-Note, patches are based on-top of Saeed's page_pool NUMA changes.
+Tested and monitored via bpftrace scripts provide here[3].
 
 [1] https://github.com/xdp-project/xdp-project/tree/master/areas/mem
 [2] we == Ilias, Jonathan, Tariq, Saeed and me
+[3] https://github.com/xdp-project/xdp-project/tree/master/areas/mem/bpftrace
+
+Note, patches are based on-top of Saeed's page_pool NUMA changes.
 
 *** stg mail
 
 Commands used for stg-mail:
 
 #+begin_src sh
-stg mail --prefix="RFC-offlist v2" -e --cc meup \
+stg mail --prefix="net-next v1" -e --cc meup \
+ --cc netdev \
  --cc lemon --cc ilias --cc tariq --cc saeed \
  --cc tokerh --cc matteo --cc lore \
  xdp-revert-forced-mem..block-alloc-cache
@@ -174,3 +178,4 @@ One way to avoid this during shutdown, is to block the alloc cache by (after
 flushing it) pretend that it is full, by setting pool->alloc.count equal to
 max size PP_ALLOC_CACHE_SIZE.  Further more we can poison last entry to
 catch users still allocating from it.
+
