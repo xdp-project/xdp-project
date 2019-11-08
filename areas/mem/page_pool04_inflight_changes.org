@@ -179,3 +179,50 @@ flushing it) pretend that it is full, by setting pool->alloc.count equal to
 max size PP_ALLOC_CACHE_SIZE.  Further more we can poison last entry to
 catch users still allocating from it.
 
+* Notes
+
+** Performance notes
+
+Result with patchset + Saeed NUMA changes + mlx5-cache-removal-patch
+#+begin_src sh
+[broadwell kernel-bpf-samples]$ sudo ./xdp_rxq_info --dev mlx5p1 --action XDP_DROP
+[...]
+Running XDP on dev:mlx5p1 (ifindex:7) action:XDP_DROP options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      2       22,188,213  0          
+XDP-RX CPU      total   22,188,213 
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    2:2   22,188,216  0          
+rx_queue_index    2:sum 22,188,216 
+^CInterrupted: Removing XDP program on ifindex:7 device:mlx5p1
+#+end_src
+
+Result with only described patches:
+#+begin_src sh
+Running XDP on dev:mlx5p1 (ifindex:7) action:XDP_DROP options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      5       22,901,924  0          
+XDP-RX CPU      total   22,901,924 
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    1:5   22,901,924  0          
+rx_queue_index    1:sum 22,901,924 
+#+end_src
+
+Calc: (1/22901924-1/22188213)*10^9 = -1.4045 ns
+
+
+Result with only described patches + mlx5-cache-removal-patch:
+#+begin_src sh
+Running XDP on dev:mlx5p1 (ifindex:7) action:XDP_DROP options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      4       22,359,831  0          
+XDP-RX CPU      total   22,359,831 
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    3:4   22,359,842  0          
+rx_queue_index    3:sum 22,359,842 
+#+end_src
+
+Calc: (1/22359831-1/22188213)*10^9 = -0.3459 ns
