@@ -1,0 +1,96 @@
+#!/usr/local/bin/bpftrace
+/*
+ * page_pool_track_shutdown01 - Catch when page_pool_destroy see inflight pages
+ *
+ * NIC driver developers converting their driver to use page_pool, should
+ * use this script to verify, they don't leak pages.
+ *
+ */
+
+BEGIN {
+	printf("Tracking page_pool destroy\n");
+	printf(" - overlay XDP memory allocator connect+disconnect\n");
+	@types[0] = "PAGE_SHARED";
+	@types[1] = "PAGE_ORDER0";
+	@types[2] = "PAGE_POOL";
+	@types[3] = "ZERO_COPY";
+}
+
+/* This script depend on kernel change introducing page_pool_destroy().
+ * Thus, using it here will cause script to fail, if it is not avail.
+ */
+kprobe:page_pool_destroy {
+	$pp = (uint64)arg0;
+	/* On elevated page_pool user_cnt refcnt called multiple times */
+	@pp_destroy[$pp] = count();
+	// @pp_last_kstack[$pp] = kstack;
+}
+
+tracepoint:page_pool:page_pool_inflight {
+	$page_pool = args->pool;
+	$inflight  = args->inflight;
+	$hold      = args->hold;
+	$release   = args->release;
+
+	/* Challenge is that 'mem_id' is unknown to page_pool object.
+	 * Thus, identifier is page_pool pointer in map.
+	 */
+	if ($inflight > 0) {
+		$pp = (uint64)$page_pool; /* type-case necessary here */
+		@pp_stat_inflight[$pp] = $inflight;
+		@pp_stat_hold[$pp]     = $hold;
+		@pp_stat_release[$pp]  = $release;
+
+		@pp_inflight_kstack = kstack;
+
+		printf("%s: pp:0x%lX inflight:%d (hold:%d release:%d) (*HIT*)\n",
+		       probe, $page_pool, $inflight, $hold, $release);
+	} else {
+		printf("%s: pp:0x%lX inflight:%d (hold:%d release:%d)\n",
+		       probe, $page_pool, $inflight, $hold, $release);
+	}
+}
+
+tracepoint:xdp:mem_connect {
+	$id        = args->mem_id;
+	$page_pool = args->allocator;
+	$type      = args->mem_type;
+	$type_str  = @types[$type];
+
+	// time();  /* Used as event marker */
+	printf("%s: type:%s mem.id:%d pp:0x%lX\n",
+	       probe, $type_str, $id, $page_pool);
+
+	@active_mem_ids[$id] = nsecs;
+}
+
+tracepoint:xdp:mem_disconnect {
+	$id        = args->mem_id;
+	$page_pool = args->allocator;
+	$type      = args->mem_type;
+	$type_str  = @types[$type];
+
+	// time(); /* Used as event marker */
+
+	$time_ms = 0;
+	if (@active_mem_ids[$id]) {
+		$time_ms = (nsecs - @active_mem_ids[$id]) / 1000000;
+	}
+	printf("%s: type:%s mem.id:%d pp:0x%lX (lived %d ms)\n",
+	       probe, $type_str, $id,  $page_pool, $time_ms);
+
+	$pp = (uint64)$page_pool;
+	if (@pp_stat_inflight[$pp]) {
+		/* An inflight event happened */
+		@disconn_kstack[$pp] = kstack;
+		printf("%s: INFLIGHT type:%s mem.id:%d pp:0x%lX (lived %d ms)\n",
+		       probe, $type_str, $id,  $page_pool, $time_ms);
+	}
+
+	delete(@active_mem_ids[$id]);
+}
+
+END {
+	/* Default bpftrace will print all remaining maps at END */
+	clear(@types); /* Avoid printing @types table */
+}
