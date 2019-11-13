@@ -1,0 +1,90 @@
+#!/usr/local/bin/bpftrace
+/*
+ * page_pool_track_leaks01 -
+ *
+ * WORK-IN-PROGRESS
+ */
+
+BEGIN {
+	printf("Tracking page_pool - leaks\n");
+	@verbose = $1;
+	@once = 1;
+}
+
+tracepoint:page_pool:page_pool_state_hold {
+	$pp   = (uint64)args->pool;
+	$page = (uint64)args->page;
+	$cnt  = args->hold;
+
+	/* Mark page as owned by page_pool (that we track) */
+	if (@pp_track[$pp]) {
+		@pages_hold[$page] = $pp;
+	}
+
+	if (@verbose) {
+		printf("%s: page:0x%lX cnt:%u\n", probe, $page, $cnt);
+	}
+}
+tracepoint:page_pool:page_pool_state_release {
+	$pp   = (uint64)args->pool;
+	$page = (uint64)args->page;
+	$cnt  = args->release;
+
+	/* Lookup which page_pool owns this page */
+	$pp_owner = @pages_hold[$page];
+
+	if ($pp_owner) {
+		/* Remove page as "owned" by page_pool */
+		delete(@pages_hold[$page]);
+
+		if ($pp != $pp_owner) {
+			printf("%s: BUG page:0x%lX owned by wrong page pool\n",
+			       probe, $page);
+		}
+	}
+	if (@verbose) {
+		printf("%s: page:0x%lX cnt:%u\n", probe, $page, $cnt);
+	}
+}
+
+/* Issue: Before it's possible to track page, we need to track a
+ * page_pool from creation until destruction.
+ */
+kretprobe:page_pool_create {
+	$pp = (uint64)retval;
+	if (@once == 1) {
+		@once = 2; // Hack: only track first page_pool we see
+		printf("%s: start tracking page pool pp:0x%lX\n", probe, $pp);
+		@pp_track[$pp] = nsecs;
+	} else {
+		printf("%s: SKIP tracking page pool pp:0x%lX\n", probe, $pp);
+	}
+}
+// Hmmm... need delete point too... but this can be work-queue sched.
+tracepoint:page_pool:page_pool_inflight {
+	// Use page_pool_inflight as "destroy" event
+	$pp       = (uint64)args->pool;
+	$inflight = args->inflight;
+	$hold     = args->hold;
+	$release  = args->release;
+
+	if ($inflight == 0) {
+		if (@pp_track[$pp]) {
+			@pp_end_of_life[$pp, nsecs] = @pp_track[$pp];
+			delete(@pp_track[$pp]);
+		}
+	}
+}
+
+END {
+	/* Default bpftrace will print all remaining maps at END */
+
+	/* Issue: It is only tracked page_pool's that have seen a destroy event
+	 * (avail in @pp_end_of_life), what we want to show leaked pages for,
+	 * but howto filter those from @pp_track[] ???
+	 *
+	 * Don't think we can iterate over a hash in bpftrace?
+	 *
+	 * (Maybe I need to write this with BCC-tools instead?)
+	 */
+}
