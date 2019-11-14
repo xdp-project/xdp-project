@@ -76,22 +76,25 @@ tracepoint:page_pool:page_pool_state_release {
 	}
 }
 
-/* __put_page() is called after put_page_testzero(page) */
+/* Would be better to use: trace_mm_page_free(page, order) to catch all page free
+ *
+ * Unfortunately the tracepoint only provided the PFN number.
+ */
+//tracepoint:kmem:mm_page_free {
+//	$pfn      = (uint64)args->pfn;
+//	//$page     = pfn_to_page($pfn);
+//}
 
-/* For order-0 pages, they SHOULD end-up calling free_unref_page(), but we have
+/* Alternative: catch page free via kprobe.
+ *
+ * For order-0 pages, they SHOULD end-up calling free_unref_page(), but we have
  * seen examples/bugs of order-0 pages being returned via __free_pages_ok, which
  * returns the pages directly to buddy-allocator.
+ *
+ * Notice: network stack often uses page_frag_free() and end up in inline
+ * function "free_the_page", which calls (order == 0) free_unref_page(page) else
+ * __free_pages_ok()
  */
-
-// Notice: network stack often uses page_frag_free() and end up in
-// inline function "free_the_page", which calls (order == 0)
-// free_unref_page(page) else __free_pages_ok()
-
-// Other places to track
-// __free_pages
-// 
-
-
 kprobe:free_unref_page {
 	$page     = (uint64)arg0;
 	$pp_owner = @pages_hold[$page];
@@ -108,7 +111,6 @@ kprobe:free_unref_page {
 		@bug_on_page_release[$page] = kstack;
 	}
 }
-// Better to use: trace_mm_page_free(page, order);
 
 /* Catch page_pool delete events.
  *
