@@ -8,30 +8,54 @@
 BEGIN {
 	printf("Tracking page_pool - leaks\n");
 	@verbose = $1;
-	@once = 1;
+	@once = 0;
 }
 
+/* Calculate distance between two u32 values, valid if distance is below 2^(31)
+ *  https://en.wikipedia.org/wiki/Serial_number_arithmetic#General_Solution
+ */
+//#define _distance(a, b)	(int32)((a) - (b))
+
 tracepoint:page_pool:page_pool_state_hold {
-	$pp   = (uint64)args->pool;
-	$page = (uint64)args->page;
-	$cnt  = args->hold;
+	$pp       = (uint64)args->pool;
+	$page     = (uint64)args->page;
+	$hold_cnt = (uint32)args->hold;
 
 	/* Mark page as owned by page_pool (that we track) */
 	if (@pp_track[$pp]) {
 		@pages_hold[$page] = $pp;
 	}
 
-	if (@verbose) {
-		printf("%s: page:0x%lX cnt:%u\n", probe, $page, $cnt);
+	/* Calculate inflight via data from other tracepoint */
+	@pp_hold_cnt[$pp] = $hold_cnt;
+	$rele_cnt = @pp_release_cnt[$pp];
+	if ($rele_cnt > 0) {
+		$inflight = (int32)($hold_cnt - $rele_cnt);
+		@pp_inflight_stat[$pp] = hist($inflight);
+	}
+
+	if (@verbose && @pp_track[$pp]) {
+		printf("%s: page:0x%lX cnt hold:%u release:%u inflight:%d\n",
+		       probe, $page, $hold_cnt, $rele_cnt, $inflight);
 	}
 }
+
 tracepoint:page_pool:page_pool_state_release {
-	$pp   = (uint64)args->pool;
-	$page = (uint64)args->page;
-	$cnt  = args->release;
+	$pp       = (uint64)args->pool;
+	$page     = (uint64)args->page;
+	$rele_cnt = (uint32)args->release;
 
 	/* Lookup which page_pool owns this page */
 	$pp_owner = @pages_hold[$page];
+
+	/* Calculate inflight via data from other tracepoint */
+	@pp_release_cnt[$pp] = $rele_cnt;
+	$hold_cnt = @pp_hold_cnt[$pp];
+	if ($hold_cnt > 0) {
+		$inflight = (int32)($hold_cnt - $rele_cnt);
+		@pp_inflight_stat[$pp] = hist($inflight);
+	}
+
 
 	if ($pp_owner) {
 		/* Remove page as "owned" by page_pool */
@@ -43,17 +67,56 @@ tracepoint:page_pool:page_pool_state_release {
 		}
 	}
 	if (@verbose) {
-		printf("%s: page:0x%lX cnt:%u\n", probe, $page, $cnt);
+//		printf("%s: page:0x%lX cnt hold:%u release:%u in\n",
+//		       probe, $page, $hold_cnt, $rele_cnt, $inflight);
+//		printf("in:%d\n", $inflight);
+		printf("%s: page:0x%lX cnt hold:%u release:%u inflight:%d\n",
+		       probe, $page, $hold_cnt, $rele_cnt, $inflight);
 	}
 }
+
+/* __put_page() is called after put_page_testzero(page) */
+
+/* For order-0 pages, they SHOULD end-up calling free_unref_page(), but we have
+ * seen examples/bugs of order-0 pages being returned via __free_pages_ok, which
+ * returns the pages directly to buddy-allocator.
+ */
+
+// Notice: network stack often uses page_frag_free() and end up in
+// inline function "free_the_page", which calls (order == 0)
+// free_unref_page(page) else __free_pages_ok()
+
+// Other places to track
+// __free_pages
+// 
+
+
+kprobe:free_unref_page {
+	$page     = (uint64)arg0;
+	$pp_owner = @pages_hold[$page];
+
+//	if (@verbose) {
+//		printf("%s: page:0x%lX\n", probe, $page);
+//	}
+
+	/* Bug if a page is still owned by a page_pool */
+	if ($pp_owner) {
+		printf("%s: BUG page:0x%lX still owned by page_pool 0x%lX\n%s\n",
+		       probe, $page, $pp_owner, kstack);
+		@bug[$pp_owner] = count();
+		@bug_on_page_release[$page] = kstack;
+	}
+}
+// Better to use: trace_mm_page_free(page, order);
+
 
 /* Issue: Before it's possible to track page, we need to track a
  * page_pool from creation until destruction.
  */
 kretprobe:page_pool_create {
 	$pp = (uint64)retval;
-	if (@once == 1) {
-		@once = 2; // Hack: only track first page_pool we see
+	if (@once == 0) {
+		@once = 1; // Hack: only track first page_pool we see
 		printf("%s: start tracking page pool pp:0x%lX\n", probe, $pp);
 		@pp_track[$pp] = nsecs;
 	} else {
@@ -87,4 +150,9 @@ END {
 	 *
 	 * (Maybe I need to write this with BCC-tools instead?)
 	 */
+
+	/* When script stops map @pages_hold still contains pages from
+	 * page_pool's that have not been shutdown.
+	 */
+	clear(@pages_hold);
 }
