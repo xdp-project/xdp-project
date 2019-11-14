@@ -1,8 +1,12 @@
 #!/usr/local/bin/bpftrace
 /*
- * page_pool_track_leaks01 -
+ * page_pool_track_leaks01 - track pages owned by page_pool and detect leaks
  *
- * WORK-IN-PROGRESS
+ * Script track pages owned by page_pool's (via hold and release tracepoints)
+ * and detect if page-allocator is freeing a page with a page_pool owner.
+ *
+ * The inflight pages are calculated via the respective hold and release
+ * counters, and stats are printed periodically.
  */
 
 BEGIN {
