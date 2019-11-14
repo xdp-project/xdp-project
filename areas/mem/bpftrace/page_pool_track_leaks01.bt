@@ -124,8 +124,13 @@ kretprobe:page_pool_create {
 	}
 }
 // Hmmm... need delete point too... but this can be work-queue sched.
+
+/* Catch page_pool delete events.
+ *
+ * Need to cleanup maps related to pp, because it can be free'ed and reused
+ * again, which would break the different maps used across probes.
+ */
 tracepoint:page_pool:page_pool_inflight {
-	// Use page_pool_inflight as "destroy" event
 	$pp       = (uint64)args->pool;
 	$inflight = args->inflight;
 	$hold     = args->hold;
@@ -136,6 +141,19 @@ tracepoint:page_pool:page_pool_inflight {
 			@pp_end_of_life[$pp, nsecs] = @pp_track[$pp];
 			delete(@pp_track[$pp]);
 		}
+		/* Use page_pool_inflight as "destroy" event */
+
+		printf("Use (delete) event to show inflight stats for ALL pp\n");
+		print(@pp_inflight_stat);// print all, but only wanted this $pp
+		//printf("%s\n", @pp_inflight_stat[$pp]);
+
+		/* Important: delete map contents for pp as ptr could be reused */
+		delete(@pp_inflight_stat[$pp]);
+		delete(@pp_hold_cnt[$pp]);
+		delete(@pp_release_cnt[$pp]);
+
+		printf("Delete page_pool:0x%lX cnt hold:%u release:%u inflight:%d\n",
+		       $pp, $hold, $release, $inflight);
 	}
 }
 
