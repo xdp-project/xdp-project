@@ -9,6 +9,7 @@ BEGIN {
 	printf("Tracking page_pool - leaks\n");
 	printf("- (slower path ptr_ring events needed to get stats)\n");
 	@verbose = $1;
+	@debug = $2
 }
 
 /* Calculate distance between two u32 values, valid if distance is below 2^(31)
@@ -49,6 +50,15 @@ tracepoint:page_pool:page_pool_state_release {
 
 	/* Lookup which page_pool owns this page */
 	$pp_owner = @pages_hold[$page];
+	if ($pp_owner) {
+		/* Remove page as "owned" by page_pool */
+		delete(@pages_hold[$page]);
+
+		if ($pp != $pp_owner) {
+			printf("%s: BUG page:0x%lX owned by wrong page pool\n",
+			       probe, $page);
+		}
+	}
 
 	/* Calculate inflight via data from other tracepoint */
 	@pp_release_cnt[$pp] = $rele_cnt;
@@ -62,15 +72,6 @@ tracepoint:page_pool:page_pool_state_release {
 		}
 	}
 
-	if ($pp_owner) {
-		/* Remove page as "owned" by page_pool */
-		delete(@pages_hold[$page]);
-
-		if ($pp != $pp_owner) {
-			printf("%s: BUG page:0x%lX owned by wrong page pool\n",
-			       probe, $page);
-		}
-	}
 	if (@verbose) {
 		printf("%s: page:0x%lX cnt hold:%u release:%u inflight:%d\n",
 		       probe, $page, $hold_cnt, $rele_cnt, $inflight);
@@ -100,16 +101,16 @@ kprobe:free_unref_page {
 	$page     = (uint64)arg0;
 	$pp_owner = @pages_hold[$page];
 
-//	if (@verbose) {
-//		printf("%s: page:0x%lX\n", probe, $page);
-//	}
-
 	/* Bug if a page is still owned by a page_pool */
 	if ($pp_owner) {
 		printf("%s: BUG page:0x%lX still owned by page_pool 0x%lX\n%s\n",
 		       probe, $page, $pp_owner, kstack);
-		@bug[$pp_owner] = count();
+		@bugs[$pp_owner] = count();
 		@bug_on_page_release[$page] = kstack;
+	}
+
+	if (@debug) {
+		printf("%s: page:0x%lX\n", probe, $page);
 	}
 }
 
@@ -146,6 +147,7 @@ interval:s:3
 	print(@pp_inflight_stat);
 	clear(@pp_inflight_stat);
 	print(@pp_inflight_max);
+	print(@bugs);
 }
 
 END {
