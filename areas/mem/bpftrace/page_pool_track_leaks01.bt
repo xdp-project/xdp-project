@@ -7,6 +7,7 @@
 
 BEGIN {
 	printf("Tracking page_pool - leaks\n");
+	printf("- (slower path ptr_ring events needed to get stats)\n");
 	@verbose = $1;
 }
 
@@ -125,20 +126,26 @@ tracepoint:page_pool:page_pool_inflight {
 
 	if ($inflight == 0) {
 		/* Use page_pool_inflight as "destroy" event */
-
-		printf("Use (delete) event to show inflight stats for ALL pp\n");
-		print(@pp_inflight_stat);// print all, but only wanted this $pp
-		//printf("%s\n", @pp_inflight_stat[$pp]);
+		$max = @pp_inflight_max[$pp];
+		printf("Delete page_pool:0x%lX cnt hold:%u release:%u inflight:%d MAX\n",
+		       $pp, $hold, $release, $max);
 
 		/* Important: delete map contents for pp as ptr could be reused */
 		delete(@pp_inflight_stat[$pp]);
 		delete(@pp_hold_cnt[$pp]);
 		delete(@pp_release_cnt[$pp]);
-
-		$max = @pp_inflight_max[$pp];
-		printf("Delete page_pool:0x%lX cnt hold:%u release:%u inflight:%d MAX\n",
-		       $pp, $hold, $release, $max);
+		delete(@pp_inflight_max[$pp]);
 	}
+}
+
+/* Periodically print inflight stats */
+interval:s:3
+{
+        time();
+	printf("Periodic show inflight stats for ALL pp (and clear histograms)\n");
+	print(@pp_inflight_stat);
+	clear(@pp_inflight_stat);
+	print(@pp_inflight_max);
 }
 
 END {
