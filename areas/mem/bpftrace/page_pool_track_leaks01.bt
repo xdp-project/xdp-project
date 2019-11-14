@@ -29,6 +29,10 @@ tracepoint:page_pool:page_pool_state_hold {
 	if ($rele_cnt > 0) {
 		$inflight = (int32)($hold_cnt - $rele_cnt);
 		@pp_inflight_stat[$pp] = hist($inflight);
+		$max = @pp_inflight_max[$pp];
+		if ($max < $inflight) {
+			@pp_inflight_max[$pp] = $inflight;
+		}
 	}
 
 	if (@verbose) {
@@ -51,8 +55,11 @@ tracepoint:page_pool:page_pool_state_release {
 	if ($hold_cnt > 0) {
 		$inflight = (int32)($hold_cnt - $rele_cnt);
 		@pp_inflight_stat[$pp] = hist($inflight);
+		$max = @pp_inflight_max[$pp];
+		if ($max < $inflight) {
+			@pp_inflight_max[$pp] = $inflight;
+		}
 	}
-
 
 	if ($pp_owner) {
 		/* Remove page as "owned" by page_pool */
@@ -64,9 +71,6 @@ tracepoint:page_pool:page_pool_state_release {
 		}
 	}
 	if (@verbose) {
-//		printf("%s: page:0x%lX cnt hold:%u release:%u in\n",
-//		       probe, $page, $hold_cnt, $rele_cnt, $inflight);
-//		printf("in:%d\n", $inflight);
 		printf("%s: page:0x%lX cnt hold:%u release:%u inflight:%d\n",
 		       probe, $page, $hold_cnt, $rele_cnt, $inflight);
 	}
@@ -129,8 +133,9 @@ tracepoint:page_pool:page_pool_inflight {
 		delete(@pp_hold_cnt[$pp]);
 		delete(@pp_release_cnt[$pp]);
 
-		printf("Delete page_pool:0x%lX cnt hold:%u release:%u inflight:%d\n",
-		       $pp, $hold, $release, $inflight);
+		$max = @pp_inflight_max[$pp];
+		printf("Delete page_pool:0x%lX cnt hold:%u release:%u inflight:%d MAX\n",
+		       $pp, $hold, $release, $max);
 	}
 }
 
