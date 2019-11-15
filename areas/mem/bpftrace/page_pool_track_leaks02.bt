@@ -1,0 +1,164 @@
+#!/usr/local/bin/bpftrace
+/*
+ * page_pool_track_leaks01 - track pages owned by page_pool and detect leaks
+ *
+ * Script track pages owned by page_pool's (via hold and release tracepoints)
+ * and detect if page-allocator is freeing a page with a page_pool owner.
+ *
+ * The inflight pages are calculated via the respective hold and release
+ * counters, and stats are printed periodically.
+ */
+
+BEGIN {
+	printf("Tracking page_pool - leaks\n");
+	printf("- (slower path ptr_ring events needed to get stats)\n");
+	@verbose = $1;
+	@debug = $2
+}
+
+/* Calculate distance between two u32 values, valid if distance is below 2^(31)
+ *  https://en.wikipedia.org/wiki/Serial_number_arithmetic#General_Solution
+ */
+//#define _distance(a, b)	(int32)((a) - (b))
+
+tracepoint:page_pool:page_pool_state_hold {
+	$pp       = (uint64)args->pool;
+	$page     = (uint64)args->page;
+	$hold_cnt = (uint32)args->hold;
+
+	/* Mark page as owned by page_pool */
+	@pages_hold[$page] = $pp;
+
+	/* Calculate inflight via data from other tracepoint */
+	@pp_hold_cnt[$pp] = $hold_cnt;
+	$rele_cnt = @pp_release_cnt[$pp];
+	if ($rele_cnt > 0) {
+		$inflight = (int32)($hold_cnt - $rele_cnt);
+		@pp_inflight_stat[$pp] = hist($inflight);
+		$max = @pp_inflight_max[$pp];
+		if ($max < $inflight) {
+			@pp_inflight_max[$pp] = $inflight;
+		}
+	}
+
+	if (@verbose) {
+		printf("%s: page:0x%lX cnt hold:%u release:%u inflight:%d\n",
+		       probe, $page, $hold_cnt, $rele_cnt, $inflight);
+	}
+}
+
+tracepoint:page_pool:page_pool_state_release {
+	$pp       = (uint64)args->pool;
+	$page     = (uint64)args->page;
+	$rele_cnt = (uint32)args->release;
+
+	/* Lookup which page_pool owns this page */
+	$pp_owner = @pages_hold[$page];
+	if ($pp_owner) {
+		/* Remove page as "owned" by page_pool */
+		delete(@pages_hold[$page]);
+
+		if ($pp != $pp_owner) {
+			printf("%s: BUG page:0x%lX owned by wrong page pool\n",
+			       probe, $page);
+		}
+	}
+
+	/* Calculate inflight via data from other tracepoint */
+	@pp_release_cnt[$pp] = $rele_cnt;
+	$hold_cnt = @pp_hold_cnt[$pp];
+	if ($hold_cnt > 0) {
+		$inflight = (int32)($hold_cnt - $rele_cnt);
+		@pp_inflight_stat[$pp] = hist($inflight);
+		$max = @pp_inflight_max[$pp];
+		if ($max < $inflight) {
+			@pp_inflight_max[$pp] = $inflight;
+		}
+	}
+
+	if (@verbose) {
+		printf("%s: page:0x%lX cnt hold:%u release:%u inflight:%d\n",
+		       probe, $page, $hold_cnt, $rele_cnt, $inflight);
+	}
+}
+
+/* Would be better to use: trace_mm_page_free(page, order) to catch all page free
+ *
+ * Unfortunately the tracepoint only provided the PFN number.
+ */
+//tracepoint:kmem:mm_page_free {
+//	$pfn      = (uint64)args->pfn;
+//	//$page     = pfn_to_page($pfn);
+//}
+
+/* Alternative: catch page free via kprobe.
+ *
+ * For order-0 pages, they SHOULD end-up calling free_unref_page(), but we have
+ * seen examples/bugs of order-0 pages being returned via __free_pages_ok, which
+ * returns the pages directly to buddy-allocator.
+ *
+ * Notice: network stack often uses page_frag_free() and end up in inline
+ * function "free_the_page", which calls (order == 0) free_unref_page(page) else
+ * __free_pages_ok()
+ */
+kprobe:free_unref_page {
+	$page     = (uint64)arg0;
+	$pp_owner = @pages_hold[$page];
+
+	/* Bug if a page is still owned by a page_pool */
+	if ($pp_owner) {
+		printf("%s: BUG page:0x%lX still owned by page_pool 0x%lX\n%s\n",
+		       probe, $page, $pp_owner, kstack);
+		@bugs[$pp_owner] = count();
+		@bug_on_page_release[$page] = kstack;
+	}
+
+	if (@debug) {
+		printf("%s: page:0x%lX\n", probe, $page);
+	}
+}
+
+/* Catch page_pool delete events.
+ *
+ * Need to cleanup maps related to pp, because it can be free'ed and reused
+ * again, which would break the different maps used across probes.
+ */
+tracepoint:page_pool:page_pool_inflight {
+	$pp       = (uint64)args->pool;
+	$inflight = args->inflight;
+	$hold     = args->hold;
+	$release  = args->release;
+
+	if ($inflight == 0) {
+		/* Use page_pool_inflight as "destroy" event */
+		$max = @pp_inflight_max[$pp];
+		printf("Delete page_pool:0x%lX cnt hold:%u release:%u inflight:%d MAX\n",
+		       $pp, $hold, $release, $max);
+
+		/* Important: delete map contents for pp as ptr could be reused */
+		delete(@pp_inflight_stat[$pp]);
+		delete(@pp_hold_cnt[$pp]);
+		delete(@pp_release_cnt[$pp]);
+		delete(@pp_inflight_max[$pp]);
+	}
+}
+
+/* Periodically print inflight stats */
+interval:s:3
+{
+        time();
+	printf("Periodic show inflight stats for ALL pp (and clear histograms)\n");
+	print(@pp_inflight_stat);
+	clear(@pp_inflight_stat);
+	print(@pp_inflight_max);
+	print(@bugs);
+}
+
+END {
+	/* Default bpftrace will print all remaining maps at END */
+
+	/* When script stops map @pages_hold still contains pages from
+	 * page_pool's that have not been shutdown.
+	 */
+	clear(@pages_hold);
+}
