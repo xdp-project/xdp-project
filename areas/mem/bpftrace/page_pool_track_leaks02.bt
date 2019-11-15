@@ -123,11 +123,12 @@ kprobe:free_unref_page {
  * Need to cleanup maps related to pp, because it can be free'ed and reused
  * again, which would break the different maps used across probes.
  */
-tracepoint:page_pool:page_pool_inflight {
+tracepoint:page_pool:page_pool_release {
 	$pp       = (uint64)args->pool;
 	$inflight = args->inflight;
 	$hold     = args->hold;
 	$release  = args->release;
+	$attempts = args->cnt;
 
 	if ($inflight == 0) {
 		/* Use page_pool_inflight as "destroy" event */
