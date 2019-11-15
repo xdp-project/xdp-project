@@ -84,11 +84,17 @@ tracepoint:page_pool:page_pool_state_release {
 	}
 }
 
-/* Use: trace_mm_page_free(page, order) to catch all page free
+/* Use MM page-allocator tracepoint
+ *
+ * Kernel calls for easier locating kernel code:
+ * - trace_mm_page_free(page, order)
+ * - trace_mm_page_alloc(page, order, alloc_mask, ac.migratetype);
  *
  * Tracepoint only provided the PFN number, not the page pointer
  */
-tracepoint:kmem:mm_page_free {
+tracepoint:kmem:mm_page_free,
+tracepoint:kmem:mm_page_alloc
+{
 	$pfn      = (uint64)args->pfn;
 	//$page     = pfn_to_page($pfn);
 
