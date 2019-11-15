@@ -107,6 +107,7 @@ kprobe:free_unref_page {
 
 	/* Bug if a page is still owned by a page_pool */
 	if ($pp_owner) {
+		delete(@pages_hold[$pfn]); /* Delete to avoid filling up map */
 		printf("%s: BUG page:0x%lX still owned by page_pool 0x%lX\n%s\n",
 		       probe, $page, $pp_owner, kstack);
 		@bugs[$pp_owner] = count();
