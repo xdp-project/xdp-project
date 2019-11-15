@@ -82,7 +82,16 @@ Another advantage of having a work-queue to periodically flush the
 page_pool, was to avoid adding extra checks to fast-path code, about
 page_pool being in a shutdown state.
 
-* Patchset descriptions
+* Patchset#1 - REJECTED UPSTREAM
+
+*Update*: Patchset rejected upstream.
+
+Instead this patch is being considered:
+- Subject: [net-next PATCH v3 1/1] page_pool: do not release pool until inflight == 0.
+- https://patchwork.ozlabs.org/project/netdev/list/?series=142975&state=%2a
+- https://patchwork.ozlabs.org/patch/1195227/
+- Message-ID: <20191114221300.1002982-2-jonathan.lemon@gmail.com>
+- http://lore.kernel.org/netdev/20191114221300.1002982-2-jonathan.lemon@gmail.com
 
 ** Cover-letter
 
@@ -158,7 +167,7 @@ The alloc cache is blocked via pretending it is full, and then also
 poisoning the last element. This blocks producers from using fast-path,
 and consumer (which is not allowed) will see a NULL pointer.
 
-* Potential bug?
+** Potential bug?
 
 *Update*: below issue should be addressed in patch2.
 
@@ -178,6 +187,8 @@ One way to avoid this during shutdown, is to block the alloc cache by (after
 flushing it) pretend that it is full, by setting pool->alloc.count equal to
 max size PP_ALLOC_CACHE_SIZE.  Further more we can poison last entry to
 catch users still allocating from it.
+
+
 
 * Notes
 
