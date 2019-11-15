@@ -189,6 +189,24 @@ max size PP_ALLOC_CACHE_SIZE.  Further more we can poison last entry to
 catch users still allocating from it.
 
 
+* Followup patchset
+
+** cover-letter
+
+page_pool: followup changes to restore tracepoint features
+
+This patchset is a followup to Jonathan patch, that do not release
+pool until inflight == 0. That changed page_pool to be responsible for
+its own delayed destruction instead of relying on xdp memory model.
+
+As the page_pool maintainer, I'm promoting the use of tracepoint to
+troubleshoot and help driver developers verify correctness when
+converting at driver to use page_pool. The role of xdp:mem_disconnect
+have changed, which broke my bpftrace tools for shutdown verification.
+With these changes, the same capabilities are regained.
+
+
+
 
 * Notes
 
