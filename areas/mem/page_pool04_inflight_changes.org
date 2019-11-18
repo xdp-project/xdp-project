@@ -205,6 +205,17 @@ converting at driver to use page_pool. The role of xdp:mem_disconnect
 have changed, which broke my bpftrace tools for shutdown verification.
 With these changes, the same capabilities are regained.
 
+*** stg mail
+Commands used for stg-mail:
+
+#+begin_src sh
+stg mail --prefix="net-next v2" -e --cc meup \
+ --cc netdev \
+ --cc lemon --cc ilias --cc tariq --cc saeed \
+ --cc tokerh --cc matteo --cc lore \
+ 02-04-rm-mem-poison..pfn-page
+#+end_src
+
 
 
 
