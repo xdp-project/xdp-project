@@ -13,7 +13,67 @@ The Espressobin board homepage:
 The main reason for choosing Fedora 31, is that this distro include LLVM9.
 This is connected with LLVM9 can produce BTF (BPF Type Format).
 
+* Board info in U-Boot
 
+Jesper's new board:
+#+begin_example
+U-Boot 2017.03-armada-17.10.2-g255b9cc9c1 (Jun 10 2019 - 17:35:12 +0800)
 
+Model: Marvell Armada 3720 Community Board ESPRESSOBin
+       CPU    @ 1200 [MHz]
+       L2     @ 800 [MHz]
+       TClock @ 200 [MHz]
+       DDR    @ 750 [MHz]
+DRAM:  1 GiB
+U-Boot DT blob at : 000000003f716298
+Comphy-0: USB3          5 Gbps    
+Comphy-1: PEX0          2.5 Gbps  
+Comphy-2: SATA0         6 Gbps    
+#+end_example
 
+** original printenv
+
+List existing env via printenv:
+
+#+begin_example
+Marvell>> printenv
+baudrate=115200
+bootargs=console=ttyMV0,115200 earlycon=ar3700_uart,0xd0012000 root=/dev/mmcblk0p1 rw rootwait net.ifnames=00
+bootcmd=mmc dev 0; ext4load mmc 0:1 $kernel_addr $image_name;ext4load mmc 0:1 $fdt_addr $fdt_name;setenv boor
+bootdelay=2
+console=console=ttyMV0,115200 earlycon=ar3700_uart,0xd0012000
+eth1addr=00:51:82:11:22:01
+eth2addr=00:51:82:11:22:02
+eth3addr=00:51:82:11:22:03
+ethact=neta@30000
+ethaddr=F0:AD:4E:0A:A5:2B
+ethprime=eth0
+fdt_addr=0x4f00000
+fdt_high=0xffffffffffffffff
+fdt_name=boot/armada-3720-community-v7.dtb
+fdtcontroladdr=3f716298
+gatewayip=10.4.50.254
+get_images=tftpboot $kernel_addr $image_name; tftpboot $fdt_addr $fdt_name; run get_ramfs
+get_ramfs=if test "${ramfs_name}" != "-"; then setenv ramfs_addr 0x8000000; tftpboot $ramfs_addr $ramfs_namei
+hostname=marvell
+image_name=boot/Image
+initrd_addr=0xa00000
+initrd_size=0x2000000
+ipaddr=0.0.0.0
+kernel_addr=0x5000000
+loadaddr=0x5000000
+netdev=eth0
+netmask=255.255.255.0
+ramfs_addr=0x8000000
+ramfs_name=-
+root=root=/dev/nfs rw
+rootpath=/srv/nfs/
+serverip=0.0.0.0
+set_bootargs=setenv bootargs $console $root ip=$ipaddr:$serverip:$gatewayip:$netmask:$hostname:$netdev:none s
+stderr=serial@12000
+stdin=serial@12000
+stdout=serial@12000
+
+Environment size: 1477/65532 bytes
+#+end_example
 
