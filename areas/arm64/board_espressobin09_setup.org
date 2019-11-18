@@ -1,0 +1,19 @@
+#+Title: V2: Setup notes for board espressobin
+
+This doc is notes on howto setup/install Fedora 31 on an Espressobin board.
+
+This is very similar to [[file:board_espressobin01_setup.org]] what show howto
+get Ubuntu working on the same board.
+
+The Espressobin board homepage:
+ - http://espressobin.net/tech-spec/
+
+* Why Fedora 31
+
+The main reason for choosing Fedora 31, is that this distro include LLVM9.
+This is connected with LLVM9 can produce BTF (BPF Type Format).
+
+
+
+
+
