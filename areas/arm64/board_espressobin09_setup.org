@@ -206,3 +206,31 @@ mmc0 is current device
 10590 bytes read in 6 ms (1.7 MiB/s)
 Bad Linux ARM64 Image magic!
 #+end_example
+
+** Update kernel on SDcard
+
+The kernel on SDcard seems be broken, try to update it.
+Follow compile instruction in [[file:arm02_cross_compile_setup.org]].
+
+Mount sdcard on laptop again.
+
+In the kernel source, after compiling, the binary 'Image' file is located in
+=arch/arm64/boot/Image=
+
+#+begin_example
+cp Image /mnt/sdcard/boot/
+umount /mnt/sdcard
+#+end_example
+
+Booting kernel worked.
+
+But new distro challenges:
+#+begin_example
+You are in emergency mode. After logging in, type "journalctl -xb" to view
+system logs, "systemctl reboot" to reboot, "systemctl default" or "exit"
+to boot into
+Cannot open access to console, the root account is locked.
+See sulogin(8) man page for more details.
+
+Press Enter to continue.
+#+end_example
