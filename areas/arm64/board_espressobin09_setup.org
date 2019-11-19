@@ -234,3 +234,31 @@ See sulogin(8) man page for more details.
 
 Press Enter to continue.
 #+end_example
+
+** Populating /dev
+
+The rootfs was extracted as root, but it seems that come files in =/dev=
+have not been created correctly.
+
+Getting help from:
+- http://www.linuxfromscratch.org/lfs/view/6.1/chapter06/devices.html
+
+Mount sdcard on laptop again.
+
+Creating Initial Device Nodes:
+
+When the kernel boots the system, it requires the presence of a few device
+nodes, in particular the console and null devices. Create these by running
+the following commands (as root):
+
+#+begin_src sh
+mknod -m 600 /mnt/sdcard/dev/console c 5 1
+mknod -m 666 /mnt/sdcard/dev/null c 1 3
+#+end_src
+
+Also fix permissions on /tmp:
+#+begin_src sh
+chmod 1777 /mnt/sdcard/tmp
+#+end_src
+
+Issue: System still doesn't boot.
