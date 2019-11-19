@@ -262,3 +262,34 @@ chmod 1777 /mnt/sdcard/tmp
 #+end_src
 
 Issue: System still doesn't boot.
+
+** Fixing etc/fstab and etc/shadow
+
+Real issue seems to be related to not mounting rootfs:
+
+#+begin_example
+[ TIME ] Timed out waiting for device ¦e-687a-49e0-9a7c-b9a403fc4027.
+[DEPEND] Dependency failed for /boot.
+[DEPEND] Dependency failed for /boot/efi.
+[DEPEND] Dependency failed for Local File Systems.
+[ TIME ] Timed out waiting for device /dev/disk/by-uuid/B7C7-D61F.
+[DEPEND] Dependency failed for Fileâ¦n /dev/disk/by-uuid/B7C7-D61F.
+#+end_example
+
+Original /mnt/sdcard/etc/fstab contained:
+#+begin_example
+/dev/mapper/fedora-root /                       xfs     defaults        0 0
+UUID=983cb62e-687a-49e0-9a7c-b9a403fc4027 /boot                   xfs     defaults        0 0
+UUID=B7C7-D61F          /boot/efi               vfat    umask=0077,shortname=winnt 0 2
+#+end_example
+
+New entry in /mnt/sdcard/etc/fstab:
+#+begin_example
+/dev/mmcblk0p1   /boot                   ext4     defaults        0 0
+#+end_example
+
+Also edit =/mnt/sdcard/etc/shadow= and change root password to nothing.
+Do remember to set a password after boot!
+
+
+
