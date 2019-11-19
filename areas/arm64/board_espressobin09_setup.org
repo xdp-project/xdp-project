@@ -293,3 +293,66 @@ Do remember to set a password after boot!
 
 
 
+
+* Network setup
+
+Keeping network simple via old-style =/etc/sysconfig/network-scripts/=
+files.
+
+** Network interfaces
+
+Network interfaces available:
+#+begin_example
+[root@localhost /]# ip link ls
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: bond0: <BROADCAST,MULTICAST,MASTER> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether de:27:5e:43:ee:50 brd ff:ff:ff:ff:ff:ff
+3: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1508 qdisc mq state UP mode DEFAULT group default qlen 1024
+    link/ether 6e:a2:a3:96:32:71 brd ff:ff:ff:ff:ff:ff
+4: wan@eth0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state LOWERLAYERDOWN mode DEFAULT group default qlen 1000
+    link/ether 2a:42:5f:1f:43:fb brd ff:ff:ff:ff:ff:ff
+5: lan0@eth0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state LOWERLAYERDOWN mode DEFAULT group default qlen 1000
+    link/ether f6:e0:e5:99:b5:22 brd ff:ff:ff:ff:ff:ff
+6: lan1@eth0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state LOWERLAYERDOWN mode DEFAULT group default qlen 1000
+    link/ether 8a:a3:cf:35:00:5a brd ff:ff:ff:ff:ff:ff
+#+end_example
+
+#+begin_example
+ethtool -i wan | grep driver
+driver: dsa
+#+end_example
+
+** Setup network old style (failed)
+
+File: /etc/sysconfig/network-scripts/ifcfg-wan
+
+#+begin_example
+NM_CONTROLLED="no"
+NAME="wan"
+ONBOOT="yes"
+TYPE="Ethernet"
+BOOTPROTO="none"
+DEFROUTE="no"
+IPV4_FAILURE_FATAL="no"
+IPV6INIT="no"
+IPV6_AUTOCONF="no"
+IPV6_DEFROUTE="no"
+IPV6_FAILURE_FATAL="no"
+#IPV6_PEERDNS="yes"
+#IPV6_PEERROUTES="yes"
+IPADDR=192.168.42.44
+PREFIX=24
+#+end_example
+
+Very strange, command =ifup= says it cannot load the file, even-though it
+does exist:
+#+begin_example
+[root@localhost /]# ls -l /etc/sysconfig/network-scripts/ifcfg-wan
+-rw-r--r-- 1 root root 245 Oct 10 09:19 /etc/sysconfig/network-scripts/ifcfg-wan
+
+[root@localhost /]# ifup wan
+Could not load file '/etc/sysconfig/network-scripts/ifcfg-wan'
+Error: unknown connection '/etc/sysconfig/network-scripts/ifcfg-wan'.
+#+end_example
+
