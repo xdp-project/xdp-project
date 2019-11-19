@@ -77,3 +77,58 @@ stdout=serial@12000
 Environment size: 1477/65532 bytes
 #+end_example
 
+* Create SDcard
+
+Given [[http://espressobin.net/tech-spec/][Espressobin download]] doesn't have Fedora 31, we have to create a boot
+image from scratch.
+
+Follow the instructions here:
+- http://wiki.espressobin.net/tiki-index.php?page=Boot+from+removable+storage+-+Buildroot
+
+** sdcard partition
+
+On my system, sdcard device name was also /dev/sdb. Created partition
+/dev/sdb1 and =ext4= formatted it like this:
+
+#+begin_src sh
+#(on laptop)
+mkfs.ext4 -O ^metadata_csum,^64bit /dev/sdb1
+#+end_src
+
+Mount on laptop
+
+#+begin_src sh
+#(on laptop)
+mkdir -p /mnt/sdcard
+mount /dev/sdb1 /mnt/sdcard
+#+end_src
+
+** sdcard data
+
+Ilias have been kind and created a rootfs tar.gz file for F31 here:
+- http://people.linaro.org/~ilias.apalodimas/images/fedora-iot/Fedora-31-server-aarch64.tar.xz
+- one gotcha: need to strip first directory 'media' via tar '--strip-components=1'
+
+Alternatively download other distros from:
+- http://espressobin.net/tech-spec/
+
+Simply extract this rootfs into /mnt/sdcard/:
+
+#+begin_src sh
+#(on laptop)
+tar xvf Fedora-31-server-aarch64.tar.xz --strip-components=1 -C /mnt/sdcard
+#+end_src
+
+Contents in /mnt/sdcard/boot/ :
+#+begin_example
+[laptop sdcard]# ll boot/
+total 79416
+-rw-r--r--. 1 root root    10590 Nov 13 12:58 armada-3720-espressobin.dtb
+-rwxr-xr-x. 1 root root  9027813 Nov 13 12:58 Image
+-rw-------. 1 root root 72276159 Nov 13 12:57 initramfs-5.3.7-301.fc31.aarch64.img
+#+end_example
+
+Remember to unmount:
+#+begin_src sh
+umount /mnt/sdcard
+#+end_src
