@@ -132,3 +132,77 @@ Remember to unmount:
 #+begin_src sh
 umount /mnt/sdcard
 #+end_src
+
+* Setup U-Boot on Espressobin
+
+Again follow
+- http://wiki.espressobin.net/tiki-index.php?page=Boot+from+removable+storage+-+Buildroot
+
+** Initial failed boot
+Without any setup boards fails to boot with following output:
+
+#+begin_example
+U-Boot 2017.03-armada-17.10.2-g255b9cc9c1 (Jun 10 2019 - 17:35:12 +0800)
+
+Model: Marvell Armada 3720 Community Board ESPRESSOBin
+       CPU    @ 1200 [MHz]
+       L2     @ 800 [MHz]
+       TClock @ 200 [MHz]
+       DDR    @ 750 [MHz]
+DRAM:  1 GiB
+U-Boot DT blob at : 000000003f716298
+Comphy-0: USB3          5 Gbps    
+Comphy-1: PEX0          2.5 Gbps  
+Comphy-2: SATA0         6 Gbps    
+SATA link 0 timeout.
+AHCI 0001.0300 32 slots 1 ports 6 Gbps 0x1 impl SATA mode
+flags: ncq led only pmp fbss pio slum part sxs 
+PCIE-0: Link down
+MMC:   sdhci@d0000: 0, sdhci@d8000: 1
+SF: Detected gd25lq32d with page size 256 Bytes, erase size 64 KiB, total 4 MiB
+Net:   eth0: neta@30000 [PRIME]
+Hit any key to stop autoboot:  0 
+switch to partitions #0, OK
+mmc0 is current device
+9027813 bytes read in 400 ms (21.5 MiB/s)
+ ** File not found boot/armada-3720-community-v7.dtb **
+Bad Linux ARM64 Image magic!
+Marvell>>
++end_example
+
+** Setting U-Boot parameters
+
+Listing contents of mmc:
+
+#+begin_example
+Marvell>> ext4ls mmc 0:1 boot
+<DIR>       4096 .
+<DIR>       4096 ..
+           10590 armada-3720-espressobin.dtb
+         9027813 Image
+        72276159 initramfs-5.3.7-301.fc31.aarch64.img
+Marvell>>
+#+end_example
+
+First, set the proper boot image name and device tree path and name:
+#+begin_example
+Marvell>> setenv image_name boot/Image
+Marvell>> setenv fdt_name boot/armada-3720-espressobin.dtb
+#+end_example
+
+Next, define the bootmmc variable which we will use to boot from the microSD
+card:
+#+begin_example
+setenv bootmmc 'mmc dev 0; ext4load mmc 0:1 $kernel_addr $image_name;ext4load mmc 0:1 $fdt_addr $fdt_name;setenv bootargs $console root=/dev/mmcblk0p1 rw rootwait; booti $kernel_addr - $fdt_addr'
+saveenv
+#+end_example
+
+Booting fails:
+#+begin_example
+Marvell>> run bootmmc
+switch to partitions #0, OK
+mmc0 is current device
+9027813 bytes read in 400 ms (21.5 MiB/s)
+10590 bytes read in 6 ms (1.7 MiB/s)
+Bad Linux ARM64 Image magic!
+#+end_example
