@@ -356,6 +356,68 @@ Could not load file '/etc/sysconfig/network-scripts/ifcfg-wan'
 Error: unknown connection '/etc/sysconfig/network-scripts/ifcfg-wan'.
 #+end_example
 
+** Setup network new style (NetworkManager)
+
+Still want/need to strictly use cmdline tools for network setup, given the
+access is over USB serial cable (via minicom).
+
+*** List current setup via nmcli
+Trying out =nmcli= command:
+#+begin_src sh
+# nmcli
+wan: connected to Wired connection 4
+        "wan"
+        ethernet (mv88e6085), 2A:42:5F:1F:43:FB, hw, mtu 1500
+        ip4 default
+        inet4 192.168.42.226/24
+        route4 0.0.0.0/0
+        route4 192.168.42.0/24
+        inet6 fe80::3d09:5fb4:404c:bc9b/64
+        route6 fe80::/64
+        route6 ff00::/8
+
+eth0: connecting (getting IP configuration) to Wired connection 1
+        "eth0"
+        ethernet (mvneta), 6E:A2:A3:96:32:71, hw, mtu 1508
+
+lan0: unavailable
+        "lan0"
+        ethernet (mv88e6085), F6:E0:E5:99:B5:22, hw, mtu 1500
+
+lan1: unavailable
+        "lan1"
+        ethernet (mv88e6085), 8A:A3:CF:35:00:5A, hw, mtu 1500
+#+end_src
+
+*** Task: Setup static IP-address in 'wan'
+
+List connections:
+#+begin_example
+# nmcli connection
+NAME                UUID                                  TYPE      DEVICE 
+Wired connection 4  7b62939e-5b3c-3876-84f6-87aa08be43f3  ethernet  wan    
+Wired connection 1  475e922f-bf29-3517-847a-697dc42b699c  ethernet  --     
+Wired connection 2  162d9794-6481-3ab7-a3ac-258d93167b3d  ethernet  --     
+Wired connection 3  cff3dfb2-2788-3209-b681-0225fd02a60e  ethernet  --     
+#+end_example
+
+We guess that UUID '7b62939e-5b3c-3876-84f6-87aa08be43f3' is the connection
+we want to modify.
+
+#+begin_src sh
+nmcli connection modify 7b62939e-5b3c-3876-84f6-87aa08be43f3 IPv4.address 192.168.42.44/24
+nmcli connection modify 7b62939e-5b3c-3876-84f6-87aa08be43f3 IPv4.gateway 192.168.42.1
+nmcli connection modify 7b62939e-5b3c-3876-84f6-87aa08be43f3 IPv4.dns 1.1.1.1
+nmcli connection modify 7b62939e-5b3c-3876-84f6-87aa08be43f3 IPv4.method manual
+#+end_src
+
+Restart network to apply changes:
+
+#+begin_src sh
+nmcli connection down 7b62939e-5b3c-3876-84f6-87aa08be43f3 ;\
+nmcli connection up   7b62939e-5b3c-3876-84f6-87aa08be43f3
+#+end_src
+
 
 * Installing extra software
 
