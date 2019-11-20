@@ -633,6 +633,12 @@ LLVM (http://llvm.org/):
     xcore      - XCore
 #+end_example
 
+Also install =clang=:
+
+#+begin_example
+dnf install -y clang
+#+end_example
+
 ** Developer packages
 
 Installing devel packages for building the kernel. We usually cross compile
@@ -646,3 +652,80 @@ avail on the ARM64/aarch64 target system.
 dnf builddep kernel
 #+end_src
 
+** Extra software packages
+
+For building xdp-tcpdump install: =libpcap-devel=
+
+#+begin_src sh
+dnf install -y bpftool
+dnf install -y perf
+dnf install -y vim
+#+end_src
+
+** BCC and bpftrace
+
+#+begin_example
+dnf install -y bcc
+
+Dependencies resolved.
+=============================================================================================================================
+ Package                         Architecture              Version                           Repository                 Size
+=============================================================================================================================
+Installing:
+ bcc                             aarch64                   0.10.0-2.fc31                     fedora                     11 M
+Installing dependencies:
+ kernel-devel                    aarch64                   5.3.11-300.fc31                   updates                    11 M
+ bcc-tools                       aarch64                   0.10.0-2.fc31                     fedora                    398 k
+ clang8.0-libs                   aarch64                   8.0.0-5.fc31                      fedora                     13 M
+ llvm8.0-libs                    aarch64                   8.0.0-10.fc31                     fedora                     19 M
+ python3-bcc                     noarch                    0.10.0-2.fc31                     fedora                     76 k
+#+end_example
+
+Package for building bpftrace from git-tree:
+#+begin_src sh
+dnf install -y bcc-devel
+dnf install -y cmake stow bcc
+#+end_src
+
+Getting all build dependencies for bpftrace via: =dnf builddep bpftrace=
+
+#+begin_example
+sudo dnf builddep -y bpftrace
+
+Dependencies resolved.
+=============================================================================================================================
+ Package                          Architecture           Version                                Repository              Size
+=============================================================================================================================
+Installing:
+ clang-devel                      aarch64                9.0.0-1.fc31                           fedora                 1.7 M
+ llvm-devel                       aarch64                9.0.0-1.fc31                           fedora                 2.6 M
+Installing dependencies:
+ libedit-devel                    aarch64                3.1-29.20191025cvs.fc31                updates                 40 k
+ clang-tools-extra                aarch64                9.0.0-1.fc31                           fedora                 596 k
+ ncurses-c++-libs                 aarch64                6.1-12.20190803.fc31                   fedora                  37 k
+ ncurses-devel                    aarch64                6.1-12.20190803.fc31                   fedora                 503 k
+#+end_example
+
+* Setup adjustments
+
+Notes about some setup adjustments.
+
+#+begin_src sh
+hostnamectl set-hostname espressobin
+#+end_src
+
+Loading libs from /usr/local/ 
+
+#+begin_src sh
+cat >> /etc/ld.so.conf.d/usr_local.conf << EOF
+/usr/local/lib
+/usr/local/lib64
+EOF
+#+end_src
+
+** Disable audit
+
+#+begin_example
+systemctl disable auditd.service
+systemctl mask systemd-journald-audit.socket
+#+end_example
