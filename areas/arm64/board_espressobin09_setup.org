@@ -80,7 +80,7 @@ Environment size: 1477/65532 bytes
 * Creating Fedora 31 rootfs.tar
 
 This section describe the manual process of creating a rootfs for ARM64,
-based off the Fedora 31 aarch64 ISO image.
+based off the Fedora 31 aarch64 "raw" image.
 
 ** Official fedora approach
 
