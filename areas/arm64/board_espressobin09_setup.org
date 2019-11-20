@@ -77,6 +77,89 @@ stdout=serial@12000
 Environment size: 1477/65532 bytes
 #+end_example
 
+* Creating Fedora 31 rootfs.tar
+
+This section describe the manual process of creating a rootfs for ARM64,
+based off the Fedora 31 aarch64 ISO image.
+
+** Official fedora approach
+
+We are not using this official fedora approach.
+The Fedora project do have ARM install wiki here:
+- https://fedoraproject.org/wiki/Architectures/ARM/Installation
+
+There is an =arm-image-installer= software package, but it didn't contain
+EspressoBin as a supported target, and it looks like its more target for
+ARM-32 bit boards (although I think I spotted a 64-bit board).
+
+** Download F31 image for aarch64
+
+Download the *server edition* of "Fedora 31: Raw image for aarch64"
+- Here: https://getfedora.org/en/server/download/
+- [[https://download.fedoraproject.org/pub/fedora/linux/releases/31/Server/aarch64/images/Fedora-Server-31-1.9.aarch64.raw.xz][Deep-link: Fedora-Server-31-1.9.aarch64.raw.xz]]
+
+All the Fedora Alternate Architectures image variants are here:
+- https://alt.fedoraproject.org/alt/
+
+** Mounting raw image
+
+It requires some tricks to mount the 'raw' file. Via using the =losetup=
+command:
+
+#+begin_src sh
+sudo losetup -f -P Fedora-Server-31-1.9.aarch64.raw
+$ ls -1 /dev/loop*
+/dev/loop0
+/dev/loop1
+/dev/loop1p1
+/dev/loop1p2
+/dev/loop1p3
+/dev/loop-control
+#+end_src
+
+(Hint: Cleanup the /dev/loop1pX files via: =sudo losetup -D=)
+
+The partition =/dev/loop1p3= contains the data, but we cannot mount it
+directly because it is a LVM partition.
+See full disk layout via: =fdisk -l /dev/loop1=.
+
+#+begin_src sh
+$ sudo mount /dev/loop1p3 /mnt/raw/
+mount: /mnt/raw: unknown filesystem type 'LVM2_member'.
+#+end_src
+
+*** LVM tricks
+
+Getting LVM help from guide:
+- https://www.svennd.be/mount-unknown-filesystem-type-lvm2_member/
+
+The =lvscan= shows an *inactive* =/dev/fedora/root= device.
+
+#+begin_example
+$ sudo lvscan
+  /dev/sda: open failed: No medium found
+  /dev/sdb: open failed: No medium found
+  inactive          '/dev/fedora/root' [5,41 GiB] inherit
+#+end_example
+
+Activate it via: =vgchange -ay=
+
+#+begin_src sh
+$ sudo vgchange -ay
+  1 logical volume(s) in volume group "fedora" now active
+#+end_src
+
+*** Mounting /dev/fedora/root
+
+Now =/dev/fedora/root= have appeared, lets mount it. Mounting the RAW image
+as root is important to get the file ownership permissions correct.
+
+#+begin_example
+sudo mkdir /mnt/fedora-rootfs
+sudo mount /dev/fedora/root /mnt/fedora-rootfs
+#+end_example
+
+
 * Create SDcard
 
 Given [[http://espressobin.net/tech-spec/][Espressobin download]] doesn't have Fedora 31, we have to create a boot
