@@ -206,7 +206,7 @@ image from scratch.
 Follow the instructions here:
 - http://wiki.espressobin.net/tiki-index.php?page=Boot+from+removable+storage+-+Buildroot
 
-** sdcard partition
+** sdcard: Partition
 
 On my system, sdcard device name was also /dev/sdb. Created partition
 /dev/sdb1 and =ext4= formatted it like this:
@@ -224,35 +224,51 @@ mkdir -p /mnt/sdcard
 mount /dev/sdb1 /mnt/sdcard
 #+end_src
 
-** sdcard data
+** sdcard: rootfs data
 
-Ilias have been kind and created a rootfs tar.gz file for F31 here:
-- http://people.linaro.org/~ilias.apalodimas/images/fedora-iot/Fedora-31-server-aarch64.tar.xz
-- one gotcha: need to strip first directory 'media' via tar '--strip-components=1'
-- second gotcha: most files have ownership id 1000
-
-Alternatively download other distros from:
-- http://espressobin.net/tech-spec/
+Now it's time to use the 'rootfs.tar.gz' file that we created above.
 
 Simply extract this rootfs into /mnt/sdcard/:
 
 #+begin_src sh
 #(on laptop)
-tar xvf Fedora-31-server-aarch64.tar.xz --strip-components=1 -C /mnt/sdcard
+sudo tar -xpvf rootfs.tar.gz -C /mnt/sdcard --numeric-owner
+#+end_src
+
+** sdcard: Update kernel
+
+The contents in /mnt/sdcard/boot/ is empty.  Thus, upload a kernel.
+
+Follow compile instruction in [[file:arm02_cross_compile_setup.org]].
+(Mount sdcard on laptop)
+
+In the kernel source, after compiling, the binary 'Image' file is located in
+=arch/arm64/boot/Image=
+
+#+begin_example
+# git kernel source
+cp arch/arm64/boot/Image /mnt/sdcard/boot/
+#+end_example
+
+For booting the 'dtb' file is also needed. The file for espressobin is
+called: =arch/arm64/boot/dts/marvell/armada-3720-espressobin.dtb=
+
+Copy over that file too:
+#+begin_src sh
+cp arch/arm64/boot/dts/marvell/armada-3720-espressobin.dtb /mnt/sdcard/boot/
 #+end_src
 
 Contents in /mnt/sdcard/boot/ :
 #+begin_example
-[laptop sdcard]# ll boot/
-total 79416
--rw-r--r--. 1 root root    10590 Nov 13 12:58 armada-3720-espressobin.dtb
--rwxr-xr-x. 1 root root  9027813 Nov 13 12:58 Image
--rw-------. 1 root root 72276159 Nov 13 12:57 initramfs-5.3.7-301.fc31.aarch64.img
+[laptop sdcard]# ll /mnt/sdcard/boot/
+total 26972
+-rw-r--r--. 1 root root    10826 Nov 20 12:34 armada-3720-espressobin.dtb
+-rwxr-xr-x. 1 root root 27603456 Nov 20 12:34 Image
 #+end_example
 
 Remember to unmount:
 #+begin_src sh
-umount /mnt/sdcard
+sudo umount /mnt/sdcard
 #+end_src
 
 * Setup U-Boot on Espressobin
