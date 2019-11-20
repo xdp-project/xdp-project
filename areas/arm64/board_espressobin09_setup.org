@@ -159,6 +159,44 @@ sudo mkdir /mnt/fedora-rootfs
 sudo mount /dev/fedora/root /mnt/fedora-rootfs
 #+end_example
 
+** Prepare and modify rootfs
+
+The ARM64/aarch64 rootfs (=/dev/fedora/root=) is now mounted at
+=/mnt/fedora-rootfs=.
+
+Copy via =rsync= files over to a local directory, to allow us to modify it.
+Important do copy as 'root' to get all files and correct ownership.
+
+#+begin_src sh
+mkdir rootfs-f31
+sudo rsync -av /mnt/fedora-rootfs/ rootfs-f31/
+#+end_src
+
+Modify the /etc/shadow file and give root an empty password, to allow us
+access after booting (delete the =!locked= part).
+
+#+begin_src sh
+sudo vim rootfs-f31/etc/shadow
+#+end_src
+
+The =/dev/fstab= also contain wrong setup. The device the espressobin sees
+as root-dev is called =/dev/mmcblk0p1=. Thus, update =rootfs-f31/etc/fstab=
+with e.g.:
+
+#+begin_example
+# From: /etc/fstab
+/dev/mmcblk0p1	/	ext4	defaults	0 0
+#+end_example
+
+** Create tarball
+
+Create the tarball, with =-p= to preserves the permissions of the files put
+in the archive for restoration later:
+
+#+begin_src sh
+cd rootfs-f31/
+sudo tar -cvpzf ../rootfs.tar.gz --one-file-system .
+#+end_src
 
 * Create SDcard
 
