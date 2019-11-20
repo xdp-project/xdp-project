@@ -108,6 +108,7 @@ mount /dev/sdb1 /mnt/sdcard
 Ilias have been kind and created a rootfs tar.gz file for F31 here:
 - http://people.linaro.org/~ilias.apalodimas/images/fedora-iot/Fedora-31-server-aarch64.tar.xz
 - one gotcha: need to strip first directory 'media' via tar '--strip-components=1'
+- second gotcha: most files have ownership id 1000
 
 Alternatively download other distros from:
 - http://espressobin.net/tech-spec/
