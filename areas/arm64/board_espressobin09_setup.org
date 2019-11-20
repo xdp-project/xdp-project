@@ -632,3 +632,17 @@ LLVM (http://llvm.org/):
     x86-64     - 64-bit X86: EM64T and AMD64
     xcore      - XCore
 #+end_example
+
+** Developer packages
+
+Installing devel packages for building the kernel. We usually cross compile
+kernel on a faster build host and push/rsync it to target host (see
+[[https://github.com/netoptimizer/prototype-kernel/tree/master/scripts][scripts]]).
+
+For testing samples/bpf/ and compiling libbpf we also want the build tools
+avail on the ARM64/aarch64 target system.
+
+#+begin_src sh
+dnf builddep kernel
+#+end_src
+
