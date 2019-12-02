@@ -165,4 +165,4 @@ doing XDP_PASS or when doing SKB alloc after XDP_REDIRECT.
 
 Side-note: There have been suggestion before, to unify =bio_vec= and
 =skb_frag_t= (see [[https://lore.kernel.org/netdev/20190501041757.8647-1-willy@infradead.org/][here]])
-
+Update: This unification has already been done (see [[https://lore.kernel.org/netdev/1d34658b-a807-44ae-756a-d55dead27f94@fb.com//][here]])
