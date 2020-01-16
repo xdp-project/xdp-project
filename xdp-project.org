@@ -301,7 +301,13 @@ and also the fallback return codes if map index were unpopulated.  BUT the
 samples/bpf programs does not take advantage of this. Task is to update
 samples/bpf to demonstrate these new features.
 
-*** NEXT Retire bpf_redirect() helper
+*** CANCELLED Retire bpf_redirect() helper                      :CANCELLED:
+CLOSED: [2020-01-16 Thu 15:49]
+:LOGBOOK:
+- State "CANCELLED"  from "NEXT"       [2020-01-16 Thu 15:49] \\
+  We've finally fixed the bpf_redirect() helper to no longer have a performance
+  delta with the _map variant! :)
+:END:
 
 Rather than extending the bpf_redirect() helper to use hidden maps, it is
 probably better to document it as deprecated and point users to use the
