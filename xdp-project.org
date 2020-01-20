@@ -248,82 +248,23 @@ is tail-calling into.
 
 Netlink? Ethtool?
 
+** TODO Multiple XDP programs on a single interface
 
-** TODO Handling XDP_REDIRECT failures
-:PROPERTIES:
-:ID:       760b03fc-2a8e-499c-a90c-74dbc4716cbc
-:END:
+Being able to load multiple programs on the same XDP interface is an
+important use case if XDP is to see more widespread deployment (as otherwise
+applications will step on each others' toes when trying to accelerate using
+XDP).
 
-Presently, an XDP program cannot know if a call to bpf_redirect_map() is
-going to fail. This means that programs end up doing things like using
-duplicate maps for checking if a redirect map entry exists, or to packets
-being silently dropped.
+The upstream solution for this is known as "dynamic re-linking", which
+allows BPF global functions to be replaced by other programs. The last piece
+of the kernel functionality for this was posted upstream on January 18th:
+https://lore.kernel.org/bpf/20200118000657.2135859-1-ast@kernel.org/T/#t
 
-*** DONE Allow lookups in devmap/cpumap
-CLOSED: [2019-06-29 Sat 18:24]
-:LOGBOOK:
-- State "DONE"       from "NEXT"       [2019-06-29 Sat 18:24]
-:END:
+*** TODO Build an XDP chain loader on top of the kernel support
 
-Return pointer to same ID as we insert, just copy it to a scratch space
-first.
+This will be included in [[https://github.com/xdp-project/xdp-tools]] in both
+library and binary form, to hopefully be widely applicable.
 
-Merged as [[https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/commit/?id=0cdbb4b09a0658b72c563638d476113aadd91afb][0cdbb4b09a0]].
-
-*** DONE Make bpf_redirect_map() check map contents
-CLOSED: [2019-06-29 Sat 18:25]
-:LOGBOOK:
-- State "DONE"       from "NEXT"       [2019-06-29 Sat 18:25]
-:END:
-
-If we simply make the redirect_map() helper check that something exists in
-that position in the map, we at least catch the case where a map entry is
-empty (where we *know* it is going to fail). If we then later add the
-capability for a map to ensure that TX resources are available on insert, we
-will get this check for free.
-
-What is the right return code for the helper on failure? We already return
-XDP_ABORTED on invalid flags, so we could create a new
-REDIRECT_PASS_ON_INVALID that make non-existent map entries return XDP_PASS.
-This makes it easy to implement "defer to stack on error" type programs,
-*and* it makes it possible to disambiguate between "flag not understood" and
-"flag understood and map is empty".
-
-Mellanox drivers turn a failure in xdp_do_redirect() into an ABORTED action,
-other drivers do not.
-
-Merged as [[https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/commit/?id=43e74c0267a35d6f5127218054b2d80c7fe801f5][43e74c0267a3]].
-
-*** NEXT In samples/bpf: use that bpf_redirect_map() can check map content
-
-Toke's patchset for allowing reading redirect maps were accepted upstream,
-and also the fallback return codes if map index were unpopulated.  BUT the
-samples/bpf programs does not take advantage of this. Task is to update
-samples/bpf to demonstrate these new features.
-
-*** CANCELLED Retire bpf_redirect() helper                      :CANCELLED:
-CLOSED: [2020-01-16 Thu 15:49]
-:LOGBOOK:
-- State "CANCELLED"  from "NEXT"       [2020-01-16 Thu 15:49] \\
-  We've finally fixed the bpf_redirect() helper to no longer have a performance
-  delta with the _map variant! :)
-:END:
-
-Rather than extending the bpf_redirect() helper to use hidden maps, it is
-probably better to document it as deprecated and point users to use the
-bpf_redirect_map() helper.
-
-*** TODO What happens if redirect fails even though TX resources are available?
-
-Even with the above, we can still get failures if, e.g., TX ring runs out of
-space. We can't really handle this by return, so what should we do instead?
-Maybe just defer this to [[id:24faae01-542b-4882-9f7a-5ab283e657b0][XDP hook at TX]].
-
-*** TODO Add selftests for devmaps
-[2019-08-09 Fri 20:51]
-[[notmuch:id:CAADnVQLY3CUe3hdDMvEc3QiM6gLd6fEVy9vwDc38wpY4_wajxQ@mail.gmail.com][Email from Alexei Starovoitov: Re: [PATCH bpf-next v5 0/6] xdp: Add devmap_hash map type]]
-*** TODO REDIRECT_MAP idx type - what happens with namespace moving?
-[2019-05-13 Mon 14:03]
 * Important medium-term tasks                                       :@medium:
 
 These are tasks that are important to fix in the medium term, but that are
@@ -620,6 +561,81 @@ To fix this, we would need to allow queueing of some sort. Options:
 - Have some kind of "intermediate queueing structure" that can be a redirect
   target, does queueing, and can forward packets on afterwards
 
+*** TODO Handling XDP_REDIRECT failures
+:PROPERTIES:
+:ID:       760b03fc-2a8e-499c-a90c-74dbc4716cbc
+:END:
+
+Presently, an XDP program cannot know if a call to bpf_redirect_map() is
+going to fail. This means that programs end up doing things like using
+duplicate maps for checking if a redirect map entry exists, or to packets
+being silently dropped.
+
+**** DONE Allow lookups in devmap/cpumap
+CLOSED: [2019-06-29 Sat 18:24]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-06-29 Sat 18:24]
+:END:
+
+Return pointer to same ID as we insert, just copy it to a scratch space
+first.
+
+Merged as [[https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/commit/?id=0cdbb4b09a0658b72c563638d476113aadd91afb][0cdbb4b09a0]].
+
+**** DONE Make bpf_redirect_map() check map contents
+CLOSED: [2019-06-29 Sat 18:25]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2019-06-29 Sat 18:25]
+:END:
+
+If we simply make the redirect_map() helper check that something exists in
+that position in the map, we at least catch the case where a map entry is
+empty (where we *know* it is going to fail). If we then later add the
+capability for a map to ensure that TX resources are available on insert, we
+will get this check for free.
+
+What is the right return code for the helper on failure? We already return
+XDP_ABORTED on invalid flags, so we could create a new
+REDIRECT_PASS_ON_INVALID that make non-existent map entries return XDP_PASS.
+This makes it easy to implement "defer to stack on error" type programs,
+*and* it makes it possible to disambiguate between "flag not understood" and
+"flag understood and map is empty".
+
+Mellanox drivers turn a failure in xdp_do_redirect() into an ABORTED action,
+other drivers do not.
+
+Merged as [[https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/commit/?id=43e74c0267a35d6f5127218054b2d80c7fe801f5][43e74c0267a3]].
+
+**** NEXT In samples/bpf: use that bpf_redirect_map() can check map content
+
+Toke's patchset for allowing reading redirect maps were accepted upstream,
+and also the fallback return codes if map index were unpopulated.  BUT the
+samples/bpf programs does not take advantage of this. Task is to update
+samples/bpf to demonstrate these new features.
+
+**** CANCELLED Retire bpf_redirect() helper                    :CANCELLED:
+CLOSED: [2020-01-16 Thu 15:49]
+:LOGBOOK:
+- State "CANCELLED"  from "NEXT"       [2020-01-16 Thu 15:49] \\
+  We've finally fixed the bpf_redirect() helper to no longer have a performance
+  delta with the _map variant! :)
+:END:
+
+Rather than extending the bpf_redirect() helper to use hidden maps, it is
+probably better to document it as deprecated and point users to use the
+bpf_redirect_map() helper.
+
+**** TODO What happens if redirect fails even though TX resources are available?
+
+Even with the above, we can still get failures if, e.g., TX ring runs out of
+space. We can't really handle this by return, so what should we do instead?
+Maybe just defer this to [[id:24faae01-542b-4882-9f7a-5ab283e657b0][XDP hook at TX]].
+
+**** TODO Add selftests for devmaps
+[2019-08-09 Fri 20:51]
+[[notmuch:id:CAADnVQLY3CUe3hdDMvEc3QiM6gLd6fEVy9vwDc38wpY4_wajxQ@mail.gmail.com][Email from Alexei Starovoitov: Re: [PATCH bpf-next v5 0/6] xdp: Add devmap_hash map type]]
+**** TODO REDIRECT_MAP idx type - what happens with namespace moving?
+[2019-05-13 Mon 14:03]
 ** TODO Multi-buffer XDP (aka. jumbo-frames)
 
 As described in the design document
