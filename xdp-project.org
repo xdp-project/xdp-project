@@ -244,6 +244,17 @@ time because of tail call. Not even with cooperation from the tail-calling
 program, because that may not know what features are used by the programs it
 is tail-calling into.
 
+**** Notes: implementation plan
+- On load: verifier populates bpf_prog->feature_bits
+- On load, if ifindex: reject if prog->features ^ iface->features
+- On attach: reject if prog->features ^ iface->features
+- Tail call maps:
+  - On insert: if (map->feature_lock) {reject_if(prog->features ^ map->feature_lock)}
+                                  else Map->features |= prog->features
+  - On prog load, if ifindex: reject if map->features ^ ifindex->features, else
+                              progs->maps[]->feature_lock = ifindex->features
+                              progs->features |= ifindex->features
+
 *** TODO Add a userspace API to query features
 
 Netlink? Ethtool?
