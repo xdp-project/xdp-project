@@ -3,36 +3,6 @@
 #+CATEGORY: CPUMAP
 #+OPTIONS: ^:nil
 
-* TOC                                                                   :toc_3:
-- [[#baseline-benchmarks][Baseline benchmarks]]
-  - [[#baseline-rx-napi-cpu-handle-driver-i40e][Baseline: RX-NAPI CPU handle (driver: i40e)]]
-    - [[#baseline-udpnoports-3380531][baseline: UdpNoPorts: 3,380,531]]
-    - [[#baseline-iptables-raw-drop-5775937-pps-gro-enabled][baseline: iptables-raw drop: 5,775,937 pps (GRO-enabled)]]
-    - [[#baseline-iptables-raw-drop-6783904-pps-gro-disabled][baseline: iptables-raw drop: 6,783,904 pps (GRO-disabled)]]
-  - [[#baseline-cpumap-redirect][Baseline: cpumap redirect]]
-    - [[#baseline-redirect-udpnoports-3180074][baseline-redirect: UdpNoPorts: 3,180,074]]
-    - [[#baseline-redirect-iptables-raw-drop-6193534][baseline-redirect: iptables-raw drop: 6,193,534]]
-- [[#patch-descriptions--benchmarks][Patch descriptions + benchmarks]]
-  - [[#patch1-bpf-cpumap-use-ptr_ring_consume_batched][Patch1: bpf: cpumap use ptr_ring_consume_batched]]
-    - [[#redirect-udpnoports-3327729][redirect: UdpNoPorts: 3,327,729]]
-    - [[#redirect-iptables-raw-drop-6321540][redirect: iptables-raw drop: 6,321,540]]
-  - [[#patch2-net-core-introduce-build_skb_around][Patch2: net: core: introduce build_skb_around]]
-    - [[#redirect-udpnoports-3221303][redirect: UdpNoPorts: 3,221,303]]
-    - [[#redirect-iptables-raw-drop-6320066][redirect: iptables-raw drop: 6,320,066]]
-  - [[#patch3-bpf-cpumap-do-bulk-allocation-of-skbs][Patch3: bpf: cpumap do bulk allocation of SKBs]]
-    - [[#redirect-udpnoports-3290563][redirect: UdpNoPorts: 3,290,563]]
-    - [[#redirect-iptables-raw-drop-6650112][redirect: iptables-raw drop: 6,650,112]]
-  - [[#patch4-bpf-cpumap-memory-prefetchw-optimizations-for-struct-page][Patch4: bpf: cpumap memory prefetchw optimizations for struct page]]
-    - [[#redirect-udpnoports-3520250][redirect: UdpNoPorts: 3,520,250]]
-    - [[#redirect-iptables-raw-drop-7649604][redirect: iptables-raw drop: 7,649,604]]
-    - [[#cpumap-qsize64-redirect-udpnoports-3930379][cpumap-qsize:64: redirect: UdpNoPorts: 3,930,379]]
-    - [[#cpumap-qsize64-redirect-iptables-raw-drop-7329574][cpumap-qsize:64: redirect: iptables-raw drop: 7,329,574]]
-  - [[#patch5-bpf-cpumap-use-netif_receive_skb_list][Patch5: bpf: cpumap use netif_receive_skb_list]]
-    - [[#redirect-udpnoports-3303269][redirect: UdpNoPorts: 3,303,269]]
-    - [[#redirect-iptables-raw-drop-7160297][redirect: iptables-raw drop: 7,160,297]]
-    - [[#cpumap-qsize64-redirect-udpnoports-4089778][cpumap-qsize:64: redirect: UdpNoPorts: 4,089,778]]
-    - [[#cpumap-qsize64-redirect-iptables-raw-drop-6869895][cpumap-qsize:64: redirect: iptables-raw drop: 6,869,895]]
-
 * Cover-letter                                                     :noexport:
 
 Bulk optimization for XDP cpumap redirect
