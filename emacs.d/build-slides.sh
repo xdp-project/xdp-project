@@ -8,7 +8,7 @@ fi
 set -o errexit
 set -o nounset
 
-BOOTSTRAP_FILE="$(dirname $0)/bootstrap-build.el"
+BOOTSTRAP_FILE="$(dirname $0)/build-slides.el"
 
 test -f "$BOOTSTRAP_FILE"
 
