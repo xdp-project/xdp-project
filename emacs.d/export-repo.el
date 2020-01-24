@@ -35,6 +35,31 @@
        "<script type=\"text/javascript\" src=\"/styles/bigblow/js/hideshow.js\"></script>\n"
        "<script type=\"text/javascript\" src=\"/styles/lib/js/jquery.stickytableheaders.min.js\"></script>\n"))
 
+(defun sitemap-func (title list)
+  "Default site map, as a string.
+TITLE is the title of the site map.  LIST is an internal
+representation for the files to include, as returned by
+`org-list-to-lisp'.  PROJECT is the current project."
+  (org-list-to-org (-filter (lambda (entry) (or (not (listp entry))
+                                                (not (string-match-p "SKIP" (car entry)))))
+                            list)))
+
+(defun sitemap-entry (entry style project)
+  "Default format for site map ENTRY, as a string.
+ENTRY is a file name.  STYLE is the style of the sitemap.
+PROJECT is the current project."
+  (cond ((not (directory-name-p entry))
+         (if (org-publish-find-property entry :with-planning project)
+             "SKIP"
+           (format "[[file:%s][%s]]"
+                   entry
+                   (org-publish-find-title entry project))))
+	((eq style 'tree)
+	 ;; Return only last subdir.
+	 (file-name-nondirectory (directory-file-name entry)))
+	(t entry)))
+
+
 (defun export-repo (destdir)
   "Export repository to DESTDIR using org-publish-project."
   (let* ((enable-local-variables :all)
@@ -59,7 +84,9 @@
             :recursive t
             :auto-sitemap t
             :sitemap-title "The XDP project"
-            :sitemap-filename "index.org"
+            :sitemap-filename "sitemap.org"
+            :sitemap-function sitemap-func
+            :sitemap-format-entry sitemap-entry
             :htmlized-source nil))
          (styles
           `("styles"

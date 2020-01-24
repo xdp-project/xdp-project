@@ -34,3 +34,5 @@
 (use-package git :straight t)
 (use-package org :straight t)
 (use-package htmlize :straight t)
+
+(use-package dash :straight t)

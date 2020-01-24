@@ -1,8 +1,23 @@
 # -*- fill-column: 76; -*-
 #+TITLE: Top-level XDP project management
 #+CATEGORY: XDP
-#+OPTIONS: ^:nil
+#+OPTIONS: ^:nil p:t
 
+This file contains the high-level XDP tasks. The items in this file are
+divided into three categories, reflecting the urgency and time frame we
+envision them being completed; although this is somewhat of a soft
+categorisation, as the development is also dependent on the priorities of
+the people and organisations involved. These categories are:
+
+- Current high-priority tasks
+- Important medium-term tasks
+- Longer-term preliminary plans
+
+Tasks are filed under the headings corresponding to these categories below,
+and each category contains a description of what it (is supposed to)
+include.
+
+* Emacs setup instructions                                         :noexport:
 This the top-level *XDP project management* file that contains *tasks* via
 org-mode =TODO=, =NEXT= and =DONE=. The [[file:areas][areas directory]] also contains
 *tasks*. It is recommended to use emacs when viewing and editing these
@@ -13,22 +28,9 @@ Together with the emacs setup in [[file:../org-setup.el]], the extended
 =org-agenda= view can be used for project management, and the setup
 automatically detect [[http://doc.norang.ca/org-mode.html#TodoKeywordProjectTaskStates][Projects and Stuck Projects]]. For =org-agenda= view to
 pickup these tasks, make sure to [[http://doc.norang.ca/org-mode.html#AgendaSetup][configure]] =org-agenda-files= to include
-this directory and =areas/= directory.
+this directory and =areas/= directory. We also use tags to designate the
+status, to allow filtering in agenda views.
 
-The items in this file are divided into three categories, reflecting the
-urgency and time frame we envision them being completed; although this is
-somewhat of a soft categorisation, as the development is also dependent on
-the priorities of the people and organisations involved. These categories
-are:
-
-- Current high-priority tasks (=@short= tag)
-- Important medium-term tasks (=@medium= tag)
-- Longer-term preliminary plans (=@long= tag)
-
-Tasks are filed under the headings corresponding to these categories below,
-and each category contains a description of what it (is supposed to)
-include. We also use the tags mentioned above to designate the status, to
-allow filtering in agenda views.
 
 * Current high-priority tasks                                        :@short:
 
