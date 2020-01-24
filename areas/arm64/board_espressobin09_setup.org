@@ -662,6 +662,20 @@ dnf install -y perf
 dnf install -y vim
 #+end_src
 
+Getting pahole:
+#+begin_src sh
+dnf install -y dwarves
+#+end_src
+
+** Dependencies for compiling bpftool
+
+#+begin_example
+dnf install binutils-devel  # bfd.h
+dnf builddep -y bpftool
+dnf install -y readline-devel  # readline/readline.h
+#+end_example
+
+
 ** BCC and bpftrace
 
 #+begin_example
@@ -705,6 +719,8 @@ Installing dependencies:
  ncurses-c++-libs                 aarch64                6.1-12.20190803.fc31                   fedora                  37 k
  ncurses-devel                    aarch64                6.1-12.20190803.fc31                   fedora                 503 k
 #+end_example
+
+Also install F31 version: =dnf install -y bpftrace=
 
 * Setup adjustments
 
