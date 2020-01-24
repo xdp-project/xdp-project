@@ -233,11 +233,18 @@ forget to say what interface this is loaded on.  Solve by simply outputting
 the interface in the output. Even better would be outputting driver name
 from corresponding ifindex.
 
-*** NEXT investigate sample xdp_redirect_cpu counters
+*** DONE investigate sample xdp_redirect_cpu counters
+CLOSED: [2020-01-24 Fri 09:58]
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2020-01-24 Fri 09:58]
+:END:
 
 Playing with xdp_redirect_cpu, and the enqueue and kthread counters are not
 getting updated, something in stats reporting looks wrong.  Maybe latest
 upstream changes to libbpf broke something?
+
+Fixed in: f9e6bfdbaf0c ("samples/bpf: Xdp_redirect_cpu fix missing tracepoint attach")
+
 
 *** TODO cpumap: implement dynamic load-balancer that is OoO safe
 
