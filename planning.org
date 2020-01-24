@@ -1,0 +1,50 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Project management: Planning who is working on what
+#+CATEGORY: plan
+#+OPTIONS: ^:nil
+
+This document tries to get an overview on who is working on what.
+
+* Consistency for statistics with XDP
+- Assigned: Nobody
+- David Ahern was working on this, but currently dropped.
+
+* XDP multi-frame work
+- Assigned: Amazon ("Jubran, Samih" <sameehj@amazon.com>)
+
+* XDP-data-hard-end
+- Assigned: nobody
+- Needed for multi-frame
+- Needed for SKB outside drivers
+
+* XDP clone+multicast
+- Assigned: Nobody
+
+* XDP-feature bits
+- Assigned: Maybe Anton (Linode)
+
+* SKB outside drivers
+- Assigned: Jesper
+- Blocked on: XDP-data-hard-end
+- Blocked on: BTF HW-offload feature
+
+* NIC BTF HW-offload feature
+- Assigned: Tom Herbert (Intel) (working group under ZabiPlane)
+
+* page_pool: measure and optimize performance
+- Assigned: Jesper
+
+* page_pool: use in SKB free/return path
+- Assigned: Ilias (Linaro)
+
+* page_pool: add stats
+- Assigned: Jonathan (Facebook)
+
+* BPF-helper: OvS lookup
+- Assigned: Nobody
+
+* Multiple-XDP program on a single NIC
+- Assigned: Toke
+
+* BPF-helper: Conntrack lookup
+- Assigned: Matt Cover <werekraken@gmail.com>
