@@ -5,24 +5,36 @@
 
 This document tries to get an overview on who is working on what.
 
-* Consistency for statistics with XDP
+* Multiple-XDP program on a single NIC
+- Assigned: Toke
+
+* XDP clone+multicast
 - Assigned: Nobody
+
+* BPF-helper: Conntrack lookup
+- Assigned: Matt Cover <werekraken@gmail.com>
+
+* XDP egress hook/programs
+- Assigned: Ahern + jason Wang
+
+* XDP-feature bits
+- Assigned: Maybe Anton (Linode)
+
+* Consistency for statistics with XDP
+- Assigned: Lorenzo
 - David Ahern was working on this, but currently dropped.
 
-* XDP multi-frame work
-- Assigned: Amazon ("Jubran, Samih" <sameehj@amazon.com>)
+* BPF-helper: Bridge lookup
+- Assigned: Lorenzo
 
 * XDP-data-hard-end
 - Assigned: nobody
 - Needed for multi-frame
 - Needed for SKB outside drivers
 
-* XDP clone+multicast
-- Assigned: Nobody
-
-* XDP-feature bits
-- Assigned: Maybe Anton (Linode)
-
+* Better "TX" ndo_xdp_xmit resource management
+- Assigned: Toke / Magnus
+- Stalled on queue work from Intel (Magnus)
 * SKB outside drivers
 - Assigned: Jesper
 - Blocked on: XDP-data-hard-end
@@ -35,20 +47,14 @@ This document tries to get an overview on who is working on what.
 - Assigned: Jesper
 
 * page_pool: use in SKB free/return path
-- Assigned: Ilias (Linaro)
+- Assigned: Ilias (Linaro) and Lorenzo
 
 * page_pool: add stats
 - Assigned: Jonathan (Facebook)
 
+* XDP multi-frame work
+- Assigned: Amazon ("Jubran, Samih" <sameehj@amazon.com>)
+
 * BPF-helper: OvS lookup
 - Assigned: Nobody
 
-* Multiple-XDP program on a single NIC
-- Assigned: Toke
-
-* BPF-helper: Conntrack lookup
-- Assigned: Matt Cover <werekraken@gmail.com>
-
-* Better "TX" ndo_xdp_xmit resource management
-- Assigned: Toke / Magnus
-- Stalled on queue work from Intel (Magnus)
