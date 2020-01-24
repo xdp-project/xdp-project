@@ -1,13 +1,9 @@
-#+TITLE: The XDP project
 #+OPTIONS: p:t
 
 This is the XDP project website - a rendered version of [[https://github.com/xdp-project/xdp-project][the Github repository]]
 for project planning.
 
-* Main file with high-level tasks
-
-The [[file:xdp-project.org][main project file]] contains the high-level XDP tasks and is probably a good
-place to start.
+#+INCLUDE: xdp-project.org
 
 * Sub-categories and their tasks
 
