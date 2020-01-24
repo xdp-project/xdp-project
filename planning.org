@@ -48,3 +48,7 @@ This document tries to get an overview on who is working on what.
 
 * BPF-helper: Conntrack lookup
 - Assigned: Matt Cover <werekraken@gmail.com>
+
+* Better "TX" ndo_xdp_xmit resource management
+- Assigned: Toke / Magnus
+- Stalled on queue work from Intel (Magnus)

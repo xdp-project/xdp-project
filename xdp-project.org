@@ -132,6 +132,8 @@ and it would also standardise the driver related XDP ethool stats.
 :ID:       dbb66cde-82e6-47ba-be0f-5ebb8baa1cd2
 :END:
 
+Stalled on Intel/Magnus NIC queue management interface.
+
 Driver resources needed to handle a ndo_xdp_xmit() is currently tied
 to the driver having loaded an RX XDP program. This is strange, as
 allocating these Driver TX HW resources is independent.
