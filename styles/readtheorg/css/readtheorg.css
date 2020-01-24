@@ -1044,7 +1044,7 @@ h2.footnotes{
     color: #fff;
 }
 
-.WAIT, .nilWAIT{
+.WAIT, .nilWAIT, .NEXT, .nilNEXT{
     background-color: #6AB097;
 }
 
