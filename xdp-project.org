@@ -306,15 +306,17 @@ Fixed by https://patchwork.ozlabs.org/patch/1121683/
 
 Simply include/sample the net_device TX stats.
 
-*** TODO Fix unloading wrong XDP on xdp-sample exit
+*** DONE Fix unloading wrong XDP on xdp-sample exit
+CLOSED: [2020-01-24 Fri 10:50]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2020-01-24 Fri 10:50]
+:END:
 
 The XDP sample programs unconditionally unload the current running XDP
 program (via -1) on exit. If users are not careful with the order in-which
 they start and stop XDP programs, then they get confused.
 
-Almost done, but followup to make sure this gets merged upstream:
-Upstream [[https://patchwork.ozlabs.org/project/netdev/list/?series=86597&state=%2a][proposal V1]] (by [[https://patchwork.ozlabs.org/project/netdev/list/?submitter=75761][Maciej Fijalkowski]]) is to check if the BPF-prog-ID
-numbers match, before removing the current XDP-prog.
+This was fixed upstream by by [[https://patchwork.ozlabs.org/project/netdev/list/?series=89625&state=%2A&archive=both][Maciej Fijalkowski]].
 
 *** TODO Change XDP-samples to enforce native-XDP and report if not avail
 
