@@ -25,17 +25,21 @@ in user-space. The asm approach offers more accuracy if all the requirements
 are met since the timer register is accessible at EL0 and everything
 completes at EL0 without the need of any system calls.
 
+If CNTFRQ_EL0 does not offer a decent granularity (i.e at least 1ns)
+use ktime_get_ns()
+
 pseudo code can look line this:
 #+BEGIN_SRC C
 - kernel driver:
 
+#define isb() asm volatile("isb" : : : "memory")
 napi_poller(struct netsec_priv *priv, int budget)
 {
       struct xdp_buff xdp;
       u64 ts;
 	
+      isb();
 	asm volatile("mrs %0, CNTVCT_EL0" : "=r" (ts));
-      /* asm volatile ("isb sy"); */
 
       while (done < budget) {
             /* place timestamp ahead of the packet */
