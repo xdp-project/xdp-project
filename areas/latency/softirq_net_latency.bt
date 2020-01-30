@@ -1,0 +1,64 @@
+#!/usr/bin/bpftrace
+/* SPDX-License-Identifier: GPL-2.0+
+ *
+ * Catching high network IRQ-to-softirq latency by measuing time
+ * between softirq "raise" until softirq function is called.  Limited
+ * to network via softirq vector NET_RX_SOFTIRQ (3).
+ *
+ * 26-Jan-2020	Jesper Dangaard Brouer	Created this
+ */
+BEGIN
+{
+	/* Cmdline arg#1: latency threshold input in usec */
+	@threshold_usecs = $1 ? $1: 2000;
+	/* Cmdline arg#2: enable measuring runtime of softirq func */
+	@measure_runtime = $2;
+	printf("Tracing softirq latency ... Hit Ctrl-C to end.\n");
+	printf(" - Will report on latency above %d usecs (= %d ms)\n",
+	       @threshold_usecs, @threshold_usecs / 1000);
+	if (@measure_runtime) {
+		printf(" - Also record runtime of softirq func call\n");
+	}
+}
+
+tracepoint:irq:softirq_raise
+/args->vec == 3/   /* NET_RX_SOFTIRQ = 3 */
+{
+	@start[cpu] = nsecs;
+}
+
+tracepoint:irq:softirq_entry
+/args->vec == 3/
+{
+        if (@start[cpu] > 0) {
+		$lat = (nsecs - @start[cpu]) / 1000; /* convert to usecs */
+		@latency_usecs[cpu] = hist($lat);
+
+		/* Report on events over threshold */
+		if ($lat >= @threshold_usecs) {
+			// @stack[cpu, $lat] = kstack; //no useful stack
+			printf("High IRQ-to-softirq latency: %d usec (%d ms) on CPU:%d\n",
+			       $lat, $lat / 1000, cpu);
+		}
+        }
+	delete(@start[cpu]);
+	if (@measure_runtime) {
+		@runtime[cpu] = nsecs;
+	}
+}
+
+tracepoint:irq:softirq_exit
+/args->vec == 3/
+{
+        if (@measure_runtime && @runtime[cpu] > 0) {
+		$lat = (nsecs - @runtime[cpu]) / 1000;
+		@runtime_usecs[cpu] = hist($lat);
+	}
+	delete(@runtime[cpu]);
+}
+
+END
+{	/* Default bpftrace will print all remaining maps at END */
+	clear(@measure_runtime);
+	clear(@threshold_usecs);
+}
