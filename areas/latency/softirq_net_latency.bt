@@ -30,7 +30,7 @@ tracepoint:irq:softirq_raise
 tracepoint:irq:softirq_entry
 /args->vec == 3/
 {
-        if (@start[cpu] > 0) {
+	if (@start[cpu] > 0) {
 		$lat = (nsecs - @start[cpu]) / 1000; /* convert to usecs */
 		@latency_usecs[cpu] = hist($lat);
 
@@ -40,7 +40,7 @@ tracepoint:irq:softirq_entry
 			printf("High IRQ-to-softirq latency: %d usec (%d ms) on CPU:%d\n",
 			       $lat, $lat / 1000, cpu);
 		}
-        }
+	}
 	delete(@start[cpu]);
 	if (@measure_runtime) {
 		@runtime[cpu] = nsecs;
@@ -50,7 +50,7 @@ tracepoint:irq:softirq_entry
 tracepoint:irq:softirq_exit
 /args->vec == 3/
 {
-        if (@measure_runtime && @runtime[cpu] > 0) {
+	if (@measure_runtime && @runtime[cpu] > 0) {
 		$lat = (nsecs - @runtime[cpu]) / 1000;
 		@runtime_usecs[cpu] = hist($lat);
 	}
