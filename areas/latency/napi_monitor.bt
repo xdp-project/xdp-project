@@ -23,7 +23,7 @@ tracepoint:irq:softirq_entry
 {
 	if (@start_raise[cpu] > 0) {
 		$lat = (nsecs - @start_raise[cpu]) / 1000; /* convert to usecs */
-		@irq_latency_usecs = hist($lat);
+		@irq_to_softirq_latency_usecs = hist($lat);
 	}
 	delete(@start_raise[cpu]);
 	@start_entry[cpu] = nsecs;
@@ -48,7 +48,15 @@ tracepoint:irq:softirq_exit
 
 tracepoint:napi:napi_poll
 {
-	@napi_bulk = lhist(args->work, 0, 64, 4);
+	$packets = args->work; /* packets processed in NIC driver poll func */
+	@napi_bulk = lhist($packets, 0, 64, 4);
+
+	/* Tracepoint invoked just after NIC poll func call returns */
+	if (@start_entry[cpu] > 0) {
+		$lat = (nsecs - @start_entry[cpu]) / 1000; /* convert to usecs */
+		@napi_bulk_sz_latency_usec[$packets] = hist($lat);
+	}
+	/* softirq_exit will cleanup delete(@start_entry[cpu]) */
 }
 
 END
