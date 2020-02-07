@@ -8,6 +8,9 @@
  * This script was used for detecting latency issues described in blog:
  *  https://github.blog/2019-11-21-debugging-network-stalls-on-kubernetes/
  *
+ * Output examples from this script can be seen in:
+ *  https://bugzilla.redhat.com/show_bug.cgi?id=1795049#c8
+ *
  * 26-Jan-2020	Jesper Dangaard Brouer	Created this
  */
 BEGIN
