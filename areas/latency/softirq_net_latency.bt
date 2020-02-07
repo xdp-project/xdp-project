@@ -5,6 +5,9 @@
  * between softirq "raise" until softirq function is called.  Limited
  * to network via softirq vector NET_RX_SOFTIRQ (3).
  *
+ * This script was used for detecting latency issues described in blog:
+ *  https://github.blog/2019-11-21-debugging-network-stalls-on-kubernetes/
+ *
  * 26-Jan-2020	Jesper Dangaard Brouer	Created this
  */
 BEGIN
