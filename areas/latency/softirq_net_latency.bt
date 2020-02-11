@@ -30,7 +30,13 @@ BEGIN
 tracepoint:irq:softirq_raise
 /args->vec == 3/   /* NET_RX_SOFTIRQ = 3 */
 {
-	@start[cpu] = nsecs;
+	if (!@start[cpu]) {
+		/* Only catch first softirq_raise, to measure time
+		 * until softirq_entry happens.  Other raise events
+		 * could be triggered by other NICs.
+		 */
+		@start[cpu] = nsecs;
+	}
 }
 
 tracepoint:irq:softirq_entry
