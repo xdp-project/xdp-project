@@ -38,12 +38,12 @@ emacs).
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
-Kernel documentaion on Documentation/networking/page_pool.rst
+Kernel documentation on Documentation/networking/page_pool.rst
 
 - Need to create one pool for hardware queue
   - Otherwise we need locking, which beats the page_pool purpose
   - Some drivers will impose exceptions (i.e currently cpsw)
-- Optimized for speed. Cache line accessing is carefully taekn into
+- Optimized for speed. Cache line accessing is carefully taken into
   consideration
 - Plan to add recycling on it for normal SKB traffic
 
