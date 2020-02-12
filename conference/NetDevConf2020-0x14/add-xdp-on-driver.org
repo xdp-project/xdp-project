@@ -92,3 +92,12 @@ Kernel documentation on Documentation/networking/page_pool.rst
 - page_pool_get_dma_dir(): Get page_pool DMA direction
 - page_pool_recycle_direct: Immediately recycle the page. Only usable under
   NAPI
+
+* Emacs end-tricks                                                 :noexport:
+
+This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
+in the compiled version.
+
+# Local Variables:
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
