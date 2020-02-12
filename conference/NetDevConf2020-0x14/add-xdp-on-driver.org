@@ -100,5 +100,8 @@ This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
 in the compiled version.
 
 # Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
+# class=\"author\">Lorenzo Bianconi<br/>Jesper Dangaard Brouer<br/>Ilias Apalodimas</h2>
+# <h3>NetDev 0x14<br/>Vancouver, March 2020</h3>"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
 # End:
