@@ -27,7 +27,8 @@
 
 (defun straight-do-thaw ()
   "Make sure we use the straight package versions specified in versions/default.el."
-  (let ((inhibit-message t))
+  (let ((inhibit-message t)
+        (noninteractive nil))
     (straight-thaw-versions)
     (straight--save-build-cache)))
 
