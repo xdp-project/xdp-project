@@ -28,12 +28,18 @@ function addAuthor(selector, logo) {
     var title = document.querySelectorAll("title")[0].innerText;
     var authors = document.querySelectorAll("meta[name=author]")[0].content;
     var authorHTML = getAuthorHTML(title, authors);
+    var extraLogoDiv = document.querySelector("#extra-logos");
+    var extraLogo = "";
+
+    if (extraLogoDiv)
+        extraLogo = extraLogoDiv.innerHTML;
+
     return function() {
         var elems = document.querySelectorAll(selector);
         elems.forEach(function (e) {
             var author = document.createElement('div');
             author.className = 'authorbox';
-            author.innerHTML = logo + authorHTML;
+            author.innerHTML = logo + extraLogo + authorHTML;
             e.appendChild(author);
         });
     }
