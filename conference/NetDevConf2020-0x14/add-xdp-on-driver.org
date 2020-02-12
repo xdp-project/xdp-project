@@ -26,6 +26,30 @@ Only sections with tag ":export:" will end-up in the presentation. The prefix
 "Slide:" is only syntax-sugar for the reader (and it removed before export by
 emacs).
 
+* Slide: Driver XDP RX-processing (NAPI) loop                      :export:
+
+Code needed in *driver* for /supporting XDP/ is fairly simple
+
+#+begin_src C
+while (desc_in_rx_ring && budget_left--) {
+  action = bpf_prog_run_xdp(xdp_prog, xdp_buff);
+  /* helper bpf_redirect_map have set map (and index) via this_cpu_ptr */
+  switch (action) {
+    case XDP_PASS:     break;
+    case XDP_TX:       res = driver_local_xmit_xdp_ring(adapter, xdp_buff); break;
+    case XDP_REDIRECT: res = xdp_do_redirect(netdev, xdp_buff, xdp_prog); break;
+    default:           bpf_warn_invalid_xdp_action(action); /* fall-through */
+    case XDP_ABORTED:  trace_xdp_exception(netdev, xdp_prog, action); /* fall-through */
+    case XDP_DROP:     page_pool_recycle_direct(pp, page); res = DRV_XDP_CONSUMED; break;
+  } /* left out acting on res */
+} /* End of NAPI-poll */
+xdp_do_flush_map(); /* Bulk chosen by map, can store xdf_frame for flushing */
+driver_local_XDP_TX_flush();
+#+end_src
+
+Tricky part is *changing* driver */memory model/* to be compatible with XDP
+
+
 * Slide: XDP requirements							   :export:
 - XDP frame in physical contiguous memory
   - BPF Direct-Access for validating correctness
