@@ -1385,3 +1385,8 @@ body {
   visibility: hidden; }
 
 #extra-logos {display: none;}
+
+#sec-title-slide img.linaro-logo,
+.mid-slide img.linaro-logo {
+  filter: grayscale(100%) brightness(200%);
+}

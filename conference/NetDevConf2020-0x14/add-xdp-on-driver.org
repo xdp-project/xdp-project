@@ -7,7 +7,7 @@
 #+REVEAL_MARGIN: 0
 #+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
 #+REVEAL_ROOT: ../reveal.js
-#+REVEAL_POSTAMBLE: <div id="extra-logos"><img src="../reveal.js/images/linaro-logo.png" /></div>
+#+REVEAL_POSTAMBLE: <div id="extra-logos"><img src="../reveal.js/images/linaro-logo.png" class="linaro-logo" /></div>
 #+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
 #+OPTIONS: reveal_width:1600 reveal_height:900
 #+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
