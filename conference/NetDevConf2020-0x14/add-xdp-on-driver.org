@@ -26,6 +26,16 @@ Only sections with tag ":export:" will end-up in the presentation. The prefix
 "Slide:" is only syntax-sugar for the reader (and it removed before export by
 emacs).
 
+* Slide: XDP requirements							   :export:
+- XDP frame in physical contiguous memory
+  - BPF Direct-Access for validating correctness
+  - No paged frames support, data cannot be split across pages
+  - Read and Write access to the DMA buffers
+  - Disable jumbo frames (packet < PAGE_SIZE) loading a BPF program
+- XDP headroom to push/pop header through bpf_xdp_adjust_head()
+- Reserve tailroom for skb_shared_info and rely on build_skb() on XDP_PASS
+- Cannot allocate page fragments to support it (e.g. through napi_alloc_skb())
+- Rx buffers must be recycled to get high speed!
 * Slide: The Allocator								   :export:
 
 - Optimized for XDP mode. Ideally one page per frame model
