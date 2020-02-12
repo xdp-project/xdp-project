@@ -32,6 +32,11 @@
     (straight--save-build-cache)))
 
 (use-package git :straight t)
+
+(use-package org-version
+  :requires git
+  :commands (org-git-version org-release))
+
 (use-package org :straight t)
 (use-package htmlize :straight t)
 
