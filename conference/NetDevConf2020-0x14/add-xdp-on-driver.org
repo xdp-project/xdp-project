@@ -84,16 +84,64 @@ Kernel documentation on Documentation/networking/page_pool.rst
 
 ** Slide: The API
 
-- page_pool_create(): Create a pool
-- page_pool_put_page(): Try to recycle the page and deal with DMA
+- page_pool_create(): Create the pool object
+- page_pool_put_page(): Recycle or unmap the page
 - page_pool_release_page(): Unmap the page
-- page_pool_dev_alloc_pages(): Allocate pages from the page allocator or
-  page_pool cache
-- page_pool_get_dma_addr(): Retreive stored DMA address from struct page
-- page_pool_get_dma_dir(): Get page_pool DMA direction
-- page_pool_recycle_direct: Immediately recycle the page. Only usable under
-  NAPI
+- page_pool_dev_alloc_pages(): Get a new page from cache or alloc a new one
+- page_pool_get_dma_addr(): Retreive the stoired DMA address
+- page_pool_get_dma_dir(): Retrieve the stored DMA direction
+- page_pool_recycle_direct(): Recycle the page immediately (safe context only)
+* Slide: Code examples pool creation					   :export:
+#+begin_src C
+    struct page_pool_params pp_params = { 0 };
+    struct xdp_rxq_info xdp_rxq;
+    int err;
 
+    pp_params.order = 0;
+    /* internal DMA mapping in page_pool */
+    pp_params.flags = PP_FLAG_DMA_MAP;
+    pp_params.pool_size = DESC_NUM;
+    pp_params.nid = NUMA_NO_NODE;
+    pp_params.dev = priv->dev;
+    pp_params.dma_dir = xdp_prog ? DMA_BIDIRECTIONAL : DMA_FROM_DEVICE;
+    page_pool = page_pool_create(&pp_params);
+
+    err = xdp_rxq_info_reg(&xdp_rxq, ndev, 0);
+    if (err)
+        goto err_out;
+
+    err = xdp_rxq_info_reg_mem_model(&xdp_rxq, MEM_TYPE_PAGE_POOL, page_pool);
+    if (err)
+        goto err_out;
+#+end_src
+** Slide: NAPI poolling
+#+begin_src C
+    /* NAPI Rx poller */
+
+    enum dma_data_direction dma_dir;
+
+    dma_dir = page_pool_get_dma_dir(dring->page_pool);
+    while (done < budget) {
+        if (some error)
+            page_pool_recycle_direct(page_pool, page);
+        if (packet_is_xdp) {
+            if XDP_DROP:
+                page_pool_recycle_direct(page_pool, page);
+        } else (packet_is_skb) {
+            page_pool_release_page(page_pool, page);
+            new_page = page_pool_dev_alloc_pages(page_pool);
+        }
+    }
+#+end_src
+
+** Slide: Module unloading
+
+#+begin_src C
+    /* Driver unload */
+    page_pool_put_page(page_pool, page, false);
+    xdp_rxq_info_unreg(&xdp_rxq);
+    page_pool_destroy(page_pool);
+#+end_src
 * Emacs end-tricks                                                 :noexport:
 
 This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
