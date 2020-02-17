@@ -140,8 +140,73 @@ Kernel documentation on Documentation/networking/page_pool.rst
     /* Driver unload */
     page_pool_put_page(page_pool, page, false);
     xdp_rxq_info_unreg(&xdp_rxq);
-    page_pool_destroy(page_pool);
 #+end_src
+* Slide: How to test								   :export:
+- Cases we have to test for:
+  - XDP_PASS
+  - XDP_DROP
+  - XDP_TX
+  - XDP_REDIRECT
+  - ndo_xdp_xmit
+- Using samples/pktgen/ scripts to generate traffic
+** Slide: XDP_PASS
+- Load a program that returns XDP_PASS and make sure packets are delivered on
+  the normal network stack
+** Slide: XDP_DROP
+- Remote host driver running XDP on eth0
+#+begin_src bash
+make M=samples/bpf -j24
+sudo ./samples/bpf/xdp1 eth0
+proto 17:     324874 pkt/s
+proto 17:     324557 pkt/s
+proto 17:     324650 pkt/s
+#+end_src
+
+- Start sending traffic to that interface
+#+begin_src bash
+sudo ./pktgen_sample02_multiqueue.sh -i enp2s0 -d 192.168.200.1 -s 64 \
+      -m e0:d5:5e:65:ac:83 -t4 -n0
+#+end_src
+** Slide: XDP_TX
+- start XDP_TX sample on host
+#+begin_src bash
+make M=samples/bpf -j24
+sudo ./samples/bpf/xdp2 eth0
+proto 17:      55231 pkt/s
+proto 17:      55971 pkt/s
+proto 17:      55617 pkt/s
+proto 17:      55103 pkt/s
+#+end_src
+- Send a specific amount of packets to that host and capture the sender
+  traffic with wireshark
+#+begin_src bash
+sudo tcpdump -ni enp2s0 -s0 -w test.pcap
+for i in {1..1500000}; do echo "This is my data" > /dev/udp/192.168.200.1/3000; done
+#+end_src
+- Open the trace and verify packets are correctly received (1500000 Rx
+  packets)
+** Slide: XDP_REDIRECT to AF_XDP Socket
+- Redirect packet to an AF_XDP socket
+#+begin_src bash
+make M=samples/bpf -j24
+sudo ./samples/bpf/xdpsock -i eth0
+sock0@eth0:0 rxdrop
+                pps         pkts        1.00
+rx              324,596     869,646
+tx              0           0
+sock0@eth0:0 rxdrop
+                pps         pkts        1.00
+rx              324,235     1,194,260
+tx              0           0
+#+end_src
+
+- Start sending traffic to that interface
+#+begin_src bash
+sudo ./pktgen_sample02_multiqueue.sh -i enp2s0 -d 192.168.200.1 -s 64 \
+      -m e0:d5:5e:65:ac:83 -t4 -n0
+#+end_src
+** Slide: ndo_xdp_xmit
+
 * Emacs end-tricks                                                 :noexport:
 
 This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
