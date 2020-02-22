@@ -5,6 +5,7 @@
 #+REVEAL_THEME: redhat
 #+REVEAL_TRANS: linear
 #+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_CSS: ../reveal.js/css/theme/asciinema-player.css
 #+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
 #+REVEAL_ROOT: ../reveal.js
 #+REVEAL_POSTAMBLE: <div id="extra-logos"><img src="../reveal.js/images/linaro-logo.png" class="linaro-logo" /></div>
@@ -308,12 +309,16 @@ int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
 
 ** mvneta XDP: XDP_DROP (1/2)
 ** mvneta XDP: XDP_DROP (2/2)
+#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_drop.cast" cols="160" rows="32"></asciinema-player> <script src="../reveal.js/js/asciinema-player.js"></script>
 ** mvneta XDP: XDP_PASS (1/2)
 ** mvneta XDP: XDP_PASS (2/2)
+#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_pass.cast" cols="160" rows="32"></asciinema-player>
 ** mvneta XDP: XDP_TX (1/2)
 ** mvneta XDP: XDP_TX (2/2)
+#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_tx.cast" cols="160" rows="32"></asciinema-player>
 ** mvneta XDP: XDP_REDIRECT (1/2)
 ** mvneta XDP: XDP_REDIRECT (2/2)
+#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_redirect.cast" cols="160" rows="32"></asciinema-player>
 * Slide: How to test								   :export:
 - Cases we have to test for:
   - XDP_PASS
