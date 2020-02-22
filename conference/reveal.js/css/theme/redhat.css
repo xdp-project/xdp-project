@@ -355,6 +355,12 @@ body {
   border: 0;
   box-shadow: none; }
 
+.reveal .img-no-border {
+  text-align: center;
+  border: 0;
+  box-shadow: none;
+}
+
 .reveal a img {
   -webkit-transition: all .15s linear;
   -moz-transition: all .15s linear;
