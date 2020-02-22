@@ -141,6 +141,179 @@ Kernel documentation on Documentation/networking/page_pool.rst
     page_pool_put_page(page_pool, page, false);
     xdp_rxq_info_unreg(&xdp_rxq);
 #+end_src
+* Slide: Add XDP support on a NIC driver: mvneta			   :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+- page_pool lifecycle
+  - create/destroy the pool
+  - DMA refill
+- XDP architecture
+  - XDP main loop
+  - XDP verdicts
+    - demos
+
+** Marvell ESPRESSObin - mvneta
+
+#+ATTR_html: :width 75%
+[[file:images/espressobin-specs.png]]
+
+** mvneta: page_pool lifecycle (1/3)
+- the *page_pool* is usually associated to a hw rx queue
+  - the *page_pool* is created opening or reconfiguring the /net_device/
+
+#+begin_src C
+int mvneta_create_page_pool(..., struct mvneta_rx_queue *rxq, ...)
+{
+      struct page_pool_params pp_params = {
+            .oder = 0,
+            .flags = PP_FLAG_DMA_MAP | PP_FLAG_DMA_SYNC_DEV,
+            .pool_size = size,
+            .nid = NUMA_NO_NODE,
+            .dma_dir = xdp_prog ? DMA_BIDIRECTIONAL : DMA_FROM_DEVICE,
+            .offset = XDP_PACKET_HEADROOM,
+            .max_len = PAGE_SIZE - SKB_DATA_ALIGN(sizeof(struct skb_shared_info) +
+                                                  XDP_PACKET_HEADROOM),
+      };
+      rxq->page_pool = page_pool_create(&pp_params);
+      ...
+      xdp_rxq_info_reg(&rxq->xdp_rxq, ..., rxq->id);
+      ...
+      xdp_rxq_info_reg_mem_model(&rxq->xdp_rxq, MEM_TYPE_PAGE_POOL, rxq->page_pool);
+}
+#+end_src
+
+** mvneta: page_pool lifecycle (2/3)
+- /mvneta_rx_refill()/ relies on page_pool to refill hw DMA rx ring
+  - get page from *page_pool* */caches/* and avoid page allocator
+    - in-irq cache
+    - ptr_ring chace
+#+begin_src C
+int mvneta_rx_refill(..., struct mvneta_rx_queue *rxq)
+{
+      dma_addr_t dma_addr;
+      struct page *page;
+
+      page = page_pool_alloc_pages(rxq->page_pool, gfp_mask | __GFP_NOWARN);
+      if (!page)
+            return -ENOMEM;
+      dma_addr = page_pool_get_dma_addr(page) + XDP_PACKET_HEADROOM;
+      ...
+      rx_desc->buf_phys_addr = dma_addr;
+      rxq->buff_addr = page;
+}
+#+end_src
+
+** mvneta: page_pool lifecycle (3/3)
+- page allocated to the NIC are released closing the /net_device/
+  - pages are relased to the *page_pool*
+  - the *pege_pool* is destroyed whenever there are no inflight pages
+#+begin_src C
+void mvneta_rxq_drop_pkts(..., struct mvneta_rx_queue *rxq)
+{
+      for (i = 0; i < rxq->size; i++) {
+            ...
+		page_pool_put_full_page(rxq->page_pool, page, false);
+	}
+	if (xdp_rxq_info_is_reg(&rxq->xdp_rxq))
+		xdp_rxq_info_unreg(&rxq->xdp_rxq);
+	page_pool_destroy(rxq->page_pool);
+      ...
+}
+#+end_src
+
+** mvneta: loading an eBPF proram
+- /mvneta_xdp_setup/ is used to load or remove an eBPF program from the NIC
+  - it reconfigures the DMA buffers - */XDP memory model/*
+#+begin_src C
+int mvneta_xdp_setup(struct net_device *dev, struct bpf_prog *prog, ...)
+{
+      bool need_update, running = netif_running(dev);
+      struct bpf_prog *old_prog;
+
+      if (prog && dev->mtu > MVNETA_MAX_RX_BUF_SIZE) /* no jumbo frames */
+            return -EOPNOTSUPP;
+      ...
+      need_update = !!pp->xdp_prog != !!prog;
+      if (running && need_update)
+            mvneta_stop(dev); /* remove DMA buffers */
+
+      old_prog = xchg(&pp->xdp_prog, prog);
+      ...
+      if (running && need_update)
+            return mvneta_open(dev); /* refill hw DMA ring */
+      ...
+}
+#+end_src
+
+** mvneta XDP architecture
+
+#+ATTR_HTML: :class img-no-border
+[[file:images/mvneta-xdp-arch.png]]
+
+** mvneta XDP: main loop - mvneta_rx_swbm()
+#+begin_src C
+struct xdp_buff xdp;
+for (i = 0, i < budget; i++) {
+  ...
+  if (rx_status & MVNETA_RXD_FIRST_DESC) { /* XDP is single buffer */
+      dma_sync_single_for_cpu(dev, dma_addr, len, dma_dir);
+      ...
+      xdp->data_hard_start = page_addr; /* init xdp_buff */
+      xdp->data = page_addr + XDP_PACKET_HEADROOM + MVNETA_MH_SIZE;
+      xdp->data_end = xdp->data + len;
+      ...
+      ret = mvneta_run_xdp(.., xdp_prog, xdp, ...);
+      if (ret != MVNETA_XDP_PASS)
+            goto refill;
+      skb = build_skb(page_addr, PAGE_SIZE);
+      ...
+      page_pool_release_page(page_pool, page); /* the page is leaving the pool */
+      skb_put(rxq->skb, xdp->data_end - xdp->data); /* may be changed by bpf */
+      napi_gro_receive(napi, skb);
+      ...
+refill:
+      mvneta_rx_refill(.., rxq);
+  }
+}
+#+end_src
+
+** mvneta XDP: main loop - mvneta_run_xdp()
+
+#+begin_src C
+int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
+{
+      int len = xdp->data_end - xdp->data_hard_start - rx_offset;
+      int act = bpf_prog_run_xdp(prog, xdp);
+      ...
+      switch (act) {
+      case XDP_PASS:
+            return MVNETA_XDP_PASS;
+      case XDP_REDIRECT:
+            ...
+            xdp_do_redirect(..., xdp, prog);
+            return MVNETA_XDP_REDIR;
+      case XDP_TX:
+            mvneta_xdp_xmit_back(..., xdp);
+            return MVNETA_XDP_TX;
+      case XDP_ABORTED:
+            trace_xdp_exception(..., prog, act);
+      /* fall through */
+      case XDP_DROP:
+            page_pool_put_page(page_pool, page, len, true);
+            return MVNETA_XDP_DROPPED;
+      }
+}
+#+end_src
+
+** mvneta XDP: XDP_DROP (1/2)
+** mvneta XDP: XDP_DROP (2/2)
+** mvneta XDP: XDP_PASS (1/2)
+** mvneta XDP: XDP_PASS (2/2)
+** mvneta XDP: XDP_TX (1/2)
+** mvneta XDP: XDP_TX (2/2)
+** mvneta XDP: XDP_REDIRECT (1/2)
+** mvneta XDP: XDP_REDIRECT (2/2)
 * Slide: How to test								   :export:
 - Cases we have to test for:
   - XDP_PASS
