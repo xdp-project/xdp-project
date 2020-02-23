@@ -326,7 +326,7 @@ int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
 }
 #+end_src
 ** mvneta XDP: XDP_DROP (2/2)
-#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_drop.cast" cols="160" rows="32"></asciinema-player> <script src="../reveal.js/js/asciinema-player.js"></script>
+#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_drop.cast" cols="168" rows="32"></asciinema-player> <script src="../reveal.js/js/asciinema-player.js"></script>
 ** mvneta XDP: XDP_PASS (1/2)
 - /XDP_PASS/ to forward the frame to the networking stack
 - /mvneta_swbm_rx_frame()/ relies on */build_skb()/* for zero-copy
@@ -349,7 +349,7 @@ refill:
 }
 #+end_src
 ** mvneta XDP: XDP_PASS (2/2)
-#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_pass.cast" cols="160" rows="32"></asciinema-player>
+#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_pass.cast" cols="168" rows="32"></asciinema-player>
 ** mvneta XDP: XDP_TX (1/3)
 - the frame is trasmitted back to the interface where the packet was received
   - no need to DMA remap the page, only to flush CPU caches
@@ -394,7 +394,7 @@ int xdp_main(struct xdp_md *ctx)
 }
 #+end_src
 ** mvneta XDP: XDP_TX (3/3)
-#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_tx.cast" cols="160" rows="32"></asciinema-player>
+#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_tx.cast" cols="168" rows="32"></asciinema-player>
 ** mvneta XDP: XDP_REDIRECT (1/3)
 - /xdp_do_redirect()/ forwards the frame to:
   - remote interface - *ndo_xdp_xmit()*
@@ -438,7 +438,7 @@ int mvneta_xdp_xmit(struct net_device *dev, int num_frame,
 }
 #+end_src
 ** mvneta XDP: XDP_REDIRECT (3/3)
-#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_redirect.cast" cols="160" rows="32"></asciinema-player>
+#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_redirect.cast" cols="168" rows="32"></asciinema-player>
 * Slide: How to test								   :export:
 - Cases we have to test for:
   - XDP_PASS
