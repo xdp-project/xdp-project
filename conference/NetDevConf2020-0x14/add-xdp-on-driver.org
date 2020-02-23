@@ -148,7 +148,7 @@ Kernel documentation on Documentation/networking/page_pool.rst
 :END:
 - page_pool lifecycle
   - create/destroy the pool
-  - DMA refill
+  - DMA ring refill
 - XDP architecture
   - XDP main loop
   - XDP verdicts
@@ -185,10 +185,10 @@ int mvneta_create_page_pool(..., struct mvneta_rx_queue *rxq, ...)
 #+end_src
 
 ** mvneta: page_pool lifecycle (2/3)
-- /mvneta_rx_refill()/ relies on page_pool to refill hw DMA rx ring
-  - get page from *page_pool* */caches/* and avoid page allocator
-    - in-irq cache
-    - ptr_ring chace
+- /mvneta_rx_refill()/ relies on page_pool APIs to refill the hw DMA rx ring
+  - get pages from *page_pool* */caches/* and avoid the page allocator
+  - the page is /dma_sync_*_for_device()/ relying on *page_pool* APIs in
+    */page_pool_put_page()/*
 #+begin_src C
 int mvneta_rx_refill(..., struct mvneta_rx_queue *rxq)
 {
@@ -201,12 +201,12 @@ int mvneta_rx_refill(..., struct mvneta_rx_queue *rxq)
       dma_addr = page_pool_get_dma_addr(page) + XDP_PACKET_HEADROOM;
       ...
       rx_desc->buf_phys_addr = dma_addr;
-      rxq->buff_addr = page;
+      rx_desc->buff_addr = page;
 }
 #+end_src
 
 ** mvneta: page_pool lifecycle (3/3)
-- page allocated to the NIC are released closing the /net_device/
+- pages allocated to the NIC are released closing the /net_device/
   - pages are relased to the *page_pool*
   - the *pege_pool* is destroyed whenever there are no inflight pages
 #+begin_src C
@@ -224,7 +224,7 @@ void mvneta_rxq_drop_pkts(..., struct mvneta_rx_queue *rxq)
 #+end_src
 
 ** mvneta: loading an eBPF proram
-- /mvneta_xdp_setup/ is used to load or remove an eBPF program from the NIC
+- /mvneta_xdp_setup()/ is used to load or remove an eBPF program from the NIC
   - it reconfigures the DMA buffers - */XDP memory model/*
 #+begin_src C
 int mvneta_xdp_setup(struct net_device *dev, struct bpf_prog *prog, ...)
@@ -254,24 +254,23 @@ int mvneta_xdp_setup(struct net_device *dev, struct bpf_prog *prog, ...)
 
 ** mvneta XDP: main loop - mvneta_rx_swbm()
 #+begin_src C
+struct bpf_prog *xdp_prog = READ_ONCE(pp->xdp_prog);
 struct xdp_buff xdp;
 for (i = 0, i < budget; i++) {
   ...
-  if (rx_status & MVNETA_RXD_FIRST_DESC) { /* XDP is single buffer */
-      dma_sync_single_for_cpu(dev, dma_addr, len, dma_dir);
+  if (rx_desc->status & MVNETA_RXD_FIRST_DESC) { /* XDP is single buffer */
+      enum dma_data_direction dma_dir = page_pool_get_dma_dir(rxq->page_pool);
+      dma_sync_single_for_cpu(..., rx_desc->buf_phys_addr, rx_desc->data_size,
+                              dma_dir); /* invalid CPU caches */
       ...
-      xdp->data_hard_start = page_addr; /* init xdp_buff */
-      xdp->data = page_addr + XDP_PACKET_HEADROOM + MVNETA_MH_SIZE;
-      xdp->data_end = xdp->data + len;
+      xdp->data_hard_start = rx_desc->buff_addr; /* init xdp_buff */
+      xdp->data = rx_desc->buff_addr + XDP_PACKET_HEADROOM + MVNETA_MH_SIZE;
+      xdp->data_end = xdp->data + rx_desc->data_size;
       ...
       ret = mvneta_run_xdp(.., xdp_prog, xdp, ...);
       if (ret != MVNETA_XDP_PASS)
             goto refill;
-      skb = build_skb(page_addr, PAGE_SIZE);
-      ...
-      page_pool_release_page(page_pool, page); /* the page is leaving the pool */
-      skb_put(rxq->skb, xdp->data_end - xdp->data); /* may be changed by bpf */
-      napi_gro_receive(napi, skb);
+      /* send the packet to the networking stack */
       ...
 refill:
       mvneta_rx_refill(.., rxq);
@@ -284,7 +283,7 @@ refill:
 #+begin_src C
 int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
 {
-      int len = xdp->data_end - xdp->data_hard_start - rx_offset;
+      int len = xdp->data_end - xdp->data_hard_start - XDP_PACKET_HEADROOM;
       int act = bpf_prog_run_xdp(prog, xdp);
       ...
       switch (act) {
@@ -301,23 +300,144 @@ int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
             trace_xdp_exception(..., prog, act);
       /* fall through */
       case XDP_DROP:
-            page_pool_put_page(page_pool, page, len, true);
+            page_pool_put_page(rxq->page_pool, virt_to_head_page(xdp->data), len, true);
             return MVNETA_XDP_DROPPED;
       }
 }
 #+end_src
 
 ** mvneta XDP: XDP_DROP (1/2)
+- the driver is running in NAPI context and page refcount is 1
+  - /page_pool_put_page()/ will recycle the page in */in-irq/* *page_pool* cache
+- the page is synced for device using optiomal size in /page_pool_dma_sync_for_device()/
+#+begin_src C
+int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
+{
+      int len = xdp->data_end - xdp->data_hard_start - rx_offset;
+      int act = bpf_prog_run_xdp(prog, xdp);
+      ...
+      switch (act) {
+      ...
+      case XDP_DROP:
+            page_pool_put_page(rxq->page_pool, virt_to_head_page(xdp->data), len, true);
+            stats->xdp_drop++;
+            return MVNETA_XDP_DROPPED;
+      }
+}
+#+end_src
 ** mvneta XDP: XDP_DROP (2/2)
 #+REVEAL_HTML: <asciinema-player src="asciinema/xdp_drop.cast" cols="160" rows="32"></asciinema-player> <script src="../reveal.js/js/asciinema-player.js"></script>
 ** mvneta XDP: XDP_PASS (1/2)
+- /XDP_PASS/ to forward the frame to the networking stack
+- /mvneta_swbm_rx_frame()/ relies on */build_skb()/* for zero-copy
+  - get rid of origical copy-break approach
+  - take into account *skb_shared_info* in the buffer headroom
+#+begin_src C
+int mvneta_rx_swbm(struct napi_struct *napi, ..., struct mvneta_rx_queue *rxq)
+{
+      int ret = mvneta_run_xdp(.., xdp_prog, xdp, ...);
+      if (ret != MVNETA_XDP_PASS) goto refill;
+      skb = build_skb(xdp->data_hard_start, PAGE_SIZE);
+      ...
+      /* the page is leaving the pool */
+      page_pool_release_page(rxq->page_pool, rx_desc->buff_addr);
+      skb_reserve(skb, xdp->data - xdp->data_hard_start);
+      skb_put(rxq->skb, xdp->data_end - xdp->data); /* may be changed by bpf */
+      napi_gro_receive(napi, skb);
+refill:
+      ...
+}
+#+end_src
 ** mvneta XDP: XDP_PASS (2/2)
 #+REVEAL_HTML: <asciinema-player src="asciinema/xdp_pass.cast" cols="160" rows="32"></asciinema-player>
-** mvneta XDP: XDP_TX (1/2)
-** mvneta XDP: XDP_TX (2/2)
+** mvneta XDP: XDP_TX (1/3)
+- the frame is trasmitted back to the interface where the packet was received
+  - no need to DMA remap the page, only to flush CPU caches
+#+begin_src C
+int mvneta_xdp_xmit_back(..., struct xdp_buff *xdp)
+{
+      struct xdp_frame *xdpf = convert_to_xdp_frame(xdp);
+      struct page *page = virt_to_page(xdpf->data);
+      dma_addr_t dma_addr;
+
+      dma_addr = page_pool_get_dma_addr(page) +
+                 sizeof(*xdpf) + xdpf->headroom;
+      dma_sync_single_for_device(..., dma_addr, xdpf->len,
+                                 DMA_BIDIRECTIONAL);
+      tx_desc->buf_phys_addr = dma_addr;
+      tx_desc->data_size = xdpf->len;
+      /* update DMA tx registers */
+      ...
+}
+#+end_src
+** mvneta XDP: XDP_TX (2/3) - mirror.c
+- swap ethernet and ip addresses for ssh connections
+  - by Matteo Croce <mcroce@redhat.com>
+#+begin_src C
+int xdp_main(struct xdp_md *ctx)
+{
+      ...
+      struct ethhdr *eth = data;
+      struct iphdr *iph = (struct iphdr *)(eth + 1);
+      struct tcphdr *tcph = (struct tcphdr *)(iph + 1);
+      ...
+      if (tcph->dest == ntohs(22) || tcph->source == ntohs(22)) {
+            memcpy(teth, eth->h_dest, ETH_ALEN);
+            memcpy(eth->h_dest, eth->h_source, ETH_ALEN);
+            memcpy(eth->h_source, &teth, ETH_ALEN);
+            tip = iph->daddr;
+            iph->daddr = iph->saddr;
+            iph->saddr = tip;
+            return XDP_TX;
+      }
+      ...
+}
+#+end_src
+** mvneta XDP: XDP_TX (3/3)
 #+REVEAL_HTML: <asciinema-player src="asciinema/xdp_tx.cast" cols="160" rows="32"></asciinema-player>
-** mvneta XDP: XDP_REDIRECT (1/2)
-** mvneta XDP: XDP_REDIRECT (2/2)
+** mvneta XDP: XDP_REDIRECT (1/3)
+- /xdp_do_redirect()/ forwards the frame to:
+  - remote interface - *ndo_xdp_xmit()*
+  - remote cpu
+  - AF_XDP socket
+#+begin_src C
+int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
+{
+      int act = bpf_prog_run_xdp(prog, xdp);
+      ...
+      switch (act) {
+      ...
+      case XDP_REDIRECT:
+            xdp_do_redirect(..., xdp, prog);
+            ...
+            stats->xdp_redirect++;
+            return MVNETA_XDP_REDIR;
+      }
+}
+#+end_src
+** mvneta XDP: XDP_REDIRECT (2/3)
+- /mvneta_xdp_xmit()/ - mvneta is the destination of */XDP_REDIRECT/*
+  - the page is mapped to DMA hw tx ring
+#+begin_src C
+int mvneta_xdp_xmit(struct net_device *dev, int num_frame,
+                    struct xdp_frame **frames, u32 flags)
+{
+      ...
+      for (i = 0; i < num_frame; i++) {
+            struct xdp_frame *xdpf = frames[i];
+            dma_addr_t dma_addr = dma_map_single(.., xdpf->data,
+                                                 xdpf->len, DMA_TO_DEVICE);
+            ...
+            tx_desc->buf_phys_addr = dma_addr;
+            tx_desc->data_size = xdpf->len;
+      }
+      if (flags & XDP_XMIT_FLUSH) {
+            /* update DMA tx registers */
+      }
+      ...
+}
+#+end_src
+** mvneta XDP: XDP_REDIRECT (3/3)
 #+REVEAL_HTML: <asciinema-player src="asciinema/xdp_redirect.cast" cols="160" rows="32"></asciinema-player>
 * Slide: How to test								   :export:
 - Cases we have to test for:
