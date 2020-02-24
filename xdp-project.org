@@ -725,7 +725,12 @@ WAIT status as this is low priority for now.
 Various fixes that should be fixed in generic XDP eventually
 
 *** TODO Bulking for redirect maps
-*** TODO BUG: TCP packets skip (?)
+*** DONE BUG: TCP packets skip (?)
+CLOSED: [2020-02-24 Mon 17:58]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2020-02-24 Mon 17:58]
+:END:
+Fixed with commit: [[https://git.kernel.org/torvalds/c/ad1e03b2b3d4][ad1e03b2b3d4 ("core: Don't skip generic XDP program execution for cloned SKBs")]]
 *** TODO Fix CPUMAP
 [[id:8f4953c1-a862-46f2-b456-da187008f355][BUG: cpumap not working for generic-XDP]]
 
