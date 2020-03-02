@@ -227,6 +227,8 @@ PROJECT is the current project."
             :html-head-extra ,export-html-head-readtheorg
             :recursive t
             :auto-sitemap t
+            :time-stamp-file nil
+            :with-date t
             :sitemap-title "The XDP project"
             :sitemap-filename "sitemap.org"
             :sitemap-function sitemap-func
