@@ -38,9 +38,7 @@
                (new (or (cl-some
                          (lambda (cell)
                            (let ((stored (cdr (assoc cell crossrefs))))
-                             (when stored
-                               (let ((old (org-export-format-reference stored)))
-                                 (and (not (assoc old cache)) old)))))
+                             (and (not (assoc stored cache)) stored)))
                          cells)
                         (when (org-element-property :raw-value datum)
                           ;; Heading with a title
@@ -94,6 +92,61 @@
       ref)))
 
 (advice-add #'org-export-get-reference :override #'unpackaged/org-export-get-reference)
+
+
+
+(defun custom/org-publish-resolve-external-link (search file &optional prefer-custom)
+  "Return reference for element matching string SEARCH in FILE.
+
+Return value is an internal reference, as a string.
+
+This function allows resolving external links with a search
+option, e.g.,
+
+  [[file:file.org::*heading][description]]
+  [[file:file.org::#custom-id][description]]
+  [[file:file.org::fuzzy][description]]
+
+When PREFER-CUSTOM is non-nil, and SEARCH targets a headline in
+FILE, return its custom ID, if any.
+
+It only makes sense to use this if export back-end builds
+references with `org-export-get-reference'."
+  (cond
+   ((not org-publish-cache)
+    (progn
+      (message "Reference %S in file %S cannot be resolved without publishing"
+	       search
+	       file)
+      "MissingReference"))
+   (t
+    (let* ((filename (file-truename file))
+	   (crossrefs
+            (or
+             (org-publish-cache-get-file-property filename :crossrefs nil t)
+             ; If there is no list of crossrefs try publishing the file first -
+             ; this will make unpackaged/org-export-get-reference (above)
+             ; generate references for all headings in that file, which will
+             ; subsequently be available as crossrefs. This will make the target
+             ; file be exported twice, but we can live with that.
+             (progn
+               (org-publish-file filename nil t)
+               (org-publish-cache-get-file-property filename :crossrefs nil t))))
+	   (cells (org-export-string-to-search-cell search)))
+      (or
+       ;; Look for reference associated to search cells triggered by
+       ;; LINK.  It can match when targeted file has been published
+       ;; already.
+       (cdr (cl-some (lambda (c) (assoc c crossrefs)) cells))
+       ;; Search cell is unknown so far.  Generate a new internal
+       ;; reference that will be used when the targeted file will be
+       ;; published.
+       (let ((new (org-export-new-reference crossrefs)))
+	 (dolist (cell cells) (push (cons cell new) crossrefs))
+	 (org-publish-cache-set-file-property filename :crossrefs crossrefs)
+	 (org-export-format-reference new)))))))
+
+(advice-add #'org-publish-resolve-external-link :override #'custom/org-publish-resolve-external-link)
 
 (setq export-html-head-readtheorg
       (concat
