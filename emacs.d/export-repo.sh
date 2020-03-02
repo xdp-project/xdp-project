@@ -12,4 +12,7 @@ BOOTSTRAP_FILE="$(dirname $0)/export-repo.el"
 
 test -f "$BOOTSTRAP_FILE"
 
-emacs -Q --batch -l  "$BOOTSTRAP_FILE" --eval "(export-repo \"$1\")"
+DEBUGARG=
+[ "${DEBUG:-0}" -eq "1" ] && DEBUGARG="-f toggle-debug-on-error"
+
+emacs -Q $DEBUGARG --batch -l "$BOOTSTRAP_FILE" --eval "(export-repo \"$1\")"
