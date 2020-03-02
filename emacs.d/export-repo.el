@@ -148,6 +148,14 @@ references with `org-export-get-reference'."
 
 (advice-add #'org-publish-resolve-external-link :override #'custom/org-publish-resolve-external-link)
 
+(unless (getenv "DEBUG")
+  (advice-add 'org-publish-needed-p :override '(lambda (&rest args) t))
+  (advice-add 'org-id-update-id-locations :around #'silence-messages)
+  (advice-add 'org-id-locations-load :around #'silence-messages)
+  (advice-add 'org-publish-reset-cache :around #'silence-messages)
+  (advice-add 'org-publish-sitemap :around #'silence-messages))
+
+
 (setq export-html-head-readtheorg
       (concat
        "<link rel=\"stylesheet\" type=\"text/css\" href=\"/styles/readtheorg/css/htmlize.css\"/>\n"
