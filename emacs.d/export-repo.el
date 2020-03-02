@@ -215,6 +215,7 @@ PROJECT is the current project."
             :with-toc t
             :html-head-include-default-style nil
             :html-head-include-scripts nil
+            :html-self-link-headlines t
             :html-head-extra ,export-html-head-readtheorg
             :recursive t
             :auto-sitemap t
