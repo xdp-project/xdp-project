@@ -148,6 +148,23 @@ references with `org-export-get-reference'."
 
 (advice-add #'org-publish-resolve-external-link :override #'custom/org-publish-resolve-external-link)
 
+(defun git-get-modif-date (filename)
+  "Get date of last git commit touching FILENAME."
+  (let* ((git-repo default-directory)
+         (git-date (git--clean (git-run "log" "--follow"
+                         "--format='%cI'" "-n" "1" "--" filename))))
+    (when git-date (date-to-time git-date))))
+
+(defun custom/org-export-get-date (info &optional fmt)
+  (let* ((filename (plist-get info :input-file))
+         (date (or
+                (git-get-modif-date filename)
+                (plist-get info :date)))
+	(fmt (or fmt org-export-date-timestamp-format)))
+    (when date
+      (format-time-string fmt date))))
+(advice-add #'org-export-get-date :override #'custom/org-export-get-date)
+
 (unless (getenv "DEBUG")
   (advice-add 'org-publish-needed-p :override '(lambda (&rest args) t))
   (advice-add 'org-id-update-id-locations :around #'silence-messages)
