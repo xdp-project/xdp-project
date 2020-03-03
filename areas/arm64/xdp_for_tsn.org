@@ -103,7 +103,7 @@ account for possibly missed packets etc.
 +           (u64) pkt[5] << 40  | (u64) pkt[4] << 32 |
 +           (u64) pkt[3] << 24 | (u64) pkt[2] << 16 |
 +           (u64) pkt[1] << 8  | (u64) pkt[0];
-+       packets[cnt] = (tss - ts) * 10; /* multiply value depends on CNTFRQ_EL0 */
++       packets[cnt] = (tss - ts) * X; /* X = multiply value depends on CNTFRQ_EL0 */
 +       cnt++;
         hex_dump(pkt, descs[i].len, descs[i].addr);
     }
