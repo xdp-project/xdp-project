@@ -256,12 +256,12 @@ PROJECT is the current project."
             :section-numbers nil
             :headline-levels 3
             :with-drawers nil
-            :with-tags nil
+            :with-tags t
             :with-toc t
             :html-head-include-default-style nil
             :html-head-include-scripts nil
             :html-self-link-headlines t
-            :html-head-extra ,export-html-head-readtheorg
+            :html-head-extra ,export-html-head-bigblow
             :recursive t
             :auto-sitemap t
             :time-stamp-file nil
@@ -275,6 +275,7 @@ PROJECT is the current project."
           `("styles"
             :base-directory ,(file-truename (concat user-emacs-directory "/../styles/"))
             :publishing-directory ,(file-truename (concat destdir "/styles"))
+            :exclude "readtheorg/"
             :base-extension "js\\|css"
             :publishing-function org-publish-attachment
             :recursive t))
