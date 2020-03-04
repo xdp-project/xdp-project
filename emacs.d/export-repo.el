@@ -254,7 +254,7 @@ PROJECT is the current project."
             :with-broken-links t
             :with-sub-superscript nil
             :section-numbers nil
-            :headline-levels 3
+            :headline-levels 4
             :with-drawers nil
             :with-tags t
             :with-toc t
