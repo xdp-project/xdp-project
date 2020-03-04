@@ -76,7 +76,7 @@
                                                   0)))
                                   (setf ,place (format "%s--%s" s1 (cl-incf suffix)))))))
     (let* ((title (org-element-property :raw-value datum))
-           (ref (url-hexify-string (substring-no-properties title)))
+           (ref (url-dashify-string (substring-no-properties title)))
            (parent (org-element-property :parent datum)))
       (while (--any (equal ref (car it))
                     cache)
@@ -85,7 +85,7 @@
             ;; Append ancestor title.
             (setf title (concat (org-element-property :raw-value parent)
                                 "--" title)
-                  ref (url-hexify-string (substring-no-properties title))
+                  ref (url-dashify-string (substring-no-properties title))
                   parent (org-element-property :parent parent))
           ;; No more ancestors: add and increment a number.
           (inc-suffixf ref)))
@@ -93,7 +93,27 @@
 
 (advice-add #'org-export-get-reference :override #'unpackaged/org-export-get-reference)
 
+(require 'url)
+(defun url-dashify-string (string &optional allowed-chars)
+  "URI-encode STRING and return the result.
+If STRING is multibyte, it is first converted to a utf-8 byte
+string.  Each byte corresponding to an allowed character is left
+as-is, while all other bytes are converted to dashes.
 
+The allowed characters are specified by ALLOWED-CHARS.  If this
+argument is nil, the list `url-unreserved-chars' determines the
+allowed characters.  Otherwise, ALLOWED-CHARS should be a vector
+whose Nth element is non-nil if character N is allowed."
+  (unless allowed-chars
+    (setq allowed-chars (url--allowed-chars url-unreserved-chars)))
+  (mapconcat (lambda (byte)
+	       (if (aref allowed-chars byte)
+		   (char-to-string byte)
+		 "-"))
+	     (if (multibyte-string-p string)
+		 (encode-coding-string string 'utf-8)
+	       string)
+	     ""))
 
 (defun custom/org-publish-resolve-external-link (search file &optional prefer-custom)
   "Return reference for element matching string SEARCH in FILE.
