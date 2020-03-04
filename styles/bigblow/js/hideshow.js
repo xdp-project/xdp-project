@@ -240,14 +240,17 @@ function hsReviewTaskNext(backward) {
             var todo = todos[index];
             if (foundReview) {
                 $(todo).addClass('hsReview');
-                hsExpandParents($(todo).children(':header'));
+                $(todo).parent().addClass('hsReview');
+                hsExpandParents($(todo).parent().children(':header'));
+                hsExpandParents($(todo));
                 break;
             }
             if ($(todo).hasClass('hsReview')) {
                 foundReview = true;
                 if (index < todos.length - 1) {
                     $(todo).removeClass('hsReview');
-                    hsCollapseParents($(todo).children(':header'));
+                    $(todo).parent().removeClass('hsReview');
+                    hsCollapseParents($(todo).parent().children(':header'));
                 }
             }
         }

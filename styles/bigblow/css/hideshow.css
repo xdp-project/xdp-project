@@ -50,6 +50,10 @@
     position: relative; /* required for z-index to work */
 }
 
+.hsReview > .hsReview {
+    border: 0px;
+}
+
 #hsOverlay {
     width: 100%;
     height: 100%;
