@@ -138,8 +138,10 @@ function hsInit() {
             if (header.siblings().length > 0) {
                 $(this).addClass(HS_CLASS);
                 header.css({cursor: 'pointer'});
-                header.click(function() {
-                    hsToggleCollapsing($(this)); });
+                header.click(function(e) {
+                    hsToggleCollapsing($(this));
+                    e.preventDefault();
+                });
 
                 // Allow to override global Collapse/Expand default on an entry
                 // basis (see property `:HTML_CONTAINER_CLASS:')
@@ -310,7 +312,8 @@ function hsAddReviewingPanels() {
                             + '(out of ' +  nbReviewTotalTasks + ' tasks)<br>'
                             + 'Shortcuts: '
                             + '<span class="hsReviewButton" onclick="hsReviewTaskNext()">r (next)</span> - '
-                            + '<span class="hsReviewButton" onclick="hsReviewTaskPrev()">R (previous)</span>'
+                            + '<span class="hsReviewButton" onclick="hsReviewTaskPrev()">R (previous)</span> - '
+                            + '<span class="hsReviewButton" onclick="hsReviewTaskQuit()">q (quit)</span>'
                             + '</div>');
         }
         else {
@@ -318,7 +321,8 @@ function hsAddReviewingPanels() {
                             + '(out of ' +  nbReviewTotalTasks + ' tasks)<br>'
                             + 'Shortcuts: '
                             + '<span class="hsReviewButton" onclick="hsReviewTaskNext()">r (next)</span> - '
-                            + '<span class="hsReviewButton" onclick="hsReviewTaskPrev()">R (previous)</span>'
+                            + '<span class="hsReviewButton" onclick="hsReviewTaskPrev()">R (previous)</span> - '
+                            + '<span class="hsReviewButton" onclick="hsReviewTaskQuit()">q (quit)</span>'
                             + '</div>');
         }
     });

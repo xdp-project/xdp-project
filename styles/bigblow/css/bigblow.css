@@ -147,18 +147,15 @@ h3, h4, h5, h6 {
 h3 {
     border-bottom: 1px solid #B5DAF1;
     font-size: 16px;
-    margin-left: 25px;
 }
 
 h4 {
     border-bottom: 1px dotted #C9E3F5;
     font-size: 14px;
-    margin-left: 60px;
 }
 
 h5 {
     font-size: 1em;
-    margin-left: 87px;
 }
 
 h6 {
@@ -184,8 +181,15 @@ h6 {
 .outline-4 > ol,
 .outline-4 > ul,
 #text-footnotes {
-    margin-left: 100px;
+    margin-left: 10px;
 }
+
+.outline-3,
+.outline-4,
+.outline-5 {
+    margin-left: 30px;
+}
+
 
 li > .outline-text-5 {
     margin-left: 20px;
@@ -670,7 +674,7 @@ p.verse {
     top: 10px;                          /* together with this to put the div at the top */
     color: #333333;
     cursor: pointer;
-    display: block;
+    display: none;
     font-family: verdana;
     font-size: 95%;
     padding: 5px;
@@ -686,7 +690,6 @@ p.verse {
 #left-panel-wrapper {
     position: fixed;
     z-index: 200;
-    /* display: none; /\* hide the panel if Javascript is not running *\/ */
 }
 
 #left-panel-contents {
@@ -719,8 +722,17 @@ p.verse {
 #right-panel-wrapper {
     position: fixed;
     z-index: 200;
-    /* display: none; /\* hide the panel if Javascript is not running *\/ */
 }
+
+@media screen and (max-width: 1000px) {
+    #left-panel-wrapper,
+    #right-panel-wrapper,
+    .hsReviewPanel {
+        display: none !important;
+    }
+}
+
+
 
 #right-panel-contents {
     background-color: #EFEFEF;
