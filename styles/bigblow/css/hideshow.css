@@ -19,14 +19,14 @@
 .hsExpanded.hsAnchor {background: #EE7700;}
 
 .buttons {
-    padding: 0px 7px 13px 0px;
+    padding: 0px 7px 20px 0px;
     background: #0A3F69;
 }
 
 .hsButton {
     color: white;
     float: right;
-    font-size: 70%;
+    font-size: 80%;
     margin-left: 10px;
 }
 
