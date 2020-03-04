@@ -47,8 +47,11 @@ $(function() {
 function generateMiniToc(divId) {
     $('#minitoc').empty().append('<h2>In this section</h2>');
     $('#' + divId).find('h3').each(function(i) {
-        let pos = $(this).text().search(" ");
-        let text = $(this).text().substring(0, pos);
+        let text = $(this).clone().find('span').remove().end()
+            .text().trim();
+        let pos = text.search(" ");
+        if (pos > 0)
+            text = text.substring(0, pos);
         $("#minitoc").append("<a href='#" + $(this).attr("id") + "'>"
                              + text + "</a>");
     });
@@ -176,6 +179,9 @@ $(document).ready(function() {
 
     // Handle click on internal links
     $('.ui-tabs-panel a[href^="#"]').click(function(e) {
+        var ptype = $(this).parent()[0].nodeName;
+        if (ptype == 'H2' || ptype == 'H3' || ptype == 'H4')
+            return;
         var href = $(this).attr('href');
         hsExpandAnchor(href);
         selectTabAndScroll(href);
@@ -268,17 +274,17 @@ $(function() {
 });
 
 $(function() {
-    $('<div id="toTop" class="dontprint"><span>^ Back to Top</span></div>').appendTo('body');
+    $('<div id="top-link" class="dontprint"><span>^ Back to Top</span></div>').appendTo('body');
 
     $(window).scroll(function() {
         if ($(this).scrollTop() != 0) {
-            $('#toTop').fadeIn();
+            $('#top-link').fadeIn();
         } else {
-            $('#toTop').fadeOut();
+            $('#top-link').fadeOut();
         }
     });
 
-    $('#toTop').click(function(e) {
+    $('#top-link').click(function(e) {
         $('html, body').animate({scrollTop: 0}, 800);
         e.preventDefault();                   // Disable default browser behavior
     });
@@ -419,9 +425,10 @@ $(function() {
     // display
     for (i = 0; i < listOfTags.length; i++) {
         var $thisTag = listOfTags[i];
+        var htmlTag = $thisTag.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, "_");
         // $(ul).append('<li><span class="tag ' + $thisTag + '">'+
         //                   $thisTag + '</span> <small>(' + countOfTags[$thisTag] + ')</small></li>');
-        $(ul).append('<li><span class="tag"><span class="' + $thisTag + '">' + $thisTag
+        $(ul).append('<li><span class="tag"><span class="' + htmlTag + '">' + $thisTag
                      + '</span></span>'
                      + ' <small>(' + countOfTags[$thisTag] + ')</small></li>');
     }
@@ -449,7 +456,7 @@ $(function() {
 
 $(function() {
     $('.tag span').click(function(e) {
-        var orgTag = $(this).text().trim();
+        var orgTag = $(this).text().trim().replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, "_");
         $('.' + orgTag).toggleClass('selected');
         $('#content .' + orgTag).parent().parent().parent()
             .toggleClass('matchtag');
