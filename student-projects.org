@@ -1,0 +1,54 @@
+# -*- fill-column: 76; -*-
+#+TITLE: XDP-related project ideas for students
+#+CATEGORY: XDP
+#+OPTIONS: ^:nil
+
+This file seeks to collect ideas for smaller, self-contained projects suitable
+for completing for a student as part of a bachelor or master's thesis. Or just
+as a starting project for someone who wants to contribute to XDP but doesn't
+know where to start.
+
+Feel free to pick up any of these projects and start working on it. You can ask
+questions by opening [[https://github.com/xdp-project/xdp-project/issues][an issue]].
+
+Got an idea for a suitable project? Open [[https://github.com/xdp-project/xdp-project/pulls][a pull request]] with your idea added to
+this file.
+
+* Userspace projects
+
+** Improve the XDP tutorial
+
+The [[https://github.com/xdp-project/xdp-tutorial][XDP tutorial]] is our go-to introduction to XDP, but it can always use
+improving! Try running through the tutorial and think about anything that might
+be missing; then implement that as an addition to the tutorial. Look at the
+tutorial issues for inspiration, or just try to think of something for yourself!
+
+** Add XDP support to a userspace application
+
+Some applications can benefit from accelerating their network support using XDP.
+This could be by adding AF_XDP support to get packets quickly into userspace, or
+by thinking about how the application could split (parts of) its network
+processing into an XDP program running in the kernel (and communicate with it
+via maps).
+
+** Add new tools to the xdp-tools repository
+
+The [[https://github.com/xdp-project/xdp-tools][XDP-tools]] repository contains tools that will be shipped by distributions as
+a collection of small useful tools related to XDP. Can you think of anything
+that might be missing here? Look at the existing tools and improve one of those,
+or maybe add a whole new one?
+
+Ideas:
+
+- Look in [[https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/tree/samples/bpf][samples/bpf]] in the kernel tree and port utilities from there; the
+  xdp_monitor utility could be useful in a more general form.
+
+* Kernel projects
+
+** Improve the programs in samples/bpf or BPF selftests
+
+There are several ideas for improvements to the programs in the samples/bpf
+directory of the kernel source tree, or the BPF selftests. See:
+
+- [[id:6b723feb-c079-46c5-b64f-d5a10fb83f92][Usability of programs in samples/bpf]]
+- [[id:66ba72d4-a1ab-4627-ac03-89fed5aa8b23][BPF-selftests - top-level TODOs]]

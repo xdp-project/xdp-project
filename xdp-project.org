@@ -291,6 +291,9 @@ Tasks in this category should at a minimum have a fleshed-out problem
 description.
 
 ** TODO Usability of programs in samples/bpf
+:PROPERTIES:
+:ID:       6b723feb-c079-46c5-b64f-d5a10fb83f92
+:END:
 
 The samples/bpf programs xdp_redirect + xdp_redirect_map are very user
 unfriendly. #1 they use raw ifindex'es as input + output. #2 the pkt/s
@@ -356,6 +359,9 @@ have as little impact on the system as possible. Thus, convert to use
 raw-tracepoints.
 
 ** TODO BPF-selftests - top-level TODOs
+:PROPERTIES:
+:ID:       66ba72d4-a1ab-4627-ac03-89fed5aa8b23
+:END:
 
 The kernel git-tree contains a lot of selftests for BPF located in:
 =tools/testing/selftests/bpf/=.
@@ -410,6 +416,9 @@ being able to test your XDP programs "offline". The selftests use this a
 lot. Docs: https://t.co/GDd7SfNYng and examples in tools/testing/selftests/bpf/.
 
 *** NEXT Could this be a "introduction job"?
+:PROPERTIES:
+:ID:       b2574f12-e787-47ca-aad5-326224a4618e
+:END:
 
 ** TODO Busy-poll support for AF_XDP
 
