@@ -336,4 +336,5 @@ var nbReviewTotalTasks;
 $(document).ready(function() {
     nbReviewTotalTasks = $('.outline-2 span.todo').length;
     hsAddReviewPanels();
+    hsCollapseAll();
 });
