@@ -1,9 +1,7 @@
 #+TITLE: People involved in XDP development
 
-* Intro
-
-Lets record people involved on XDP development.
-Need this to Cc the right people on the mailing list.
+This file records people involved on XDP development, to make it easier to Cc
+the right people on the mailing list.
 
 * History
 

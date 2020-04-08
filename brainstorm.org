@@ -7,14 +7,15 @@ them up progressively.
 Turn these notes into real issue or bug descriptions and move them
 into other docs like [[file:xdp_issues.org]]
 
-* General: Make Generic-XDP complient with Native-XDP features
+* Various brainstorm ideas
+** General: Make Generic-XDP complient with Native-XDP features
 
 
-* XDP on ARM-boards
+** XDP on ARM-boards
 
 See [[file:areas/arm64/README.org]]
 
-* Crazy-idea: XDP-redirect re-handle about-to-be-dropped packets
+** Crazy-idea: XDP-redirect re-handle about-to-be-dropped packets
 
 Ref slides: http://people.netfilter.org/hawk/presentations/NetConf2017_Seoul/XDP_devel_update_NetConf2017_Seoul.pdf
 
@@ -26,7 +27,7 @@ decision.  Wondering what this can be used for, click the youtube link
 in the slide, and blow-your-mind! (https://youtu.be/BO0QhaxBRr0)
 
 
-* Tracking and troubleshooting eBPF
+** Tracking and troubleshooting eBPF
 
 Want to track when BPF progs gets loaded/unloaded
  - Both for system audit and troubleshooting purposes
@@ -35,13 +36,13 @@ BPF code do have LSM/SElinux hooks
  - LSM maintainers request, use Audit subsystem instead
  - Jiri Olsa currently working on this
 
-* Usability: XDP redirect not impl by driver gives WARN_ON
+** Usability: XDP redirect not impl by driver gives WARN_ON
 
 E.g. AF_XDP via xdpsock uses redirect, and there is not feedback when
 running prog on driver without redirect-support.  Need to look in
 dmesg to see big splast.
 
-* Usability: HW offload on non-supported driver/firmware return EINVAL
+** Usability: HW offload on non-supported driver/firmware return EINVAL
 
 E.g. Loading XDP/ebpf prog with HW offload on Netronome NIC, but wrong
 firmware, just says EINVAL.  No help or hints that firmware needs to
@@ -53,7 +54,7 @@ Same EINVAL when loading on a NIC driver other than Netronome.  Can we
 instead return ENOTSUP ("Operation not supported"), to differentiate
 the cases?
 
-* Extend xdp_buff with member data_hard_end
+** Extend xdp_buff with member data_hard_end
 
 Issue arose when driver ixgbe and i40e choose to violate
 one-page-per-packet.  After this point, the frame-tail size became
@@ -77,93 +78,57 @@ This will allow:
     (3) Allow for TCP coalescing these kind of SKBs.
 
 
-* DMA mapping xdp_frame
+** DMA mapping xdp_frame
 
 Keeping DMA mapping in XDP return API.
 
-* Convert samples/bpf/ to use libbpf as elf-loader
+** Convert samples/bpf/ to use libbpf as elf-loader
 
-* sample/bpf output XDP-mode (as QA forget to report)
+** sample/bpf output XDP-mode (as QA forget to report)
 
-* sample/bpf output Driver (as QA forget to report)
+** sample/bpf output Driver (as QA forget to report)
 
 
-* GROUP: CPU-map redirect things
+** GROUP: CPU-map redirect things
 
-* samples/bpf upstream napi_monitor
+** samples/bpf upstream napi_monitor
 
 Missing an ifindex to match on in tracepoint
 
 
 
 
-* Generic-xdp how-to assure NAPI protect?
+** Generic-xdp how-to assure NAPI protect?
 
-* Make bulk work for generic xdp with devmap
+** Make bulk work for generic xdp with devmap
 
-* Meta data implement missing for many drivers
+** Meta data implement missing for many drivers
 
-* Should we standardize ethtool stats for xdp?
+** Should we standardize ethtool stats for xdp?
 
-* Adding and removing ethtool channels runtime semantics?
+** Adding and removing ethtool channels runtime semantics?
 (Jakub question this)
 
-* Frame to skb, missing csum hw info
+** Frame to skb, missing csum hw info
 
 (Plus other info)
 
-* Frame to skb, use full headroom
+** Frame to skb, use full headroom
 
-* BUG: Generic-XDP does not work for TCP (in certain cases)
-
-
-* Potential-bug: Mlx5 fix dma unmap call (after xdp return frame)
-
-* Retpoline performance issue for xdp
-
-* Retpoline: mlx5 too many indirect calls
+** BUG: Generic-XDP does not work for TCP (in certain cases)
 
 
+** Potential-bug: Mlx5 fix dma unmap call (after xdp return frame)
 
-* Old list: watch out for dublicates
+** Retpoline performance issue for xdp
 
-Old list of stuff I need to work-on/fix for XDP/bpf project:
- * XDP return frame API (needed by AF_XDP ZC)
- * Bulking API for return frame API
- * Bulking API for ndo_xdp_xmit
- * Address massive XDP regression due to CONFIG_RETPOLINE
- * Introduce bulking for generic-XDP (PoC test show +30% perf!!!)
- * Implement ndo_xdp_xmit for macvlan (fast guest delivery)
- * Improve BPF doc
- * Improve XDP doc
- * Work on XDP article with Toke+Alexei+Daniel
- * Better integration of XDP in Suricata (multiple small thing)
- * Find XDP feature/capability API (use in Suricata)
- * Help integrate AF_XDP in Suricata
- * Ship bpftool in distros (start with static linked libbpf)
- * Make libbpf a shared lib in distros (fix lib versioning)
- * Help (Ahern) get XDP route/FIB lookup helper integrated
- * Work on bridge FIB table lookup helper
- * XDP get more info transferred to CPUMAP skb creation time
- * cpumap: RX hash support
- * cpumap: HW csum offload/info
- * Improve XDP cpumap redirect example: flow hashing (fix NIC HW hash)
- * Help get AF_XDP API and performance aligned
- * Help get AF_XDP zero-copy integrated via XDP return API
- * convert tracepoint to use ifindex instead of names (strcpy overhead)
- * XDP_REDIRECT: Detect buggy-drivers forgetting to clear per-CPU map
- * Streamline eBPF map-create return codes on errors
- * Upstream xdp_bench01 sample to be standard way to measure XDP perf
- * Fix that TCP traffic with XDP generic on virtual net_devices are broken
- * xdp: avoid leaking info stored in xdp_frame data on page reuse
- * XDP_REDIRECT implemement in every driver
- * XDP data-meta implemement in every driver
- * Improve samples/bpf: XDP progs should take ifconfig/net_device names
- * Improve samples/bpf: Avoid including ./arch/x86/include/asm/cpufeature.h
+** Retpoline: mlx5 too many indirect calls
 
-* XDP metadata: dynamic descriptor offloads via BTF
 
-* Napatech have descriptors in-front of packet payload
+
+** XDP metadata: dynamic descriptor offloads via BTF
+
+** Napatech have descriptors in-front of packet payload
 
 Proprietary commercial companies like NapaTech, which also maps packets
 into userspace, deliver dynamic descriptor info in-front of the packet,
@@ -201,4 +166,41 @@ contains a lot of info on the types in different layers, see[10][11][12].
 [10] pktdescr_ext7.h https://docs.napatech.com/reader/GHSQQPQbWLPdJUmxIkO91Q/GXhjyPfAPJ6Rr7k8KR4KsQ
 [11] pktdescr_ext8.h https://docs.napatech.com/reader/GHSQQPQbWLPdJUmxIkO91Q/NWaAIAROOdyXvy~OV4pl6A
 [12] pktdescr_ext9.h https://docs.napatech.com/reader/GHSQQPQbWLPdJUmxIkO91Q/LVIq8m_b0_44QIIAqcdLew
+* Old list: watch out for dublicates
+
+Old list of stuff I need to work-on/fix for XDP/bpf project:
+ * XDP return frame API (needed by AF_XDP ZC)
+ * Bulking API for return frame API
+ * Bulking API for ndo_xdp_xmit
+ * Address massive XDP regression due to CONFIG_RETPOLINE
+ * Introduce bulking for generic-XDP (PoC test show +30% perf!!!)
+ * Implement ndo_xdp_xmit for macvlan (fast guest delivery)
+ * Improve BPF doc
+ * Improve XDP doc
+ * Work on XDP article with Toke+Alexei+Daniel
+ * Better integration of XDP in Suricata (multiple small thing)
+ * Find XDP feature/capability API (use in Suricata)
+ * Help integrate AF_XDP in Suricata
+ * Ship bpftool in distros (start with static linked libbpf)
+ * Make libbpf a shared lib in distros (fix lib versioning)
+ * Help (Ahern) get XDP route/FIB lookup helper integrated
+ * Work on bridge FIB table lookup helper
+ * XDP get more info transferred to CPUMAP skb creation time
+ * cpumap: RX hash support
+ * cpumap: HW csum offload/info
+ * Improve XDP cpumap redirect example: flow hashing (fix NIC HW hash)
+ * Help get AF_XDP API and performance aligned
+ * Help get AF_XDP zero-copy integrated via XDP return API
+ * convert tracepoint to use ifindex instead of names (strcpy overhead)
+ * XDP_REDIRECT: Detect buggy-drivers forgetting to clear per-CPU map
+ * Streamline eBPF map-create return codes on errors
+ * Upstream xdp_bench01 sample to be standard way to measure XDP perf
+ * Fix that TCP traffic with XDP generic on virtual net_devices are broken
+ * xdp: avoid leaking info stored in xdp_frame data on page reuse
+ * XDP_REDIRECT implemement in every driver
+ * XDP data-meta implemement in every driver
+ * Improve samples/bpf: XDP progs should take ifconfig/net_device names
+ * Improve samples/bpf: Avoid including ./arch/x86/include/asm/cpufeature.h
+
+
 #+INCLUDE: "sitemap.org" :minlevel 1
