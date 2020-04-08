@@ -215,25 +215,48 @@ references with `org-export-get-reference'."
        "<script type=\"text/javascript\" src=\"/styles/bigblow/js/hideshow.js\"></script>\n"
        "<script type=\"text/javascript\" src=\"/styles/lib/js/jquery.stickytableheaders.min.js\"></script>\n"))
 
+(setq sitemap-header "* Table of contents
+
+The repository contains a number of files that track more specific areas of XDP
+development. These are included in the following list:
+- [[file:index.org][Top-level XDP project management]]
+\n")
+
+(defun filter-sitemap (entry)
+  "Recursively filter sitemap ENTRY.
+Excludes any entries marked as \"SKIP\" by the sitemap-entry
+format function."
+  (cond ((not (listp entry))
+         entry)
+        ((and (stringp (car entry))
+              (string-match-p "^SKIP$" (car entry)))
+         nil)
+        ((cdr entry)
+         (cons (car entry) (-keep 'filter-sitemap (cdr entry))))
+        (t entry)))
+
 (defun sitemap-func (title list)
   "Default site map, as a string.
 TITLE is the title of the site map.  LIST is an internal
 representation for the files to include, as returned by
 `org-list-to-lisp'.  PROJECT is the current project."
-  (org-list-to-org (-filter (lambda (entry) (or (not (listp entry))
-                                                (not (string-match-p "SKIP" (car entry)))))
-                            list)))
+  (concat sitemap-header
+  (org-list-to-org (-keep 'filter-sitemap list))))
 
 (defun sitemap-entry (entry style project)
   "Default format for site map ENTRY, as a string.
 ENTRY is a file name.  STYLE is the style of the sitemap.
 PROJECT is the current project."
-  (cond ((not (directory-name-p entry))
+  (cond ((string-match-p "areas/[^/]+/.+\\.org" entry)
+         "SKIP")
+        ((not (directory-name-p entry))
          (if (org-publish-find-property entry :with-planning project)
              "SKIP"
            (format "[[file:%s][%s]]"
                    entry
                    (org-publish-find-title entry project))))
+        ((string-match-p "areas/[^/]+" entry)
+         "SKIP")
 	((eq style 'tree)
 	 ;; Return only last subdir.
 	 (file-name-nondirectory (directory-file-name entry)))
