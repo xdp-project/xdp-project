@@ -99,3 +99,4 @@ forwarding and flowoffload approach.
 ** TODO Interact with current vendors regarding if proposed solution is enough to solve their problems
 Bring work to PRPL Foundation working groups to get feedback and interest
 from vendors on the approach and if the proposed design/APIs is enough.
+#+INCLUDE: "../sitemap.org" :minlevel 1

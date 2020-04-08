@@ -294,3 +294,5 @@ when dequeuing xdp_frames from ptr_ring, a cacheline between two CPUs are
 touched, and we should reduce the time window as much as possible.  Then
 there is of-cause also the performance improvement of bulk alloc.
 
+
+#+INCLUDE: "../sitemap.org" :minlevel 1

@@ -4,10 +4,3 @@ This is the XDP project website - a rendered version of [[https://github.com/xdp
 for project planning.
 
 #+INCLUDE: xdp-project.org
-
-* Sub-categories and their tasks
-
-The repository contains a number of files that track more specific areas of XDP
-development. These are included in the following list:
-
-#+INCLUDE: sitemap.org

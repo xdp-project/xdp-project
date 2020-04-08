@@ -131,3 +131,4 @@ Brainstorm over topics in presentation:
   * required kernel version
 - Offer to help people with their own use-cases
 
+#+INCLUDE: "sitemap.org" :minlevel 1
