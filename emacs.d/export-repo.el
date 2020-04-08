@@ -215,7 +215,7 @@ references with `org-export-get-reference'."
        "<script type=\"text/javascript\" src=\"/styles/bigblow/js/hideshow.js\"></script>\n"
        "<script type=\"text/javascript\" src=\"/styles/lib/js/jquery.stickytableheaders.min.js\"></script>\n"))
 
-(setq sitemap-header "* Table of contents
+(setq sitemap-header "* Site navigation
 
 The repository contains a number of files that track more specific areas of XDP
 development. These are included in the following list:
