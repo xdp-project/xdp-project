@@ -337,4 +337,10 @@ $(document).ready(function() {
     nbReviewTotalTasks = $('.outline-2 span.todo').length;
     hsAddReviewPanels();
     hsCollapseAll();
+    var hash = $(location).attr('hash').replace('#', '');
+    if (hash.match(/^[a-zA-Z0-9\._-]+$/)) {
+        var itm = $('body').find('#'+hash);
+        if (itm.length > 0)
+            hsExpandParents(itm);
+    }
 });
