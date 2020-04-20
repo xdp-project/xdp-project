@@ -289,6 +289,7 @@ PROJECT is the current project."
             :auto-sitemap t
             :time-stamp-file nil
             :with-date t
+            :with-author nil
             :sitemap-title "The XDP project"
             :sitemap-filename "sitemap.org"
             :sitemap-function sitemap-func
