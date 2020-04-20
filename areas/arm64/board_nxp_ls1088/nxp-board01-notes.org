@@ -1,0 +1,45 @@
+# -*- fill-column: 76; -*-
+#+Title: NXP LS1088A - notes
+#+OPTIONS: ^:nil
+
+Board LS1088ARDB-PB.
+
+
+* Boot another kernel
+
+Trick to temporarily boot another kernel.
+
+Copy over kernel to SD-card (while Linux is running on board):
+#+begin_example
+rsync -av arch/arm64/boot/Image root@192.168.42.10:/boot/Image2
+#+end_example
+
+During power up break into U-Boot:
+#+begin_example
+setenv kernel_image Image2
+boot
+#+end_example
+
+This works because the board have a U-Boot script =ls1088ardb_boot.scr= that
+use variable =kernel_image=, if set, else it fallback to =Image= (which
+refer to =/boot/Image= under Linux).
+
+* Kernel config adjustments
+
+Platform selection:
+- CONFIG_ARCH_LAYERSCAPE: "ARMv8 based Freescale Layerscape SoC family"
+
+Config adjustments:
+- CONFIG_MMC_SDHCI_OF_ESDHC: "SDHCI OF support for the Freescale eSDHC controller"
+- CONFIG_FSL_MC_BUS=y  : "QorIQ DPAA2 fsl-mc bus driver"
+- CONFIG_FSL_MC_DPIO=y : "QorIQ DPAA2 DPIO driver"
+- CONFIG_FSL_GUTS=y (selected by others)
+- CONFIG_PHY_FSL_IMX8MQ_USB: "Freescale i.MX8M USB3 PHY"
+- CONFIG_NET_VENDOR_FREESCALE=y
+- CONFIG_FSL_DPAA2_ETH : "Freescale DPAA2 Ethernet"
+- CONFIG_FSL_DPAA2: "Freescale DPAA2 devices"
+- CONFIG_FSL_DPAA2_ETHSW: "Freescale DPAA2 Ethernet Switch"
+- CONFIG_PCI_LAYERSCAPE: "Freescale Layerscape PCIe controller"
+- CONFIG_PCI_LAYERSCAPE=y
+- CONFIG_SOC_BUS=y
+
