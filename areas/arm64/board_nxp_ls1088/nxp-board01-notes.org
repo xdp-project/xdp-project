@@ -35,6 +35,18 @@ Error messages in dmesg looks like this:
  arm-smmu 5000000.iommu:  GFSR 0x80000002, GFSYNR0 0x00000002
 #+end_example
 
+*** Boot workaround on v5.2 and above
+
+There is a kernel boot parameter =arm-smmu.disable_bypass=0= that disable
+this behaviour (allowing insecure mode).
+
+Fortunately this board have a bootscript 'ls1088ardb_boot.scr', which allows
+easy addition of extra boot args via U-Boot env 'othbootargs':
+
+#+begin_src sh
+ setenv othbootargs arm-smmu.disable_bypass=0
+#+end_src
+
 * Kernel config adjustments
 
 Platform selection:
