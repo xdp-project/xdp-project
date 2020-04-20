@@ -3,7 +3,7 @@
 #+OPTIONS: ^:nil
 
 Board LS1088ARDB-PB.
-
+- SoC: LS1088AE Rev1.0 (0x87030010)
 
 * Boot another kernel
 
@@ -23,6 +23,17 @@ boot
 This works because the board have a U-Boot script =ls1088ardb_boot.scr= that
 use variable =kernel_image=, if set, else it fallback to =Image= (which
 refer to =/boot/Image= under Linux).
+
+* Boot issue (and workaround) above kernel v5.1
+
+ARM changed the behavior on SMMU devices (IOMMU), which seems this device
+have not caught up with. (Likely in this commit [[https://git.kernel.org/torvalds/c/v5.2-rc1~83^2^4~1^2~11][v5.2-rc1~83^2^4~1^2~11]]).
+
+Error messages in dmesg looks like this:
+#+begin_example
+ arm-smmu 5000000.iommu: Unexpected global fault, this could be serious
+ arm-smmu 5000000.iommu:  GFSR 0x80000002, GFSYNR0 0x00000002
+#+end_example
 
 * Kernel config adjustments
 
