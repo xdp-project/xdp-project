@@ -47,6 +47,23 @@ easy addition of extra boot args via U-Boot env 'othbootargs':
  setenv othbootargs arm-smmu.disable_bypass=0
 #+end_src
 
+*** Workaround: No network due to missing qdisc
+
+On devel kernel v5.7-rc1 board cannot transmit packets. This is due to
+default qdisc not getting assigned correctly, resulting in device driver
+dpaa2-eth getting assigned qdisc =noop=.
+
+#+begin_example
+root@LS1088ARDB-PB:~# ip link show dev eth0
+3: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noop state UP mode DEFAULT group default qlen 1000
+    link/ether 00:04:9f:06:08:f0 brd ff:ff:ff:ff:ff:ff
+#+end_example
+
+The workaround is to manually install a qdisc on the board:
+#+begin_src sh
+tc qdisc add dev eth0 root pfifo
+#+end_src
+
 * Kernel config adjustments
 
 Platform selection:
