@@ -161,3 +161,98 @@ struct Qdisc *qdisc_create_dflt(struct netdev_queue *dev_queue,
 	return NULL;
 }
 #+end_src
+
+** Ftrace: fq_codel_init
+
+Lets zoom in on =fq_codel_init()= as previous ftrace shows this function
+call fails (for a yet unknown reason).
+
+#+begin_src sh
+trace-cmd record -p function_graph -g fq_codel_init &
+sleep 4
+tc qdisc add dev eth0 root fq_codel
+kill %1
+#+end_src
+
+trace-cmd report:
+#+begin_example
+ |  fq_codel_init() {
+ |    fq_codel_change() {
+ |      rtnl_is_locked() {
+ |        mutex_is_locked();
+ |      }
+ |      _raw_spin_lock_bh();
+ |      qdisc_tree_reduce_backlog();
+ |      rtnl_is_locked() {
+ |        mutex_is_locked();
+ |      }
+ |      _raw_spin_unlock_bh() {
+ |        __local_bh_enable_ip();
+ |      }
+ |    }
+ |    tcf_block_get() {
+ |      tcf_block_get_ext() {
+ |        kmem_cache_alloc_trace() {
+ |          should_failslab();
+ |          memcg_kmem_put_cache();
+ |        }
+ |        __mutex_init();
+ |        __mutex_init();
+ |        __init_rwsem();
+ |        kmem_cache_alloc_trace() {
+ |          should_failslab();
+ |          memcg_kmem_put_cache();
+ |        }
+ |        kmem_cache_alloc_trace() {
+ |          should_failslab();
+ |          memcg_kmem_put_cache();
+ |        }
+ |        mutex_lock();
+ |        mutex_unlock();
+ |        down_write();
+ |        tcf_block_offload_cmd.isra.52() {
+ |          dpaa2_eth_setup_tc();
+NOTICE XXX  ^^^^^^^^^^^^^^^^^^^^
+
+ |        }
+ |        up_write();
+ |        tcf_chain0_head_change_cb_del.isra.56() {
+ |          mutex_lock();
+ |          mutex_unlock();
+ |          kfree();
+ |        }
+ |        tcf_block_owner_del() {
+ |          kfree();
+ |        }
+ |        __tcf_block_put() {
+ |          mutex_lock();
+ |          mutex_unlock();
+ |          kfree_call_rcu() {
+ |            _raw_spin_lock();
+ |            queue_delayed_work_on() {
+ |              __queue_delayed_work() {
+ |                add_timer() {
+ |                  lock_timer_base() {
+ |                    _raw_spin_lock_irqsave();
+ |                  }
+ |                  detach_if_pending();
+ |                  get_nohz_timer_target();
+ |                  __internal_add_timer() {
+ |                    calc_wheel_index();
+ |                    enqueue_timer();
+ |                  }
+ |                  trigger_dyntick_cpu.isra.33();
+ |                  _raw_spin_unlock_irqrestore();
+ |                }
+ |              }
+ |            }
+ |            _raw_spin_unlock();
+ |          }
+ |        }
+ |      }
+ |    }
+ |  }
+#+end_example
+
+This is driver related, because (deep) TC init code-path calls
+=ndo_setup_tc=, which calls driver =dpaa2_eth_setup_tc()=.
