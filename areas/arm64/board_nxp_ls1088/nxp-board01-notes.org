@@ -24,6 +24,20 @@ This works because the board have a U-Boot script =ls1088ardb_boot.scr= that
 use variable =kernel_image=, if set, else it fallback to =Image= (which
 refer to =/boot/Image= under Linux).
 
+** Copy-paste for workarounds
+
+In U-Boot console:
+#+begin_src sh
+setenv kernel_image Image3
+setenv othbootargs arm-smmu.disable_bypass=0
+boot
+#+end_src
+
+On serial console when running Linux:
+#+begin_src sh
+tc qdisc add dev eth0 root pfifo
+#+end_src
+
 * Boot issue (and workaround) above kernel v5.1
 
 ARM changed the behavior on SMMU devices (IOMMU), which seems this device
