@@ -73,6 +73,91 @@ RTNETLINK answers: Invalid argument
 
 This indicate that it is not =tc= version related.
 
+* Troubleshoot: via ftrace trace-cmd
 
+We can reproduce issue when =default_qdisc= is =fq_codel= and loading the
+=mq= qdisc (as assigning a single =fq_codel= root qdisc will be a
+performance issue on TX for the net_device).
 
+#+begin_src sh
+# tc qdisc del dev eth0 root
+# tc qdisc add dev eth0 root mq
+#+end_src
 
+** Setup ftrace trace-cmd
+
+System doesn't have trace-cmd (and apt-get it somehow broke on sdcard).
+Git clone and compile:
+
+#+begin_src sh
+git clone git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
+cd trace-cmd
+make
+make install
+#+end_src
+
+System also didn't have mounted the /sys/kernel/tracing directory:
+#+begin_src sh
+mount -t tracefs nodev /sys/kernel/tracing
+#+end_src
+
+** Ftrace: mq_init
+
+Pick kernel function =mq_init= that we know gets called when assigning =mq=
+qdisc. Use ftrace =trace-cmd= to track this function call.
+
+Record sequence (via serial console):
+#+begin_src sh
+trace-cmd record -p function_graph -g mq_init &
+sleep 3
+tc qdisc add dev eth0 root mq
+#+end_src
+
+Partial output from =trace-cmd report=:
+#+begin_example
+ |  mq_init() {
+ |    __kmalloc() {
+ |      kmalloc_slab();
+ |      should_failslab();
+ |      memcg_kmem_put_cache();
+ |    }
+ |    qdisc_create_dflt() {
+ |      try_module_get();
+ |      qdisc_alloc() {
+ |        __kmalloc_node() {
+ |          kmalloc_slab();
+ |          should_failslab();
+ |          memcg_kmem_put_cache();
+ |        }
+ |      }
+ |      fq_codel_init() {
+ |        tcf_block_get() {
+ |          tcf_block_get_ext() {
+ [...]
+ |            }
+ |          }
+ |        }
+ |      }
+ |      qdisc_put.part.47() {
+ |        qdisc_destroy() {
+ |          qdisc_hash_del() {
+ |            gic_handle_irq() {
+ |              handle_IPI() {
+#+end_example
+
+In =qdisc_create_dflt()= the =qdisc_put(sch)= only happens when
+the =ops->init= operation fails:
+#+begin_src C
+struct Qdisc *qdisc_create_dflt(struct netdev_queue *dev_queue,
+				const struct Qdisc_ops *ops,
+				unsigned int parentid,
+				struct netlink_ext_ack *extack)
+{
+	[... cut ...]
+	if (!ops->init || ops->init(sch, NULL, extack) == 0)
+		return sch;
+
+	qdisc_put(sch);
+	return NULL;
+}
+#+end_src
