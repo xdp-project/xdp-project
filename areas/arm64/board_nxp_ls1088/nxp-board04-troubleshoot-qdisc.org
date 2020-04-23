@@ -1,0 +1,78 @@
+# -*- fill-column: 76; -*-
+#+Title: NXP LS1088A - Troubleshooting qdisc network problem
+#+OPTIONS: ^:nil
+
+Board LS1088ARDB-PB.
+- SoC: LS1088AE Rev1.0 (0x87030010)
+
+* Issue: No network due to missing qdisc
+
+On devel kernel v5.7-rc1 board cannot transmit packets. This is due to
+default qdisc not getting assigned correctly, resulting in device driver
+dpaa2-eth getting assigned qdisc =noop=.
+
+#+begin_example
+root@LS1088ARDB-PB:~# ip link show dev eth0
+3: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noop state UP mode DEFAULT group default qlen 1000
+    link/ether 00:04:9f:06:08:f0 brd ff:ff:ff:ff:ff:ff
+#+end_example
+
+** Workaround manual
+
+The workaround is to manually install a qdisc on the board via serial port:
+#+begin_src sh
+tc qdisc add dev eth0 root pfifo
+#+end_src
+
+* Issue triggered by default_qdisc
+
+All modern distros have switched to fq_codel, via changing the default_qdisc
+via sysctl (/proc/sys/net/core/default_qdisc).
+
+#+begin_src sh
+# sysctl net/core/default_qdisc=fq_codel
+#+end_src
+
+On this Ubuntu (18.04) system it is configured under:
+=/usr/lib/sysctl.d/50-default.conf=
+
+For some unknown reason, when adding qdisc fq_codel to dpaa2-eth it fails.
+If I change the sysctl net/core/default_qdisc to pfifo_fast, then it works
+fine.
+
+** Workaround setup
+
+One can workaround via changing the sysctl config, and compile kernel with
+config option:
+#+begin_example
+CONFIG_DEFAULT_NET_SCH="pfifo_fast"
+#+end_example
+
+
+* Troubleshoot: iproute2 tc version
+
+Ideas: Is 'tc' (iproute2) version too old?
+#+begin_example
+root@LS1088ARDB-PB:~# apt show iproute2
+Package: iproute2
+Version: 4.15.0-2ubuntu1
+[...]
+#+end_example
+
+Git clone git://git.kernel.org/pub/scm/network/iproute2/iproute2.git
+and compile newest version of tc.
+
+Try old 'tc' and new 'tc' version:
+#+begin_example
+root@LS1088ARDB-PB:~# tc qdisc add dev eth0 root fq_codel
+RTNETLINK answers: Invalid argument
+
+root@LS1088ARDB-PB:~/git/iproute2/tc# ./tc qdisc add dev eth0 root fq_codel
+RTNETLINK answers: Invalid argument
+#+end_example
+
+This indicate that it is not =tc= version related.
+
+
+
+
