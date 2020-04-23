@@ -282,3 +282,29 @@ static int dpaa2_eth_setup_tc(struct net_device *net_dev,
 This code was introduced in kernel v5.3 (specifically [[https://git.kernel.org/torvalds/c/v5.3-rc1~140^2~271^2][v5.3-rc1~140^2~271^2]])
 - commit: [[ https://git.kernel.org/torvalds/c/ab1e6de2bd49][ab1e6de2bd49]] ("dpaa2-eth: Add mqprio support") (Author: Ioana Radulescu)
 
+** Blaming code calling ndo_setup_tc
+
+The driver =ndo_setup_tc= code =dpaa2_eth_setup_tc= might not be to blame,
+if other changes have caused this to be invoked when driver wasn't expecting
+this. Pablo (Netfilter maintainer) have recently change code in this area
+(e.g. [[https://git.kernel.org/torvalds/c/v5.3-rc1~140^2~6^2~5][v5.3-rc1~140^2~6^2~5]]).
+
+A possible fix could also be to return =-EOPNOTSUPP= instead of =-EINVAL=,
+as =tcf_block_offload_bind= calling =tcf_block_offload_cmd= exclude this
+return code from failing.
+
+#+begin_src C
+static int tcf_block_offload_bind [...]
+	[...]
+	err = tcf_block_offload_cmd(block, dev, ei, FLOW_BLOCK_BIND, extack);
+	if (err == -EOPNOTSUPP)
+		goto no_offload_dev_inc;
+	if (err)
+		goto err_unlock;
+#+end_src
+
+Looking at other drivers code for their =ndo_setup_tc=, there is a strong
+indication that the fix is to return =-EOPNOTSUPP=.
+
+
+
