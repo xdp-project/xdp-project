@@ -55,5 +55,9 @@ Even allowing users to add their own user specific "opaque" info. For our
 =devmap= use-case, it could be practical to store the egress MAC or VLAN
 address directly in the devmap.
 
+*** Insight: name of struct is important
 
+It is the text string ="bpf_spin_lock"= that is used for identifying the
+spinlock. This originates from the BTF info for =struct bpf_spin_lock=. The
+variable name that is chosen for the spinlock is not used.
 
