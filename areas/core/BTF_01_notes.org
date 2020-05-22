@@ -47,5 +47,13 @@ See code function =btf_find_spin_lock()= in kernel/bpf/btf.c
  - [[https://elixir.bootlin.com/linux/v5.6.14/ident/btf_find_spin_lock][Search btf_find_spin_lock]]
  - Code: [[https://elixir.bootlin.com/linux/v5.6.14/source/kernel/bpf/btf.c#L2327][btf_find_spin_lock()]]
 
-I think it will be overkill for our use-case, to allow dynamic offset.
+I think it will be overkill for our use-case, to allow dynamic offset. On
+the-other-hand, allowing dynamic offset will make it easier to extend the
+value data-type.
+
+Even allowing users to add their own user specific "opaque" info. For our
+=devmap= use-case, it could be practical to store the egress MAC or VLAN
+address directly in the devmap.
+
+
 
