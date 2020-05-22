@@ -23,3 +23,29 @@ The practical use-case is extending =devmap= and =cpumap= with a BPF-prog
 that is run when an =xdp_frame= is redirected to a entry in the map.
 
 David Ahern have [[https://lore.kernel.org/netdev/20200522010526.14649-1-dsahern@kernel.org/][posted RFC]] on extending =devmap=.
+
+* Investigate other code
+
+The ="bpf_spin_lock"= changes does a lot of checks based on BTF.
+
+TODO: Investigate their approach.
+
+** bpf_spin_lock approach
+
+Main introducing commit:
+- [[https://git.kernel.org/torvalds/c/d83525ca62cf][d83525ca62cf]] ("bpf: introduce bpf_spin_lock")
+
+The ="bpf_spin_lock"= approach is significantly more advanced than we
+actually need. So, need to figure out what parts we want to leverage.
+
+*** Dynamic offset
+
+A data-type =struct bpf_spin_lock anyname= can be located at any (aligned)
+offset in the map value.
+
+See code function =btf_find_spin_lock()= in kernel/bpf/btf.c
+ - [[https://elixir.bootlin.com/linux/v5.6.14/ident/btf_find_spin_lock][Search btf_find_spin_lock]]
+ - Code: [[https://elixir.bootlin.com/linux/v5.6.14/source/kernel/bpf/btf.c#L2327][btf_find_spin_lock()]]
+
+I think it will be overkill for our use-case, to allow dynamic offset.
+
