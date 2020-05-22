@@ -1,0 +1,13 @@
+# -*- fill-column: 76; -*-
+#+Title: BTF (Bpf Type Format) notes
+#+OPTIONS: ^:nil
+
+The BPF Type Format (BTF) is a really cool feature that allows us to
+describe data types used in e.g. BPF-maps (both key and value).
+
+The [[https://www.kernel.org/doc/html/latest/bpf/btf.html#bpf-type-format-btf][kernel BTF documentation]] is all about encoding details, and not about
+how to use BTF.
+
+This is my notes for trying to understand how to use BTF
+*from within the kernel*.
+
