@@ -11,3 +11,15 @@ how to use BTF.
 This is my notes for trying to understand how to use BTF
 *from within the kernel*.
 
+* Motivation
+
+Specifically I want to figure out, if we can use BTF to allow for
+dynamically extending and changing e.g. the map value type, and still have
+the kernel validate the contents.
+
+** Use-case: devmap and cpumap
+
+The practical use-case is extending =devmap= and =cpumap= with a BPF-prog
+that is run when an =xdp_frame= is redirected to a entry in the map.
+
+David Ahern have [[https://lore.kernel.org/netdev/20200522010526.14649-1-dsahern@kernel.org/][posted RFC]] on extending =devmap=.
