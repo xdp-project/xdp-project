@@ -25,9 +25,23 @@ that is run when an =xdp_frame= is redirected to a entry in the map.
 
 David Ahern have [[https://lore.kernel.org/netdev/20200522010526.14649-1-dsahern@kernel.org/][posted RFC]] on extending =devmap=.
 
+** Reason for dynamic map-value
+
+The reason I want to have the map-value more dynamic (both for =devmap= and
+=cpumap=) is to allow extending this later. Adding an XDP-prog to run is
+only the first step.
+
+Future extensions that could happen:
+
+ 1) Add XDP-prog that see packet(s) when ndo_xdp_xmit fails.
+
+ 2) Add overflow-queue object/setup that hold packets on ndo_xdp_xmit fails.
+
+ 3) Add TX-queue object/setup that determine TX-queue in ndo_xdp_xmit call.
+
 * Investigate other code
 
-The ="bpf_spin_lock"= changes does a lot of checks based on BTF.
+The "bpf_spin_lock" changes does a lot of checks based on BTF.
 
 TODO: Investigate their approach.
 
