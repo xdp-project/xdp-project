@@ -101,5 +101,90 @@ we want this, these size checks might need to be relaxed.
 
 
 
-* Code ideas
+*** Maps using map_check_btf
 
+Key =BTF_KIND_INT= validation example in array_map_check_btf().
+
+Other candidates:
+ - cgroup_storage_check_btf
+ - trie_check_btf
+
+
+
+* Experimenting
+
+** What happen: Adding BTF to cpumap
+
+Add BTF description when creating cpumap (=BPF_MAP_TYPE_CPUMAP=), without
+modifying kernel. This caused libbpf to fail with these error/warning
+message:
+
+#+begin_example
+libbpf: Error in bpf_create_map_xattr(cpu_map):ERROR: strerror_r(-524)=22(-524). Retrying without BTF.
+
+libbpf: Error in bpf_create_map_xattr(cpu_map):Invalid argument(-22). Retrying without BTF.
+#+end_example
+
+As libbpf retries without BTF info it succeeds anyhow, e.g this is just a
+warning. The first error message does look a bit odd and originates from
+this code:
+
+#+begin_src C
+	map->fd = bpf_create_map_xattr(&create_attr);
+	if (map->fd < 0 && (create_attr.btf_key_type_id ||
+			    create_attr.btf_value_type_id)) {
+		char *cp, errmsg[STRERR_BUFSIZE];
+		int err = -errno;
+
+		cp = libbpf_strerror_r(err, errmsg, sizeof(errmsg));
+		pr_warn("Error in bpf_create_map_xattr(%s):%s(%d). Retrying without BTF.\n",
+			map->name, cp, err);
+		create_attr.btf_fd = 0;
+		create_attr.btf_key_type_id = 0;
+		create_attr.btf_value_type_id = 0;
+		map->btf_key_type_id = 0;
+		map->btf_value_type_id = 0;
+		map->fd = bpf_create_map_xattr(&create_attr);
+	}
+#+end_src
+
+The strange error message comes when I added a slightly more advanced BTF
+struct as value.
+
+#+begin_src C
+struct cpu_map_value {
+	__u32 qsize;
+};
+
+struct {
+	__uint(type, BPF_MAP_TYPE_CPUMAP);
+	__type(key, u32);
+	__type(value, struct cpu_map_value);
+	__uint(max_entries, MAX_CPUS);
+} cpu_map SEC(".maps");
+#+end_src
+
+Trying to debug what kernel function call that returns this error.
+
+The BPF tracepoint were removed in commit 4d220ed0f814 ("bpf: remove
+tracepoints from bpf core") (Author: Alexei Starovoitov). This makes it
+harder debug and isolate 'map_create' function call (as it get inlined).
+
+
+
+#+begin_example
+ perf trace record -o /tmp/perf.data -e syscalls:sys_enter_bpf \
+  ./xdp_redirect_cpu -F --dev mlx5p1 --q 1024 --cpu 4 --prog xdp_cpu_map0
+#+end_example
+
+Finding BPF syscall to ftrace:
+#+begin_example
+ $ sudo trace-cmd list -f SyS_bpf
+ __x64_sys_bpf
+ __ia32_sys_bpf
+#+end_example
+
+In another terminal record via trace-cmd:
+#+begin_example
+sudo trace-cmd record -p function_graph -g __x64_sys_bpf
+#+end_example
