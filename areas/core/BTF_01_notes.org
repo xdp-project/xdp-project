@@ -50,7 +50,7 @@ TODO: Investigate their approach.
 Main introducing commit:
 - [[https://git.kernel.org/torvalds/c/d83525ca62cf][d83525ca62cf]] ("bpf: introduce bpf_spin_lock")
 
-The ="bpf_spin_lock"= approach is significantly more advanced than we
+The "bpf_spin_lock" approach is significantly more advanced than we
 actually need. So, need to figure out what parts we want to leverage.
 
 *** Dynamic offset
@@ -75,4 +75,31 @@ address directly in the devmap.
 It is the text string ="bpf_spin_lock"= that is used for identifying the
 spinlock. This originates from the BTF info for =struct bpf_spin_lock=. The
 variable name that is chosen for the spinlock is not used.
+
+
+** map_check_btf
+
+The function =map_check_btf()= have an explicit call to
+=btf_find_spin_lock=. But more interesting each map can implement it's own
+callback =map->ops->map_check_btf()=.
+
+#+begin_src C
+static int map_check_btf(struct bpf_map *map, const struct btf *btf,
+			 u32 btf_key_id, u32 btf_value_id)
+{
+ [...]
+	if (map->ops->map_check_btf)
+		ret = map->ops->map_check_btf(map, btf, key_type, value_type);
+}
+#+end_src
+
+The =map_create()= calls =map_check_btf()=, *after* =map_alloc()= have
+allocated map. Usually =attr->key_size= and =attr->value_size= are used in
+the map specific map_alloc (e.g. =cpu_map_alloc()=) to reject creation of
+the map, if the key or value size are incorrect.  Depending on how dynamic
+we want this, these size checks might need to be relaxed.
+
+
+
+* Code ideas
 
