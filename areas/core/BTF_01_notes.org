@@ -223,3 +223,33 @@ Given I manually found this was related to =map_check_no_btf=, it is
 possible to search for "map_check_no_btf" and indirectly see that it fails
 as the code calls =btf_put()=.
 
+*** Propose changing return code
+
+Proposal for changing the return code:
+ - https://lore.kernel.org/bpf/159050511046.148183.1806612131878890638.stgit@firesoul
+
+#+begin_quote
+bpf: Fix map_check_no_btf return code
+
+When a BPF-map type doesn't support having a BTF info associated, the
+bpf_map_ops->map_check_btf is set to map_check_no_btf(). This function
+map_check_no_btf() currently returns -ENOTSUPP, which result in a very
+confusing error message in libbpf, see below.
+
+The errno ENOTSUPP is part of the kernels internal errno in file
+include/linux/errno.h. As is stated in the file, these "should never be seen
+by user programs."
+
+Choosing errno EUCLEAN instead, which translated to "Structure needs
+cleaning" by strerror(3). This hopefully leads people to think about data
+structures which BTF is all about.
+
+Before this change end-users of libbpf will see:
+ libbpf: Error in bpf_create_map_xattr(cpu_map):ERROR: strerror_r(-524)=22(-524). Retrying without BTF.
+
+After this change end-users of libbpf will see:
+ libbpf: Error in bpf_create_map_xattr(cpu_map):Structure needs cleaning(-117). Retrying without BTF.
+
+Fixes: e8d2bec04579 ("bpf: decouple btf from seq bpf fs dump and enable more maps")
+Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
+#+end_quote
