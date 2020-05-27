@@ -226,7 +226,8 @@ as the code calls =btf_put()=.
 *** Propose changing return code
 
 Proposal for changing the return code:
- - https://lore.kernel.org/bpf/159050511046.148183.1806612131878890638.stgit@firesoul
+ - V1: https://lore.kernel.org/bpf/159050511046.148183.1806612131878890638.stgit@firesoul
+ - V2: https://lore.kernel.org/bpf/159057923399.191121.11186124752660899399.stgit@firesoul
 
 #+begin_quote
 bpf: Fix map_check_no_btf return code
@@ -237,19 +238,34 @@ map_check_no_btf() currently returns -ENOTSUPP, which result in a very
 confusing error message in libbpf, see below.
 
 The errno ENOTSUPP is part of the kernels internal errno in file
-include/linux/errno.h. As is stated in the file, these "should never be seen
-by user programs."
+include/linux/errno.h. As is stated in the file, these "should never be
+seen by user programs". This is not a not a standard Unix error.
 
-Choosing errno EUCLEAN instead, which translated to "Structure needs
-cleaning" by strerror(3). This hopefully leads people to think about data
-structures which BTF is all about.
+This should likely have been EOPNOTSUPP instead. This seems to be a common
+mistake, which even checkpatch tried to catch see commit 6b9ea5ff5abd
+("checkpatch: warn about uses of ENOTSUPP").
 
 Before this change end-users of libbpf will see:
  libbpf: Error in bpf_create_map_xattr(cpu_map):ERROR: strerror_r(-524)=22(-524). Retrying without BTF.
 
 After this change end-users of libbpf will see:
- libbpf: Error in bpf_create_map_xattr(cpu_map):Structure needs cleaning(-117). Retrying without BTF.
+ libbpf: Error in bpf_create_map_xattr(cpu_map):Operation not supported(-95). Retrying without BTF.
+
+V2: Use EOPNOTSUPP instead of EUCLEAN.
 
 Fixes: e8d2bec04579 ("bpf: decouple btf from seq bpf fs dump and enable more maps")
 Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
 #+end_quote
+
+Andrii suggests: to use EOPNOTSUPP (instead of errno ENOTSUPP)
+
+#+begin_example
+libbpf: Error in bpf_create_map_xattr(cpu_map):Operation not supported(-95). Retrying without BTF.
+#+end_example
+
+V2: Add --cc kuba@kernel.org
+#+begin_src sh
+stg mail --version='bpf-next V2' --cc meup \
+ --to bpf --cc daniel --cc alexei --cc jakub --cc andrii \
+  fix_map_check_no_btf
+#+end_src
