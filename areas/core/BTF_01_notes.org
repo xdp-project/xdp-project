@@ -269,3 +269,40 @@ stg mail --version='bpf-next V2' --cc meup \
  --to bpf --cc daniel --cc alexei --cc jakub --cc andrii \
   fix_map_check_no_btf
 #+end_src
+
+
+* Code notes
+
+** How to reject?
+
+If loading BPF-map + BTF fails, then libbpf will retry without BTF.
+
+Thus, to requires BTF we need (ability) to reject a map_create, when there
+isn't any BTF id.
+
+#+begin_src C
+static int dev_map_init_map(struct bpf_dtab *dtab, union bpf_attr *attr)
+{
+
+	/* Enforce BTF for userspace, unless dealing with legacy kABI */
+	if (attr->value_size != 4 &&
+	    (!attr->btf_key_type_id || !attr->btf_value_type_id))
+		return -EOPNOTSUPP;
+#+end_src
+
+** devmap read-only from eBPF side
+
+See commit 0cdbb4b09a06 ("devmap: Allow map lookups from eBPF")
+
+** Extra storage space argument
+
+With BTF we can allow userspace to store extra data in map-value in the
+devmap. It does require a lookup in the "devmap-egress" XDP-prog (likely
+with it's own ifindex), but prog that need such extra-info would need to do
+a map lookup anyhow (and we know devmap will be in L1 cache).
+
+To make this forward-compatible, the area need to be encapsulated in a named
+struct e.g. "storage". As in newer kernel, we want to add new members.
+
+
+
