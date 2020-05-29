@@ -1,0 +1,51 @@
+# -*- fill-column: 76; -*-
+#+Title: BTF (Bpf Type Format) proposal for dynamic map-values
+#+OPTIONS: ^:nil
+
+
+
+* Patches
+
+bpf: dynamic map-value config layout via BTF
+
+This patchset is based on top of David Ahern's work V3: "bpf: Add support
+for XDP programs in DEVMAP entries"[1]. The purpose is to address the kABI
+interfaces that is introduced in that patchset, before it is released.
+
+[1] https://lore.kernel.org/netdev/20200529052057.69378-1-dsahern@kernel.org
+
+The map-value of these special maps are evolving into configuration
+interface between userspace and kernel. The approach in[1] is to expose a
+binary struct layout that can only be grown in the end of the struct.
+
+With the BTF technology it is possible to create an interface that is much
+more dynamic and flexible.
+
+** stgit
+
+#+begin_example
+stg mail --version="bpf-next RFC" --cc meup --edit-cover \
+  --to ahern --to bpf --to netdev --cc daniel --cc alexei --cc andrii \
+  move_struct..samples-bpf
+#+end_example
+
+** PATCH: bpf: move struct bpf_devmap_val out of UAPI
+
+The struct bpf_devmap_val doesn't belong in uapi/linux/bpf.h, because this
+is a struct that BPF-progs can define themselves, and can provide different
+sizes to the kernel.
+
+While moving the struct change the union to be a named union, with the name
+"bpf_prog". This makes it easier to identify with BTF in next patch.
+
+
+** PATCH bpf: devmap dynamic map-value storage area based on BTF
+
+The devmap map-value can be read from BPF-prog side, and could be used for a
+storage area per device. This could e.g. contain info on headers that need
+to be added when packet egress this device.
+
+This patchset adds a 'storage' member to struct bpf_devmap_val. More
+importantly the struct bpf_devmap_val is made dynamic via leveraging and
+requiring BTF for struct sizes above 4. The only mandatory struct member is
+'ifindex' with a fixed offset of zero.
