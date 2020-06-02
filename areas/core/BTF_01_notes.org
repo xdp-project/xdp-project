@@ -305,4 +305,21 @@ To make this forward-compatible, the area need to be encapsulated in a named
 struct e.g. "storage". As in newer kernel, we want to add new members.
 
 
+** Existing functions
+
+Q: What existing function exist that compared two BTF layouts?
+
+
+
+#+begin_src C
+/* Compare BTFs of given program with BTF of target program */
+
+int btf_check_type_match(
+	struct bpf_verifier_env *env, struct bpf_prog *prog,
+	struct btf *btf2, const struct btf_type *t2)
+{
+ [...]
+ calls btf_check_func_type_match() 
+#+end_src
+
 
