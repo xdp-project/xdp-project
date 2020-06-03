@@ -275,10 +275,22 @@ allows BPF global functions to be replaced by other programs. The last piece
 of the kernel functionality for this was posted upstream on January 18th:
 https://lore.kernel.org/bpf/20200118000657.2135859-1-ast@kernel.org/T/#t
 
-*** TODO Build an XDP chain loader on top of the kernel support
+*** DONE Build an XDP chain loader on top of the kernel support
+CLOSED: [2020-06-02 Tue 18:45]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2020-06-02 Tue 18:45]
+:END:
 
-This will be included in [[https://github.com/xdp-project/xdp-tools]] in both
-library and binary form, to hopefully be widely applicable.
+This is implemented as part of libxdp in the [[https://github.com/xdp-project/xdp-tools][XDP tools repo]]. The current
+implementation works for loading a dispatcher with multiple programs, but
+only if they are all attached at the same time (until kernel support for
+re-attaching freplace programs land).
+
+*** TODO Implement freplace re-attachment
+To support seamlessly attaching additional XDP programs onto an interface,
+we need the kernel to support re-attaching an existing freplace program in
+multiple places, so the programs can be attached to a new dispatcher which
+can then be atomically swapped onto the interface XDP hook.
 
 * Important medium-term tasks                                       :@medium:
 
