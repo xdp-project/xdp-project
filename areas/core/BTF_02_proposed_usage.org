@@ -4,7 +4,7 @@
 
 
 
-* Patches
+* Patches attempt-1: Rejected
 
 bpf: dynamic map-value config layout via BTF
 
@@ -49,3 +49,14 @@ This patchset adds a 'storage' member to struct bpf_devmap_val. More
 importantly the struct bpf_devmap_val is made dynamic via leveraging and
 requiring BTF for struct sizes above 4. The only mandatory struct member is
 'ifindex' with a fixed offset of zero.
+
+* Patches attempt-2
+
+** Argue why not a uapi header
+
+Adding struct bpf_devmap_val to UAPI header file is problematic, because a
+userspace program that uses this header file will start to fail inserting
+into map when compiled with the newer struct. Why, because previously it
+didn't use the bpf_prog feature (and don't want to), but because bpf_prog.fd
+needs to be -1 (to not use the feature) the map-insert now fails.
+
