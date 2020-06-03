@@ -60,3 +60,56 @@ into map when compiled with the newer struct. Why, because previously it
 didn't use the bpf_prog feature (and don't want to), but because bpf_prog.fd
 needs to be -1 (to not use the feature) the map-insert now fails.
 
+** Argue in patch description
+
+This allows userspace to skip handling of 'bpf_prog' on map-inserts. The
+bpf_prog.fd feature needs a file-descriptor (pointing to a bpf_prog) as
+input. In-order to not use the feature userspace programs must handle this
+by inserting minus-1 as the file-descriptor number.
+
+Allow skip using this feature, via not including the member 'bpf_prog' in
+the map-value struct, which is propagated/described via BTF.
+
+** Details on ifindex zero
+
+Found an annoying detail. In the original commit that introduced devmap
+546ac1ffb70d ("bpf: add devmap, a map for storing net device references")
+(Author: John Fastabend), inserting ifindex==0 will result in =xchg= with a
+=NULL= pointer, which is basically a delete operation. The map already have
+a delete function call (=dev_map_delete_elem=). This property is not used by
+devmap_hash type. IMHO is it a mistake, and should result in =-EINVAL=
+instead of deleting.
+
+** Issue with Aherns patch
+
+This function is called from =net/core/dev.c= in =generic_xdp_install()= to
+refuse usage of devmap's with "egress" xdp_prog for generic-XDP. This binary
+struct extend-at-end system result in that ALL future extension for devmap
+cannot be used by generic-XDP.
+
+#+begin_src C
+bool dev_map_can_have_prog(struct bpf_map *map)
+{
+	if ((map->map_type == BPF_MAP_TYPE_DEVMAP ||
+	     map->map_type == BPF_MAP_TYPE_DEVMAP_HASH) &&
+	    map->value_size != offsetofend(struct bpf_devmap_val, ifindex))
+		return true;
+
+	return false;
+}
+#+end_src
+
+This can be fixed with the dynamic-BTF proposal. Fixing this is an excellent
+argument why BTF validation is needed.
+
+** Update selftests
+
+Update selftests added in d39aec79e592 ("selftest: Add tests for XDP
+programs in devmap entries") (Author: David Ahern).
+
+#+begin_example
+$ git whatchanged d39aec79e5923bf984df991ffe51d4a2b7a9e746
+ tools/testing/selftests/bpf/prog_tests/xdp_devmap_attach.c
+ tools/testing/selftests/bpf/progs/test_xdp_devmap_helpers.c
+ tools/testing/selftests/bpf/progs/test_xdp_with_devmap_helpers.c
+#+end_example
