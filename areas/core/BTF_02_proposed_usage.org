@@ -157,3 +157,56 @@ stg mail --version="bpf-next V1" --cc meup \
 #+end_src
 
 
+* Patchset: attempt-3 - no FD zero
+
+*New direction*: Simply avoid FD zero is used by BPF
+
+Above attempts tried to solve the kABI issue in a too advanced fashion (via
+making it dynamic via BTF). The *real practical issue* is that it is hard to
+extend a binary API (tail extending the struct) when the value must be
+initialised with something else than zero. As this breaks userspace programs
+running (and compiled with new UAPI header) against a newer kernel.
+
+** Cover-letter
+
+
+
+** Patch-1: bpf: syscall to start at file-descriptor 1
+
+This patch change BPF syscall to avoid returning file descriptor value zero.
+
+As mentioned in cover letter, it is very impractical when extending kABI
+that the file-descriptor value 'zero' is valid, as this requires new fields
+must be initialised as minus-1. First step is to change the kernel such that
+BPF-syscall simply doesn't return value zero as a FD number.
+
+This patch achieves this by similar code to anon_inode_getfd(), with the
+exception of getting unused FD starting from 1. The kernel already supports
+starting from a specific FD value, as this is used by f_dupfd(). It seems
+simpler to replicate part of anon_inode_getfd() code and use this start from
+offset feature, instead of using f_dupfd() handling afterwards.
+
+** Patch-2:
+
+#+begin_quote
+bpf: devmap adjust uapi for attach bpf program
+
+The recent commit fbee97feed9b ("bpf: Add support to attach bpf program to a
+devmap entry"), introduced ability to attach (and run) a separate XDP
+bpf_prog for each devmap entry. A bpf_prog is added via a file-descriptor.
+As zero were a valid FD, not using the feature requires using value minus-1.
+The UAPI is extended via tail-extending struct bpf_devmap_val and using
+map->value_size to determine the feature set.
+
+This will break older userspace applications not using the bpf_prog feature.
+Consider an old userspace app that is compiled against newer kernel
+uapi/bpf.h, it will not know that it need to initialise the member
+bpf_prog.fd to minus-1. Thus, users will be forced to update source code to
+get program running on newer kernels.
+
+As previous patch changed BPF-syscall to avoid returning file descriptor
+value zero, we can remove the minus-1 checks, and have zero mean feature
+isn't used.
+
+Fixes: fbee97feed9b ("bpf: Add support to attach bpf program to a devmap entry")
+#+end_quote
