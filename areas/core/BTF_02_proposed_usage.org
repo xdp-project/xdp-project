@@ -169,7 +169,42 @@ running (and compiled with new UAPI header) against a newer kernel.
 
 ** Cover-letter
 
+#+begin_quote
+bpf: avoid using/returning file descriptor value zero
 
+Make it easier to handle UAPI/kABI extensions by avoid BPF using/returning
+file descriptor value zero. Use this in recent devmap extension to keep
+older applications compatible with newer kernels.
+
+For special type maps (e.g. devmap and cpumap) the map-value data-layout is
+a configuration interface. This is a kernel Application Binary Interface
+(kABI) that can only be tail extended. Thus, new members (and thus features)
+can only be added to the end of this structure, and the kernel uses the
+map->value_size from userspace to determine feature set 'version'.
+
+For this kind of kABI to be extensible and backward compatible, is it common
+that new members/fields (that represent a new feature) in the struct are
+initialised as zero, which indicate that the feature isn't used. This makes
+it possible to write userspace applications that are unaware of new kernel
+features, but just include latest uapi headers, zero-init struct and
+populate features it knows about.
+
+The recent extension of devmap with a bpf_prog.fd requires end-user to
+supply the file-descriptor value minus-1 to communicate that the features
+isn't used. This isn't compatible with the described kABI extension model.
+#+end_quote
+
+*** stg mail
+
+#+begin_example
+stg mail --version="bpf" --cc meup --edit-cover \
+ --to ahern --to bpf --cc netdev --cc daniel --to alexei \
+ --cc andrii --cc lore \
+ 01-start_fd_1..03-tools_and_selftests
+#+end_example
+
+Message-ID: <159163498340.1967373.5048584263152085317.stgit@firesoul>
+- [[https://lore.kernel.org/bpf/159163498340.1967373.5048584263152085317.stgit@firesoul/][link]]
 
 ** Patch-1: bpf: syscall to start at file-descriptor 1
 
@@ -209,4 +244,13 @@ value zero, we can remove the minus-1 checks, and have zero mean feature
 isn't used.
 
 Fixes: fbee97feed9b ("bpf: Add support to attach bpf program to a devmap entry")
+#+end_quote
+
+** Patch-3:
+
+#+begin_quote
+bpf: selftests and tools use struct bpf_devmap_val from uapi
+
+Sync tools uapi bpf.h header file and selftests that use struct
+bpf_devmap_val.
 #+end_quote
