@@ -50,7 +50,7 @@ importantly the struct bpf_devmap_val is made dynamic via leveraging and
 requiring BTF for struct sizes above 4. The only mandatory struct member is
 'ifindex' with a fixed offset of zero.
 
-* Patches attempt-2
+* Working on attempt-2
 
 ** Argue why not a uapi header
 
@@ -113,3 +113,47 @@ $ git whatchanged d39aec79e5923bf984df991ffe51d4a2b7a9e746
  tools/testing/selftests/bpf/progs/test_xdp_devmap_helpers.c
  tools/testing/selftests/bpf/progs/test_xdp_with_devmap_helpers.c
 #+end_example
+
+* Patchset: attempt-2
+
+** PATCH: bpf: devmap dynamic map-value area based on BTF
+
+#+begin_quote
+bpf: devmap dynamic map-value area based on BTF
+
+The recent commit fbee97feed9b ("bpf: Add support to attach bpf program to a
+devmap entry"), introduced ability to attach (and run) a separate XDP
+bpf_prog for each devmap entry. A bpf_prog is added via a file-descriptor,
+thus not using the feature requires using value minus-1. The UAPI is
+extended via tail-extending struct bpf_devmap_val and using map->value_size
+to determine the feature set.
+
+There is a specific problem with dev_map_can_have_prog() check, which is
+called from net/core/dev.c in generic_xdp_install() to refuse usage of
+devmap's from generic-XDP that support these bpf_prog's. The check is size
+based. This means that all newer features will be blocked from being use by
+generic-XDP.
+
+This patch allows userspace to skip handling of 'bpf_prog' on map-inserts.
+The feature can be skipped, via not including the member 'bpf_prog' in the
+map-value struct, which is propagated/described via BTF.
+
+Fixes: fbee97feed9b ("bpf: Add support to attach bpf program to a devmap entry")
+Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
+#+end_quote
+
+Need this patch in, while there is still time before we have to support
+size=8 forever.
+
+Further more, BPF userspace programs using struct bpf_devmap_val will get
+surprised when including it as the tail-extended member will have to be
+initialised to minus-1.
+
+#+begin_src sh
+stg mail --version="bpf-next V1" --cc meup \
+  --to ahern --to bpf --cc netdev --cc daniel --to alexei --cc andrii \
+  --cc lore \
+  bpf-devmap-dynamic-map-value
+#+end_src
+
+
