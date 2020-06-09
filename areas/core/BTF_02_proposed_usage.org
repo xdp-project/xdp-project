@@ -2,7 +2,17 @@
 #+Title: BTF (Bpf Type Format) proposal for dynamic map-values
 #+OPTIONS: ^:nil
 
+This approach of /dynamic map-values via BTF/ was *rejected upstream*:
+ - https://lore.kernel.org/netdev/159119908343.1649854.17264745504030734400.stgit@firesoul/
 
+It implements a fully dynamic UAPI/ABI that userspace defines via defining
+the struct layout via BTF (at map_create), and the kernel-side validates
+BTF-info and restrict possible struct member names, which are remapped to
+offsets inside the kernel.
+
+Keeping this document around, because the link above show code on how to use
+kernel functions for walking and interacting with the BTF layout from the
+kernel side.
 
 * Patches attempt-1: Rejected
 [[https://lore.kernel.org/netdev/159076794319.1387573.8722376887638960093.stgit@firesoul/][link]]
@@ -127,7 +137,10 @@ $ git whatchanged d39aec79e5923bf984df991ffe51d4a2b7a9e746
 
 * Patchset: attempt-2
 
+Rejected with unproductive argument "make no sense" [[https://lore.kernel.org/netdev/20200604174806.29130b81@carbon/][link]].
+
 ** PATCH: bpf: devmap dynamic map-value area based on BTF
+[[https://lore.kernel.org/netdev/159119908343.1649854.17264745504030734400.stgit@firesoul/][link]]
 
 #+begin_quote
 bpf: devmap dynamic map-value area based on BTF
