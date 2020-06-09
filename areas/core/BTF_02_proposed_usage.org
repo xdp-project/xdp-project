@@ -5,7 +5,9 @@
 
 
 * Patches attempt-1: Rejected
+[[https://lore.kernel.org/netdev/159076794319.1387573.8722376887638960093.stgit@firesoul/][link]]
 
+#+begin_quote
 bpf: dynamic map-value config layout via BTF
 
 This patchset is based on top of David Ahern's work V3: "bpf: Add support
@@ -20,6 +22,7 @@ binary struct layout that can only be grown in the end of the struct.
 
 With the BTF technology it is possible to create an interface that is much
 more dynamic and flexible.
+#+end_quote
 
 ** stgit
 
@@ -30,17 +33,21 @@ stg mail --version="bpf-next RFC" --cc meup --edit-cover \
 #+end_example
 
 ** PATCH: bpf: move struct bpf_devmap_val out of UAPI
+[[https://lore.kernel.org/netdev/159076798058.1387573.3077178618799401182.stgit@firesoul/][link]]
 
+#+begin_quote
 The struct bpf_devmap_val doesn't belong in uapi/linux/bpf.h, because this
 is a struct that BPF-progs can define themselves, and can provide different
 sizes to the kernel.
 
 While moving the struct change the union to be a named union, with the name
 "bpf_prog". This makes it easier to identify with BTF in next patch.
-
+#+end_quote
 
 ** PATCH bpf: devmap dynamic map-value storage area based on BTF
+[[https://lore.kernel.org/netdev/159076798566.1387573.8417040652693679408.stgit@firesoul/][link]]
 
+#+begin_quote
 The devmap map-value can be read from BPF-prog side, and could be used for a
 storage area per device. This could e.g. contain info on headers that need
 to be added when packet egress this device.
@@ -49,6 +56,10 @@ This patchset adds a 'storage' member to struct bpf_devmap_val. More
 importantly the struct bpf_devmap_val is made dynamic via leveraging and
 requiring BTF for struct sizes above 4. The only mandatory struct member is
 'ifindex' with a fixed offset of zero.
+#+end_quote
+
+** PATCH: samples/bpf: change xdp_fwd to use new BTF config interface
+[[https://lore.kernel.org/netdev/159076799073.1387573.15478442988219832285.stgit@firesoul/][link]]
 
 * Working on attempt-2
 
