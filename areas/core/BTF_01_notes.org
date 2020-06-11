@@ -99,8 +99,6 @@ the map specific map_alloc (e.g. =cpu_map_alloc()=) to reject creation of
 the map, if the key or value size are incorrect.  Depending on how dynamic
 we want this, these size checks might need to be relaxed.
 
-
-
 *** Maps using map_check_btf
 
 Key =BTF_KIND_INT= validation example in array_map_check_btf().
@@ -108,8 +106,6 @@ Key =BTF_KIND_INT= validation example in array_map_check_btf().
 Other candidates:
  - cgroup_storage_check_btf
  - trie_check_btf
-
-
 
 * Experimenting
 
@@ -270,7 +266,6 @@ stg mail --version='bpf-next V2' --cc meup \
   fix_map_check_no_btf
 #+end_src
 
-
 * Code notes
 
 ** How to reject?
@@ -309,8 +304,6 @@ struct e.g. "storage". As in newer kernel, we want to add new members.
 
 Q: What existing function exist that compared two BTF layouts?
 
-
-
 #+begin_src C
 /* Compare BTFs of given program with BTF of target program */
 
@@ -319,7 +312,5 @@ int btf_check_type_match(
 	struct btf *btf2, const struct btf_type *t2)
 {
  [...]
- calls btf_check_func_type_match() 
+ calls btf_check_func_type_match()
 #+end_src
-
-
