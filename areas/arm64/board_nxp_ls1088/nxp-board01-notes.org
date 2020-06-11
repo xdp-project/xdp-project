@@ -28,8 +28,8 @@ refer to =/boot/Image= under Linux).
 
 In U-Boot console:
 #+begin_src sh
-setenv kernel_image Image3
 setenv othbootargs arm-smmu.disable_bypass=0
+setenv kernel_image Image3
 boot
 #+end_src
 

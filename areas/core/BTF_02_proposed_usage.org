@@ -1,0 +1,364 @@
+# -*- fill-column: 76; -*-
+#+Title: BTF (Bpf Type Format) proposal for dynamic map-values
+#+OPTIONS: ^:nil
+
+This approach of /dynamic map-values via BTF/ was *rejected upstream*:
+ - https://lore.kernel.org/netdev/159119908343.1649854.17264745504030734400.stgit@firesoul/
+
+It implements a fully dynamic UAPI/ABI that userspace defines via defining
+the struct layout via BTF (at map_create), and the kernel-side validates
+BTF-info and restrict possible struct member names, which are remapped to
+offsets inside the kernel.
+
+Keeping this document around, because the link above show code on how to use
+kernel functions for walking and interacting with the BTF layout from the
+kernel side.
+
+* Patches attempt-1: Rejected
+[[https://lore.kernel.org/netdev/159076794319.1387573.8722376887638960093.stgit@firesoul/][link]]
+
+#+begin_quote
+bpf: dynamic map-value config layout via BTF
+
+This patchset is based on top of David Ahern's work V3: "bpf: Add support
+for XDP programs in DEVMAP entries"[1]. The purpose is to address the kABI
+interfaces that is introduced in that patchset, before it is released.
+
+[1] https://lore.kernel.org/netdev/20200529052057.69378-1-dsahern@kernel.org
+
+The map-value of these special maps are evolving into configuration
+interface between userspace and kernel. The approach in[1] is to expose a
+binary struct layout that can only be grown in the end of the struct.
+
+With the BTF technology it is possible to create an interface that is much
+more dynamic and flexible.
+#+end_quote
+
+** stgit
+
+#+begin_example
+stg mail --version="bpf-next RFC" --cc meup --edit-cover \
+  --to ahern --to bpf --to netdev --cc daniel --cc alexei --cc andrii \
+  move_struct..samples-bpf
+#+end_example
+
+** PATCH: bpf: move struct bpf_devmap_val out of UAPI
+[[https://lore.kernel.org/netdev/159076798058.1387573.3077178618799401182.stgit@firesoul/][link]]
+
+#+begin_quote
+The struct bpf_devmap_val doesn't belong in uapi/linux/bpf.h, because this
+is a struct that BPF-progs can define themselves, and can provide different
+sizes to the kernel.
+
+While moving the struct change the union to be a named union, with the name
+"bpf_prog". This makes it easier to identify with BTF in next patch.
+#+end_quote
+
+** PATCH bpf: devmap dynamic map-value storage area based on BTF
+[[https://lore.kernel.org/netdev/159076798566.1387573.8417040652693679408.stgit@firesoul/][link]]
+
+#+begin_quote
+The devmap map-value can be read from BPF-prog side, and could be used for a
+storage area per device. This could e.g. contain info on headers that need
+to be added when packet egress this device.
+
+This patchset adds a 'storage' member to struct bpf_devmap_val. More
+importantly the struct bpf_devmap_val is made dynamic via leveraging and
+requiring BTF for struct sizes above 4. The only mandatory struct member is
+'ifindex' with a fixed offset of zero.
+#+end_quote
+
+** PATCH: samples/bpf: change xdp_fwd to use new BTF config interface
+[[https://lore.kernel.org/netdev/159076799073.1387573.15478442988219832285.stgit@firesoul/][link]]
+
+* Working on attempt-2
+
+** Argue why not a uapi header
+
+Adding struct bpf_devmap_val to UAPI header file is problematic, because a
+userspace program that uses this header file will start to fail inserting
+into map when compiled with the newer struct. Why, because previously it
+didn't use the bpf_prog feature (and don't want to), but because bpf_prog.fd
+needs to be -1 (to not use the feature) the map-insert now fails.
+
+** Argue in patch description
+
+This allows userspace to skip handling of 'bpf_prog' on map-inserts. The
+bpf_prog.fd feature needs a file-descriptor (pointing to a bpf_prog) as
+input. In-order to not use the feature userspace programs must handle this
+by inserting minus-1 as the file-descriptor number.
+
+Allow skip using this feature, via not including the member 'bpf_prog' in
+the map-value struct, which is propagated/described via BTF.
+
+** Details on ifindex zero
+
+Found an annoying detail. In the original commit that introduced devmap
+546ac1ffb70d ("bpf: add devmap, a map for storing net device references")
+(Author: John Fastabend), inserting ifindex==0 will result in =xchg= with a
+=NULL= pointer, which is basically a delete operation. The map already have
+a delete function call (=dev_map_delete_elem=). This property is not used by
+devmap_hash type. IMHO is it a mistake, and should result in =-EINVAL=
+instead of deleting.
+
+** Issue with Aherns patch
+
+This function is called from =net/core/dev.c= in =generic_xdp_install()= to
+refuse usage of devmap's with "egress" xdp_prog for generic-XDP. This binary
+struct extend-at-end system result in that ALL future extension for devmap
+cannot be used by generic-XDP.
+
+#+begin_src C
+bool dev_map_can_have_prog(struct bpf_map *map)
+{
+	if ((map->map_type == BPF_MAP_TYPE_DEVMAP ||
+	     map->map_type == BPF_MAP_TYPE_DEVMAP_HASH) &&
+	    map->value_size != offsetofend(struct bpf_devmap_val, ifindex))
+		return true;
+
+	return false;
+}
+#+end_src
+
+This can be fixed with the dynamic-BTF proposal. Fixing this is an excellent
+argument why BTF validation is needed.
+
+** Update selftests
+
+Update selftests added in d39aec79e592 ("selftest: Add tests for XDP
+programs in devmap entries") (Author: David Ahern).
+
+#+begin_example
+$ git whatchanged d39aec79e5923bf984df991ffe51d4a2b7a9e746
+ tools/testing/selftests/bpf/prog_tests/xdp_devmap_attach.c
+ tools/testing/selftests/bpf/progs/test_xdp_devmap_helpers.c
+ tools/testing/selftests/bpf/progs/test_xdp_with_devmap_helpers.c
+#+end_example
+
+* Patchset: attempt-2: Good BTF-code example (but rejected)
+
+Rejected with unproductive argument "make no sense" [[https://lore.kernel.org/netdev/20200604174806.29130b81@carbon/][link]].
+
+** PATCH: bpf: devmap dynamic map-value area based on BTF
+[[https://lore.kernel.org/netdev/159119908343.1649854.17264745504030734400.stgit@firesoul/][link]]
+
+#+begin_quote
+bpf: devmap dynamic map-value area based on BTF
+
+The recent commit fbee97feed9b ("bpf: Add support to attach bpf program to a
+devmap entry"), introduced ability to attach (and run) a separate XDP
+bpf_prog for each devmap entry. A bpf_prog is added via a file-descriptor,
+thus not using the feature requires using value minus-1. The UAPI is
+extended via tail-extending struct bpf_devmap_val and using map->value_size
+to determine the feature set.
+
+There is a specific problem with dev_map_can_have_prog() check, which is
+called from net/core/dev.c in generic_xdp_install() to refuse usage of
+devmap's from generic-XDP that support these bpf_prog's. The check is size
+based. This means that all newer features will be blocked from being use by
+generic-XDP.
+
+This patch allows userspace to skip handling of 'bpf_prog' on map-inserts.
+The feature can be skipped, via not including the member 'bpf_prog' in the
+map-value struct, which is propagated/described via BTF.
+
+Fixes: fbee97feed9b ("bpf: Add support to attach bpf program to a devmap entry")
+Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
+#+end_quote
+
+Need this patch in, while there is still time before we have to support
+size=8 forever.
+
+Further more, BPF userspace programs using struct bpf_devmap_val will get
+surprised when including it as the tail-extended member will have to be
+initialised to minus-1.
+
+#+begin_src sh
+stg mail --version="bpf-next V1" --cc meup \
+  --to ahern --to bpf --cc netdev --cc daniel --to alexei --cc andrii \
+  --cc lore \
+  bpf-devmap-dynamic-map-value
+#+end_src
+
+* Patchset: attempt-3 - no FD zero
+
+*New direction*: Simply avoid FD zero is used by BPF
+- This drops using BTF
+
+Above attempts tried to solve the kABI issue in a too advanced fashion (via
+making it dynamic via BTF). The *real practical issue* is that it is hard to
+extend a binary API (tail extending the struct) when the value must be
+initialised with something else than zero. As this breaks userspace programs
+running (and compiled with new UAPI header) against a newer kernel.
+
+** Cover-letter
+
+#+begin_quote
+bpf: avoid using/returning file descriptor value zero
+
+Make it easier to handle UAPI/kABI extensions by avoid BPF using/returning
+file descriptor value zero. Use this in recent devmap extension to keep
+older applications compatible with newer kernels.
+
+For special type maps (e.g. devmap and cpumap) the map-value data-layout is
+a configuration interface. This is a kernel Application Binary Interface
+(kABI) that can only be tail extended. Thus, new members (and thus features)
+can only be added to the end of this structure, and the kernel uses the
+map->value_size from userspace to determine feature set 'version'.
+
+For this kind of kABI to be extensible and backward compatible, is it common
+that new members/fields (that represent a new feature) in the struct are
+initialised as zero, which indicate that the feature isn't used. This makes
+it possible to write userspace applications that are unaware of new kernel
+features, but just include latest uapi headers, zero-init struct and
+populate features it knows about.
+
+The recent extension of devmap with a bpf_prog.fd requires end-user to
+supply the file-descriptor value minus-1 to communicate that the features
+isn't used. This isn't compatible with the described kABI extension model.
+#+end_quote
+
+*** stg mail
+
+#+begin_example
+stg mail --version="bpf" --cc meup --edit-cover \
+ --to ahern --to bpf --cc netdev --cc daniel --to alexei \
+ --cc andrii --cc lore \
+ 01-start_fd_1..03-tools_and_selftests
+#+end_example
+
+Message-ID: <159163498340.1967373.5048584263152085317.stgit@firesoul>
+- [[https://lore.kernel.org/bpf/159163498340.1967373.5048584263152085317.stgit@firesoul/][link]]
+
+** Patch-1: bpf: syscall to start at file-descriptor 1
+[[https://lore.kernel.org/netdev/159163507753.1967373.62249862728421448.stgit@firesoul/][link]]
+
+#+begin_quote
+This patch change BPF syscall to avoid returning file descriptor value zero.
+
+As mentioned in cover letter, it is very impractical when extending kABI
+that the file-descriptor value 'zero' is valid, as this requires new fields
+must be initialised as minus-1. First step is to change the kernel such that
+BPF-syscall simply doesn't return value zero as a FD number.
+
+This patch achieves this by similar code to anon_inode_getfd(), with the
+exception of getting unused FD starting from 1. The kernel already supports
+starting from a specific FD value, as this is used by f_dupfd(). It seems
+simpler to replicate part of anon_inode_getfd() code and use this start from
+offset feature, instead of using f_dupfd() handling afterwards.
+#+end_quote
+
+** Patch-2:
+[[https://lore.kernel.org/bpf/159163508261.1967373.10375683361894729822.stgit@firesoul/][link]]
+
+#+begin_quote
+bpf: devmap adjust uapi for attach bpf program
+
+The recent commit fbee97feed9b ("bpf: Add support to attach bpf program to a
+devmap entry"), introduced ability to attach (and run) a separate XDP
+bpf_prog for each devmap entry. A bpf_prog is added via a file-descriptor.
+As zero were a valid FD, not using the feature requires using value minus-1.
+The UAPI is extended via tail-extending struct bpf_devmap_val and using
+map->value_size to determine the feature set.
+
+This will break older userspace applications not using the bpf_prog feature.
+Consider an old userspace app that is compiled against newer kernel
+uapi/bpf.h, it will not know that it need to initialise the member
+bpf_prog.fd to minus-1. Thus, users will be forced to update source code to
+get program running on newer kernels.
+
+As previous patch changed BPF-syscall to avoid returning file descriptor
+value zero, we can remove the minus-1 checks, and have zero mean feature
+isn't used.
+
+Fixes: fbee97feed9b ("bpf: Add support to attach bpf program to a devmap entry")
+#+end_quote
+
+** Patch-3:
+[[https://lore.kernel.org/bpf/159163508769.1967373.9026895070748918567.stgit@firesoul/][link]]
+
+#+begin_quote
+bpf: selftests and tools use struct bpf_devmap_val from uapi
+
+Sync tools uapi bpf.h header file and selftests that use struct
+bpf_devmap_val.
+#+end_quote
+
+
+* Patchset: attempt-4
+
+Alexei didn't like patch1, but wanted to patch 2+3.
+- [[https://lore.kernel.org/bpf/20200609013410.5ktyuzlqu5xpbp4a@ast-mbp.dhcp.thefacebook.com/][link]]
+- Message-ID: <20200609013410.5ktyuzlqu5xpbp4a@ast-mbp.dhcp.thefacebook.com>
+
+I disagree, and think patch-1 is a pre-requisite, but it is more important
+to fix the UAPI (ABI) issue of minus-1. So, I can live with the unlikely
+case of getting FD=0 back.
+
+** cover-letter
+Message-ID: <159170947966.2102545.14401752480810420709.stgit@firesoul
+- [[https://lore.kernel.org/bpf/159170947966.2102545.14401752480810420709.stgit@firesoul/][link]]
+
+#+begin_quote
+bpf: adjust uapi for devmap prior to kernel release
+
+For special type maps (e.g. devmap and cpumap) the map-value data-layout is
+a configuration interface. This is uapi that can only be tail extended.
+Thus, new members (and thus features) can only be added to the end of this
+structure, and the kernel uses the map->value_size from userspace to
+determine feature set 'version'.
+
+For this kind of uapi to be extensible and backward compatible, is it common
+that new members/fields (that represent a new feature) in the struct are
+initialized as zero, which indicate that the feature isn't used. This makes
+it possible to write userspace applications that are unaware of new kernel
+features, but just include latest uapi headers, zero-init struct and
+populate features it knows about.
+
+The recent extension of devmap with a bpf_prog.fd requires end-user to
+supply the file-descriptor value minus-1 to communicate that the features
+isn't used. This isn't compatible with the described kABI extension model.
+
+V2: Drop patch-1 that changed BPF-syscall to start at file-descriptor 1
+#+end_quote
+
+*** stg mail
+
+#+begin_src sh
+stg mail --version="bpf V2" --cc meup --edit-cover \
+ --in-reply-to="20200609013410.5ktyuzlqu5xpbp4a@ast-mbp.dhcp.thefacebook.com" \
+ --to ahern --to bpf --cc netdev --cc daniel --to alexei \
+ --cc andrii --cc lore \
+ bpf-devmap-adjust-uapi-for..bpf-selftests-and-tools-use
+#+end_src
+
+** patch:
+
+#+begin_quote
+bpf: devmap adjust uapi for attach bpf program
+
+V2:
+- Defer changing BPF-syscall to start at file-descriptor 1
+- Use {} to zero initialise struct.
+
+The recent commit fbee97feed9b ("bpf: Add support to attach bpf program to a
+devmap entry"), introduced ability to attach (and run) a separate XDP
+bpf_prog for each devmap entry. A bpf_prog is added via a file-descriptor.
+As zero were a valid FD, not using the feature requires using value minus-1.
+The UAPI is extended via tail-extending struct bpf_devmap_val and using
+map->value_size to determine the feature set.
+
+This will break older userspace applications not using the bpf_prog feature.
+Consider an old userspace app that is compiled against newer kernel
+uapi/bpf.h, it will not know that it need to initialise the member
+bpf_prog.fd to minus-1. Thus, users will be forced to update source code to
+get program running on newer kernels.
+
+This patch remove the minus-1 checks, and have zero mean feature isn't used.
+
+Followup patches either for kernel or libbpf should handle and avoid
+returning file-descriptor zero in the first place.
+
+Fixes: fbee97feed9b ("bpf: Add support to attach bpf program to a devmap entry")
+#+end_quote
+

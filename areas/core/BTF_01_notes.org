@@ -1,0 +1,316 @@
+# -*- fill-column: 76; -*-
+#+Title: BTF (Bpf Type Format) notes
+#+OPTIONS: ^:nil
+
+The BPF Type Format (BTF) is a [[https://facebookmicrosites.github.io/bpf/blog/2018/11/14/btf-enhancement.html][really cool feature]] that allows us to
+describe data types used in e.g. BPF-maps (both key and value).
+
+The [[https://www.kernel.org/doc/html/latest/bpf/btf.html#bpf-type-format-btf][kernel BTF documentation]] is all about encoding details, and not about
+how to use BTF.
+
+This is my notes for trying to understand how to use BTF
+*from within the kernel*.  The last part is important, the target audience
+of this document are other kernel developers.
+
+* Motivation
+
+Specifically I want to figure out, if we can use BTF to allow for
+dynamically extending and changing e.g. the map value type, and still have
+the kernel validate the contents.
+
+** Use-case: devmap and cpumap
+
+The practical use-case is extending =devmap= and =cpumap= with a BPF-prog
+that is run when an =xdp_frame= is redirected to a entry in the map.
+
+David Ahern have [[https://lore.kernel.org/netdev/20200522010526.14649-1-dsahern@kernel.org/][posted RFC]] on extending =devmap=.
+
+** Reason for dynamic map-value
+
+The reason I want to have the map-value more dynamic (both for =devmap= and
+=cpumap=) is to allow extending this later. Adding an XDP-prog to run is
+only the first step.
+
+Future extensions that could happen:
+
+ 1) Add XDP-prog that see packet(s) when ndo_xdp_xmit fails.
+
+ 2) Add overflow-queue object/setup that hold packets on ndo_xdp_xmit fails.
+
+ 3) Add TX-queue object/setup that determine TX-queue in ndo_xdp_xmit call.
+
+* Investigate other code
+
+The "bpf_spin_lock" changes does a lot of checks based on BTF.
+
+TODO: Investigate their approach.
+
+** bpf_spin_lock approach
+
+Main introducing commit:
+- [[https://git.kernel.org/torvalds/c/d83525ca62cf][d83525ca62cf]] ("bpf: introduce bpf_spin_lock")
+
+The "bpf_spin_lock" approach is significantly more advanced than we
+actually need. So, need to figure out what parts we want to leverage.
+
+*** Dynamic offset
+
+A data-type =struct bpf_spin_lock anyname= can be located at any (aligned)
+offset in the map value.
+
+See code function =btf_find_spin_lock()= in kernel/bpf/btf.c
+ - [[https://elixir.bootlin.com/linux/v5.6.14/ident/btf_find_spin_lock][Search btf_find_spin_lock]]
+ - Code: [[https://elixir.bootlin.com/linux/v5.6.14/source/kernel/bpf/btf.c#L2327][btf_find_spin_lock()]]
+
+I think it will be overkill for our use-case, to allow dynamic offset. On
+the-other-hand, allowing dynamic offset will make it easier to extend the
+value data-type.
+
+Even allowing users to add their own user specific "opaque" info. For our
+=devmap= use-case, it could be practical to store the egress MAC or VLAN
+address directly in the devmap.
+
+*** Insight: name of struct is important
+
+It is the text string ="bpf_spin_lock"= that is used for identifying the
+spinlock. This originates from the BTF info for =struct bpf_spin_lock=. The
+variable name that is chosen for the spinlock is not used.
+
+
+** map_check_btf
+
+The function =map_check_btf()= have an explicit call to
+=btf_find_spin_lock=. But more interesting each map can implement it's own
+callback =map->ops->map_check_btf()=.
+
+#+begin_src C
+static int map_check_btf(struct bpf_map *map, const struct btf *btf,
+			 u32 btf_key_id, u32 btf_value_id)
+{
+ [...]
+	if (map->ops->map_check_btf)
+		ret = map->ops->map_check_btf(map, btf, key_type, value_type);
+}
+#+end_src
+
+The =map_create()= calls =map_check_btf()=, *after* =map_alloc()= have
+allocated map. Usually =attr->key_size= and =attr->value_size= are used in
+the map specific map_alloc (e.g. =cpu_map_alloc()=) to reject creation of
+the map, if the key or value size are incorrect.  Depending on how dynamic
+we want this, these size checks might need to be relaxed.
+
+*** Maps using map_check_btf
+
+Key =BTF_KIND_INT= validation example in array_map_check_btf().
+
+Other candidates:
+ - cgroup_storage_check_btf
+ - trie_check_btf
+
+* Experimenting
+
+** What happen: Adding BTF to cpumap
+
+Add BTF description when creating cpumap (=BPF_MAP_TYPE_CPUMAP=), without
+modifying kernel. This caused libbpf to fail with these error/warning
+message:
+
+#+begin_example
+libbpf: Error in bpf_create_map_xattr(cpu_map):ERROR: strerror_r(-524)=22(-524). Retrying without BTF.
+
+libbpf: Error in bpf_create_map_xattr(cpu_map):Invalid argument(-22). Retrying without BTF.
+#+end_example
+
+As libbpf retries without BTF info it succeeds anyhow, e.g this is just a
+warning. The first error message does look a bit odd and originates from
+this code:
+
+#+begin_src C
+	map->fd = bpf_create_map_xattr(&create_attr);
+	if (map->fd < 0 && (create_attr.btf_key_type_id ||
+			    create_attr.btf_value_type_id)) {
+		char *cp, errmsg[STRERR_BUFSIZE];
+		int err = -errno;
+
+		cp = libbpf_strerror_r(err, errmsg, sizeof(errmsg));
+		pr_warn("Error in bpf_create_map_xattr(%s):%s(%d). Retrying without BTF.\n",
+			map->name, cp, err);
+		create_attr.btf_fd = 0;
+		create_attr.btf_key_type_id = 0;
+		create_attr.btf_value_type_id = 0;
+		map->btf_key_type_id = 0;
+		map->btf_value_type_id = 0;
+		map->fd = bpf_create_map_xattr(&create_attr);
+	}
+#+end_src
+
+The strange error message comes when I added a slightly more advanced BTF
+struct as value.
+
+#+begin_src C
+struct cpu_map_value {
+	__u32 qsize;
+};
+
+struct {
+	__uint(type, BPF_MAP_TYPE_CPUMAP);
+	__type(key, u32);
+	__type(value, struct cpu_map_value);
+	__uint(max_entries, MAX_CPUS);
+} cpu_map SEC(".maps");
+#+end_src
+
+Trying to debug what kernel function call that returns this error.
+
+Using =strace= it is easy trace all BPF syscalls (=-e trace=bpf=) and then
+filter to the ones that fails (=--failed-only or -Z=):
+
+#+begin_example
+sudo strace -e trace=bpf --failed-only ./xdp_redirect_cpu -F --dev mlx5p1 --q 1024 --cpu 4 --prog xdp_cpu_map0 
+bpf(BPF_MAP_CREATE, {map_type=BPF_MAP_TYPE_CPUMAP, key_size=4, value_size=4, max_entries=8192, map_flags=0, inner_map_fd=0, map_name="cpu_map", map_ifindex=0, btf_fd=3, btf_key_type_id=7, btf_value_type_id=27, btf_vmlinux_value_type_id=0}, 120) = -1 ENOTSUPP (Unknown error 524)
+libbpf: Error in bpf_create_map_xattr(cpu_map):ERROR: strerror_r(-524)=22(-524). Retrying without BTF.
+#+end_example
+
+It shows what we already knows, that =BPF_MAP_CREATE= fails with error
+code 524. This errno is defined as =ENOTSUPP=, and is part of the kernels
+internal errno in file [[https://github.com/torvalds/linux/blob/master/include/linux/errno.h][include/linux/errno.h]]. As is stated in the file,
+these "should never be seen by user programs."
+
+#+begin_example
+#define ENOTSUPP        524     /* Operation is not supported */
+#+end_example
+
+What we really wanted was to identify and record the kernel functions
+involved to figure out what kernel function fails.
+
+The BPF tracepoint were removed in commit 4d220ed0f814 ("bpf: remove
+tracepoints from bpf core") (Author: Alexei Starovoitov). This makes it
+harder debug and isolate 'map_create' function call (as it get inlined).
+
+*** Using ftrace and trace-cmd
+
+Finding BPF syscall to ftrace:
+#+begin_example
+ $ sudo trace-cmd list -f SyS_bpf
+ __x64_sys_bpf
+ __ia32_sys_bpf
+#+end_example
+
+In another terminal record via trace-cmd:
+#+begin_example
+sudo trace-cmd record -p function_graph -g __x64_sys_bpf
+#+end_example
+
+Run the failing command:
+#+begin_example
+sudo ./xdp_redirect_cpu -F --dev mlx5p1 --q 1024 --cpu 4 --prog xdp_cpu_map0
+libbpf: Error in bpf_create_map_xattr(cpu_map):ERROR: strerror_r(-524)=22(-524). Retrying without BTF.
+libbpf: map 'cpu_map': failed to create: ERROR: strerror_r(-524)=22(-524)
+libbpf: failed to load object './xdp_redirect_cpu_kern.o'
+#+end_example
+
+Viewing the result via:
+#+begin_example
+trace-cmd report | less
+#+end_example
+
+In general there is way too much data. Thus it is hard to use for anything.
+Given I manually found this was related to =map_check_no_btf=, it is
+possible to search for "map_check_no_btf" and indirectly see that it fails
+as the code calls =btf_put()=.
+
+*** Propose changing return code
+
+Proposal for changing the return code:
+ - V1: https://lore.kernel.org/bpf/159050511046.148183.1806612131878890638.stgit@firesoul
+ - V2: https://lore.kernel.org/bpf/159057923399.191121.11186124752660899399.stgit@firesoul
+
+#+begin_quote
+bpf: Fix map_check_no_btf return code
+
+When a BPF-map type doesn't support having a BTF info associated, the
+bpf_map_ops->map_check_btf is set to map_check_no_btf(). This function
+map_check_no_btf() currently returns -ENOTSUPP, which result in a very
+confusing error message in libbpf, see below.
+
+The errno ENOTSUPP is part of the kernels internal errno in file
+include/linux/errno.h. As is stated in the file, these "should never be
+seen by user programs". This is not a not a standard Unix error.
+
+This should likely have been EOPNOTSUPP instead. This seems to be a common
+mistake, which even checkpatch tried to catch see commit 6b9ea5ff5abd
+("checkpatch: warn about uses of ENOTSUPP").
+
+Before this change end-users of libbpf will see:
+ libbpf: Error in bpf_create_map_xattr(cpu_map):ERROR: strerror_r(-524)=22(-524). Retrying without BTF.
+
+After this change end-users of libbpf will see:
+ libbpf: Error in bpf_create_map_xattr(cpu_map):Operation not supported(-95). Retrying without BTF.
+
+V2: Use EOPNOTSUPP instead of EUCLEAN.
+
+Fixes: e8d2bec04579 ("bpf: decouple btf from seq bpf fs dump and enable more maps")
+Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
+#+end_quote
+
+Andrii suggests: to use EOPNOTSUPP (instead of errno ENOTSUPP)
+
+#+begin_example
+libbpf: Error in bpf_create_map_xattr(cpu_map):Operation not supported(-95). Retrying without BTF.
+#+end_example
+
+V2: Add --cc kuba@kernel.org
+#+begin_src sh
+stg mail --version='bpf-next V2' --cc meup \
+ --to bpf --cc daniel --cc alexei --cc jakub --cc andrii \
+  fix_map_check_no_btf
+#+end_src
+
+* Code notes
+
+** How to reject?
+
+If loading BPF-map + BTF fails, then libbpf will retry without BTF.
+
+Thus, to requires BTF we need (ability) to reject a map_create, when there
+isn't any BTF id.
+
+#+begin_src C
+static int dev_map_init_map(struct bpf_dtab *dtab, union bpf_attr *attr)
+{
+
+	/* Enforce BTF for userspace, unless dealing with legacy kABI */
+	if (attr->value_size != 4 &&
+	    (!attr->btf_key_type_id || !attr->btf_value_type_id))
+		return -EOPNOTSUPP;
+#+end_src
+
+** devmap read-only from eBPF side
+
+See commit 0cdbb4b09a06 ("devmap: Allow map lookups from eBPF")
+
+** Extra storage space argument
+
+With BTF we can allow userspace to store extra data in map-value in the
+devmap. It does require a lookup in the "devmap-egress" XDP-prog (likely
+with it's own ifindex), but prog that need such extra-info would need to do
+a map lookup anyhow (and we know devmap will be in L1 cache).
+
+To make this forward-compatible, the area need to be encapsulated in a named
+struct e.g. "storage". As in newer kernel, we want to add new members.
+
+
+** Existing functions
+
+Q: What existing function exist that compared two BTF layouts?
+
+#+begin_src C
+/* Compare BTFs of given program with BTF of target program */
+
+int btf_check_type_match(
+	struct bpf_verifier_env *env, struct bpf_prog *prog,
+	struct btf *btf2, const struct btf_type *t2)
+{
+ [...]
+ calls btf_check_func_type_match()
+#+end_src
