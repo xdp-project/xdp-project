@@ -1,0 +1,11 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Test cpumap running 2nd XDP-prog on remote CPU
+#+CATEGORY: CPUMAP
+#+OPTIONS: ^:nil
+
+Work-in-progress patches upstream by Lorenzo and Jesper, are adding ability
+to run another (2nd) XDP-prog on the remote CPU the XDP packets is getting
+redirected to.
+
+The 2nd XDP-program is installed via inserting its FD into the map.
+
