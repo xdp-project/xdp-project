@@ -361,3 +361,73 @@ Diff vs mprog:
 - (7130415-7004220) = 126195 pps
 - (1/7130415-1/7004220)*10^9 = -2.53 ns
 
+*** Touch data on RX-CPU + iptables-raw drop
+
+Using prog =prog_name:xdp_cpu_map1_touch_data= we can force RX-CPU to touch
+payload, as this will show cost of moving these cache-lines across the CPUs.
+
+XDP-redirect command:
+#+begin_example
+sudo ./xdp_redirect_cpu --dev i40e2 --qsize 64 --cpu 4 --prog xdp_cpu_map1_touch_data
+#+end_example
+
+Output:
+#+begin_example
+Running XDP/eBPF prog_name:xdp_cpu_map1_touch_data
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          2       17,220,167     0           0          
+XDP-RX          total   17,220,167     0          
+cpumap-enqueue    2:4   17,220,165     10,748,391  8.00       bulk-average
+cpumap-enqueue  sum:4   17,220,165     10,748,391  8.00       bulk-average
+cpumap_kthread  4       6,471,781      0           0          
+cpumap_kthread  total   6,471,781      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+
+2nd remote XDP/eBPF prog_name: xdp_redirect_dummy
+XDP-cpumap      CPU:to  xdp-pass       xdp-drop    xdp-redir
+xdp-in-kthread  4       6,471,781      0           0         
+xdp-in-kthread  total   6,471,781      0           0         
+#+end_example
+
+Compared against: 7,004,220 pps
+ - (6471781-7004220) =  -532439 pps
+ - (1/6471781-1/7004220)*10^9 = 11.75 ns
+
+*** RX-CPU do hashing of packets + iptables-raw drop
+
+Do a full parsing of the packet and calculate a hash in RX CPU.
+
+XDP-redirect command:
+#+begin_example
+sudo ./xdp_redirect_cpu --dev i40e2 --qsize 64 --cpu 4 \
+ --prog xdp_cpu_map5_lb_hash_ip_pairs
+#+end_example
+
+Output:
+#+begin_example
+Running XDP/eBPF prog_name:xdp_cpu_map5_lb_hash_ip_pairs
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          2       12,740,194     0           0          
+XDP-RX          total   12,740,194     0          
+cpumap-enqueue    2:4   12,740,190     6,274,416   8.00       bulk-average
+cpumap-enqueue  sum:4   12,740,190     6,274,416   8.00       bulk-average
+cpumap_kthread  4       6,465,781      0           0          
+cpumap_kthread  total   6,465,781      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+
+2nd remote XDP/eBPF prog_name: xdp_redirect_dummy
+XDP-cpumap      CPU:to  xdp-pass       xdp-drop    xdp-redir
+xdp-in-kthread  4       6,465,782      0           0         
+xdp-in-kthread  total   6,465,782      0           0         
+#+end_example
+
+There is almost no performance change on target-CPU running =cpumap_kthread=.
+
+The XDP-RX CPU performance is reduced significant:
+- From: 17,220,167 pps 
+- To  : 12,740,190 pps
+
+But it doesn't really matter, as the processing capacity on target/remote
+CPU is the bottleneck anyhow.  Thus, we have cycles to spare on RX-CPU.
