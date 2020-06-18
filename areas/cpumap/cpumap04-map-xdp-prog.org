@@ -9,6 +9,22 @@ redirected to.
 
 The 2nd XDP-program is installed via inserting its FD into the map.
 
+* Testing git tree
+
+Kernel git tree under testing
+- https://github.com/LorenzoBianconi/bpf-next/
+- branch: cpu_map_program_v9
+
+Local adjustments
+- branch: cpu_map_program_v9.jesper_adjust02.stgit
+
+* Testlab machine
+
+The testlab machine:
+- Intel CPU E5-1650 v4 @ 3.60GHz
+- Disabled HT (HyperThreading)
+- Fedora 31
+
 * Baseline benchmarks RX-CPU
 
 The processing and (deliberate) packet drops happens on same CPU as packet
@@ -144,3 +160,4 @@ IpInReceives                    5288656            0.0
 IpExtInOctets                   243278498          0.0
 IpExtInNoECTPkts                5288664            0.0
 #+end_example
+
