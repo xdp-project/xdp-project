@@ -18,6 +18,10 @@ Two drivers: i40e and mlx5 because they have two memory models.
 - i40e: refcnt pages, recycle depend on < 512 outstanding pages
 - mlx5: page_pool based, recycle works for XDP_DROP
 
+Kernel:
+- Linux broadwell 5.8.0-rc1-bpf-next-lorenzo+ #9 SMP PREEMPT
+- Contains cpumap changes, but okay as that code isn't active here
+
 ** Baseline: RX-NAPI CPU handle (driver: i40e)
 
 *** baseline(i40e): UdpNoPorts: 3,649,402 pps
@@ -65,3 +69,78 @@ IpExtInOctets                   257453030          0.0
 IpExtInNoECTPkts                5596800            0.0
 #+end_example
 
+
+** Baseline: RX-NAPI CPU handle (driver: mlx5)
+
+The mlx5 drivers memory model is special and combines refcnt and page_pool
+system for recycling. It have a 128 (per queue) page recycle cache, before
+the page_pool. When XDP is NOT loaded, it still allocate via page_pool, but
+the pages use a split-model with two packets per page with refcnt to
+determine recycle-ability. When XDP gets loaded it uses one packet per page,
+but still tries to do refcnt recycling towards network stack.
+
+*** baseline(mlx5): UdpNoPorts: 3,548,400 pps
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    3548400            0.0
+IpInDelivers                    3548403            0.0
+IpOutRequests                   1                  0.0
+IcmpOutMsgs                     1                  0.0
+IcmpOutDestUnreachs             1                  0.0
+IcmpMsgOutType3                 1                  0.0
+UdpNoPorts                      3548400            0.0
+IpExtInOctets                   163227826          0.0
+IpExtOutOctets                  74                 0.0
+IpExtInNoECTPkts                3548432            0.0
+#+end_example
+
+*** baseline(mlx5): iptables-raw drop: 4,484,640 pps (GRO-enabled)
+
+Command used to drop packets:
+- iptables -t raw -I PREROUTING -p udp --dport 9 -j DROP
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    4484640            0.0
+IpExtInOctets                   206293440          0.0
+IpExtInNoECTPkts                4484640            0.0
+#+end_example
+
+ethtool_stats showing cache_reuse counters:
+#+begin_example
+$ ethtool_stats.pl --dev mlx5p1 --sec 2
+
+Show adapter(s) (mlx5p1) statistics (ONLY that changed!)
+Ethtool(mlx5p1  ) stat:        69667 (         69,667) <= ch2_poll /sec
+Ethtool(mlx5p1  ) stat:        69667 (         69,667) <= ch_poll /sec
+Ethtool(mlx5p1  ) stat:    267522383 (    267,522,383) <= rx2_bytes /sec
+Ethtool(mlx5p1  ) stat:      2229360 (      2,229,360) <= rx2_cache_reuse /sec
+Ethtool(mlx5p1  ) stat:      4458706 (      4,458,706) <= rx2_csum_unnecessary /sec
+Ethtool(mlx5p1  ) stat:      4458706 (      4,458,706) <= rx2_packets /sec
+Ethtool(mlx5p1  ) stat:     44978045 (     44,978,045) <= rx_64_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:    267522236 (    267,522,236) <= rx_bytes /sec
+Ethtool(mlx5p1  ) stat:   2878598428 (  2,878,598,428) <= rx_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:      2229360 (      2,229,360) <= rx_cache_reuse /sec
+Ethtool(mlx5p1  ) stat:      4458704 (      4,458,704) <= rx_csum_unnecessary /sec
+Ethtool(mlx5p1  ) stat:     40519382 (     40,519,382) <= rx_out_of_buffer /sec
+Ethtool(mlx5p1  ) stat:      4458704 (      4,458,704) <= rx_packets /sec
+Ethtool(mlx5p1  ) stat:     44978101 (     44,978,101) <= rx_packets_phy /sec
+Ethtool(mlx5p1  ) stat:   2878595049 (  2,878,595,049) <= rx_prio0_bytes /sec
+Ethtool(mlx5p1  ) stat:     44978045 (     44,978,045) <= rx_prio0_packets /sec
+Ethtool(mlx5p1  ) stat:   2698685498 (  2,698,685,498) <= rx_vport_unicast_bytes /sec
+Ethtool(mlx5p1  ) stat:     44978090 (     44,978,090) <= rx_vport_unicast_packets /sec
+#+end_example
+
+Command to disable GRO:
+- ethtool -K mlx5p1 gro off tso off
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    5288656            0.0
+IpExtInOctets                   243278498          0.0
+IpExtInNoECTPkts                5288664            0.0
+#+end_example
