@@ -161,7 +161,7 @@ IpExtInOctets                   243278498          0.0
 IpExtInNoECTPkts                5288664            0.0
 #+end_example
 
-* Testing patchset on driver i40e
+* Testing patchset on driver i40e`
 
 ** i40e qsize adjustment (64)
 
@@ -307,4 +307,57 @@ xdp_exception   total   0              0
 #+end_example
 
 
+
+
+** CPU-redirect (i40e): iptables-raw drop: 7,004,219 pps
+
+Command used to drop packets:
+- iptables -t raw -I PREROUTING -p udp --dport 9 -j DROP
+
+CPU-redirect command:
+#+begin_example
+sudo ./xdp_redirect_cpu --dev i40e2 --qsize 64 --cpu 4 --prog xdp_cpu_map0
+#+end_example
+
+Notice the result is very impressive compared to RX-CPU raw-drop:
+- 4,727,128 pps - baseline(i40e): iptables-raw drop
+- 7,004,219 pps - this test: iptables-raw drop on remote CPU
+- Diff +2,277,092 pps
+- Diff (1/4727128-1/7004220)*10^9 = 68.77 ns
+
+#+begin_example
+Running XDP/eBPF prog_name:xdp_cpu_map0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          2       17,717,224     0           0          
+XDP-RX          total   17,717,224     0          
+cpumap-enqueue    2:4   17,717,226     10,713,002  8.00       bulk-average
+cpumap-enqueue  sum:4   17,717,226     10,713,002  8.00       bulk-average
+cpumap_kthread  4       7,004,219      0           0          
+cpumap_kthread  total   7,004,219      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+
+2nd remote XDP/eBPF prog_name: xdp_redirect_dummy
+XDP-cpumap      CPU:to  xdp-pass       xdp-drop    xdp-redir
+xdp-in-kthread  4       7,004,220      0           0         
+xdp-in-kthread  total   7,004,220      0           0         
+#+end_example
+
+With disabled mprog:
+#+begin_example
+Running XDP/eBPF prog_name:xdp_cpu_map0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          2       17,861,630     0           0          
+XDP-RX          total   17,861,630     0          
+cpumap-enqueue    2:4   17,861,631     10,731,216  8.00       bulk-average
+cpumap-enqueue  sum:4   17,861,631     10,731,216  8.00       bulk-average
+cpumap_kthread  4       7,130,415      0           0          
+cpumap_kthread  total   7,130,415      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0     
+#+end_example
+
+Diff vs mprog:
+- (7130415-7004220) = 126195 pps
+- (1/7130415-1/7004220)*10^9 = -2.53 ns
 
