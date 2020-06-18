@@ -239,11 +239,72 @@ xdp-in-kthread  total   4,096,218      0           0
 Calculate slowdown:
  - (1/3454128-1/4096217)*10^9 = 45.38 ns
 
-** cpu-redirect (i40e): UdpNoPorts:
+** CPU-redirect (i40e): UdpNoPorts: 4,102,929 pps
 
-BPF-prog command:
-- xdp_redirect_cpu --dev i40e2 --qsize 64 --cpu 4 --prog xdp_cpu_map0
+BPF-prog command used:
+#+begin_src sh
+sudo ./xdp_redirect_cpu --dev i40e2 --qsize 64 --cpu 4 --prog xdp_cpu_map0
+#+end_src
 
+The xdp_redirect_dummy program running as 2nd XDP-prog in kthread does
+nothing and returns =XDP_PASS=.
+
+#+begin_example
+unning XDP/eBPF prog_name:xdp_cpu_map0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          2       17,767,786     0           0          
+kXDP-RX          total   17,767,787     0          
+cpumap-enqueue    2:4   17,767,785     13,664,852  8.00       bulk-average
+cpumap-enqueue  sum:4   17,767,786     13,664,853  8.00       bulk-average
+cpumap_kthread  4       4,102,929      0           0          
+cpumap_kthread  total   4,102,929      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+
+2nd remote XDP/eBPF prog_name: xdp_redirect_dummy
+XDP-cpumap      CPU:to  xdp-pass       xdp-drop    xdp-redir
+xdp-in-kthread  4       4,102,930      0           0         
+xdp-in-kthread  total   4,102,930      0           0         
+#+end_example
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    4118695            0.0
+IpInDelivers                    4118696            0.0
+IpOutRequests                   1                  0.0
+IcmpOutMsgs                     1                  0.0
+IcmpOutDestUnreachs             1                  0.0
+IcmpMsgOutType3                 1                  0.0
+UdpNoPorts                      4118694            0.0
+IpExtInOctets                   189459786          0.0
+IpExtOutOctets                  74                 0.0
+IpExtInNoECTPkts                4118691            0.0
+#+end_example
+
+Disabling loading the "mprog" change the performance a bit
+- From: 4,102,929 pps
+- To  : 4,202,953 pps
+- Diff:  +100,024 pps
+- Diff: (1/4102929-1/4202953)*10^9 = 5.8 ns
+
+It is actually surprisingly little overhead, 5.8 nanosec, to run the
+XDP-prog on the remote/target CPU.
+
+#+begin_example
+sudo ./xdp_redirect_cpu --dev i40e2 --qsize 64 --cpu 4 --prog xdp_cpu_map0 --mprog-disable
+
+Running XDP/eBPF prog_name:xdp_cpu_map0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          2       17,730,736     0           0          
+XDP-RX          total   17,730,736     0          
+cpumap-enqueue    2:4   17,730,742     13,527,783  8.00       bulk-average
+cpumap-enqueue  sum:4   17,730,742     13,527,783  8.00       bulk-average
+cpumap_kthread  4       4,202,953      0           0          
+cpumap_kthread  total   4,202,953      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
 
 
 
