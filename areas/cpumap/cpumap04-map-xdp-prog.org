@@ -9,3 +9,59 @@ redirected to.
 
 The 2nd XDP-program is installed via inserting its FD into the map.
 
+* Baseline benchmarks RX-CPU
+
+The processing and (deliberate) packet drops happens on same CPU as packet
+was RX-ed on, which have many cache advantages.
+
+Two drivers: i40e and mlx5 because they have two memory models.
+- i40e: refcnt pages, recycle depend on < 512 outstanding pages
+- mlx5: page_pool based, recycle works for XDP_DROP
+
+** Baseline: RX-NAPI CPU handle (driver: i40e)
+
+*** baseline(i40e): UdpNoPorts: 3,649,402 pps
+
+No listen-ing UDP service.
+No iptables.
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    3649400            0.0
+IpInDelivers                    3649397            0.0
+IpOutRequests                   1                  0.0
+IcmpOutMsgs                     1                  0.0
+IcmpOutDestUnreachs             1                  0.0
+IcmpMsgOutType3                 1                  0.0
+UdpNoPorts                      3649402            0.0
+IpExtInOctets                   167868398          0.0
+IpExtOutOctets                  74                 0.0
+IpExtInNoECTPkts                3649314            0.0
+#+end_example
+
+*** baseline(i40e): iptables-raw drop: 4,727,128 pps (GRO-enabled)
+
+Command used to drop packets:
+- iptables -t raw -I PREROUTING -p udp --dport 9 -j DROP
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    4727128            0.0
+IpExtInOctets                   217450096          0.0
+IpExtInNoECTPkts                4727176            0.0
+#+end_example
+
+Command to disable GRO:
+- ethtool -K i40e2 gro off tso off
+
+#+begin_example
+$ ethtool -K i40e2 gro off tso off
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    5596808            0.0
+IpExtInOctets                   257453030          0.0
+IpExtInNoECTPkts                5596800            0.0
+#+end_example
+
