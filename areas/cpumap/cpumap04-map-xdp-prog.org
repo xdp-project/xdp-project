@@ -161,3 +161,89 @@ IpExtInOctets                   243278498          0.0
 IpExtInNoECTPkts                5288664            0.0
 #+end_example
 
+* Testing patchset on driver i40e
+
+** i40e qsize adjustment (64)
+
+The i40e driver (as mentioned) uses a refcnt based recycle scheme, that
+depend on depend on < 512 outstanding pages. The default queue size (between
+the CPUs) in CPUMAP program =xdp_redirect_cpu= (from =samples/bpf/=) is 192
+packets, which cause the i40e drivers recycle scheme to fail. This cause
+pages to go-through the page-allocator, which causes a significant slowdown.
+
+Changing queue size to 64 (=--qsize=64=) seems to allow recycle to work.
+Thus, using this in below tests for i40e driver.
+
+Example with qsize=192:
+#+begin_example
+$ sudo ./xdp_redirect_cpu --dev i40e2 --qsize 192 --cpu 4 --prog xdp_cpu_map0
+
+unning XDP/eBPF prog_name:xdp_cpu_map0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          2       13,292,641     0           0          
+XDP-RX          total   13,292,641     0          
+cpumap-enqueue    2:4   13,292,647     9,838,519   8.00       bulk-average
+cpumap-enqueue  sum:4   13,292,647     9,838,519   8.00       bulk-average
+cpumap_kthread  4       3,454,127      0           0          
+cpumap_kthread  total   3,454,127      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+
+2nd remote XDP/eBPF prog_name: xdp_redirect_dummy
+XDP-cpumap      CPU:to  xdp-pass       xdp-drop    xdp-redir
+xdp-in-kthread  4       3,454,128      0           0         
+xdp-in-kthread  total   3,454,128      0           0         
+#+end_example
+
+Unfortunately ethtool stats does not show that recycling are failing:
+#+begin_example
+Show adapter(s) (i40e2) statistics (ONLY that changed!)
+Ethtool(i40e2   ) stat:   2920468143 (  2,920,468,143) <= port.rx_bytes /sec
+Ethtool(i40e2   ) stat:     11907326 (     11,907,326) <= port.rx_dropped /sec
+Ethtool(i40e2   ) stat:     45632337 (     45,632,337) <= port.rx_size_64 /sec
+Ethtool(i40e2   ) stat:     45632326 (     45,632,326) <= port.rx_unicast /sec
+Ethtool(i40e2   ) stat:           91 (             91) <= port.tx_bytes /sec
+Ethtool(i40e2   ) stat:            1 (              1) <= port.tx_size_127 /sec
+Ethtool(i40e2   ) stat:            1 (              1) <= port.tx_unicast /sec
+Ethtool(i40e2   ) stat:    795753110 (    795,753,110) <= rx-2.bytes /sec
+Ethtool(i40e2   ) stat:     13262552 (     13,262,552) <= rx-2.packets /sec
+Ethtool(i40e2   ) stat:     20462471 (     20,462,471) <= rx_dropped /sec
+Ethtool(i40e2   ) stat:     33725009 (     33,725,009) <= rx_unicast /sec
+Ethtool(i40e2   ) stat:           87 (             87) <= tx-4.bytes /sec
+Ethtool(i40e2   ) stat:            1 (              1) <= tx-4.packets /sec
+Ethtool(i40e2   ) stat:           87 (             87) <= tx_bytes /sec
+Ethtool(i40e2   ) stat:            1 (              1) <= tx_packets /sec
+Ethtool(i40e2   ) stat:            1 (              1) <= tx_unicast /sec
+#+end_example
+
+Example with qsize=64:
+#+begin_example
+ sudo ./xdp_redirect_cpu --dev i40e2 --qsize 64 --cpu 4 --prog xdp_cpu_map0
+Running XDP/eBPF prog_name:xdp_cpu_map0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          2       17,809,657     0           0          
+XDP-RX          total   17,809,657     0          
+cpumap-enqueue    2:4   17,809,652     13,713,438  8.00       bulk-average
+cpumap-enqueue  sum:4   17,809,652     13,713,438  8.00       bulk-average
+cpumap_kthread  4       4,096,217      0           0          
+cpumap_kthread  total   4,096,217      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+
+2nd remote XDP/eBPF prog_name: xdp_redirect_dummy
+XDP-cpumap      CPU:to  xdp-pass       xdp-drop    xdp-redir
+xdp-in-kthread  4       4,096,218      0           0         
+xdp-in-kthread  total   4,096,218      0           0       
+#+end_example
+
+Calculate slowdown:
+ - (1/3454128-1/4096217)*10^9 = 45.38 ns
+
+** cpu-redirect (i40e): UdpNoPorts:
+
+BPF-prog command:
+- xdp_redirect_cpu --dev i40e2 --qsize 64 --cpu 4 --prog xdp_cpu_map0
+
+
+
+
