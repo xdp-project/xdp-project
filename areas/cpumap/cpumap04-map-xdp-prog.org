@@ -780,3 +780,97 @@ The (4.406.506) branch-misses:k is lower than the packets per sec. Thus, we
 don't have a miss per packet, which is good.
 
 
+** CPU-redirect (i40e): XDP_DROP on remote CPU (Optimize attempt#1)
+
+In =cpu_map_bpf_prog_run_xdp()= delay calling xdp_return_frame() until end
+of loop, as it is calling =page_frag_free()=, that looks like it affects
+insn per cycle numbers. This actually helped from 1,32 to 1,38 insn per cycle.
+
+#+begin_example
+ perf stat -C4 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -e L1-icache-load-misses -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (4 runs):
+
+     3.701.857.577      cycles                                                        ( +-  0,09% )
+     5.111.116.087      instructions              #    1,38  insn per cycle           ( +-  0,07% )
+        94.174.479      cache-references                                              ( +-  0,28% )
+             1.520      cache-misses              #    0,002 % of all cache refs      ( +- 29,42% )
+     1.001.166.319      branches:k                                                    ( +-  0,11% )
+         2.436.848      branch-misses:k           #    0,24% of all branches          ( +-  0,53% )
+         3.278.129      l2_rqsts.all_code_rd                                          ( +-  2,67% )
+         2.592.240      l2_rqsts.code_rd_hit                                          ( +-  3,03% )
+           685.869      l2_rqsts.code_rd_miss                                         ( +- 10,03% )
+         1.030.323      L1-icache-load-misses                                         ( +-  6,02% )
+
+          1,001128 +- 0,000144 seconds time elapsed  ( +-  0,01% )
+#+end_example
+
+* Observations
+
+** Strange: kmem_cache_alloc_bulk called on all XDP_DROP
+
+Looking at perf reports, =kmem_cache_alloc_bulk()= is still getting called
+even for cases where all packets are dropped via XDP_DROP.
+
+#+begin_example
+sudo ./xdp_redirect_cpu --dev mlx5p1 --qsize 64 --cpu 4 --prog xdp_cpu_map0 \
+  --mprog-filename xdp1_kern.o   --mprog-name xdp1
+
+Running XDP/eBPF prog_name:xdp_cpu_map0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          2       13,052,901     0           0          
+XDP-RX          total   13,052,901     0          
+cpumap-enqueue    2:4   13,052,898     1,656,902   8.00       bulk-average
+cpumap-enqueue  sum:4   13,052,898     1,656,902   8.00       bulk-average
+cpumap_kthread  4       11,395,994     0           274        sched
+cpumap_kthread  total   11,395,994     0           274        sched-sum
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+
+2nd remote XDP/eBPF prog_name: xdp1
+XDP-cpumap      CPU:to  xdp-pass       xdp-drop    xdp-redir
+xdp-in-kthread  4       0              11,395,995  0         
+xdp-in-kthread  total   0              11,395,995  0         
+
+Interrupted: Removing XDP program on ifindex:6 device:mlx5p1
+#+end_example
+
+Simply do this code change:
+#+begin_src diff
+diff --git a/kernel/bpf/cpumap.c b/kernel/bpf/cpumap.c
+index 0cef6f43a4cc..d91d75365cde 100644
+--- a/kernel/bpf/cpumap.c
++++ b/kernel/bpf/cpumap.c
+@@ -364,8 +364,9 @@ static int cpu_map_kthread_run(void *data)
+                /* Support running another XDP prog on this CPU */
+                nframes = cpu_map_bpf_prog_run_xdp(rcpu, xdp_frames, n, &stats);
+ 
+-               m = kmem_cache_alloc_bulk(skbuff_head_cache, gfp,
+-                                         nframes, skbs);
++               if (nframes)
++                       m = kmem_cache_alloc_bulk(skbuff_head_cache, gfp,
++                                                 nframes, skbs);
+                if (unlikely(m == 0)) {
+                        for (i = 0; i < nframes; i++)
+                                skbs[i] = NULL; /* effect: xdp_return_frame */
+#+end_src
+
+Results after change, tested on mlx5:
+#+begin_example
+Running XDP/eBPF prog_name:xdp_cpu_map0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          5       13,674,323     0           0          
+XDP-RX          total   13,674,323     0          
+cpumap-enqueue    5:4   13,674,323     193,984     8.00       bulk-average
+cpumap-enqueue  sum:4   13,674,323     193,984     8.00       bulk-average
+cpumap_kthread  4       13,480,346     0           12,016     sched
+cpumap_kthread  total   13,480,346     0           12,016     sched-sum
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+
+2nd remote XDP/eBPF prog_name: xdp1
+XDP-cpumap      CPU:to  xdp-pass       xdp-drop    xdp-redir
+xdp-in-kthread  4       0              13,480,347  0         
+xdp-in-kthread  total   0              13,480,347  0         
+#+end_example
+
