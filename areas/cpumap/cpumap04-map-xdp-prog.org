@@ -161,7 +161,7 @@ IpExtInOctets                   243278498          0.0
 IpExtInNoECTPkts                5288664            0.0
 #+end_example
 
-* Testing patchset on driver i40e`
+* Testing patchset on driver i40e
 
 ** i40e qsize adjustment (64)
 
@@ -426,8 +426,33 @@ xdp-in-kthread  total   6,465,782      0           0
 There is almost no performance change on target-CPU running =cpumap_kthread=.
 
 The XDP-RX CPU performance is reduced significant:
-- From: 17,220,167 pps 
+- From: 17,220,167 pps
 - To  : 12,740,190 pps
 
 But it doesn't really matter, as the processing capacity on target/remote
 CPU is the bottleneck anyhow.  Thus, we have cycles to spare on RX-CPU.
+
+* Baseline for patchset
+
+Question: Does this patchset introduce any performance regressions?
+
+As can be seen in [[file:cpumap03-optimizations.org]] the cpumap.c code have
+been carefully optimized. We want to make sure, these changes doesn't revert
+part of those performance gains.
+
+** What to watch out for
+
+Jesper and Lorenzo have already adjusted (in different patchset versions)
+where the prefetchw of struct-page happens. It is important to understand
+that this is a cache-coherency protocol optimization (e.g. see [[https://en.wikipedia.org/wiki/MESIF_protocol][MESIF]]). The
+memory backing struct-page is operated on with atomic refcnt operations.
+Thus, on RX-CPU it is in Modified (cache-coherency protocol) state, making
+it expensive to access on our target/remote CPU. The prefetchw is asking the
+CPU to start moving these cachelines into another cache-coherency state, in
+the background before we access them.
+
+** Baseline kernel git info
+
+Popped all patches, testing a baseline kernel at commit:
+- 69119673bd50 ("Merge git://git.kernel.org/pub/scm/linux/kernel/git/netdev/net") (Author: Linus Torvalds)
+
