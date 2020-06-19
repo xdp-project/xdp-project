@@ -541,6 +541,117 @@ xdp_exception   total   0              0
 #+end_example
 * Testing patchset(v10) on driver i40e
 
+A new advanced feature that comes with this patchset is being able to
+XDP_REDIRECT again on the target/remote CPU. Remember first step was to
+XDP_REDIRECT the frame via cpumap to a remote/target CPU.  On this CPU we
+can now run a "2nd" XDP program, that can redirect again.
 
+This can be used for solving RSS-hashing issues, where the hardware chose to
+only deliver packets to a single CPU, in a multi-CPU system.  This issue
+have been observed on EspressoBin and with ixgbe with double-tagged VLANs.
 
+** Normal redirect (i40e): back same device: 12,560,354 pps
 
+XDP-redirect back-same device command:
+#+begin_example
+sudo ./xdp_redirect_map i40e2 i40e2
+input: 9 output: 9
+libbpf: Kernel error message: XDP program already attached
+WARN: link set xdp fd failed on 9
+ifindex 9:    8501803 pkt/s
+ifindex 9:   12574709 pkt/s
+ifindex 9:   12573984 pkt/s
+ifindex 9:   12574664 pkt/s
+ifindex 9:   12572677 pkt/s
+ifindex 9:   12570511 pkt/s
+ifindex 9:   12576605 pkt/s
+ifindex 9:   12571091 pkt/s
+ifindex 9:   12568339 pkt/s
+ifindex 9:   12522768 pkt/s
+ifindex 9:   12556959 pkt/s
+#+end_example
+
+The numbers from =xdp_redirect_map= cannot be trusted as it counts RX
+packets, and don't know if there packets were successfully transmitted.
+
+Thus, results are taking from ethtool (=ethtool_stats.pl=) instead:
+- 12,560,354 <= tx_unicast packets/sec
+
+#+begin_example
+Show adapter(s) (i40e2) statistics (ONLY that changed!)
+Ethtool(i40e2   ) stat:   2900616074 (  2,900,616,074) <= port.rx_bytes /sec
+Ethtool(i40e2   ) stat:     13180998 (     13,180,998) <= port.rx_dropped /sec
+Ethtool(i40e2   ) stat:     45322138 (     45,322,138) <= port.rx_size_64 /sec
+Ethtool(i40e2   ) stat:     45322127 (     45,322,127) <= port.rx_unicast /sec
+Ethtool(i40e2   ) stat:    803862264 (    803,862,264) <= port.tx_bytes /sec
+Ethtool(i40e2   ) stat:     12560338 (     12,560,338) <= port.tx_size_64 /sec
+Ethtool(i40e2   ) stat:     12560327 (     12,560,327) <= port.tx_unicast /sec
+Ethtool(i40e2   ) stat:    753621258 (    753,621,258) <= rx-3.bytes /sec
+Ethtool(i40e2   ) stat:     12560354 (     12,560,354) <= rx-3.packets /sec
+Ethtool(i40e2   ) stat:    753619361 (    753,619,361) <= rx_bytes /sec
+Ethtool(i40e2   ) stat:     19580801 (     19,580,801) <= rx_dropped /sec
+Ethtool(i40e2   ) stat:     12560323 (     12,560,323) <= rx_packets /sec
+Ethtool(i40e2   ) stat:     32141140 (     32,141,140) <= rx_unicast /sec
+Ethtool(i40e2   ) stat:     12560354 (     12,560,354) <= tx_unicast /sec
+#+end_example
+
+** CPU-redirect (i40e): 2nd XDP_REDIRECT
+
+The command to double-redirect is a bit long:
+#+begin_src sh
+sudo ./xdp_redirect_cpu --dev i40e2 --qsize 64 --cpu 4 --prog xdp_cpu_map0 \
+  --mprog-name xdp_redirect \
+  --redirect-map tx_port \
+  --redirect-device i40e2
+#+end_src
+
+#+begin_example
+Running XDP/eBPF prog_name:xdp_cpu_map0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          1       17,533,635     0           0          
+XDP-RX          total   17,533,635     0          
+cpumap-enqueue    1:4   17,533,609     8,732,956   8.00       bulk-average
+cpumap-enqueue  sum:4   17,533,609     8,732,956   8.00       bulk-average
+cpumap_kthread  4       8,800,644      0           0          
+cpumap_kthread  total   8,800,644      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+
+2nd remote XDP/eBPF prog_name: xdp_redirect
+XDP-cpumap      CPU:to  xdp-pass       xdp-drop    xdp-redir
+xdp-in-kthread  4       0              0           8,800,645 
+xdp-in-kthread  total   0              0           8,800,645 
+#+end_example
+
+ethtool_stats.pl:
+#+begin_example
+Show adapter(s) (i40e2) statistics (ONLY that changed!)
+Ethtool(i40e2   ) stat:   2876960152 (  2,876,960,152) <= port.rx_bytes /sec
+Ethtool(i40e2   ) stat:     12561014 (     12,561,014) <= port.rx_dropped /sec
+Ethtool(i40e2   ) stat:     44952355 (     44,952,355) <= port.rx_size_64 /sec
+Ethtool(i40e2   ) stat:     44952501 (     44,952,501) <= port.rx_unicast /sec
+Ethtool(i40e2   ) stat:    563159066 (    563,159,066) <= port.tx_bytes /sec
+Ethtool(i40e2   ) stat:      8799338 (      8,799,338) <= port.tx_size_64 /sec
+Ethtool(i40e2   ) stat:      8799360 (      8,799,360) <= port.tx_unicast /sec
+Ethtool(i40e2   ) stat:   1051485080 (  1,051,485,080) <= rx-1.bytes /sec
+Ethtool(i40e2   ) stat:     17524751 (     17,524,751) <= rx-1.packets /sec
+Ethtool(i40e2   ) stat:    527959995 (    527,959,995) <= rx_bytes /sec
+Ethtool(i40e2   ) stat:     14866622 (     14,866,622) <= rx_dropped /sec
+Ethtool(i40e2   ) stat:      8799333 (      8,799,333) <= rx_packets /sec
+Ethtool(i40e2   ) stat:     32391369 (     32,391,369) <= rx_unicast /sec
+Ethtool(i40e2   ) stat:      8799342 (      8,799,342) <= tx_unicast /sec
+#+end_example
+
+Using result: 8,799,342 pps (tx_unicast)
+
+Compared to directly redirect:
+ - 12560354-8799342 = 3761012 pps
+ - (1/12560354-1/8799342)*10^9 = -34.02 ns
+
+The pps performance difference looks big (3.76 Mpps), but the overhead in
+nano-seconds are only 34.02 ns. Loading iptables (only filter table) with an
+empty ruleset increase packet overhead with 26.76 ns.
+
+Thus, the results are actually quite good. Only having an overhead of
+34.02ns, from moving the packet to a remote CPU and redirecting it again is
+actually pretty low-overhead.
