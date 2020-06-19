@@ -13,10 +13,25 @@ The 2nd XDP-program is installed via inserting its FD into the map.
 
 Kernel git tree under testing
 - https://github.com/LorenzoBianconi/bpf-next/
-- branch: cpu_map_program_v9
+
+** V9 reference
+
+V9 branch: cpu_map_program_v9
+- https://github.com/LorenzoBianconi/bpf-next/tree/cpu_map_program_v9
 
 Local adjustments
 - branch: cpu_map_program_v9.jesper_adjust02.stgit
+
+** V10 reference
+
+V10 branch: cpu_map_program_v10
+- https://github.com/LorenzoBianconi/bpf-next/tree/cpu_map_program_v10
+
+The V10 branch is identical to V9 as it just contains the local changes
+Jesper had in his local git tree.
+
+The V10 branch is rebased on commit:
+- 808e105a9c9c ("e1000e: fix unused-function warning") (Author: Arnd Bergmann)
 
 * Testlab machine
 
@@ -161,7 +176,7 @@ IpExtInOctets                   243278498          0.0
 IpExtInNoECTPkts                5288664            0.0
 #+end_example
 
-* Testing patchset on driver i40e
+* Testing patchset(v9) on driver i40e
 
 ** i40e qsize adjustment (64)
 
@@ -524,3 +539,8 @@ cpumap_kthread  total   7,012,141      0           0
 redirect_err    total   0              0          
 xdp_exception   total   0              0          
 #+end_example
+* Testing patchset(v10) on driver i40e
+
+
+
+
