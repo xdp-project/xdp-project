@@ -456,3 +456,71 @@ the background before we access them.
 Popped all patches, testing a baseline kernel at commit:
 - 69119673bd50 ("Merge git://git.kernel.org/pub/scm/linux/kernel/git/netdev/net") (Author: Linus Torvalds)
 
+Kernel:
+- Linux broadwell 5.8.0-rc1-bpf-next-lorenzo-baseline+ #10 SMP PREEMPT
+
+** Baseline: CPU-redirect (i40e): UdpNoPorts: 4,196,176 pps
+
+(Unloaded netfilter modules)
+
+XDP-redirect CPU command:
+#+begin_src sh
+sudo ./xdp_redirect_cpu --dev i40e2 --qsize 64 --cpu 4 --prog xdp_cpu_map0
+#+end_src
+
+Result: 4,196,176 pps
+
+This result is very close to the patchset 4,202,953 pps (i40e) without the
+"mprog" loaded (with "mprog" 4,102,929 pps). *Conclusion*: No regression
+observed.
+
+#+begin_example
+Running XDP/eBPF prog_name:xdp_cpu_map0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          2       18,683,297     0           0          
+XDP-RX          total   18,683,297     0          
+cpumap-enqueue    2:4   18,683,293     14,487,120  8.00       bulk-average
+cpumap-enqueue  sum:4   18,683,293     14,487,120  8.00       bulk-average
+cpumap_kthread  4       4,196,176      0           0          
+cpumap_kthread  total   4,196,176      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
+
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    4194101            0.0
+IpInDelivers                    4194101            0.0
+IpOutRequests                   1                  0.0
+IcmpOutMsgs                     1                  0.0
+IcmpOutDestUnreachs             1                  0.0
+IcmpMsgOutType3                 1                  0.0
+UdpNoPorts                      4194108            0.0
+IpExtInOctets                   192925058          0.0
+IpExtOutOctets                  74                 0.0
+IpExtInNoECTPkts                4194023            0.0
+#+end_example
+** Baseline: CPU-redirect (i40e): iptables-raw drop: 7,012,141 pps
+
+Drop packets in iptables-raw. Note, this cause iptables modules to be loaded.
+#+begin_example
+iptables -t raw -I PREROUTING -p udp --dport 9 -j DROP
+#+end_example
+
+Result: 7,012,141
+- Conclusion: No regression observed
+
+#+begin_example
+sudo ./xdp_redirect_cpu --dev i40e2 --qsize 64 --cpu 4 --prog xdp_cpu_map0
+Running XDP/eBPF prog_name:xdp_cpu_map0
+XDP-cpumap      CPU:to  pps            drop-pps    extra-info
+XDP-RX          2       18,643,500     0           0          
+XDP-RX          total   18,643,500     0          
+cpumap-enqueue    2:4   18,643,503     11,631,361  8.00       bulk-average
+cpumap-enqueue  sum:4   18,643,503     11,631,361  8.00       bulk-average
+cpumap_kthread  4       7,012,141      0           0          
+cpumap_kthread  total   7,012,141      0           0          
+redirect_err    total   0              0          
+xdp_exception   total   0              0          
+#+end_example
