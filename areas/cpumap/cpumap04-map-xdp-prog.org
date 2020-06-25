@@ -874,3 +874,38 @@ xdp-in-kthread  4       0              13,480,347  0
 xdp-in-kthread  total   0              13,480,347  0         
 #+end_example
 
+** Optimize-attempt: Move xdp_rxq_info outside func call
+
+The function call =cpu_map_bpf_prog_run_xdp()= doesn't get inlined by the
+compiler.
+
+This cause two potential issues:
+ 1) A struct xdp_rxq_info is "allocated" on call-stack
+ 2) If no map-prog is configured function is still invoked.
+
+*** struct xdp_rxq_info
+
+The xdp_rxq_info have cache-line alignment restrictions, that cause it to be
+rather big (1-cacheline) to have on the callstack on each call. Attempt:
+Move xdp_rxq_info to =cpu_map_kthread_run()=. Result#1: Measurements doesn't
+show any performance difference.
+
+*** empty map-prog no func call
+
+Test via mprog-disable:
+#+begin_src sh
+ sudo ./xdp_redirect_cpu --dev DEVICE --qsize 64 \
+  --cpu 4 --prog xdp_cpu_map0 --mprog-disable
+#+end_src
+
+Before change:
+ - Mlx5: ipt-raw-drop: 4,578,109 pps
+ - i40e: ipt-raw-drop: 7,160,828 pps
+
+After:
+ - Mlx5: ipt-raw-drop: 4,524,810 pps
+ - i40e: ipt-raw-drop: 7,265,412 pps
+   - (1/7160828-1/7265412)*10^9 = 2.01021152700000000000 ns
+
+
+
