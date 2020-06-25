@@ -39,6 +39,12 @@ This test report correspond to upstream patchset V3 emails:
  - [PATCH v3 bpf-next 0/9] introduce support for XDP programs in CPUMAP
  - https://lore.kernel.org/bpf/cover.1592947694.git.lorenzo@kernel.org/
 
+** New V4 patchset
+
+New V4 patchset:
+ - [PATCH v4 bpf-next 0/9] introduce support for XDP programs in CPUMAP
+ - https://lore.kernel.org/bpf/cover.1593012598.git.lorenzo@kernel.org/
+
 * Testlab machine
 
 The testlab machine:
