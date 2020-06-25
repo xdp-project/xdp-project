@@ -33,15 +33,21 @@ Jesper had in his local git tree.
 The V10 branch is rebased on commit:
 - 808e105a9c9c ("e1000e: fix unused-function warning") (Author: Arnd Bergmann)
 
-** Corresponding patchset
+** Corresponding patchset V2
 
-This test report correspond to upstream patchset V3 emails:
+This test report correspond to upstream patchset V2 emails:
+ - [PATCH v2 bpf-next 0/8] introduce support for XDP programs in CPUMAP
+ - https://lore.kernel.org/bpf/cover.1592606391.git.lorenzo@kernel.org/
+
+** Patchset V3
+
+V3 patchset:
  - [PATCH v3 bpf-next 0/9] introduce support for XDP programs in CPUMAP
  - https://lore.kernel.org/bpf/cover.1592947694.git.lorenzo@kernel.org/
 
-** New V4 patchset
+** Patchset V4
 
-New V4 patchset:
+V4 patchset:
  - [PATCH v4 bpf-next 0/9] introduce support for XDP programs in CPUMAP
  - https://lore.kernel.org/bpf/cover.1593012598.git.lorenzo@kernel.org/
 
