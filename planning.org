@@ -10,7 +10,11 @@ This document tries to get an overview on who is working on what.
 ** Multiple-XDP program on a single NIC
 - Assigned: Toke
 
+** XDP clone+multicast
+- Assigned: Hangbin
+
 ** BPF-helper: Conntrack lookup
+
 - Assigned: Matt Cover <werekraken@gmail.com>
 
 ** XDP egress hook/programs
@@ -51,8 +55,6 @@ This document tries to get an overview on who is working on what.
 - Assigned: Amazon ("Jubran, Samih" <sameehj@amazon.com>)
 
 * Not being actively worked on
-** XDP clone+multicast
-- Assigned: Nobody
 
 ** XDP-data-hard-end
 - Assigned: nobody
