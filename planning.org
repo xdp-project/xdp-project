@@ -13,6 +13,10 @@ This document tries to get an overview on who is working on what.
 ** XDP clone+multicast
 - Assigned: Hangbin
 
+** XDP multi-frame work
+- Assigned: Amazon ("Jubran, Samih" <sameehj@amazon.com>)
+- Reviewers/collaborators: Lorenzo and Eelco
+
 ** XDP egress hook/programs
 - Assigned: Ahern + jason Wang
 
@@ -43,9 +47,6 @@ This document tries to get an overview on who is working on what.
 
 ** page_pool: add stats
 - Assigned: Jonathan (Facebook)
-
-** XDP multi-frame work
-- Assigned: Amazon ("Jubran, Samih" <sameehj@amazon.com>)
 
 * Not being actively worked on
 
