@@ -13,15 +13,8 @@ This document tries to get an overview on who is working on what.
 ** XDP clone+multicast
 - Assigned: Hangbin
 
-** BPF-helper: Conntrack lookup
-
-- Assigned: Matt Cover <werekraken@gmail.com>
-
 ** XDP egress hook/programs
 - Assigned: Ahern + jason Wang
-
-** XDP-feature bits
-- Assigned: Maybe Anton (Linode)
 
 ** Consistency for statistics with XDP
 - Assigned: Lorenzo
@@ -59,7 +52,12 @@ This document tries to get an overview on who is working on what.
 ** BPF-helper: OvS lookup
 - Assigned: Nobody
 
+** BPF-helper: Conntrack lookup
+- Assigned: Matt Cover <werekraken@gmail.com>
 
+** XDP-feature bits
+- Assigned: Maybe Anton (Linode)
+- Note: Anton don't have time for this, find somebody else.
 
 * Finished projects
 
