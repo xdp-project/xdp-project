@@ -56,13 +56,17 @@ This document tries to get an overview on who is working on what.
 
 * Not being actively worked on
 
-** XDP-data-hard-end
-- Assigned: nobody
-- Needed for multi-frame
-- Needed for SKB outside drivers
-
 ** BPF-helper: OvS lookup
 - Assigned: Nobody
+
+
+
+* Finished projects
+
+** DONE XDP-data-hard-end
+- Assigned: Jesper
+- Needed for multi-frame
+- Needed for SKB outside drivers
 
 
 #+INCLUDE: "sitemap.org" :minlevel 1
