@@ -152,7 +152,7 @@ Kernel documentation on Documentation/networking/page_pool.rst
 - XDP architecture
   - XDP main loop
   - XDP verdicts
-    - demos
+  - XDP new features
 
 ** Marvell ESPRESSObin - mvneta
 
@@ -306,7 +306,7 @@ int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
 }
 #+end_src
 
-** mvneta XDP: XDP_DROP (1/2)
+** mvneta XDP: XDP_DROP (1/3)
 - the driver is running in NAPI context and page refcount is 1
   - /page_pool_put_page()/ will recycle the page in */in-irq/* *page_pool* cache
 - the page is synced for device using optiomal size in /page_pool_dma_sync_for_device()/
@@ -325,12 +325,31 @@ int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
       }
 }
 #+end_src
-** mvneta XDP: XDP_DROP (2/2)
+** mvneta XDP: XDP_DROP (2/3)
 #+REVEAL_HTML: <asciinema-player src="asciinema/xdp_drop.cast" cols="168" rows="32"></asciinema-player> <script src="../reveal.js/js/asciinema-player.js"></script>
+** mvneta XDP: XDP_DROP (3/3)
+- DDoS performance:
+  - packet size: 64B
+  - DSA: disabled
+- XDP_DROP:
+#+begin_src bash
+$ip link set dev eth0 xdp obj xdp-drop.o
+585273 pkt/s
+585159 pkt/s
+585050 pkt/s
+#+end_src
+
+- tc drop:
+#+begin_src bash
+$tc qdisc add dev eth0 clsact ; tc filter add dev eth0 ingress matchall action gact drop
+185237 pkt/s
+185557 pkt/s
+185670 pkt/s
+#+end_src
 ** mvneta XDP: XDP_PASS (1/2)
 - /XDP_PASS/ to forward the frame to the networking stack
 - /mvneta_swbm_rx_frame()/ relies on */build_skb()/* for zero-copy
-  - get rid of origical copy-break approach
+  - get rid of original copy-break approach
   - take into account *skb_shared_info* in the buffer headroom
 #+begin_src C
 int mvneta_rx_swbm(struct napi_struct *napi, ..., struct mvneta_rx_queue *rxq)
@@ -350,7 +369,7 @@ refill:
 #+end_src
 ** mvneta XDP: XDP_PASS (2/2)
 #+REVEAL_HTML: <asciinema-player src="asciinema/xdp_pass.cast" cols="168" rows="32"></asciinema-player>
-** mvneta XDP: XDP_TX (1/3)
+** mvneta XDP: XDP_TX (1/4)
 - the frame is trasmitted back to the interface where the packet was received
   - no need to DMA remap the page, only to flush CPU caches
 #+begin_src C
@@ -370,9 +389,11 @@ int mvneta_xdp_xmit_back(..., struct xdp_buff *xdp)
       ...
 }
 #+end_src
-** mvneta XDP: XDP_TX (2/3) - mirror.c
+** mvneta XDP: XDP_TX (2/4)
+#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_redirect.cast" cols="168" rows="32"></asciinema-player>
+** mvneta XDP: XDP_TX (3/4) - mirror.c
 - swap ethernet and ip addresses for ssh connections
-  - by Matteo Croce <mcroce@redhat.com>
+  - by Matteo Croce <mcroce@microsoft.com>
 #+begin_src C
 int xdp_main(struct xdp_md *ctx)
 {
@@ -393,12 +414,12 @@ int xdp_main(struct xdp_md *ctx)
       ...
 }
 #+end_src
-** mvneta XDP: XDP_TX (3/3)
+** mvneta XDP: XDP_TX (4/4)
 #+REVEAL_HTML: <asciinema-player src="asciinema/xdp_tx.cast" cols="168" rows="32"></asciinema-player>
 ** mvneta XDP: XDP_REDIRECT (1/3)
 - /xdp_do_redirect()/ forwards the frame to:
   - remote interface - *ndo_xdp_xmit()*
-  - remote cpu
+  - remote cpu - */cpu_map/*
   - AF_XDP socket
 #+begin_src C
 int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
@@ -439,6 +460,93 @@ int mvneta_xdp_xmit(struct net_device *dev, int num_frame,
 #+end_src
 ** mvneta XDP: XDP_REDIRECT (3/3)
 #+REVEAL_HTML: <asciinema-player src="asciinema/xdp_redirect.cast" cols="168" rows="32"></asciinema-player>
+** mvneta sw RPS: CPUMAP (1/3)
+- ESPRESSObin does not support hw */Receive Packet Steering (RPS)/*
+  - all the packets are received on cpu0
+- With /CPUMAPs/ we can move the processing on a remote cpu
+  - /CPUMAPs/ are used to build the skb and forward it to legacy stack
+- We extended /CPUMAPs/ to execute an eBPF program on a remote cpu
+  - we can now attach an eBPF program on /CPUMAP/ entries
+- *XDP_REDIRECT* and /CPUMAP/: */sw RPS/*
+  - on cpu0 mvneta perforoms *XDP_REDIRECT* on a /CPUMAP/ entry
+  - on the remote cpu we run an eBPF program
+    - e.g. XDP_REDIRECT to another device
+** mvneta sw RPS: CPUMAP (2/3)
+- kthread binded on the remote cpu
+#+begin_src C
+int cpu_map_kthread_run(void *data)
+{
+       n = __ptr_ring_consume_batched(); /* consume redirected frames */
+       ...
+       for (i = 0; i < n; i++) {
+            ...
+            act = bpf_prog_run_xdp(rcpu->prog, &xdp);
+            switch (act) {
+            case XDP_PASS:
+                  skb = build_skb_around();
+                  ...
+            case XDP_REDIRECT:
+                  ...
+            case XDP_DROP:
+                  xdp_return_frame(xdpf);
+                  ...
+            }
+      }
+
+}
+#+end_src
+** mvneta sw RPS: CPUMAP (3/3)
+#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_redirect.cast" cols="168" rows="32"></asciinema-player>
+** mvneta: multi-buffers support for XDP (1/3)
+ - /eBPF Direct-Access (DA)/ to packet data: single buffer per packet design
+   - packet memory must be contiguous
+ - */XDP multi-buffer/* use cases
+   - Jumbo frames
+   - TSO
+   - ...
+ - Proposal:
+   - eBPF can access just to the first packet buffer
+     - no abstraction layer to remap the splitted payload area
+   - extend *xdp_buff* and *xdp_md* to provide metadata about the packet
+     - full packet length
+** mvneta: multi-buffers support for XDP (2/3)
+   - storage space for multi-buffer segments references
+     - *skb_shared_info* at the end of the first segment
+   - modify drivers rx NAPI loop
+     - process all rx descriptors building the xdp_buff
+       - mvneta_swbm_rx_frame
+       - mvneta_swbm_add_rx_fragment
+     - run the eBPF program when all descripts are processed
+     - /XDP_TX/ and /ndo_xdp_xmit/ can map non-linear buffers
+       - mvneta_xdp_submit_frame
+     - remove MTU check loading the eBPF program
+       - mvneta_xdp_setup
+** mvneta: multi-buffers support for XDP (3/3)
+#+begin_src C
+void mvneta_swbm_add_rx_fragment(struct xdp_buff *xdp, ...)
+{
+      struct skb_shared_info *sinfo = xdp_get_shared_info_from_buff(xdp);
+      ...
+      if (data_len > 0 && sinfo->nr_frags < MAX_SKB_FRAGS) {
+            skb_frag_t *frag = &sinfo->frags[sinfo->nr_frags++];
+            skb_frag_off_set(frag, offset);
+            skb_frag_size_set(frag, data_len);
+            __skb_frag_set_page(frag, page);
+      }
+}
+struct sk_buff *mvneta_swbm_build_skb(struct xdp_buff *xdp, ..)
+{
+      struct skb_shared_info *sinfo = xdp_get_shared_info_from_buff(xdp);
+      ...
+      skb = build_skb(xdp->data_hard_start, PAGE_SIZE);
+      memcpy(frags, sinfo->frags, sizeof(skb_frag_t) * num_frags);
+      for (i = 0; i < num_frags; i++) {
+            skb_add_rx_frag(skb, skb_shinfo(skb)->nr_frags, page,
+                            skb_frag_off(frag), skb_frag_size(frag), PAGE_SIZE);
+            page_pool_release_page(..., page);
+      }
+}
+#+end_src
 * Slide: How to test								   :export:
 - Cases we have to test for:
   - XDP_PASS
@@ -513,6 +621,6 @@ in the compiled version.
 # Local Variables:
 # org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
 # class=\"author\">Lorenzo Bianconi<br/>Jesper Dangaard Brouer<br/>Ilias Apalodimas</h2>
-# <h3>NetDev 0x14<br/>Vancouver, March 2020</h3>"
+# <h3>NetDev 0x14<br/>August 2020</h3>"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
 # End:
