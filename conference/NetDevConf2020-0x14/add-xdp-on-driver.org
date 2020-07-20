@@ -599,6 +599,24 @@ struct sk_buff *mvneta_swbm_build_skb(struct xdp_buff *xdp, ..)
       }
 }
 #+end_src
+** mvneta: XDP stats
+- proper stats accounting is essential for XDP success
+  - allow the sys-admin to understand what is going on
+- netdev stats:
+  - always increment rx packets counters even for *XDP_DROP*
+- fine grained stats though /ethtool/
+#+begin_src bash
+root@espresso-bin:~# ethtool -S eth0 | grep xdp
+     rx_xdp_redirect: 0
+     rx_xdp_pass: 0
+     rx_xdp_drop: 0
+     rx_xdp_tx: 0
+     rx_xdp_tx_errors: 0
+     tx_xdp_xmit: 0
+     tx_xdp_xmit_errors: 0
+#+end_src
+- even stats */name/* matters!!
+
 * Slide: How to test								   :export:
 - Cases we have to test for:
   - XDP_PASS
