@@ -1,0 +1,49 @@
+--- /home/lorenzo/workspace/bpf-next/samples/bpf/xdp_redirect_kern.c	2020-05-11 20:39:27.244504171 +0200
++++ /home/lorenzo/workspace/armada-devel/bpf/netdev-demos/bpf/xdp_redirect_kern.c	2020-07-21 20:36:16.258444372 +0200
+@@ -80,6 +80,46 @@
+ 	return bpf_redirect(*ifindex, 0);
+ }
+ 
++#define IPERF_PORT	5201
++SEC("xdp_redirect_iperf")
++int xdp_redirect_iperf_prog(struct xdp_md *ctx)
++{
++	void *data_end = (void *)(long)ctx->data_end;
++	void *data = (void *)(long)ctx->data;
++	struct ethhdr *eth = data;
++	struct iphdr *iph = (struct iphdr *)(eth + 1);
++	struct tcphdr *tcph = (struct tcphdr *)(iph + 1);
++
++	/* keep the preverivier happy and skip short packets */
++	if (tcph + 1 > (struct tcphdr *)data_end)
++		return XDP_PASS;
++
++	/* skip non TCP packets */
++	if (eth->h_proto != ntohs(ETH_P_IP) || iph->protocol != IPPROTO_TCP)
++		return XDP_PASS;
++
++	if (tcph->dest == ntohs(IPERF_PORT)) {
++		/* XXX: set proper mac address */
++		unsigned char dst[] = { 0xfa, 0xdd, 0x3e, 0xc7, 0xd0, 0x1b };
++		int *ifindex, port = 0;
++		u32 key = 0;
++		long *value;
++
++		ifindex = bpf_map_lookup_elem(&tx_port, &port);
++		if (!ifindex)
++			return XDP_DROP;
++
++		value = bpf_map_lookup_elem(&rxcnt, &key);
++		if (value)
++			*value += 1;
++
++		memcpy(data, dst, 6);
++		return bpf_redirect(*ifindex, 0);
++	}
++
++	return XDP_PASS;
++}
++
+ /* Redirect require an XDP bpf_prog loaded on the TX device */
+ SEC("xdp_redirect_dummy")
+ int xdp_redirect_dummy_prog(struct xdp_md *ctx)
