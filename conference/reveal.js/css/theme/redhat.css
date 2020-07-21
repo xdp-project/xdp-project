@@ -359,6 +359,7 @@ body {
   text-align: center;
   border: 0;
   box-shadow: none;
+  background: none;
 }
 
 .reveal a img {
