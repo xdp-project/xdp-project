@@ -167,7 +167,7 @@ Kernel documentation on Documentation/networking/page_pool.rst
 int mvneta_create_page_pool(..., struct mvneta_rx_queue *rxq, ...)
 {
       struct page_pool_params pp_params = {
-            .oder = 0,
+            .order = 0,
             .flags = PP_FLAG_DMA_MAP | PP_FLAG_DMA_SYNC_DEV,
             .pool_size = size,
             .nid = NUMA_NO_NODE,
@@ -207,7 +207,7 @@ int mvneta_rx_refill(..., struct mvneta_rx_queue *rxq)
 
 ** mvneta: page_pool lifecycle (3/3)
 - pages allocated to the NIC are released closing the /net_device/
-  - pages are relased to the *page_pool*
+  - pages are released to the *page_pool*
   - the *pege_pool* is destroyed whenever there are no inflight pages
 #+begin_src C
 void mvneta_rxq_drop_pkts(..., struct mvneta_rx_queue *rxq)
@@ -223,7 +223,7 @@ void mvneta_rxq_drop_pkts(..., struct mvneta_rx_queue *rxq)
 }
 #+end_src
 
-** mvneta: loading an eBPF proram
+** mvneta: loading an eBPF program
 - /mvneta_xdp_setup()/ is used to load or remove an eBPF program from the NIC
   - it reconfigures the DMA buffers - */XDP memory model/*
 #+begin_src C
@@ -604,7 +604,7 @@ struct sk_buff *mvneta_swbm_build_skb(struct xdp_buff *xdp, ..)
   - allow the sys-admin to understand what is going on
 - netdev stats:
   - always increment rx packets counters even for *XDP_DROP*
-- fine grained stats though /ethtool/
+- fine grained stats through /ethtool/
 #+begin_src bash
 root@espresso-bin:~# ethtool -S eth0 | grep xdp
      rx_xdp_redirect: 0
