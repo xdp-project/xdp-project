@@ -82,7 +82,10 @@ Kernel documentation on Documentation/networking/page_pool.rst
 - Optimized for speed. Cache line accessing is carefully taken into
   consideration
 - Plan to add recycling on it for normal SKB traffic
+** page_pool architecture
 
+#+ATTR_HTML: :class img-no-border
+[[file:images/page_pool_architecture.png]]
 ** Slide: The API
 
 - page_pool_create(): Create the pool object
