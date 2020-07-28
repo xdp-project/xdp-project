@@ -87,7 +87,7 @@ Helping drivers with API to ease transition to new memory model
   - some hw will impose exceptions (i.e. currently cpsw)
 - native buffer recycling for XDP
   - two caches available
-    - /in-irq/ cache
+    - /in-softirq/ cache
     - *ptr-ring* cache
 - API supports DMA mapping and syncing
 ** page_pool: architecture
@@ -317,7 +317,7 @@ int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
 
 ** mvneta XDP: XDP_DROP (1/3)
 - the driver is running in NAPI context and page refcount is 1
-  - /page_pool_put_page()/ will recycle the page in */in-irq/* *page_pool* cache
+  - /page_pool_put_page()/ will recycle the page in */in-softirq/* *page_pool* cache
 - the page is synced for device using optiomal size in /page_pool_dma_sync_for_device()/
 #+begin_src C
 int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
