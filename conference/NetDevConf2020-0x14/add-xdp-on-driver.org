@@ -16,6 +16,9 @@
 * For conference: NetDevConf 2020					 :noexport:
 
 Workshop for NetDevConf 0x14
+- [[https://netdevconf.info/0x14/session.html?tutorial-add-XDP-support-to-a-NIC-driver][Talk abstract]]
+- [[https://netdev0x14.sched.com/event/ZVsf/how-to-add-xdp-support-to-a-nic-driver][Schedule]]
+
 * Colors in slides                                                 :noexport:
 Text colors on slides are chosen via org-mode italic/bold high-lighting:
  - /italic/ = /green/
