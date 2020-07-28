@@ -65,10 +65,13 @@ Tricky part is *changing* driver */memory model/* to be compatible with XDP
 - Reserve tailroom for skb_shared_info and rely on build_skb() on XDP_PASS
 - Cannot allocate page fragments to support it (e.g. through napi_alloc_skb())
 - Rx buffers must be recycled to get high speed!
-* Slide: page_pool allocator							   :export:
+* Slide: The page_pool allocator                                     :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
+
+Helping drivers with API to ease transition to new memory model
+
 - page_pool design principles
 - page_pool architecture
 - page_pool APIs
