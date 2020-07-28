@@ -13,7 +13,7 @@
 #+OPTIONS: reveal_width:1600 reveal_height:900
 #+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
 
-* For conference: NetDevConf 2020					 :noexport:
+* For conference: NetDevConf 2020                                  :noexport:
 
 Workshop for NetDevConf 0x14
 - [[https://netdevconf.info/0x14/session.html?tutorial-add-XDP-support-to-a-NIC-driver][Talk abstract]]
@@ -31,7 +31,7 @@ Only sections with tag ":export:" will end-up in the presentation. The prefix
 "Slide:" is only syntax-sugar for the reader (and it removed before export by
 emacs).
 
-* Slide: Driver XDP RX-processing (NAPI) loop                      :export:
+* Slide: Driver XDP RX-processing (NAPI) loop                        :export:
 
 Code needed in *driver* for /supporting XDP/ is fairly simple
 
@@ -55,7 +55,7 @@ driver_local_XDP_TX_flush();
 Tricky part is *changing* driver */memory model/* to be compatible with XDP
 
 
-* Slide: XDP requirements							   :export:
+* Slide: XDP requirements                                            :export:
 - XDP frame in *physical contiguous memory*
   - BPF /Direct-Access/ for validating correctness
   - No paged frames support, data cannot be split across pages
@@ -77,7 +77,7 @@ Helping drivers with API to ease transition to new memory model
 - page_pool architecture
 - page_pool APIs
 - code examples
-** Slide: page_pool: design principles					   :export:
+** Slide: page_pool: design principles                              :export:
 
 - optimized for */XDP memory-model/*
   - ideally one page per frame model
@@ -90,11 +90,11 @@ Helping drivers with API to ease transition to new memory model
     - /in-softirq/ cache
     - *ptr-ring* cache
 - API supports DMA mapping and syncing
-** page_pool: architecture
+** Slide: page_pool: architecture                                   :export:
 
 #+ATTR_HTML: :class img-no-border
 [[file:images/page_pool_architecture.png]]
-** Slide: page_pool: APIs
+** Slide: page_pool: APIs                                           :export:
 
 - Main APIs
   - page_pool_create(): create the pool object
@@ -105,7 +105,7 @@ Helping drivers with API to ease transition to new memory model
   - page_pool_get_dma_dir(): retrieve the stored DMA direction
   - page_pool_recycle_direct(): recycle the page immediately
 - kernel documentation available @ Documentation/networking/page_pool.rst
-** Slide: Code examples (1/2)							   :export:
+** Slide: Code examples (1/2)                                       :export:
 - pool registration opening /net_device/
 #+begin_src C
     struct page_pool_params pp_params = { 0 };
@@ -129,7 +129,7 @@ Helping drivers with API to ease transition to new memory model
     if (err)
         goto err_out;
 #+end_src
-** Slide: Code examples (2/2)							   :export:
+** Slide: Code examples (2/2)                                       :export:
 - NAPI poller
 #+begin_src C
     dma_dir = page_pool_get_dma_dir(dring->page_pool);
@@ -151,7 +151,7 @@ Helping drivers with API to ease transition to new memory model
     page_pool_put_page(page_pool, page, false);
     xdp_rxq_info_unreg(&xdp_rxq);
 #+end_src
-* Slide: Add XDP support on a NIC driver: mvneta			   :export:
+* Slide: Add XDP support on a NIC driver: mvneta                     :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -557,6 +557,15 @@ int xdp_redirect_iperf(struct xdp_md *ctx)
 #+end_src
 ** mvneta sw RPS: CPUMAP (5/5)
 #+REVEAL_HTML: <asciinema-player src="asciinema/cpumap.cast" cols="168" rows="32"></asciinema-player>
+
+* Slide: XDP multi-buffers                                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Work-in-progress
+- Adding XDP multi-buffers support
+
 ** mvneta: multi-buffers support for XDP (1/3)
  - /eBPF Direct-Access (DA)/ to packet data: single buffer per packet design
    - packet memory must be contiguous
@@ -607,7 +616,7 @@ struct sk_buff *mvneta_swbm_build_skb(struct xdp_buff *xdp, ..)
       }
 }
 #+end_src
-** mvneta: XDP stats
+* Slide: mvneta: XDP stats                                           :export:
 - proper stats accounting is essential for XDP success
   - allow the sys-admin to understand what is going on
 - netdev stats:
@@ -625,7 +634,11 @@ root@espresso-bin:~# ethtool -S eth0 | grep xdp
 #+end_src
 - even stats */name/* matters!!
 
-* Slide: How to test								   :export:
+* Slide: How to test                                                 :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
 - Cases we have to test for:
   - XDP_PASS
   - XDP_DROP
