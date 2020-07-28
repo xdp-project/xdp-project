@@ -82,7 +82,7 @@ Helping drivers with API to ease transition to new memory model
 - optimized for */XDP memory-model/*
   - ideally one page per frame model
   - supports split-page model, but the recycling is usually in-driver
-- one page_pool for hardware rx queue
+- one page_pool for *each* hardware rx queue
   - run in NAPI context, no locking penalties
   - some hw will impose exceptions (i.e. currently cpsw)
 - native buffer recycling for XDP
@@ -101,7 +101,7 @@ Helping drivers with API to ease transition to new memory model
   - page_pool_put_page(): recycle or unmap the page
   - page_pool_release_page(): unmap the page
   - page_pool_dev_alloc_pages(): get a new page from cache or alloc a new one
-  - page_pool_get_dma_addr(): retreive the stored DMA address
+  - page_pool_get_dma_addr(): retrieve the stored DMA address
   - page_pool_get_dma_dir(): retrieve the stored DMA direction
   - page_pool_recycle_direct(): recycle the page immediately
 - kernel documentation available @ Documentation/networking/page_pool.rst
@@ -318,7 +318,7 @@ int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
 ** mvneta XDP: XDP_DROP (1/3)
 - the driver is running in NAPI context and page refcount is 1
   - /page_pool_put_page()/ will recycle the page in */in-softirq/* *page_pool* cache
-- the page is synced for device using optiomal size in /page_pool_dma_sync_for_device()/
+- the page is synced for device using optional size in /page_pool_dma_sync_for_device()/
 #+begin_src C
 int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
 {
@@ -379,8 +379,8 @@ refill:
 ** mvneta XDP: XDP_PASS (2/2)
 #+REVEAL_HTML: <asciinema-player src="asciinema/xdp_pass.cast" cols="168" rows="32"></asciinema-player>
 ** mvneta XDP: XDP_TX (1/4)
-- the frame is trasmitted back to the interface where the packet was received
-  - no need to DMA remap the page, only to flush CPU caches
+- XDP_TX = frame transmitted back out interface where packet was received
+  - no need to DMA remap the page, only to DMA-sync/flush CPU caches
 #+begin_src C
 int mvneta_xdp_xmit_back(..., struct xdp_buff *xdp)
 {
@@ -406,7 +406,6 @@ int mvneta_xdp_xmit_back(..., struct xdp_buff *xdp)
 #+begin_src C
 int xdp_main(struct xdp_md *ctx)
 {
-      ...
       struct ethhdr *eth = data;
       struct iphdr *iph = (struct iphdr *)(eth + 1);
       struct tcphdr *tcph = (struct tcphdr *)(iph + 1);
@@ -500,11 +499,11 @@ int xdp_redirect_prog(struct xdp_md *ctx)
 - We extended /CPUMAPs/ to execute an eBPF program on a remote cpu
   - we can now attach an eBPF program on /CPUMAP/ entries
 - *XDP_REDIRECT* and /CPUMAP/: */sw RPS/*
-  - on cpu0 mvneta perforoms *XDP_REDIRECT* on a /CPUMAP/ entry
+  - on cpu0 mvneta performs *XDP_REDIRECT* on a /CPUMAP/ entry
   - on the remote cpu we run an eBPF program
     - e.g. XDP_REDIRECT to another device
 ** mvneta sw RPS: CPUMAP (2/5)
-- kthread binded on the remote cpu
+- kthread bound to run on the remote CPU
 #+begin_src C
 int cpu_map_kthread_run(void *data)
 {
