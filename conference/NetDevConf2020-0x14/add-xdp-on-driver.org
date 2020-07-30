@@ -66,6 +66,10 @@ Tricky part is *changing* driver */memory model/* to be compatible with XDP
 - Reserve /tailroom/ *for skb_shared_info* and *rely on build_skb()* on XDP_PASS
 - Cannot allocate page fragments to support it (e.g. through napi_alloc_skb())
 - Rx buffers must be recycled to get high speed!
+* XDP architecture								   :export:
+#+ATTR_HTML: :class img-no-border
+[[file:images/xdp_architecture.png]]
+
 * Slide: The page_pool allocator                                     :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
