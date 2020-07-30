@@ -634,38 +634,36 @@ struct sk_buff *mvneta_swbm_build_skb(struct xdp_buff *xdp, ..)
       }
 }
 #+end_src
-* Slide: How to test                                                 :export:
+* Slide: How to test a XDP driver						   :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-- Cases we have to test for:
-  - XDP_PASS
-  - XDP_DROP
-  - XDP_TX
-  - XDP_REDIRECT
-  - ndo_xdp_xmit
-- Using samples/pktgen/ scripts to generate traffic
-** Slide: XDP_PASS
-- Load a program that returns XDP_PASS and make sure packets are delivered on
-  the normal network stack
-** Slide: XDP_DROP
-- Remote host driver running XDP on eth0
+- XDP_PASS
+- XDP_DROP
+- XDP_TX
+- XDP_REDIRECT
+- ndo_xdp_xmit
+** Slide: test a XDP driver (1/4)
+- XDP_PASS:
+  - load a program that returns /XDP_PASS/ on the host
+    - verify the packets are delivered to the networking stack
+
+- XDP_DROP:
+  - load a program that returns */XDP_DROP/* on the host
+    - verify traffic is dropped
 #+begin_src bash
 make M=samples/bpf -j24
 sudo ./samples/bpf/xdp1 eth0
 proto 17:     324874 pkt/s
 proto 17:     324557 pkt/s
 proto 17:     324650 pkt/s
-#+end_src
 
-- Start sending traffic to that interface
-#+begin_src bash
 sudo ./pktgen_sample02_multiqueue.sh -i enp2s0 -d 192.168.200.1 -s 64 \
       -m e0:d5:5e:65:ac:83 -t4 -n0
 #+end_src
-** Slide: XDP_TX
-- start XDP_TX sample on host
+** Slide: test a XDP driver: XDP_TX (2/4)
+- load a program that returns  *XDP_TX* on the host
 #+begin_src bash
 make M=samples/bpf -j24
 sudo ./samples/bpf/xdp2 eth0
@@ -674,16 +672,16 @@ proto 17:      55971 pkt/s
 proto 17:      55617 pkt/s
 proto 17:      55103 pkt/s
 #+end_src
-- Send a specific amount of packets to that host and capture the sender
-  traffic with wireshark
+- send a specific amount of packets to the host and capture the re-injected
+  traffic with wireshark/tcpdump
 #+begin_src bash
 sudo tcpdump -ni enp2s0 -s0 -w test.pcap
 for i in {1..1500000}; do echo "This is my data" > /dev/udp/192.168.200.1/3000; done
 #+end_src
-- Open the trace and verify packets are correctly received (1500000 Rx
+- open the trace and verify packets are correctly received (1500000 Rx
   packets)
-** Slide: XDP_REDIRECT to AF_XDP Socket
-- Redirect packet to an AF_XDP socket
+** Slide: test a XDP driver: XDP_REDIRECT (3/4)
+- redirect packets to an /AF_XDP/ socket
 #+begin_src bash
 make M=samples/bpf -j24
 sudo ./samples/bpf/xdpsock -i eth0
@@ -697,12 +695,26 @@ rx              324,235     1,194,260
 tx              0           0
 #+end_src
 
-- Start sending traffic to that interface
+- start sending traffic to that interface
 #+begin_src bash
 sudo ./pktgen_sample02_multiqueue.sh -i enp2s0 -d 192.168.200.1 -s 64 \
       -m e0:d5:5e:65:ac:83 -t4 -n0
 #+end_src
-** Slide: ndo_xdp_xmit
+** Slide: test XDP: ndo_xdp_xmit (4/4)
+- create a veth pair and move one peer to a "remote" namespace
+#+begin_src bash
+ip netns add remote
+ip link add v0 type veth peer name v1 netns remote
+#+end_src
+- run /xdp_redirect/ sample from kernel tree to redirect traffic from v0 to eth0
+  - start sending traffic from v1
+#+begin_src bash
+make M=samples/bpf -j24
+sudo ./samples/bpf/xdp_redirect v0 eth0
+#+end_src
+
+- start injecting traffic into v1
+- check outgoing traffic from eth0 with wireshark/tcpdump
 
 * Emacs end-tricks                                                 :noexport:
 
