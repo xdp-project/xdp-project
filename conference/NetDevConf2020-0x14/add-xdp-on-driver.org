@@ -13,9 +13,12 @@
 #+OPTIONS: reveal_width:1600 reveal_height:900
 #+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
 
-* For conference: NetDevConf 2020					 :noexport:
+* For conference: NetDevConf 2020                                  :noexport:
 
 Workshop for NetDevConf 0x14
+- [[https://netdevconf.info/0x14/session.html?tutorial-add-XDP-support-to-a-NIC-driver][Talk abstract]]
+- [[https://netdev0x14.sched.com/event/ZVsf/how-to-add-xdp-support-to-a-nic-driver][Schedule]]
+
 * Colors in slides                                                 :noexport:
 Text colors on slides are chosen via org-mode italic/bold high-lighting:
  - /italic/ = /green/
@@ -28,7 +31,7 @@ Only sections with tag ":export:" will end-up in the presentation. The prefix
 "Slide:" is only syntax-sugar for the reader (and it removed before export by
 emacs).
 
-* Slide: Driver XDP RX-processing (NAPI) loop                      :export:
+* Slide: Driver XDP RX-processing (NAPI) loop                        :export:
 
 Code needed in *driver* for /supporting XDP/ is fairly simple
 
@@ -52,53 +55,57 @@ driver_local_XDP_TX_flush();
 Tricky part is *changing* driver */memory model/* to be compatible with XDP
 
 
-* Slide: XDP requirements							   :export:
-- XDP frame in physical contiguous memory
-  - BPF Direct-Access for validating correctness
+* Slide: XDP requirements                                            :export:
+- XDP frame in *physical contiguous memory*
+  - BPF /Direct-Access/ for validating correctness
   - No paged frames support, data cannot be split across pages
   - Read and Write access to the DMA buffers
   - Disable jumbo frames (packet < PAGE_SIZE) loading a BPF program
-- XDP headroom to push/pop header through bpf_xdp_adjust_head()
-- Reserve tailroom for skb_shared_info and rely on build_skb() on XDP_PASS
+- XDP /headroom/ *for xdp_frame* area
+  - add push/pop header through bpf_xdp_adjust_head()
+- Reserve /tailroom/ *for skb_shared_info* and *rely on build_skb()* on XDP_PASS
 - Cannot allocate page fragments to support it (e.g. through napi_alloc_skb())
 - Rx buffers must be recycled to get high speed!
-* Slide: page_pool allocator							   :export:
+* Slide: The page_pool allocator                                     :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
+
+Helping drivers with API to ease transition to new memory model
+
 - page_pool design principles
 - page_pool architecture
 - page_pool APIs
 - code examples
-** Slide: page_pool: design principles					   :export:
+** Slide: page_pool: design principles                              :export:
 
 - optimized for */XDP memory-model/*
   - ideally one page per frame model
   - supports split-page model, but the recycling is usually in-driver
-- one page_pool for hardware rx queue
+- one page_pool for *each* hardware rx queue
   - run in NAPI context, no locking penalties
   - some hw will impose exceptions (i.e. currently cpsw)
 - native buffer recycling for XDP
   - two caches available
-    - /in-irq/ cache
+    - /in-softirq/ cache
     - *ptr-ring* cache
 - API supports DMA mapping and syncing
-** page_pool: architecture
+** Slide: page_pool: architecture                                   :export:
 
 #+ATTR_HTML: :class img-no-border
 [[file:images/page_pool_architecture.png]]
-** Slide: page_pool: APIs
+** Slide: page_pool: APIs                                           :export:
 
 - Main APIs
   - page_pool_create(): create the pool object
   - page_pool_put_page(): recycle or unmap the page
   - page_pool_release_page(): unmap the page
   - page_pool_dev_alloc_pages(): get a new page from cache or alloc a new one
-  - page_pool_get_dma_addr(): retreive the stored DMA address
+  - page_pool_get_dma_addr(): retrieve the stored DMA address
   - page_pool_get_dma_dir(): retrieve the stored DMA direction
   - page_pool_recycle_direct(): recycle the page immediately
 - kernel documentation available @ Documentation/networking/page_pool.rst
-** Slide: Code examples (1/2)							   :export:
+** Slide: Code examples (1/2)                                       :export:
 - pool registration opening /net_device/
 #+begin_src C
     struct page_pool_params pp_params = { 0 };
@@ -122,7 +129,7 @@ Tricky part is *changing* driver */memory model/* to be compatible with XDP
     if (err)
         goto err_out;
 #+end_src
-** Slide: Code examples (2/2)							   :export:
+** Slide: Code examples (2/2)                                       :export:
 - NAPI poller
 #+begin_src C
     dma_dir = page_pool_get_dma_dir(dring->page_pool);
@@ -144,7 +151,7 @@ Tricky part is *changing* driver */memory model/* to be compatible with XDP
     page_pool_put_page(page_pool, page, false);
     xdp_rxq_info_unreg(&xdp_rxq);
 #+end_src
-* Slide: Add XDP support on a NIC driver: mvneta			   :export:
+* Slide: Add XDP support on a NIC driver: mvneta                     :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -310,8 +317,8 @@ int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
 
 ** mvneta XDP: XDP_DROP (1/3)
 - the driver is running in NAPI context and page refcount is 1
-  - /page_pool_put_page()/ will recycle the page in */in-irq/* *page_pool* cache
-- the page is synced for device using optiomal size in /page_pool_dma_sync_for_device()/
+  - /page_pool_put_page()/ will recycle the page in */in-softirq/* *page_pool* cache
+- the page is synced for device using optional size in /page_pool_dma_sync_for_device()/
 #+begin_src C
 int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
 {
@@ -372,8 +379,8 @@ refill:
 ** mvneta XDP: XDP_PASS (2/2)
 #+REVEAL_HTML: <asciinema-player src="asciinema/xdp_pass.cast" cols="168" rows="32"></asciinema-player>
 ** mvneta XDP: XDP_TX (1/4)
-- the frame is trasmitted back to the interface where the packet was received
-  - no need to DMA remap the page, only to flush CPU caches
+- XDP_TX = frame transmitted back out interface where packet was received
+  - no need to DMA remap the page, only to DMA-sync/flush CPU caches
 #+begin_src C
 int mvneta_xdp_xmit_back(..., struct xdp_buff *xdp)
 {
@@ -399,7 +406,6 @@ int mvneta_xdp_xmit_back(..., struct xdp_buff *xdp)
 #+begin_src C
 int xdp_main(struct xdp_md *ctx)
 {
-      ...
       struct ethhdr *eth = data;
       struct iphdr *iph = (struct iphdr *)(eth + 1);
       struct tcphdr *tcph = (struct tcphdr *)(iph + 1);
@@ -493,11 +499,11 @@ int xdp_redirect_prog(struct xdp_md *ctx)
 - We extended /CPUMAPs/ to execute an eBPF program on a remote cpu
   - we can now attach an eBPF program on /CPUMAP/ entries
 - *XDP_REDIRECT* and /CPUMAP/: */sw RPS/*
-  - on cpu0 mvneta perforoms *XDP_REDIRECT* on a /CPUMAP/ entry
+  - on cpu0 mvneta performs *XDP_REDIRECT* on a /CPUMAP/ entry
   - on the remote cpu we run an eBPF program
     - e.g. XDP_REDIRECT to another device
 ** mvneta sw RPS: CPUMAP (2/5)
-- kthread binded on the remote cpu
+- kthread bound to run on the remote CPU
 #+begin_src C
 int cpu_map_kthread_run(void *data)
 {
@@ -551,6 +557,15 @@ int xdp_redirect_iperf(struct xdp_md *ctx)
 #+end_src
 ** mvneta sw RPS: CPUMAP (5/5)
 #+REVEAL_HTML: <asciinema-player src="asciinema/cpumap.cast" cols="168" rows="32"></asciinema-player>
+
+* Slide: XDP multi-buffers                                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Work-in-progress
+- Adding XDP multi-buffers support
+
 ** mvneta: multi-buffers support for XDP (1/3)
  - /eBPF Direct-Access (DA)/ to packet data: single buffer per packet design
    - packet memory must be contiguous
@@ -601,7 +616,7 @@ struct sk_buff *mvneta_swbm_build_skb(struct xdp_buff *xdp, ..)
       }
 }
 #+end_src
-** mvneta: XDP stats
+* Slide: mvneta: XDP stats                                           :export:
 - proper stats accounting is essential for XDP success
   - allow the sys-admin to understand what is going on
 - netdev stats:
@@ -619,7 +634,11 @@ root@espresso-bin:~# ethtool -S eth0 | grep xdp
 #+end_src
 - even stats */name/* matters!!
 
-* Slide: How to test								   :export:
+* Slide: How to test                                                 :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
 - Cases we have to test for:
   - XDP_PASS
   - XDP_DROP
