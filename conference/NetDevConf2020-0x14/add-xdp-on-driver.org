@@ -558,6 +558,24 @@ int xdp_redirect_iperf(struct xdp_md *ctx)
 ** mvneta sw RPS: CPUMAP (5/5)
 #+REVEAL_HTML: <asciinema-player src="asciinema/cpumap.cast" cols="168" rows="32"></asciinema-player>
 
+** mvneta XDP stats
+- proper stats accounting is essential for XDP success
+  - allow the sys-admin to understand what is going on
+- netdev stats:
+  - always increment rx packets counters even for *XDP_DROP*
+- fine grained stats through /ethtool/
+#+begin_src bash
+root@espresso-bin:~# ethtool -S eth0 | grep xdp
+     rx_xdp_redirect: 0
+     rx_xdp_pass: 0
+     rx_xdp_drop: 0
+     rx_xdp_tx: 0
+     rx_xdp_tx_errors: 0
+     tx_xdp_xmit: 0
+     tx_xdp_xmit_errors: 0
+#+end_src
+- even stats */name/* matters!!
+
 * Slide: XDP multi-buffers                                           :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
@@ -616,24 +634,6 @@ struct sk_buff *mvneta_swbm_build_skb(struct xdp_buff *xdp, ..)
       }
 }
 #+end_src
-* Slide: mvneta: XDP stats                                           :export:
-- proper stats accounting is essential for XDP success
-  - allow the sys-admin to understand what is going on
-- netdev stats:
-  - always increment rx packets counters even for *XDP_DROP*
-- fine grained stats through /ethtool/
-#+begin_src bash
-root@espresso-bin:~# ethtool -S eth0 | grep xdp
-     rx_xdp_redirect: 0
-     rx_xdp_pass: 0
-     rx_xdp_drop: 0
-     rx_xdp_tx: 0
-     rx_xdp_tx_errors: 0
-     tx_xdp_xmit: 0
-     tx_xdp_xmit_errors: 0
-#+end_src
-- even stats */name/* matters!!
-
 * Slide: How to test                                                 :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
