@@ -716,6 +716,11 @@ sudo ./samples/bpf/xdp_redirect v0 eth0
 - start injecting traffic into v1
 - check outgoing traffic from eth0 with wireshark/tcpdump
 
+* Slide: Q&A:									   :export:
+#+ATTR_HTML: :class img-no-border
+[[file:images/qa.jpg]]
+- https://github.com/xdp-project
+- https://xdp-project.net
 * Emacs end-tricks                                                 :noexport:
 
 This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
