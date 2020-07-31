@@ -704,6 +704,13 @@ sudo ./pktgen_sample02_multiqueue.sh -i enp2s0 -d 192.168.200.1 -s 64 \
 #+end_src
 ** Slide: ndo_xdp_xmit
 
+Drivers =ndo_xdp_xmit()= function
+- Paired with /XDP_REDIRECT/ into a *devmap*
+
+Test: Use /another driver RX/ to redirect *out your driver*
+- Must work between different NIC drivers
+
+
 * Emacs end-tricks                                                 :noexport:
 
 This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
