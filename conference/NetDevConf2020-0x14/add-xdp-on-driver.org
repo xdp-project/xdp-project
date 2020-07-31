@@ -221,7 +221,7 @@ int mvneta_rx_refill(..., struct mvneta_rx_queue *rxq)
 ** mvneta: page_pool lifecycle (3/3)
 - pages allocated to the NIC are released closing the /net_device/
   - pages are released to the *page_pool*
-  - the *pege_pool* is destroyed whenever there are no inflight pages
+  - the *page_pool* is destroyed whenever there are no inflight pages
 #+begin_src C
 void mvneta_rxq_drop_pkts(..., struct mvneta_rx_queue *rxq)
 {
@@ -607,7 +607,7 @@ Work-in-progress
      - process all rx descriptors building the xdp_buff
        - mvneta_swbm_rx_frame
        - mvneta_swbm_add_rx_fragment
-     - run the eBPF program when all descripts are processed
+     - run the eBPF program when all descriptors are processed
      - /XDP_TX/ and /ndo_xdp_xmit/ can map non-linear buffers
        - mvneta_xdp_submit_frame
      - remove MTU check loading the eBPF program
