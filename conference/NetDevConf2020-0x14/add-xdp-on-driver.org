@@ -31,6 +31,9 @@ Only sections with tag ":export:" will end-up in the presentation. The prefix
 "Slide:" is only syntax-sugar for the reader (and it removed before export by
 emacs).
 
+* Slide: target audience							   :export:
+- target audience is a kernel developer that wants to extend existing driver to support /XDP/
+[[file:images/audience.jpg]]
 * Slide: Driver XDP RX-processing (NAPI) loop                        :export:
 
 Code needed in *driver* for /supporting XDP/ is fairly simple
