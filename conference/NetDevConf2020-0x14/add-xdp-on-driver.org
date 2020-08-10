@@ -591,7 +591,7 @@ root@espresso-bin:~# ethtool -S eth0 | grep xdp
 Work-in-progress
 - Adding XDP multi-buffers support
 
-** mvneta: multi-buffers support for XDP (1/3)
+** mvneta: multi-buffers support for XDP (1/4)
  - /eBPF Direct-Access (DA)/ to packet data: single buffer per packet design
    - packet memory must be contiguous
  - */XDP multi-buffer/* use cases
@@ -603,7 +603,7 @@ Work-in-progress
      - no abstraction layer to remap the splitted payload area
    - extend *xdp_buff* and *xdp_md* to provide metadata about the packet
      - full packet length
-** mvneta: multi-buffers support for XDP (2/3)
+** mvneta: multi-buffers support for XDP (2/4)
    - storage space for multi-buffer segments references
      - *skb_shared_info* at the end of the first segment
    - modify drivers rx NAPI loop
@@ -615,7 +615,10 @@ Work-in-progress
        - mvneta_xdp_submit_frame
      - remove MTU check loading the eBPF program
        - mvneta_xdp_setup
-** mvneta: multi-buffers support for XDP (3/3)
+** mvneta: multi-buffers support for XDP (3/4)
+#+ATTR_HTML: :class img-no-border
+[[file:images/xdp-multibuff.png]]
+** mvneta: multi-buffers support for XDP (4/4)
 #+begin_src C
 void mvneta_swbm_add_rx_fragment(struct xdp_buff *xdp, ...)
 {
