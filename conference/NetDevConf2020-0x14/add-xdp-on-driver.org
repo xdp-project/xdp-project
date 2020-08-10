@@ -611,7 +611,7 @@ Work-in-progress
        - mvneta_swbm_rx_frame
        - mvneta_swbm_add_rx_fragment
      - run the eBPF program when all descriptors are processed
-     - /XDP_TX/ and /ndo_xdp_xmit/ can map non-linear buffers
+     - change /XDP_TX/ and /ndo_xdp_xmit/ to map non-linear buffers
        - mvneta_xdp_submit_frame
      - remove MTU check loading the eBPF program
        - mvneta_xdp_setup
