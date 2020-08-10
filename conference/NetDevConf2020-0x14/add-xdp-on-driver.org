@@ -592,17 +592,17 @@ Work-in-progress
 - Adding XDP multi-buffers support
 
 ** mvneta: multi-buffers support for XDP (1/4)
- - /eBPF Direct-Access (DA)/ to packet data: single buffer per packet design
-   - packet memory must be contiguous
  - */XDP multi-buffer/* use cases
-   - Jumbo frames
-   - TSO
-   - ...
- - Proposal:
-   - eBPF can access just to the first packet buffer
+   - Jumbo frames, TSO,
+   - Packet header split
+   - Handling GRO SKBs in veth/cpumap/generic-XDP
+ - /eBPF Direct-Access (DA)/ to packet data: single buffer per packet design
+   - How to work-around: "packet memory must be contiguous" ?
+ - *Proposal:*
+   - eBPF can access */only/* to the *first* packet buffer
      - no abstraction layer to remap the splitted payload area
    - extend *xdp_buff* and *xdp_md* to provide metadata about the packet
-     - full packet length
+     - e.g. full packet length, number of segments
 ** mvneta: multi-buffers support for XDP (2/4)
    - storage space for multi-buffer segments references
      - *skb_shared_info* at the end of the first segment
