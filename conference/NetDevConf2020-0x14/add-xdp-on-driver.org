@@ -604,17 +604,17 @@ Work-in-progress
    - extend *xdp_buff* and *xdp_md* to provide metadata about the packet
      - e.g. full packet length, number of segments
 ** Slide: Multi-buffers support for XDP (2/4)                       :export:
-   - storage space for multi-buffer segments references
+   - Storage space for multi-buffer segments references
      - *skb_shared_info* at the end of the first segment
-   - modify drivers rx NAPI loop
-     - process all rx descriptors building the xdp_buff
-       - mvneta_swbm_rx_frame
-       - mvneta_swbm_add_rx_fragment
-     - run the eBPF program when all descriptors are processed
-     - change /XDP_TX/ and /ndo_xdp_xmit/ to map non-linear buffers
-       - mvneta_xdp_submit_frame
-     - remove MTU check loading the eBPF program
-       - mvneta_xdp_setup
+   - Modify drivers rx NAPI loop
+     - Process all RX descriptor segments building xdp_buff
+       - =mvneta_swbm_rx_frame()=
+       - =mvneta_swbm_add_rx_fragment()=
+     - Run the eBPF program when all descriptors are processed
+     - Change /XDP_TX/ and /ndo_xdp_xmit/ to map non-linear buffers
+       - =mvneta_xdp_submit_frame()=
+     - Remove MTU check loading the eBPF program
+       - =mvneta_xdp_setup()=
 ** Slide: Multi-buffers support for XDP (3/4)                       :export:
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp-multibuff.png]]
