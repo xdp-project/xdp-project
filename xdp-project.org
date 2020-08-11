@@ -516,6 +516,8 @@ more helpers.
 The obvious next step is a l2 bridging helper that mirrors the l3 routing
 one. Should be fairly straight forward to implement.
 
+[[https://lore.kernel.org/bpf/1596170660-5582-1-git-send-email-komachi.yoshiki@gmail.com/][RFC series posted for this]].
+
 **** TODO What to do about broadcast/multicast?
 
 See [[id:7e5439f6-7603-4df6-8164-7d2bc5dcd8c3][Handling multicast]] below.
