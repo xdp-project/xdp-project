@@ -84,7 +84,7 @@ XDP force /drivers/ to register *which memory model* they use
 - See struct /xdp_rxq_info/ and member *"mem"* struct /xdp_mem_info/
   - API see: =xdp_rxq_info_reg_mem_model()=
 
-Advantage: Allows inventing new (RX) memory models for networking
+Advantage: Allows *inventing* /new memory models for networking/
 - =MEM_TYPE_PAGE_SHARED= is the normal refcnt based model
 - =MEM_TYPE_PAGE_POOL= is optimized for XDP (more on this later)
 - =MEM_TYPE_XSK_BUFF_POOL= is to AF_XDP zero-copy into userspace
