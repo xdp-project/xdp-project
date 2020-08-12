@@ -364,7 +364,7 @@ int mvneta_run_xdp(struct bpf_prog *prog, struct xdp_buff *xdp, ...)
 }
 #+end_src
 ** mvneta XDP: XDP_DROP (2/3)
-#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_drop.cast" cols="168" rows="32"></asciinema-player> <script src="../reveal.js/js/asciinema-player.js"></script>
+#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_drop.cast" speed="1.5" cols="168" rows="32"></asciinema-player> <script src="../reveal.js/js/asciinema-player.js"></script>
 ** mvneta XDP: XDP_DROP (3/3)
 - DDoS performance:
   - packet size: 64B
@@ -406,7 +406,7 @@ refill:
 }
 #+end_src
 ** mvneta XDP: XDP_PASS (2/2)
-#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_pass.cast" cols="168" rows="32"></asciinema-player>
+#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_pass.cast" speed="1.5" cols="168" rows="32"></asciinema-player>
 ** mvneta XDP: XDP_TX (1/3)
 - XDP_TX = frame transmitted back out interface where packet was received
   - no need to DMA remap the page, only to DMA-sync/flush CPU caches
@@ -450,7 +450,7 @@ int xdp_main(struct xdp_md *ctx)
 }
 #+end_src
 ** mvneta XDP: XDP_TX (3/3)
-#+REVEAL_HTML: <asciinema-player src="asciinema/ssh_mirror.cast" cols="168" rows="32"></asciinema-player>
+#+REVEAL_HTML: <asciinema-player src="asciinema/ssh_mirror.cast" speed="1.5" cols="168" rows="32"></asciinema-player>
 ** mvneta XDP: XDP_REDIRECT (1/3)
 - /xdp_do_redirect()/ forwards the frame to:
   - remote interface - *ndo_xdp_xmit()*
@@ -494,7 +494,7 @@ int mvneta_xdp_xmit(struct net_device *dev, int num_frame,
 }
 #+end_src
 ** mvneta XDP: XDP_REDIRECT (3/3)
-#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_redirect.cast" cols="168" rows="32"></asciinema-player>
+#+REVEAL_HTML: <asciinema-player src="asciinema/xdp_redirect.cast" speed="1.5" cols="168" rows="32"></asciinema-player>
 ** mvneta sw RPS: CPUMAP (1/4)
 - ESPRESSObin does not support hw */Receive Packet Steering (RPS)/*
   - all the packets are received on cpu0
@@ -535,7 +535,7 @@ int cpu_map_kthread_run(void *data)
 #+ATTR_HTML: :class img-no-border
 [[file:images/cpumap-test-arch.png]]
 ** mvneta sw RPS: CPUMAP (4/4)
-#+REVEAL_HTML: <asciinema-player src="asciinema/cpumap.cast" cols="168" rows="32"></asciinema-player>
+#+REVEAL_HTML: <asciinema-player src="asciinema/cpumap.cast" speed="1.5" cols="168" rows="32"></asciinema-player>
 
 ** mvneta XDP stats
 - proper stats accounting is essential for XDP success
