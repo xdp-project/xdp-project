@@ -34,7 +34,15 @@ emacs).
 * Slide: Target audience                                             :export:
 - target audience is a kernel developer that wants to extend existing driver to support /XDP/
 [[file:images/audience.jpg]]
-* Slide: Driver XDP RX-processing (NAPI) loop                        :export:
+
+* Slide: XDP technical requirements                                  :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Quick introduction to XDP technical requirements
+
+** Slide: Driver XDP RX-processing (NAPI) loop                      :export:
 
 Code needed in *driver* for /supporting XDP/ is fairly simple
 
@@ -57,8 +65,8 @@ driver_local_XDP_TX_flush();
 
 Tricky part is *changing* driver */memory model/* to be compatible with XDP
 
+** Slide: XDP requirements                                          :export:
 
-* Slide: XDP requirements                                            :export:
 - XDP frame in *physical contiguous memory*
   - BPF /Direct-Access/ for validating correctness
   - No paged frames support, data cannot be split across pages
@@ -69,7 +77,21 @@ Tricky part is *changing* driver */memory model/* to be compatible with XDP
 - Reserve /tailroom/ *for skb_shared_info* and *rely on build_skb()* on XDP_PASS
 - Cannot allocate page fragments to support it (e.g. through napi_alloc_skb())
 - Rx buffers must be recycled to get high speed!
-* Slide: XDP architecture                                            :export:
+
+** Slide: Register your XDP memory model                            :export:
+
+XDP force /drivers/ to register *which memory model* they use
+- See struct /xdp_rxq_info/ and member *"mem"* struct /xdp_mem_info/
+  - API see: =xdp_rxq_info_reg_mem_model()=
+
+Advantage: Allows *inventing* /new memory models for networking/
+- =MEM_TYPE_PAGE_SHARED= is the normal refcnt based model
+- =MEM_TYPE_PAGE_POOL= is optimized for XDP (more on this later)
+- =MEM_TYPE_XSK_BUFF_POOL= is to AF_XDP zero-copy into userspace
+- Hope new models will be invented
+  - e.g. imagine memory used by NIC belongs to GPU graphics card
+
+** Slide: XDP architecture                                          :export:
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp_architecture.png]]
 
