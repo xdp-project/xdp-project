@@ -34,7 +34,15 @@ emacs).
 * Slide: Target audience                                             :export:
 - target audience is a kernel developer that wants to extend existing driver to support /XDP/
 [[file:images/audience.jpg]]
-* Slide: Driver XDP RX-processing (NAPI) loop                        :export:
+
+* Slide: XDP technical requirements                                  :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Quick introduction to XDP technical requirements
+
+** Slide: Driver XDP RX-processing (NAPI) loop                      :export:
 
 Code needed in *driver* for /supporting XDP/ is fairly simple
 
@@ -57,8 +65,8 @@ driver_local_XDP_TX_flush();
 
 Tricky part is *changing* driver */memory model/* to be compatible with XDP
 
+** Slide: XDP requirements                                          :export:
 
-* Slide: XDP requirements                                            :export:
 - XDP frame in *physical contiguous memory*
   - BPF /Direct-Access/ for validating correctness
   - No paged frames support, data cannot be split across pages
@@ -83,7 +91,7 @@ Advantage: Allows inventing new (RX) memory models for networking
 - Hope new models will be invented
   - e.g. imagine memory used by NIC belongs to GPU graphics card
 
-* Slide: XDP architecture                                            :export:
+** Slide: XDP architecture                                          :export:
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp_architecture.png]]
 
