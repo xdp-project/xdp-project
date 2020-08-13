@@ -19,6 +19,20 @@ Workshop for NetDevConf 0x14
 - [[https://netdevconf.info/0x14/session.html?tutorial-add-XDP-support-to-a-NIC-driver][Talk abstract]]
 - [[https://netdev0x14.sched.com/event/ZVsf/how-to-add-xdp-support-to-a-nic-driver][Schedule]]
 
+** Viewing slides
+
+These slides contains demos that use [[https://asciinema.org/][asciinema]]. To get the demos working
+locally when displaying the HTML slides using google-chrome, you need to allow
+chrome local file access via option =--allow-file-access-from-files=:
+
+#+begin_src sh
+$ make html
+$ google-chrome --allow-file-access-from-files add-xdp-on-driver.html
+#+end_src
+
+This is not necessary if you load them from a http server.
+Lorenzo will upload a compiled version of the slides [[http://people.redhat.com/lbiancon/conference/NetDevConf2020-0x14/add-xdp-on-driver.html][here]].
+
 * Colors in slides                                                 :noexport:
 Text colors on slides are chosen via org-mode italic/bold high-lighting:
  - /italic/ = /green/
