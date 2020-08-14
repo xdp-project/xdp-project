@@ -574,13 +574,18 @@ root@espresso-bin:~# ethtool -S eth0 | grep xdp
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-Work-in-progress
-- Adding XDP multi-buffers support
+*Work-in-progress*
+- /Adding XDP multi-buffers support/
+- [[https://github.com/xdp-project/xdp-project/blob/master/areas/core/xdp-multi-buffer01-design.org][Design document]] under XDP-project
+
+Joint work between Amazon and Red Hat
+- Future credit to:
+  - Samih Jubran, Lorenzo Bianconi, Eelco Chaudron
+
 
 ** Slide: Multi-buffers support for XDP (1/4)                       :export:
  - */XDP multi-buffer/* use cases
-   - Jumbo frames, TSO
-   - Packet header split
+   - Jumbo frames, TSO, LRO, Packet header split
    - Handling GRO SKBs in veth/cpumap/generic-XDP
  - /eBPF Direct-Access (DA)/ to packet data: single buffer per packet design
    - How to work-around: "packet memory must be contiguous" ?
