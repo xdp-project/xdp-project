@@ -73,7 +73,7 @@ while (desc_in_rx_ring && budget_left--) {
     case XDP_DROP:     page_pool_recycle_direct(pp, page); res = DRV_XDP_CONSUMED; break;
   } /* left out acting on res */
 } /* End of NAPI-poll */
-xdp_do_flush_map(); /* Bulk chosen by map, can store xdf_frame for flushing */
+xdp_do_flush_map(); /* Bulk chosen by map, can store xdp_frame's for flushing */
 driver_local_XDP_TX_flush();
 #+end_src
 
