@@ -574,24 +574,30 @@ root@espresso-bin:~# ethtool -S eth0 | grep xdp
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-Work-in-progress
-- Adding XDP multi-buffers support
+*Work-in-progress*
+- /Adding XDP multi-buffers support/
+- [[https://github.com/xdp-project/xdp-project/blob/master/areas/core/xdp-multi-buffer01-design.org][Design document]] under XDP-project
+
+Joint work between Amazon and Red Hat
+- Future credit to:
+  - Samih Jubran, Lorenzo Bianconi, Eelco Chaudron
+
 
 ** Slide: Multi-buffers support for XDP (1/4)                       :export:
  - */XDP multi-buffer/* use cases
-   - Jumbo frames, TSO
-   - Packet header split
+   - Jumbo frames, TSO, LRO, Packet header split
    - Handling GRO SKBs in veth/cpumap/generic-XDP
- - /eBPF Direct-Access (DA)/ to packet data: single buffer per packet design
-   - How to work-around: "packet memory must be contiguous" ?
- - *Proposal:*
-   - eBPF can access */only/* to the *first* packet buffer
-     - no abstraction layer to remap the splitted payload area
-   - extend *xdp_buff* and *xdp_md* to provide metadata about the packet
-     - e.g. full packet length, number of segments
+ - How to satisfy /eBPF Direct-Access (DA)/ design?
+ - *Proposal:* eBPF can access */only/* to the *first* packet buffer
+    - Storage space for multi-buffer segments references
+      - (like *skb_shared_info*) at the end of the first segment (in tailroom)
+    - This "/xdp_shared_info/" area provide metadata
+      - for-each buffer: page-pointer, offset, length (see skb_frag_t frags[])
+      - also metadata for e.g. number of segments, full packet length
+    - Only need single "mb" (multi_buffer) bit indicator in *xdp_buff* and *xdp_md*
+
 ** Slide: Multi-buffers support for XDP (2/4)                       :export:
-   - Storage space for multi-buffer segments references
-     - *skb_shared_info* at the end of the first segment
+
    - Modify drivers rx NAPI loop
      - Process all RX descriptor segments building xdp_buff
        - =mvneta_swbm_rx_frame()=
@@ -601,6 +607,7 @@ Work-in-progress
        - =mvneta_xdp_submit_frame()=
      - Remove MTU check loading the eBPF program
        - =mvneta_xdp_setup()=
+
 ** Slide: Multi-buffers support for XDP (3/4)                       :export:
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp-multibuff.png]]
