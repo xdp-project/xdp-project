@@ -32,8 +32,10 @@ BPF-prog access to payload across multiple buffers.
 
 One way forward is to define that XDP only get access to the first packet
 buffer, and it cannot see subsequent buffers.
+We can probably allow the bpf program to adjust subsequent buffers
+pushing/pulling headers through bpf helpers.
 
-We likely need to extend xdp_buff or xdp_md (the XDP bpf context) with some
+We will extend xdp_buff/xdp_frame adding multi-buffer bit (mb) as an
 indication that this is a multi-buffer packets, as this is needed by
 internal helpers (see later) and might be useful for XDP-developer (e.g.
 return XDP_PASS for these kind of frames).
@@ -166,3 +168,29 @@ doing XDP_PASS or when doing SKB alloc after XDP_REDIRECT.
 Side-note: There have been suggestion before, to unify =bio_vec= and
 =skb_frag_t= (see [[https://lore.kernel.org/netdev/20190501041757.8647-1-willy@infradead.org/][here]])
 Update: This unification has already been done (see [[https://lore.kernel.org/netdev/1d34658b-a807-44ae-756a-d55dead27f94@fb.com/][here]])
+
+* Proposal#1 for XDP multi-buffer bpf helpers
+
+Assuming the XDP multi-buffer layout relies on a skb_shared_info structure at
+the end of the first buffer to link all subsequent buffers, we can leverage
+on skb_frags* utilities in bpf helpers. Moreover, assuming each buffer length
+is one PAGE, it is possible to compute the headroom/tailroom available in
+the buffer to push/pop headers through bpf helpers.
+
+- =bpf_xdp_adjust_frag_offset(index,offset)=
+
+  Adjust skb_frag_t offset of a fragment with index index in a xdp
+  multi-buffer.
+
+- =bpf_xdp_adjust_frag_len(index,len)=
+
+  Adjust skb_frag_t length of a fragment with index index in a xdp
+  multi-buffer.
+
+- =bpf_xdp_get_frag(index,*offset,*len)=
+
+  Return offset and length of a fragment with index index.
+
+- =bpf_xdp_get_frag_count()=
+
+  Return the total number of fragments for a given xdp multi-buffer.
