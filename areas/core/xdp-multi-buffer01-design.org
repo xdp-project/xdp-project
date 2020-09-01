@@ -22,6 +22,7 @@ contiguous memory.  This DA feature is essential for XDP performance.
 What are the use-cases for multi-buffer packets:
 - Jumbo-frames
 - Packet header split
+  * See: Google's [[https://netdevconf.info/0x14/session.html?talk-the-path-to-tcp-4k-mtu-and-rx-zerocopy][use-case at NetDevConf 0x14]]
 - TSO/LRO
 
 * Proposal#1: XDP only access first-buffer
@@ -50,6 +51,9 @@ multi-buffer packets?
 The BPF XDP helper named: =bpf_xdp_adjust_tail= change length of the packet.
 Currently it can only shrink the packet (but we need to extended it to allow
 extending the tail, as e.g IPSEC and DNS-cache needs this).
+
+*UPDATE* helper can also *grow* packet size as of kernel v5.8 commit
+[[https://git.kernel.org/torvalds/c/c8741e2bfe87][c8741e2bfe87]] ("xdp: Allow bpf_xdp_adjust_tail() to grow packet size").
 
 With multi-buffer XDP packets (and proposal#1) then this adjust tail helper
 becomes problematic.
@@ -169,13 +173,17 @@ Side-note: There have been suggestion before, to unify =bio_vec= and
 =skb_frag_t= (see [[https://lore.kernel.org/netdev/20190501041757.8647-1-willy@infradead.org/][here]])
 Update: This unification has already been done (see [[https://lore.kernel.org/netdev/1d34658b-a807-44ae-756a-d55dead27f94@fb.com/][here]])
 
-* Proposal#1 for XDP multi-buffer bpf helpers
+* Helper-proposal#1 for XDP multi-buffer bpf helpers
 
 Assuming the XDP multi-buffer layout relies on a skb_shared_info structure at
 the end of the first buffer to link all subsequent buffers, we can leverage
 on skb_frags* utilities in bpf helpers. Moreover, assuming each buffer length
 is one PAGE, it is possible to compute the headroom/tailroom available in
 the buffer to push/pop headers through bpf helpers.
+
+*Critique*: IMHO these helpers are too low level, as they UAPI expose
+manipulating offset and len of individual segments/fragments directly, this
+will limit flexibility of the internal kernel API.
 
 - =bpf_xdp_adjust_frag_offset(index,offset)=
 
@@ -194,3 +202,56 @@ the buffer to push/pop headers through bpf helpers.
 - =bpf_xdp_get_frag_count()=
 
   Return the total number of fragments for a given xdp multi-buffer.
+
+* Helper-proposal#2 for XDP multi-buffer bpf helpers
+
+Assuming "XDP only access first-buffer" (Proposal#1) is selected, then the
+BPF-program cannot access the remaining buffers/segments. The BPF-programmer
+still needs some knowledge about these remaining buffers/segments. The
+question is what is makes-sense to expose and why (the use-case).
+
+Technically this can be either exported/exposed via 1) the ctx object
+"xdp_md", or 2) via BPF-helper calls.
+
+*Helper proposal-A*: Allow moving data between first and second buffer. The
+use-case is for packet-header split (see Googles presentation). The NIC
+hardware might have split the packet wrong, either placed some packet
+headers in second buffer, or placed some payload-data in first buffer.
+Adding this helper, will allow the BPF-programmer to fix-up the
+packet-header split done by hardware. When the BPF-program parse packet
+headers, the program logic can detect the wrong header split, and use this
+helper to adjust.
+
+
+* Discuss: What info does BPF-programmer need about buffers/segments?
+
+** Info: multi-buffer packet?
+
+BPF-programmer should have a way to tell if an =xdp_buff= contains more
+segments/buffers. The current proposal (upstream) is to mark this via a
+single bit in =xdp_buff->mb= (and =xdp_frame->mb=), but this is an
+*internal* representation.
+
+How do we expose this to the BPF-program?
+
+Options:
+- Give BPF-prog info via ctx =xdp_md=.
+- Add BPF-helper to extract this information.
+
+Sameeh have proposed BPF-helper: =bpf_xdp_get_frag_count()=
+- https://lore.kernel.org/netdev/20200727125653.31238-2-sameehj@amazon.com/
+
+** Info: Use-case counting bytes (accounting)
+
+The XDP BPF-programmer will often need to do basic traffic accounting of
+packets and bytes (as XDP hooks doesn't provide this). Thus, we need to
+export/expose at least byte counters from buffers/segments.
+
+Sameeh have proposed [[ https://lore.kernel.org/netdev/20200727125653.31238-2-sameehj@amazon.com/][BPF-helper]]:
+- =bpf_xdp_get_frag(*xdp_md, frag_index, *size, *offset)=
+- This design requires walking each buffer
+  - Example of using:
+    https://lore.kernel.org/netdev/20200727125653.31238-3-sameehj@amazon.com/
+- Why should the BPF-prog do this walking? (if use-case is getting bytes)
+  - Remember BPF-code don't handle loops well (loop-bound tricks needed)
+
