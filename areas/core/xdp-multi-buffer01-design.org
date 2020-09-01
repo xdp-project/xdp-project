@@ -173,13 +173,17 @@ Side-note: There have been suggestion before, to unify =bio_vec= and
 =skb_frag_t= (see [[https://lore.kernel.org/netdev/20190501041757.8647-1-willy@infradead.org/][here]])
 Update: This unification has already been done (see [[https://lore.kernel.org/netdev/1d34658b-a807-44ae-756a-d55dead27f94@fb.com/][here]])
 
-* Proposal#1 for XDP multi-buffer bpf helpers
+* Helper-proposal#1 for XDP multi-buffer bpf helpers
 
 Assuming the XDP multi-buffer layout relies on a skb_shared_info structure at
 the end of the first buffer to link all subsequent buffers, we can leverage
 on skb_frags* utilities in bpf helpers. Moreover, assuming each buffer length
 is one PAGE, it is possible to compute the headroom/tailroom available in
 the buffer to push/pop headers through bpf helpers.
+
+*Critique*: IMHO these helpers are too low level, as they UAPI expose
+manipulating offset and len of individual segments/fragments directly, this
+will limit flexibility of the internal kernel API.
 
 - =bpf_xdp_adjust_frag_offset(index,offset)=
 
