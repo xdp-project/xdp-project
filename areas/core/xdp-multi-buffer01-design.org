@@ -22,6 +22,7 @@ contiguous memory.  This DA feature is essential for XDP performance.
 What are the use-cases for multi-buffer packets:
 - Jumbo-frames
 - Packet header split
+  * See: Google's [[https://netdevconf.info/0x14/session.html?talk-the-path-to-tcp-4k-mtu-and-rx-zerocopy][use-case at NetDevConf 0x14]]
 - TSO/LRO
 
 * Proposal#1: XDP only access first-buffer
