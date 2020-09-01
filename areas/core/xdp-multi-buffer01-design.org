@@ -223,3 +223,35 @@ headers, the program logic can detect the wrong header split, and use this
 helper to adjust.
 
 
+* Discuss: What info does BPF-programmer need about buffers/segments?
+
+** Info: multi-buffer packet?
+
+BPF-programmer should have a way to tell if an =xdp_buff= contains more
+segments/buffers. The current proposal (upstream) is to mark this via a
+single bit in =xdp_buff->mb= (and =xdp_frame->mb=), but this is an
+*internal* representation.
+
+How do we expose this to the BPF-program?
+
+Options:
+- Give BPF-prog info via ctx =xdp_md=.
+- Add BPF-helper to extract this information.
+
+Sameeh have proposed BPF-helper: =bpf_xdp_get_frag_count()=
+- https://lore.kernel.org/netdev/20200727125653.31238-2-sameehj@amazon.com/
+
+** Info: Use-case counting bytes (accounting)
+
+The XDP BPF-programmer will often need to do basic traffic accounting of
+packets and bytes (as XDP hooks doesn't provide this). Thus, we need to
+export/expose at least byte counters from buffers/segments.
+
+Sameeh have proposed [[ https://lore.kernel.org/netdev/20200727125653.31238-2-sameehj@amazon.com/][BPF-helper]]:
+- =bpf_xdp_get_frag(*xdp_md, frag_index, *size, *offset)=
+- This design requires walking each buffer
+  - Example of using:
+    https://lore.kernel.org/netdev/20200727125653.31238-3-sameehj@amazon.com/
+- Why should the BPF-prog do this walking? (if use-case is getting bytes)
+  - Remember BPF-code don't handle loops well (loop-bound tricks needed)
+
