@@ -52,6 +52,9 @@ The BPF XDP helper named: =bpf_xdp_adjust_tail= change length of the packet.
 Currently it can only shrink the packet (but we need to extended it to allow
 extending the tail, as e.g IPSEC and DNS-cache needs this).
 
+*UPDATE* helper can also *grow* packet size as of kernel v5.8 commit
+[[https://git.kernel.org/torvalds/c/c8741e2bfe87][c8741e2bfe87]] ("xdp: Allow bpf_xdp_adjust_tail() to grow packet size").
+
 With multi-buffer XDP packets (and proposal#1) then this adjust tail helper
 becomes problematic.
 
