@@ -202,3 +202,24 @@ will limit flexibility of the internal kernel API.
 - =bpf_xdp_get_frag_count()=
 
   Return the total number of fragments for a given xdp multi-buffer.
+
+* Helper-proposal#2 for XDP multi-buffer bpf helpers
+
+Assuming "XDP only access first-buffer" (Proposal#1) is selected, then the
+BPF-program cannot access the remaining buffers/segments. The BPF-programmer
+still needs some knowledge about these remaining buffers/segments. The
+question is what is makes-sense to expose and why (the use-case).
+
+Technically this can be either exported/exposed via 1) the ctx object
+"xdp_md", or 2) via BPF-helper calls.
+
+*Helper proposal-A*: Allow moving data between first and second buffer. The
+use-case is for packet-header split (see Googles presentation). The NIC
+hardware might have split the packet wrong, either placed some packet
+headers in second buffer, or placed some payload-data in first buffer.
+Adding this helper, will allow the BPF-programmer to fix-up the
+packet-header split done by hardware. When the BPF-program parse packet
+headers, the program logic can detect the wrong header split, and use this
+helper to adjust.
+
+
