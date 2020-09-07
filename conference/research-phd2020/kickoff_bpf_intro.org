@@ -162,6 +162,56 @@ The number of BPF hook points in the Linux kernel have exploded
 
 /*What new and exciting things can we build with this technology?*/
 
+* Slide: Project ideas / discussion points                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: Architecture for programmable devices                     :export:
+
+We have several layers of network processing on a server:
+
+- NIC hardware offloads (checksum, protocol parsing, etc.)
+- Offloaded XDP programs
+- XDP program(s) on the host
+- XDP program(s) inside a VM/container
+- Other eBPF kernel hooks (TC, cgroup, socket, ...)
+- Userspace applications
+
+All of these are (or will be) programmable - how do they cooperate?
+
+** Slide: Performance increases by omitting code                    :export:
+
+The dynamic nature of eBPF means features can be added as-needed
+
+- Ex: Don't need IPv4? Remove the parsing code completely
+
+But *how do we realise this in practice*?
+
+- Automatic conditional compilation?
+- Removal of code at load-time by the verifier
+- How to do this, and take advantage of existing kernel data structures?
+
+** Slide: XDP and eBPF in the cloud                                 :export:
+
+There are [[https://github.com/dsahern/bpf-progs/raw/master/docs/netdev-0x14-XDP-and-the-cloud.pdf][several issues]] with using XDP in a cloud environment:
+
+- Hardware features not working with XDP
+- VLAN header handling (or lack thereof)
+- TX/RX hardware queue tuning and CPU affinity settings
+- Poor support inside virtualised environment
+
+Starting upstream project to deal with this - can this project contribute? How?
+
+** Slide: Performance monitoring with eBPF                          :export:
+
+With eBPF we can hook into lots of new places in the kernel
+
+- What kind of performance monitoring tools can we build from that?
+- What metrics that were not available before can we use?
+- How do we turn those metrics into higher-level insights?
+- Can we build solutions that will automatically fix problems?
+
 * Emacs tricks
 
 # Local Variables:
