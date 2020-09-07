@@ -1,0 +1,150 @@
+# -*- fill-column: 79; -*-
+#+TITLE: BPF/XDP research PhD kickoff: Introduction to BPF/XDP
+#+AUTHOR: Jesper Dangaard Brouer <brouer@redhat.com> and Toke Høiland-Jørgensen <toke@redhat.com>
+#+EMAIL: brouer@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+This is the slide deck for the PhD Kick-off meeting, 8th September 2020.
+
+* Agenda content                                                   :noexport:
+
+Anna's standard agenda:
+
+1. Welcome and introductions
+
+2. Short introductory presentation from each partner
+
+3. Review of the project plan (overall goals, project structure, research
+   tasks)
+
+4. Planning of the first phase of the project (initial research tasks, upcoming
+   deliverables, meeting structure)
+
+Specific Content proposed in email thread:
+
+1. Quick recap of the project description, and the background for why we (RH)
+   are doing this.
+
+2. "BPF in five minutes" - a quick recap of what this whole BPF subsystem in
+   the kernel is and why it's relevant (for both projects, so also focusing on
+   tracing). Just to get everyone on the same page, and start people thinking.
+
+3. "Interesting future directions for XDP" - a grab bag of ideas and
+   perspectives that we can discuss, and maybe even turn (some of them) into
+   starting points for Frey and Simon depending on interest.
+
+   My current list of subjects for this include (to be expanded on
+   Tuesday, but in case you want to think about them ahead of time; I
+   may also add a few more):
+
+   - How do we define an architecture for a chain of programmable devices /
+     device features to cooperate? I.e., how do we combine normal hardware
+     offloads, offloaded BPF/P4, XDP, and the regular kernel stack into a
+     coherent whole?
+
+   - How can we realise (in practice) the potential for performance increases
+     from dynamic bytecode elimination in BPF?
+
+   - Using XDP and BPF in the cloud - there's an ongoing effort to get an
+     upstream collaboration going around fixing some of the issues with this
+     (see [0])
+
+   - What kind of new performance monitoring tools can we build with BPF?
+
+* Slide: Outline                                                     :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Background for Red Hat Research on XDP
+
+BPF in five minutes
+
+Interesting future directions for XDP
+
+* Slide: A new Operating System Model                                :export:
+
+Modern Linux: becoming Microkernel-ish ([[http://www.brendangregg.com/blog/2019-12-02/bpf-a-new-type-of-software.html][from Brendan Gregg]])
+[[file:images/bpf-os-model02.jpg]]
+
+* Slide: Basic introduction and understanding of BPF                 :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+/"BPF in five minutes"/
+
+Basic introduction to
+- BPF bytecode
+- BPF concepts: hooks, context, maps and helpers
+- Compiling restricted-C to BPF
+
+** Slide: BPF bytecode                                              :export:
+
+The BPF bytecode is:
+- /Generic Instruction Set/ Architecture (ISA) with C-calling convention
+  * Read: the BPF assembly language
+- Designed to *run in the Linux kernel*
+  * It is */not a kernel module/*
+  * It is a *sandbox* technology; BPF verfier ensures code safety
+
+** Slide: Kernel runtime and hooks                                  :export:
+
+Kernel provides an /BPF runtime/ environment
+- via BPF /maps/ and /helper calls/
+- *Event based* hooks gets /context/ object
+
+BPF hook point in the Linux kernel have exploded
+- XDP and TC-BPF hooks likely *very relevant for this project*
+- Many tracepoints, also /all kernel function calls/ via kprobe hooks
+- TCP congestion control via BPF hooks
+- cgroups, selinux, etc.
+
+** Slide: BPF concepts: context, maps and helpers
+
+Each BPF runtime hook gets a *pointer to a context* struct
+- BPF bytecode has access to context (read/write limited)
+  * verifier may adjust the bytecode for safety
+
+The BPF program itself is stateless
+- /Concept BPF maps/ can be used to create state
+- Maps are basically /key = value/ construct
+- Can be changed/read from both userspace and BPF-prog kernel-side
+
+BPF helpers are used for
+- calling kernel functions, to obtain info/state from kernel
+
+** Slide: BPF coding in restricted-C                                :export:
+
+/LLVM compiler/ has an BPF backend
+- Fortunately we */avoid writing BPF assembly/* by hand
+- Instead code in *restricted-C* code
+  * many limits imposed by sandbox and BPF-verfier
+
+Compiler produces an standard ELF "executable" file
+- Cannot execute this file directly, as the /BPF runtime is inside the kernel/
+- Recommend using [[https://github.com/libbpf/libbpf][libbpf]] as our *ELF loader*
+
+#+BEGIN_NOTES
+  * Extract the BPF bytecode and create BPF maps
+  * Do ELF relocation of BPF maps references in bytecode
+  * Understand and loads BTF (BPF Type Format)
+#+END_NOTES
+
+- *Attaching to hook is separate* step
+
+* Emacs tricks
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
+# class=\"author\">Jesper Dangaard Brouer<br/>Toke Høiland-Jørgensen</h2>
+# <h3>Karlstads University (Virtual event)<br/>8th September 2020</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
