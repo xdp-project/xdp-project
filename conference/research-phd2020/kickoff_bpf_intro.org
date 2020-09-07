@@ -46,17 +46,17 @@ Specific Content proposed in email thread:
 
    - How do we define an architecture for a chain of programmable devices /
      device features to cooperate? I.e., how do we combine normal hardware
-     offloads, offloaded eBPF/P4, XDP, and the regular kernel stack into a
+     offloads, offloaded BPF/P4, XDP, and the regular kernel stack into a
      coherent whole?
 
    - How can we realise (in practice) the potential for performance increases
-     from dynamic bytecode elimination in eBPF?
+     from dynamic bytecode elimination in BPF?
 
-   - Using XDP and eBPF in the cloud - there's an ongoing effort to get an
+   - Using XDP and BPF in the cloud - there's an ongoing effort to get an
      upstream collaboration going around fixing some of the issues with this
      (see [0])
 
-   - What kind of new performance monitoring tools can we build with eBPF?
+   - What kind of new performance monitoring tools can we build with BPF?
 
 * Slide: Outline                                                     :export:
 :PROPERTIES:
@@ -69,7 +69,7 @@ BPF in five minutes
 
 Interesting future directions for XDP
 
-* Slide: Basic introduction and understanding of eBPF                :export:
+* Slide: Basic introduction and understanding of BPF                :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -77,22 +77,22 @@ Interesting future directions for XDP
 /"BPF in five minutes"/
 
 Basic introduction to
-- eBPF bytecode
-- eBPF concepts: context, maps and helpers
-- Compiling restricted-C to eBPF
+- BPF bytecode
+- BPF concepts: context, maps and helpers
+- Compiling restricted-C to BPF
 
-** Slide: eBPF bytecode                                             :export:
+** Slide: BPF bytecode                                             :export:
 
-The eBPF bytecode is:
+The BPF bytecode is:
 - /Generic Instruction Set/ Architecture (ISA) with C-calling convention
-  * Read: the eBPF assembly language
+  * Read: the BPF assembly language
 - Designed to *run in the Linux kernel*
   * It is */not a kernel module/*
   * It is a *sandbox* technology; BPF verfier ensures code safety
 
 ** Slide: Kernel runtime and hooks                                  :export:
 
-Kernel provides an /eBPF runtime/ environment
+Kernel provides an /BPF runtime/ environment
 - via BPF /maps/ and /helper calls/
 - and hook /context/ object
 
@@ -102,30 +102,30 @@ BPF hook point in the Linux kernel have exploded
 - TCP congestion control via BPF hooks
 - cgroups, selinux, etc.
 
-** Slide: eBPF concepts: context, maps and helpers
+** Slide: BPF concepts: context, maps and helpers
 
-Each eBPF runtime hook gets a *pointer to a context* struct
+Each BPF runtime hook gets a *pointer to a context* struct
 - BPF bytecode has access to context (read/write limited)
   * verifier may adjust the bytecode for safety
 
 The BPF program itself is stateless
-- /Concept eBPF maps/ can be used to create state
+- /Concept BPF maps/ can be used to create state
 - Maps are basically /key = value/ construct
 
 BPF helpers are used for
 - calling kernel functions, to obtain info/state from kernel
 
-** Slide: Compiling restricted-C to eBPF into ELF                   :export:
+** Slide: Compiling restricted-C to BPF into ELF                   :export:
 
-/LLVM compiler/ has an eBPF backend (to */avoid writing eBPF assembly/* by hand)
+/LLVM compiler/ has an BPF backend (to */avoid writing BPF assembly/* by hand)
 - Write *Restricted C* -- some limits imposed by sandbox BPF-verfier
 
 Compiler produces an standard ELF "executable" file
-- Cannot execute this file directly, as the /eBPF runtime is inside the kernel/
+- Cannot execute this file directly, as the /BPF runtime is inside the kernel/
 - Need our *own ELF loader* that can:
-  * Extract the eBPF bytecode and eBPF maps
-  * Do ELF relocation of eBPF maps references in bytecode
-  * Create/load eBPF maps and bytecode into kernel
+  * Extract the BPF bytecode and BPF maps
+  * Do ELF relocation of BPF maps references in bytecode
+  * Create/load BPF maps and bytecode into kernel
 - *Attaching to hook is separate* step
 
 * Emacs tricks
