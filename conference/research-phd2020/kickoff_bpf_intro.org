@@ -69,7 +69,12 @@ BPF in five minutes
 
 Interesting future directions for XDP
 
-* Slide: Basic introduction and understanding of BPF                :export:
+* Slide: A new Operating System Model                                :export:
+
+Modern Linux: becoming Microkernel-ish ([[http://www.brendangregg.com/blog/2019-12-02/bpf-a-new-type-of-software.html][from Brendan Gregg]])
+[[file:images/bpf-os-model02.jpg]]
+
+* Slide: Basic introduction and understanding of BPF                 :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -81,7 +86,7 @@ Basic introduction to
 - BPF concepts: hooks, context, maps and helpers
 - Compiling restricted-C to BPF
 
-** Slide: BPF bytecode                                             :export:
+** Slide: BPF bytecode                                              :export:
 
 The BPF bytecode is:
 - /Generic Instruction Set/ Architecture (ISA) with C-calling convention
@@ -94,7 +99,7 @@ The BPF bytecode is:
 
 Kernel provides an /BPF runtime/ environment
 - via BPF /maps/ and /helper calls/
-- and hook /context/ object
+- *Event based* hooks gets /context/ object
 
 BPF hook point in the Linux kernel have exploded
 - XDP and TC-BPF hooks likely *very relevant for this project*
