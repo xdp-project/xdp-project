@@ -78,7 +78,7 @@ Interesting future directions for XDP
 
 Basic introduction to
 - BPF bytecode
-- BPF concepts: context, maps and helpers
+- BPF concepts: hooks, context, maps and helpers
 - Compiling restricted-C to BPF
 
 ** Slide: BPF bytecode                                             :export:
@@ -111,21 +111,28 @@ Each BPF runtime hook gets a *pointer to a context* struct
 The BPF program itself is stateless
 - /Concept BPF maps/ can be used to create state
 - Maps are basically /key = value/ construct
+- Can be changed/read from both userspace and BPF-prog kernel-side
 
 BPF helpers are used for
 - calling kernel functions, to obtain info/state from kernel
 
-** Slide: Compiling restricted-C to BPF into ELF                   :export:
+** Slide: BPF coding in restricted-C                                :export:
 
-/LLVM compiler/ has an BPF backend (to */avoid writing BPF assembly/* by hand)
-- Write *Restricted C* -- some limits imposed by sandbox BPF-verfier
+/LLVM compiler/ has an BPF backend
+- Fortunately we */avoid writing BPF assembly/* by hand
+- Instead code in *restricted-C* code
+  * many limits imposed by sandbox and BPF-verfier
 
 Compiler produces an standard ELF "executable" file
 - Cannot execute this file directly, as the /BPF runtime is inside the kernel/
-- Need our *own ELF loader* that can:
-  * Extract the BPF bytecode and BPF maps
+- Recommend using [[https://github.com/libbpf/libbpf][libbpf]] as our *ELF loader*
+
+#+BEGIN_NOTES
+  * Extract the BPF bytecode and create BPF maps
   * Do ELF relocation of BPF maps references in bytecode
-  * Create/load BPF maps and bytecode into kernel
+  * Understand and loads BTF (BPF Type Format)
+#+END_NOTES
+
 - *Attaching to hook is separate* step
 
 * Emacs tricks
