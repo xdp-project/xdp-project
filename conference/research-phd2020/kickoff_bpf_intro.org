@@ -211,6 +211,7 @@ With eBPF we can hook into lots of new places in the kernel
 - What metrics that were not available before can we use?
 - How do we turn those metrics into higher-level insights?
 - Can we build solutions that will automatically fix problems?
+  - e.g. create feedback loop from BPF monitor to XDP prog
 
 * Emacs tricks
 
