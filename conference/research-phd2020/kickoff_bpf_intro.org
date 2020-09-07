@@ -69,10 +69,42 @@ BPF in five minutes
 
 Interesting future directions for XDP
 
-* Slide: A new Operating System Model                                :export:
+* Slide: Red Hat Research                                            :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
 
-Modern Linux: becoming Microkernel-ish ([[http://www.brendangregg.com/blog/2019-12-02/bpf-a-new-type-of-software.html][from Brendan Gregg]])
-[[file:images/bpf-os-model02.jpg]]
+Why is Red Hat sponsoring a research project?
+
+** Slide: What is Red Hat Research                                  :export:
+
+Established 2019: https://research.redhat.com
+
+- Promoting open source in research
+- Connecting Red Hatters with academia
+- Promoting Red Hat and open source to students
+
+** Slide: The Red Hat / KAU research project                        :export:
+
+Project: "Building the next generation of programmable networking - powered by
+Linux"
+
+- Funded by Red Hat for three years
+  - But hopefully we can continue the collaboration beyond that
+- Focusing on /Linux/ and *XDP*
+  - A way for us to think about longer-term issues
+  - How does Linux fit into the world of programmable networking?
+
+** Slide: How we work upstream                                      :export:
+
+Red Hat is rolling out support for XDP in RHEL...
+
+...but this project is about *upstream* development.
+
+- Collaborating with other upstream people as well
+- Everything is in the open ([[https://github.com/xdp-project][XDP-project github repository]] and mailing lists)
+
+Important goal: Excellent research /and/ upstream code!
 
 * Slide: Basic introduction and understanding of BPF                 :export:
 :PROPERTIES:
@@ -86,6 +118,11 @@ Basic introduction to
 - BPF concepts: hooks, context, maps and helpers
 - Compiling restricted-C to BPF
 
+** Slide: A new Operating System Model                              :export:
+
+Modern Linux: becoming Microkernel-ish ([[http://www.brendangregg.com/blog/2019-12-02/bpf-a-new-type-of-software.html][from Brendan Gregg]])
+[[file:images/bpf-os-model02.jpg]]
+
 ** Slide: BPF bytecode                                              :export:
 
 The BPF bytecode is:
@@ -94,51 +131,36 @@ The BPF bytecode is:
 - Designed to *run in the Linux kernel*
   * It is */not a kernel module/*
   * It is a *sandbox* technology; BPF verfier ensures code safety
-
-** Slide: Kernel runtime and hooks                                  :export:
-
-Kernel provides an /BPF runtime/ environment
-- via BPF /maps/ and /helper calls/
-- *Event based* hooks gets /context/ object
-
-BPF hook point in the Linux kernel have exploded
-- XDP and TC-BPF hooks likely *very relevant for this project*
-- Many tracepoints, also /all kernel function calls/ via kprobe hooks
-- TCP congestion control via BPF hooks
-- cgroups, selinux, etc.
+- /LLVM compiler/ has a BPF backend
+  * Fortunately we */avoid writing BPF assembly/* by hand
 
 ** Slide: BPF concepts: context, maps and helpers
 
-Each BPF runtime hook gets a *pointer to a context* struct
+Each BPF program starts with a *pointer to a context* struct
 - BPF bytecode has access to context (read/write limited)
-  * verifier may adjust the bytecode for safety
+  * function of context depends on program type
 
 The BPF program itself is stateless
-- /Concept BPF maps/ can be used to create state
+- /BPF maps/ can be used to create state
 - Maps are basically /key = value/ construct
 - Can be changed/read from both userspace and BPF-prog kernel-side
 
 BPF helpers are used for
 - calling kernel functions, to obtain info/state from kernel
 
-** Slide: BPF coding in restricted-C                                :export:
+** Slide: Kernel runtime and hooks                                  :export:
 
-/LLVM compiler/ has an BPF backend
-- Fortunately we */avoid writing BPF assembly/* by hand
-- Instead code in *restricted-C* code
-  * many limits imposed by sandbox and BPF-verfier
+Kernel provides an /BPF runtime/ environment
+- via BPF /maps/ and /helper calls/
+- *Event based* hooks with type-specific /context/
 
-Compiler produces an standard ELF "executable" file
-- Cannot execute this file directly, as the /BPF runtime is inside the kernel/
-- Recommend using [[https://github.com/libbpf/libbpf][libbpf]] as our *ELF loader*
+The number of BPF hook points in the Linux kernel have exploded
+- XDP and TC-BPF hooks likely *very relevant for this project*
+- Many tracepoints, also /all kernel function calls/ via kprobe hooks
+- TCP congestion control via BPF hooks
+- cgroups, selinux, etc.
 
-#+BEGIN_NOTES
-  * Extract the BPF bytecode and create BPF maps
-  * Do ELF relocation of BPF maps references in bytecode
-  * Understand and loads BTF (BPF Type Format)
-#+END_NOTES
-
-- *Attaching to hook is separate* step
+/*What new and exciting things can we build with this technology?*/
 
 * Emacs tricks
 
