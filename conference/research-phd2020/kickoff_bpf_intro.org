@@ -1,5 +1,5 @@
 # -*- fill-column: 79; -*-
-#+TITLE: XDP research PhD kick-off meeting: Introduction to BPF/XDP
+#+TITLE: BPF/XDP research PhD kickoff: Introduction to BPF/XDP
 #+AUTHOR: Jesper Dangaard Brouer <brouer@redhat.com> and Toke Høiland-Jørgensen <toke@redhat.com>
 #+EMAIL: brouer@redhat.com
 #+REVEAL_THEME: redhat
@@ -58,3 +58,22 @@ Specific Content proposed in email thread:
 
    - What kind of new performance monitoring tools can we build with eBPF?
 
+* Slide: Outline                                                     :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Background for Red Hat Research on XDP
+
+BPF in five minutes
+
+Interesting future directions for XDP
+
+* Emacs tricks
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1><h2
+# class=\"author\">Jesper Dangaard Brouer<br/>Toke Høiland-Jørgensen</h2>
+# <h3>Karlstads University (Virtual event)<br/>8th September 2020</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
