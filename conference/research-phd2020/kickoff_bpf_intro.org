@@ -69,6 +69,69 @@ BPF in five minutes
 
 Interesting future directions for XDP
 
+* Slide: Basic introduction and understanding of eBPF                :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Basic introduction to
+- eBPF bytecode
+- Compiling restricted-C to eBPF
+  * compiler storing it in ELF-format
+  * loading this into the Linux kernel
+
+** Slide: eBPF bytecode and kernel hooks                            :export:
+
+XDP 'just' a Linux kernel hook that can run eBPF-bytecode
+- Many more eBPF hooks (tracepoint, all function calls via kprobe)
+
+The eBPF bytecode is:
+- /Generic Instruction Set/ Architecture (ISA) with C-calling convention
+  * Read: the eBPF assembly language
+- Designed to *run in the Linux kernel*
+  * It is */not a kernel module/*
+  * It is a *sandbox* technology; BPF verfier ensures code safety
+  * Kernel provides an /eBPF runtime/ environment, via BPF /helper calls/
+
+** Slide: Compiling restricted-C to eBPF into ELF                   :export:
+
+/LLVM compiler/ has an eBPF backend (to */avoid writing eBPF assembly/* by hand)
+- Write *Restricted C* -- some limits imposed by sandbox BPF-verfier
+
+Compiler produces an standard ELF "executable" file
+- Cannot execute this file directly, as the eBPF runtime is inside the kernel
+- Need our *own ELF loader* that can:
+  * Extract the eBPF bytecode and eBPF maps
+  * Do ELF relocation of eBPF maps references in bytecode
+  * Create/load eBPF maps and bytecode into kernel
+- *Attaching to hook is separate* step
+
+** Slide: libbpf                                                    :export:
+
+This tutorial uses /libbpf/ as our *ELF loader for eBPF*
+- libbpf is /part of Linux kernel tree/
+- Facebook fortunately *exports* this to https://github.com/libbpf
+  * Tutorial git repo, use [[https://github.com/libbpf/libbpf][libbpf]] as git-submodule
+
+Please userspace apps: *Everybody should use this library*
+- */Unfortunately/* several loaders exists
+- Worst case is iproute2 have its own
+  * cause incompatible ELF object, if using eBPF maps
+  * (stalled?) plans for converting to libbpf
+
+** Slide: eBPF concepts: context, maps and helpers
+
+Each eBPF runtime hook gets a *pointer to a context* struct
+- BPF bytecode has access to context (read/write limited)
+  * verifier may adjust the bytecode for safety
+
+The BPF program itself is stateless
+- /Concept eBPF maps/ can be used to create state
+- Maps are basically /key = value/ construct
+
+BPF helpers are used for
+- calling kernel functions, to obtain info/state from kernel
+
 * Emacs tricks
 
 # Local Variables:
