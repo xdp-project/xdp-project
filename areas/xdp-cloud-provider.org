@@ -3,8 +3,9 @@
 #+CATEGORY: Cloud
 #+OPTIONS: ^:nil
 
-This [[file:xdp-cloud-provider.org]] contains tasks for XDP-Cloud-Provider project.
-This gets rendered on [[https://xdp-project.net/areas/xdp-cloud-provider.html][xdp-project.net]].
+This [[file:xdp-cloud-provider.org]] contains tasks for the XDP-Cloud-Provider
+project. This gets rendered on [[https://xdp-project.net/areas/xdp-cloud-provider.html][xdp-project.net]] and is located in GitHub repo
+[[https://github.com/xdp-project/xdp-project/blob/master/areas/xdp-cloud-provider.org][xdp-project under areas/]].
 
 *Intro* (that should be moved to project git-repo):
 
