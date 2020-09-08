@@ -207,6 +207,16 @@ There are [[https://github.com/dsahern/bpf-progs/raw/master/docs/netdev-0x14-XDP
 
 Starting upstream project to deal with this - can this project contribute? How?
 
+** Slide: An XDP-accelerated (small) router                         :export:
+
+Linux-based routers are especially common in the CPE space, using small
+embedded boxes. Some pieces are missing for XDP to work well here:
+
+- XDP support in more drivers
+- Helpers to hook into routing, bridging, conntrack, NAT, firewalling
+- Packet queueing and scheduling for XDP-forwarded packets
+- What about WiFi?
+
 ** Slide: Performance monitoring with eBPF                          :export:
 
 With eBPF we can hook into lots of new places in the kernel
