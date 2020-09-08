@@ -15,17 +15,21 @@ This is the slide deck for the PhD Kick-off meeting, 8th September 2020.
 
 * Agenda content                                                   :noexport:
 
-Anna's standard agenda:
+Meeting agenda:
 
-1. Welcome and introductions
+1. Welcome and introductions (Anna)
 
-2. Short introductory presentation from each partner
+2. Quick recap of the project description, and the background for why RH are doing this (Toke/Jesper)
 
-3. Review of the project plan (overall goals, project structure, research
-   tasks)
+3. Overview of KUA research context for the project (Anna)
 
-4. Planning of the first phase of the project (initial research tasks, upcoming
-   deliverables, meeting structure)
+4. BPF in five minutes (Toke/Jesper)
+
+5. Interesting future directions for XDP (Toke/Jesper/all)
+
+6. Work organization and meeting structure moving forward (Anna/all)
+
+**  Our/RH proposed item to cover
 
 Specific Content proposed in email thread:
 
