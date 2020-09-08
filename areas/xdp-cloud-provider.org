@@ -1,0 +1,15 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Project management for XDP Cloud-Provider use-case
+#+CATEGORY: Cloud
+#+OPTIONS: ^:nil
+
+A solid use-case for XDP is redirection into guest VMs. As this allows a
+packet destined for a VM to skip the entire overhead of the Host-OS network
+stack.  The Host-OS still sees the packet at the XDP layer which allow for
+implementing and enforcing per VM policies.
+
+For a Cloud Provider this could (1) save significant amount of CPU resources
+in the Host-OS, and (2) increase the throughput (pps) performance into a
+Guest VM.
+
+#+INCLUDE: "../sitemap.org" :minlevel 1
