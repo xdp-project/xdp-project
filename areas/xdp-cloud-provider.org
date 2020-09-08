@@ -1,15 +1,46 @@
 # -*- fill-column: 76; -*-
-#+TITLE: Project management for XDP Cloud-Provider use-case
+#+TITLE: Project management for XDP Cloud-Provider
 #+CATEGORY: Cloud
 #+OPTIONS: ^:nil
 
+This [[file:xdp-cloud-provider.org]] contains tasks for XDP-Cloud-Provider project.
+This gets rendered on [[https://xdp-project.net/areas/xdp-cloud-provider.html][xdp-project.net]].
+
+*Intro* (that should be moved to project git-repo):
+
 A solid use-case for XDP is redirection into guest VMs. As this allows a
 packet destined for a VM to skip the entire overhead of the Host-OS network
-stack.  The Host-OS still sees the packet at the XDP layer which allow for
+stack. The Host-OS still sees the packet at the XDP layer which allow for
 implementing and enforcing per VM policies.
 
 For a Cloud Provider this could (1) save significant amount of CPU resources
 in the Host-OS, and (2) increase the throughput (pps) performance into a
 Guest VM.
+
+* Current tasks                                                      :@short:
+
+** TODO Kickstart the project "xdp-cloud-provider"
+
+*** TODO Find project stakeholders and participants
+
+*** TODO Initial video meeting to settle expectations
+
+*** TODO Howto keep track of tasks
+
+This org-mode project TODO file is likely not optimal for peoples workflow.
+Have a meeting about this. Obvious question: Can we simply use GitHub's
+facilities, like issues to track assignments?
+
+** TODO Create git repo for xdp-cloud-provider
+
+* Completed tasks
+
+** DONE Promoting Aherns work on xdp-newbies
+CLOSED: [2020-08-21 Fri 11:56]
+
+Subject: Using XDP for Cloud VMs by David Ahern
+- Message-ID: <[[https://lore.kernel.org/xdp-newbies/20200821115614.40fa7eb0@carbon/][20200821115614.40fa7eb0@carbon]]>
+
+
 
 #+INCLUDE: "../sitemap.org" :minlevel 1
