@@ -1,0 +1,11 @@
+# -*- fill-column: 76; -*-
+#+TITLE: For devmap running 2nd XDP-prog later
+#+CATEGORY: CPUMAP
+#+OPTIONS: ^:nil
+
+Do as proposed in:
+- https://lore.kernel.org/netdev/20200911095820.304d9877@carbon
+
+Slightly related to cpumap that can also run 2nd XDP-prog:
+- [[file:../cpumap/cpumap04-map-xdp-prog.org]]
+
