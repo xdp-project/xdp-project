@@ -1,3 +1,4 @@
+
 # -*- fill-column: 76; -*-
 #+Title: XDP multi buffer design
 
@@ -40,6 +41,34 @@ We will extend xdp_buff/xdp_frame adding multi-buffer bit (mb) as an
 indication that this is a multi-buffer packets, as this is needed by
 internal helpers (see later) and might be useful for XDP-developer (e.g.
 return XDP_PASS for these kind of frames).
+
+* Proposal#2: Access to additional fragments
+Although by default you only have access to the first segment (fragment 0),
+it would make sense for an XDP application to access data further on in the
+packet.
+
+If this gets done by a helper similar to bpf_msg_pull_data(), the
+linearization of the data would make this a show stopper from a performance
+point of view. As an alternative, it would be nice if we could get a rolling
+window into the packet, by selecting the fragment (page) we would like to
+look at. The downside of this is that the XDP program needs to take into
+account that some data (let's say a specific network struct) might be split
+across multiple pages.
+
+There are several ways this could be implemented. The helper could simple be
+called something like bpf_xdp_fragment_select(struct xdp_buff *xdp_md, u8
+frag). The implementation details could be different.
+
+- We would use the existing data* pointer fields to point to the current
+fragment to access and introduce a data_current_fragment (or alike variable)
+to indicate to which fragment the data* values point to (or leave this to
+the XDP application to track).
+
+- Alternatively, we could keep the data* fields as is, and add some additional
+fragment_data* fields. However, this would add additional fields to the
+xdp_md/xdp_buff structure, and it would require additional helper functions
+(see below).
+
 
 * XDP multi-buffer extensions and complications
 
@@ -222,6 +251,13 @@ packet-header split done by hardware. When the BPF-program parse packet
 headers, the program logic can detect the wrong header split, and use this
 helper to adjust.
 
+In the case where you need to add something to the first fragment (0) of a
+packet, let's say add a tunnel header, there might not be enough room as the
+hardware filled the entire first page. We need some additional helpers, some
+examples:
+
+bpf_xdp_fragment_split(struct xdp_buff *xdp_md, u8 fragment, u32 split_at);
+bpf_xdp_fragment_add(struct xdp_buff *xdp_md, u8 add_frag_after_frag);
 
 * Discuss: What info does BPF-programmer need about buffers/segments?
 
