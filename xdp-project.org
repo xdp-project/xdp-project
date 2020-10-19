@@ -543,7 +543,13 @@ The metadata available to XDP programs through the XDP context object could
 be expanded with other useful entries. This section collects lists of which
 items would be useful to have, and explains why for each of them.
 
-*** TODO XDP frame length
+*** DONE XDP frame length
+CLOSED: [2020-10-19 Mon 12:55]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2020-10-19 Mon 12:55]
+:END:
+DONE: Merge commit: https://git.kernel.org/torvalds/c/5cc5924d8315
+
 The length of the XDP *frame* (as opposed to the data packet) is needed for
 various things:
 
