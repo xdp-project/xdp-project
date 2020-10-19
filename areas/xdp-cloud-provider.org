@@ -7,7 +7,9 @@ This [[file:xdp-cloud-provider.org]] contains tasks for the XDP-Cloud-Provider
 project. This gets rendered on [[https://xdp-project.net/areas/xdp-cloud-provider.html][xdp-project.net]] and is located in GitHub repo
 [[https://github.com/xdp-project/xdp-project/blob/master/areas/xdp-cloud-provider.org][xdp-project under areas/]].
 
-*Intro* (that should be moved to project git-repo):
+Project have own GitHub repo: https://github.com/xdp-project/xdp-cloud
+
+*Intro* (that should be moved to [[https://github.com/xdp-project/xdp-cloud][project git-repo]]):
 
 A solid use-case for XDP is redirection into guest VMs. As this allows a
 packet destined for a VM to skip the entire overhead of the Host-OS network
@@ -32,7 +34,12 @@ This org-mode project TODO file is likely not optimal for peoples workflow.
 Have a meeting about this. Obvious question: Can we simply use GitHub's
 facilities, like issues to track assignments?
 
-** TODO Create git repo for xdp-cloud-provider
+** DONE Create git repo for xdp-cloud-provider
+CLOSED: [2020-10-19 Mon 10:32]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2020-10-19 Mon 10:32]
+:END:
+https://github.com/xdp-project/xdp-cloud
 
 * Completed tasks
 
