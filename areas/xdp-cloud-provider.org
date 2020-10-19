@@ -41,6 +41,14 @@ CLOSED: [2020-10-19 Mon 10:32]
 :END:
 https://github.com/xdp-project/xdp-cloud
 
+** WAIT Create mailing list                                        :WAITING:
+:LOGBOOK:
+- State "WAIT"       from "TODO"       [2020-10-19 Mon 10:44] \\
+  Waiting on Red Hat IT-department.
+:END:
+Waiting for getting mailman and MX records setup on xdp-project.net.
+
+
 * Completed tasks
 
 ** DONE Promoting Aherns work on xdp-newbies
