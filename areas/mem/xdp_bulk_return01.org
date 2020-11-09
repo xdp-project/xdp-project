@@ -1,0 +1,22 @@
+# -*- fill-column: 76; -*-
+#+Title: Testing XDP redirect bulk return API
+#+Options: ^:nil
+
+Upstream patchset proposal
+ https://lore.kernel.org/netdev/cover.1604686496.git.lorenzo@kernel.org/
+
+Testing this git tree + branch:
+ - https://github.com/LorenzoBianconi/net-next/tree/xdp_bulk_tx_return_jesper
+
+From cover letter:
+#+begin_quote
+XDP bulk APIs introduce a defer/flush mechanism to return
+pages belonging to the same xdp_mem_allocator object
+(identified via the mem.id field) in bulk to optimize
+I-cache and D-cache since xdp_return_frame is usually run
+inside the driver NAPI tx completion loop.
+
+Convert mvneta, mvpp2 and mlx5 drivers to xdp_return_frame_bulk APIs.
+#+end_quote
+
+
