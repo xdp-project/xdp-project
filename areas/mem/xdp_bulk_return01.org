@@ -105,4 +105,48 @@ Use XDP-redirect to act like XDP_TX and redirect packets back-out same
 interface. This is done as-a-test to keep same net_device in cache and same
 driver code (I-cache) active.
 
+Testing xdp_redirect_map:
+#+begin_example
+jbrouer@broadwell kernel-bpf-samples]$ sudo ./xdp_redirect_map mlx5p1 mlx5p1
+input: 7 output: 7
+libbpf: Kernel error message: XDP program already attached
+WARN: link set xdp fd failed on 7
+ifindex 7:    8900610 pkt/s
+ifindex 7:    8996142 pkt/s
+ifindex 7:    8985280 pkt/s
+ifindex 7:    8980360 pkt/s
+ifindex 7:    8988103 pkt/s
+#+end_example
 
+Ethtool stats to verify packets are transmitted:
+#+begin_example
+Show adapter(s) (mlx5p1) statistics (ONLY that changed!)
+Ethtool(mlx5p1  ) stat:       140436 (        140,436) <= ch1_poll /sec
+Ethtool(mlx5p1  ) stat:       140436 (        140,436) <= ch_poll /sec
+Ethtool(mlx5p1  ) stat:      8987891 (      8,987,891) <= rx1_cache_empty /sec
+Ethtool(mlx5p1  ) stat:      8987880 (      8,987,880) <= rx1_xdp_redirect /sec
+Ethtool(mlx5p1  ) stat:     44748662 (     44,748,662) <= rx_64_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:   2863921010 (  2,863,921,010) <= rx_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:      8987894 (      8,987,894) <= rx_cache_empty /sec
+Ethtool(mlx5p1  ) stat:     35760982 (     35,760,982) <= rx_out_of_buffer /sec
+Ethtool(mlx5p1  ) stat:     44748762 (     44,748,762) <= rx_packets_phy /sec
+Ethtool(mlx5p1  ) stat:   2863907667 (  2,863,907,667) <= rx_prio0_bytes /sec
+Ethtool(mlx5p1  ) stat:     44748558 (     44,748,558) <= rx_prio0_packets /sec
+Ethtool(mlx5p1  ) stat:   2684927295 (  2,684,927,295) <= rx_vport_unicast_bytes /sec
+Ethtool(mlx5p1  ) stat:     44748791 (     44,748,791) <= rx_vport_unicast_packets /sec
+Ethtool(mlx5p1  ) stat:      8987876 (      8,987,876) <= rx_xdp_redirect /sec
+Ethtool(mlx5p1  ) stat:       140435 (        140,435) <= tx1_xdp_cqes /sec
+Ethtool(mlx5p1  ) stat:       280871 (        280,871) <= tx1_xdp_mpwqe /sec
+Ethtool(mlx5p1  ) stat:       608555 (        608,555) <= tx1_xdp_nops /sec
+Ethtool(mlx5p1  ) stat:      8987882 (      8,987,882) <= tx1_xdp_xmit /sec
+Ethtool(mlx5p1  ) stat:    575223027 (    575,223,027) <= tx_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:      8987852 (      8,987,852) <= tx_packets_phy /sec
+Ethtool(mlx5p1  ) stat:    575219919 (    575,219,919) <= tx_prio0_bytes /sec
+Ethtool(mlx5p1  ) stat:      8987809 (      8,987,809) <= tx_prio0_packets /sec
+Ethtool(mlx5p1  ) stat:    539271092 (    539,271,092) <= tx_vport_unicast_bytes /sec
+Ethtool(mlx5p1  ) stat:      8987852 (      8,987,852) <= tx_vport_unicast_packets /sec
+Ethtool(mlx5p1  ) stat:       140436 (        140,436) <= tx_xdp_cqes /sec
+Ethtool(mlx5p1  ) stat:       280871 (        280,871) <= tx_xdp_mpwqe /sec
+Ethtool(mlx5p1  ) stat:       608555 (        608,555) <= tx_xdp_nops /sec
+Ethtool(mlx5p1  ) stat:      8987878 (      8,987,878) <= tx_xdp_xmit /sec
+#+end_example
