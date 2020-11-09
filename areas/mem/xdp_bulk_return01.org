@@ -99,7 +99,7 @@ Ethtool(mlx5p1  ) stat:  551096207 (    551,096,207) <= tx_vport_unicast_bytes /
 Ethtool(mlx5p1  ) stat:    9184940 (      9,184,940) <= tx_vport_unicast_packets /sec
 #+end_example
 
-** XDP-redirect bounce
+** XDP-redirect bounce (baseline)
 
 Use XDP-redirect to act like XDP_TX and redirect packets back-out same
 interface. This is done as-a-test to keep same net_device in cache and same
@@ -150,3 +150,131 @@ Ethtool(mlx5p1  ) stat:       280871 (        280,871) <= tx_xdp_mpwqe /sec
 Ethtool(mlx5p1  ) stat:       608555 (        608,555) <= tx_xdp_nops /sec
 Ethtool(mlx5p1  ) stat:      8987878 (      8,987,878) <= tx_xdp_xmit /sec
 #+end_example
+
+Baseline: choosing TX-pps at phy level
+- Baseline: 8987852 ( 8,987,852) <= tx_packets_phy /sec
+
+* Testing patchset
+
+Upstream patchset proposal
+ https://lore.kernel.org/netdev/cover.1604686496.git.lorenzo@kernel.org/
+
+Testing this git tree + branch:
+ - https://github.com/LorenzoBianconi/net-next/tree/xdp_bulk_tx_return_jesper
+
+** XDP_TX test
+
+#+begin_example
+sudo ./xdp_rxq_info --dev mlx5p1 --act XDP_TX
+[...]
+Running XDP on dev:mlx5p1 (ifindex:7) action:XDP_TX options:swapmac
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      5       15,282,307  0          
+XDP-RX CPU      total   15,282,307 
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    5:5   15,282,316  0          
+rx_queue_index    5:sum 15,282,316 
+#+end_example
+
+Something is still wrong on actual transmitted packet size, so even-though
+this slower than baseline, I'm not sure that these XDP_TX results or counter
+from the XDP side can be trusted.
+
+Ethtool stats to verify packets are transmitted:
+#+begin_example
+Show adapter(s) (mlx5p1) statistics (ONLY that changed!)
+Ethtool(mlx5p1  ) stat:       233354 (        233,354) <= ch5_poll /sec
+Ethtool(mlx5p1  ) stat:       233355 (        233,355) <= ch_poll /sec
+Ethtool(mlx5p1  ) stat:          424 (            424) <= rx5_cache_empty /sec
+Ethtool(mlx5p1  ) stat:          424 (            424) <= rx5_cache_full /sec
+Ethtool(mlx5p1  ) stat:     14934253 (     14,934,253) <= rx5_cache_reuse /sec
+Ethtool(mlx5p1  ) stat:      5581066 (      5,581,066) <= rx5_xdp_drop /sec
+Ethtool(mlx5p1  ) stat:       146150 (        146,150) <= rx5_xdp_tx_cqes /sec
+Ethtool(mlx5p1  ) stat:      5581066 (      5,581,066) <= rx5_xdp_tx_full /sec
+Ethtool(mlx5p1  ) stat:      9349435 (      9,349,435) <= rx5_xdp_tx_inlnw /sec
+Ethtool(mlx5p1  ) stat:       876639 (        876,639) <= rx5_xdp_tx_mpwqe /sec
+Ethtool(mlx5p1  ) stat:       993656 (        993,656) <= rx5_xdp_tx_nops /sec
+Ethtool(mlx5p1  ) stat:      9353579 (      9,353,579) <= rx5_xdp_tx_xmit /sec
+Ethtool(mlx5p1  ) stat:     44387430 (     44,387,430) <= rx_64_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:   2840787378 (  2,840,787,378) <= rx_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:          424 (            424) <= rx_cache_empty /sec
+Ethtool(mlx5p1  ) stat:          424 (            424) <= rx_cache_full /sec
+Ethtool(mlx5p1  ) stat:     14934296 (     14,934,296) <= rx_cache_reuse /sec
+Ethtool(mlx5p1  ) stat:     29452362 (     29,452,362) <= rx_out_of_buffer /sec
+Ethtool(mlx5p1  ) stat:     44387303 (     44,387,303) <= rx_packets_phy /sec
+Ethtool(mlx5p1  ) stat:   2840830503 (  2,840,830,503) <= rx_prio0_bytes /sec
+Ethtool(mlx5p1  ) stat:     44387977 (     44,387,977) <= rx_prio0_packets /sec
+Ethtool(mlx5p1  ) stat:   2663234382 (  2,663,234,382) <= rx_vport_unicast_bytes /sec
+Ethtool(mlx5p1  ) stat:     44387241 (     44,387,241) <= rx_vport_unicast_packets /sec
+Ethtool(mlx5p1  ) stat:      5581087 (      5,581,087) <= rx_xdp_drop /sec
+Ethtool(mlx5p1  ) stat:       146150 (        146,150) <= rx_xdp_tx_cqe /sec
+Ethtool(mlx5p1  ) stat:      5581087 (      5,581,087) <= rx_xdp_tx_full /sec
+Ethtool(mlx5p1  ) stat:      9349461 (      9,349,461) <= rx_xdp_tx_inlnw /sec
+Ethtool(mlx5p1  ) stat:       876641 (        876,641) <= rx_xdp_tx_mpwqe /sec
+Ethtool(mlx5p1  ) stat:       993657 (        993,657) <= rx_xdp_tx_nops /sec
+Ethtool(mlx5p1  ) stat:      9353605 (      9,353,605) <= rx_xdp_tx_xmit /sec
+Ethtool(mlx5p1  ) stat:    598635096 (    598,635,096) <= tx_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:      9353671 (      9,353,671) <= tx_packets_phy /sec
+Ethtool(mlx5p1  ) stat:    598644630 (    598,644,630) <= tx_prio0_bytes /sec
+Ethtool(mlx5p1  ) stat:      9353822 (      9,353,822) <= tx_prio0_packets /sec
+Ethtool(mlx5p1  ) stat:    561220066 (    561,220,066) <= tx_vport_unicast_bytes /sec
+Ethtool(mlx5p1  ) stat:      9353664 (      9,353,664) <= tx_vport_unicast_packets /sec
+#+end_example
+
+** XDP-redirect bounce
+
+Testing xdp_redirect_map back-out same interface.
+
+#+begin_example
+brouer@broadwell kernel-bpf-samples]$ sudo ./xdp_redirect_map mlx5p1 mlx5p1
+input: 7 output: 7
+libbpf: Kernel error message: XDP program already attached
+WARN: link set xdp fd failed on 7
+ifindex 7:    9475880 pkt/s
+ifindex 7:    9548121 pkt/s
+ifindex 7:    9548336 pkt/s
+ifindex 7:    9545295 pkt/s
+#+end_example
+
+Ethtool stats to verify packets are transmitted:
+#+begin_example
+Show adapter(s) (mlx5p1) statistics (ONLY that changed!)
+Ethtool(mlx5p1  ) stat:       149101 (        149,101) <= ch5_poll /sec
+Ethtool(mlx5p1  ) stat:       149101 (        149,101) <= ch_poll /sec
+Ethtool(mlx5p1  ) stat:      9542483 (      9,542,483) <= rx5_cache_empty /sec
+Ethtool(mlx5p1  ) stat:      9542491 (      9,542,491) <= rx5_xdp_redirect /sec
+Ethtool(mlx5p1  ) stat:     44715715 (     44,715,715) <= rx_64_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:   2861806193 (  2,861,806,193) <= rx_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:      9542483 (      9,542,483) <= rx_cache_empty /sec
+Ethtool(mlx5p1  ) stat:     35173205 (     35,173,205) <= rx_out_of_buffer /sec
+Ethtool(mlx5p1  ) stat:     44715726 (     44,715,726) <= rx_packets_phy /sec
+Ethtool(mlx5p1  ) stat:   2861812704 (  2,861,812,704) <= rx_prio0_bytes /sec
+Ethtool(mlx5p1  ) stat:     44715823 (     44,715,823) <= rx_prio0_packets /sec
+Ethtool(mlx5p1  ) stat:   2682943266 (  2,682,943,266) <= rx_vport_unicast_bytes /sec
+Ethtool(mlx5p1  ) stat:     44715721 (     44,715,721) <= rx_vport_unicast_packets /sec
+Ethtool(mlx5p1  ) stat:      9542499 (      9,542,499) <= rx_xdp_redirect /sec
+Ethtool(mlx5p1  ) stat:       149102 (        149,102) <= tx5_xdp_cqes /sec
+Ethtool(mlx5p1  ) stat:       298203 (        298,203) <= tx5_xdp_mpwqe /sec
+Ethtool(mlx5p1  ) stat:       646106 (        646,106) <= tx5_xdp_nops /sec
+Ethtool(mlx5p1  ) stat:      9542490 (      9,542,490) <= tx5_xdp_xmit /sec
+Ethtool(mlx5p1  ) stat:    610718914 (    610,718,914) <= tx_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:      9542483 (      9,542,483) <= tx_packets_phy /sec
+Ethtool(mlx5p1  ) stat:    610720267 (    610,720,267) <= tx_prio0_bytes /sec
+Ethtool(mlx5p1  ) stat:      9542504 (      9,542,504) <= tx_prio0_packets /sec
+Ethtool(mlx5p1  ) stat:    572550251 (    572,550,251) <= tx_vport_unicast_bytes /sec
+Ethtool(mlx5p1  ) stat:      9542504 (      9,542,504) <= tx_vport_unicast_packets /sec
+Ethtool(mlx5p1  ) stat:       149102 (        149,102) <= tx_xdp_cqes /sec
+Ethtool(mlx5p1  ) stat:       298203 (        298,203) <= tx_xdp_mpwqe /sec
+Ethtool(mlx5p1  ) stat:       646106 (        646,106) <= tx_xdp_nops /sec
+Ethtool(mlx5p1  ) stat:      9542499 (      9,542,499) <= tx_xdp_xmit /sec
+#+end_example
+
+Comparing TX-pps at phy level
+- Baseline: 8987852 ( 8,987,852) <= tx_packets_phy /sec
+- Patchset: 9542483 ( 9,542,483) <= tx_packets_phy /sec
+
+
+These numbers are lower than I measured before in earlier iterations
+(10165419 pkt/s (10,165,419 pps)) of patchset. And non-patched was 8514144
+pkt/s (8,514,144 pps).  Something need investing.
