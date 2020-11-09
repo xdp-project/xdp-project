@@ -280,3 +280,252 @@ Comparing TX-pps at phy level
 These numbers are lower than I measured before in earlier iterations
 (10165419 pkt/s (10,165,419 pps)) of patchset. And non-patched was 8514144
 pkt/s (8,514,144 pps).  Something need investing.
+
+*** Details: perf stat measurement
+
+#+begin_example
+$ perf stat -C5 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -e L1-icache-load-misses -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 5' (4 runs):
+
+     3.803.620.734      cycles                                                        ( +-  0,01% )
+     9.950.204.056      instructions              #    2,62  insn per cycle           ( +-  0,01% )
+        83.226.329      cache-references                                              ( +-  0,02% )
+               544      cache-misses              #    0,001 % of all cache refs      ( +- 46,55% )
+     1.826.738.580      branches:k                                                    ( +-  0,01% )
+         3.226.436      branch-misses:k           #    0,18% of all branches          ( +-  0,20% )
+           423.246      l2_rqsts.all_code_rd                                          ( +-  1,44% )
+            58.690      l2_rqsts.code_rd_hit                                          ( +-  2,91% )
+           364.548      l2_rqsts.code_rd_miss                                         ( +-  1,30% )
+           359.595      L1-icache-load-misses                                         ( +-  0,79% )
+
+          1,000988 +- 0,000149 seconds time elapsed  ( +-  0,01% )
+#+end_example
+
+
+* Optimize code
+
+** Fix bulk in mlx5 driver code
+
+Fix to mlx5
+#+begin_src diff
+diff --git a/drivers/net/ethernet/mellanox/mlx5/core/en/xdp.c b/drivers/net/ethernet/mellanox/mlx5/core/en/xdp.c
+index 5fdfbf390d5c..3a5c1845243c 100644
+--- a/drivers/net/ethernet/mellanox/mlx5/core/en/xdp.c
++++ b/drivers/net/ethernet/mellanox/mlx5/core/en/xdp.c
+@@ -366,13 +366,12 @@ mlx5e_xmit_xdp_frame(struct mlx5e_xdpsq *sq, struct mlx5e_xmit_data *xdptxd,
+ static void mlx5e_free_xdpsq_desc(struct mlx5e_xdpsq *sq,
+                                  struct mlx5e_xdp_wqe_info *wi,
+                                  u32 *xsk_frames,
+-                                 bool recycle)
++                                 bool recycle,
++                                 struct xdp_frame_bulk *bq)
+ {
+        struct mlx5e_xdp_info_fifo *xdpi_fifo = &sq->db.xdpi_fifo;
+-       struct xdp_frame_bulk bq;
+        u16 i;
+ 
+-       bq.xa = NULL;
+        for (i = 0; i < wi->num_pkts; i++) {
+                struct mlx5e_xdp_info xdpi = mlx5e_xdpi_fifo_pop(xdpi_fifo);
+ 
+@@ -381,7 +380,7 @@ static void mlx5e_free_xdpsq_desc(struct mlx5e_xdpsq *sq,
+                        /* XDP_TX from the XSK RQ and XDP_REDIRECT */
+                        dma_unmap_single(sq->pdev, xdpi.frame.dma_addr,
+                                         xdpi.frame.xdpf->len, DMA_TO_DEVICE);
+-                       xdp_return_frame_bulk(xdpi.frame.xdpf, &bq);
++                       xdp_return_frame_bulk(xdpi.frame.xdpf, bq);
+                        break;
+                case MLX5E_XDP_XMIT_MODE_PAGE:
+                        /* XDP_TX from the regular RQ */
+@@ -395,7 +394,7 @@ static void mlx5e_free_xdpsq_desc(struct mlx5e_xdpsq *sq,
+                        WARN_ON_ONCE(true);
+                }
+        }
+-       xdp_flush_frame_bulk(&bq);
++       // xdp_flush_frame_bulk(&bq); // Wrong place
+ }
+ 
+ bool mlx5e_poll_xdpsq_cq(struct mlx5e_cq *cq)
+@@ -406,6 +405,9 @@ bool mlx5e_poll_xdpsq_cq(struct mlx5e_cq *cq)
+        u16 sqcc;
+        int i;
+ 
++       struct xdp_frame_bulk bq;
++       bq.xa = NULL;
++
+        sq = container_of(cq, struct mlx5e_xdpsq, cq);
+ 
+        if (unlikely(!test_bit(MLX5E_SQ_STATE_ENABLED, &sq->state)))
+@@ -437,7 +439,7 @@ bool mlx5e_poll_xdpsq_cq(struct mlx5e_cq *cq)
+ 
+                        sqcc += wi->num_wqebbs;
+ 
+-                       mlx5e_free_xdpsq_desc(sq, wi, &xsk_frames, true);
++                       mlx5e_free_xdpsq_desc(sq, wi, &xsk_frames, true, &bq);
+                } while (!last_wqe);
+ 
+                if (unlikely(get_cqe_opcode(cqe) != MLX5_CQE_REQ)) {
+@@ -450,6 +452,8 @@ bool mlx5e_poll_xdpsq_cq(struct mlx5e_cq *cq)
+                }
+        } while ((++i < MLX5E_TX_CQ_POLL_BUDGET) && (cqe = mlx5_cqwq_get_cqe(&cq->wq)));
+ 
++       xdp_flush_frame_bulk(&bq);
++
+        if (xsk_frames)
+                xsk_tx_completed(sq->xsk_pool, xsk_frames);
+ 
+@@ -468,6 +472,11 @@ void mlx5e_free_xdpsq_descs(struct mlx5e_xdpsq *sq)
+ {
+        u32 xsk_frames = 0;
+ 
++       struct xdp_frame_bulk bq;
++       bq.xa = NULL;
++
++       rcu_read_lock(); /* need for xdp_return_frame_bulk */
++
+        while (sq->cc != sq->pc) {
+                struct mlx5e_xdp_wqe_info *wi;
+                u16 ci;
+@@ -477,9 +486,12 @@ void mlx5e_free_xdpsq_descs(struct mlx5e_xdpsq *sq)
+ 
+                sq->cc += wi->num_wqebbs;
+ 
+-               mlx5e_free_xdpsq_desc(sq, wi, &xsk_frames, false);
++               mlx5e_free_xdpsq_desc(sq, wi, &xsk_frames, false, &bq);
+        }
+ 
++       xdp_flush_frame_bulk(&bq);
++       rcu_read_unlock();
++
+        if (xsk_frames)
+                xsk_tx_completed(sq->xsk_pool, xsk_frames);
+ }
+
+#+end_src
+
+** Optimize code: attempt 02
+
+
+Change to page_pool:
+
+#+begin_src diff
+diff --git a/net/core/page_pool.c b/net/core/page_pool.c
+index 31dac2ad4a1f..4cba11ff6f41 100644
+--- a/net/core/page_pool.c
++++ b/net/core/page_pool.c
+@@ -364,7 +364,7 @@ static bool pool_page_reusable(struct page_pool *pool, struct page *page)
+  * If the page refcnt != 1, then the page will be returned to memory
+  * subsystem.
+  */
+-static struct page *
++static __always_inline struct page *
+ __page_pool_put_page(struct page_pool *pool, struct page *page,
+                     unsigned int dma_sync_size, bool allow_direct)
+ {
+@@ -435,7 +435,7 @@ void page_pool_put_page_bulk(struct page_pool *pool, void **data,
+                        data[bulk_len++] = page;
+        }
+ 
+-       if (!bulk_len)
++       if (unlikely(!bulk_len))
+                return;
+ 
+        /* Bulk producer into ptr_ring page_pool cache */
+@@ -446,6 +446,9 @@ void page_pool_put_page_bulk(struct page_pool *pool, void **data,
+        }
+        page_pool_ring_unlock(pool);
+ 
++       if (likely(!pa_len))
++               return;
++
+        /* ptr_ring cache full, free pages outside producer lock since
+         * put_page() with refcnt == 1 can be an expensive operation
+         */
+
+#+end_src
+
+Changes to xdp.c:
+
+#+begin_src diff
+diff --git a/net/core/xdp.c b/net/core/xdp.c
+index ff7c801bd40c..a5ab053ae178 100644
+--- a/net/core/xdp.c
++++ b/net/core/xdp.c
+@@ -402,6 +402,7 @@ void xdp_flush_frame_bulk(struct xdp_frame_bulk *bq)
+ }
+ EXPORT_SYMBOL_GPL(xdp_flush_frame_bulk);
+ 
++/* Must be called with rcu_read_lock held */
+ void xdp_return_frame_bulk(struct xdp_frame *xdpf,
+                           struct xdp_frame_bulk *bq)
+ {
+@@ -413,8 +414,6 @@ void xdp_return_frame_bulk(struct xdp_frame *xdpf,
+                return;
+        }
+ 
+-       rcu_read_lock();
+-
+        xa = bq->xa;
+        if (unlikely(!xa)) {
+                xa = rhashtable_lookup(mem_id_ht, &mem->id, mem_id_rht_params);
+@@ -425,14 +424,12 @@ void xdp_return_frame_bulk(struct xdp_frame *xdpf,
+        if (bq->count == XDP_BULK_QUEUE_SIZE)
+                xdp_flush_frame_bulk(bq);
+ 
+-       if (mem->id != xa->mem.id) {
++       if (unlikely(mem->id != xa->mem.id)) {
+                xdp_flush_frame_bulk(bq);
+                bq->xa = rhashtable_lookup(mem_id_ht, &mem->id, mem_id_rht_params);
+        }
+ 
+        bq->q[bq->count++] = xdpf->data;
+-
+-       rcu_read_unlock();
+ }
+ EXPORT_SYMBOL_GPL(xdp_return_frame_bulk);
+#+end_src
+
+** Optimize code: attempt 02 - results
+
+#+begin_example
+sudo ./xdp_redirect_map mlx5p1 mlx5p1
+[...]
+ifindex 7:   10258717 pkt/s
+ifindex 7:   10263252 pkt/s
+ifindex 7:   10255251 pkt/s
+ifindex 7:   10256871 pkt/s
+ifindex 7:   10263568 pkt/s
+#+end_example
+
+#+begin_example
+Show adapter(s) (mlx5p1) statistics (ONLY that changed!)
+Ethtool(mlx5p1  ) stat:       160388 (        160,388) <= ch1_poll /sec
+Ethtool(mlx5p1  ) stat:       160388 (        160,388) <= ch_poll /sec
+Ethtool(mlx5p1  ) stat:     10264823 (     10,264,823) <= rx1_cache_empty /sec
+Ethtool(mlx5p1  ) stat:     10264802 (     10,264,802) <= rx1_xdp_redirect /sec
+Ethtool(mlx5p1  ) stat:     45316225 (     45,316,225) <= rx_64_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:   2900232288 (  2,900,232,288) <= rx_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:     10264799 (     10,264,799) <= rx_cache_empty /sec
+Ethtool(mlx5p1  ) stat:     35051252 (     35,051,252) <= rx_out_of_buffer /sec
+Ethtool(mlx5p1  ) stat:     45316130 (     45,316,130) <= rx_packets_phy /sec
+Ethtool(mlx5p1  ) stat:   2900223009 (  2,900,223,009) <= rx_prio0_bytes /sec
+Ethtool(mlx5p1  ) stat:     45315989 (     45,315,989) <= rx_prio0_packets /sec
+Ethtool(mlx5p1  ) stat:   2718966819 (  2,718,966,819) <= rx_vport_unicast_bytes /sec
+Ethtool(mlx5p1  ) stat:     45316114 (     45,316,114) <= rx_vport_unicast_packets /sec
+Ethtool(mlx5p1  ) stat:     10264815 (     10,264,815) <= rx_xdp_redirect /sec
+Ethtool(mlx5p1  ) stat:       160387 (        160,387) <= tx1_xdp_cqes /sec
+Ethtool(mlx5p1  ) stat:       320775 (        320,775) <= tx1_xdp_mpwqe /sec
+Ethtool(mlx5p1  ) stat:       695015 (        695,015) <= tx1_xdp_nops /sec
+Ethtool(mlx5p1  ) stat:     10264802 (     10,264,802) <= tx1_xdp_xmit /sec
+Ethtool(mlx5p1  ) stat:    656948779 (    656,948,779) <= tx_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:     10264844 (     10,264,844) <= tx_packets_phy /sec
+Ethtool(mlx5p1  ) stat:    656948652 (    656,948,652) <= tx_prio0_bytes /sec
+Ethtool(mlx5p1  ) stat:     10264823 (     10,264,823) <= tx_prio0_packets /sec
+Ethtool(mlx5p1  ) stat:    615889361 (    615,889,361) <= tx_vport_unicast_bytes /sec
+Ethtool(mlx5p1  ) stat:     10264823 (     10,264,823) <= tx_vport_unicast_packets /sec
+Ethtool(mlx5p1  ) stat:       160388 (        160,388) <= tx_xdp_cqes /sec
+Ethtool(mlx5p1  ) stat:       320775 (        320,775) <= tx_xdp_mpwqe /sec
+Ethtool(mlx5p1  ) stat:       695011 (        695,011) <= tx_xdp_nops /sec
+Ethtool(mlx5p1  ) stat:     10264812 (     10,264,812) <= tx_xdp_xmit /sec
+#+end_example
