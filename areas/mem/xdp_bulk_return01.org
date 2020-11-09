@@ -273,7 +273,9 @@ Ethtool(mlx5p1  ) stat:      9542499 (      9,542,499) <= tx_xdp_xmit /sec
 Comparing TX-pps at phy level
 - Baseline: 8987852 ( 8,987,852) <= tx_packets_phy /sec
 - Patchset: 9542483 ( 9,542,483) <= tx_packets_phy /sec
-
+- Packets:   554631 (   554,631) pps faster
+- Nanosec:   6.4667 ns (1/8987852-1/9542483)*10^9
+- Percent :  +6.17% faster ((9542483/8987852)-1)*100
 
 These numbers are lower than I measured before in earlier iterations
 (10165419 pkt/s (10,165,419 pps)) of patchset. And non-patched was 8514144
