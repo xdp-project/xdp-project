@@ -20,3 +20,49 @@ Convert mvneta, mvpp2 and mlx5 drivers to xdp_return_frame_bulk APIs.
 #+end_quote
 
 
+* Baseline testing
+
+#+begin_src sh
+[broadwell ~]$ uname -r -v
+5.10.0-rc2-lorenzo-baseline-for-bulk+ #4 SMP PREEMPT Mon Nov 9 11:46:02 CET 2020
+#+end_src
+
+Testing at kernel commit bff6f1db91e330d7fba56f815cdbc412c75fe163
+
+Generator running:
+#+begin_src sh
+[firesoul pktgen]$ ./pktgen_sample03_burst_single_flow.sh -vi mlx5p1 -d 198.18.1.1 -m ec:0d:9a:db:11:c4 -t 12 
+#+end_src
+
+Generator sending speed:
+- Ethtool(mlx5p1  ) stat: 44992839 ( 44,992,839) <= tx_packets /sec
+- Ethtool(mlx5p1  ) stat: 44993648 ( 44,993,648) <= tx_packets_phy /sec
+
+** XDP_TX test
+
+This XDP_TX should not really be affected by this optimisation, but it shows
+the max/upper performance bound achievable with a single RX-to-TX queue. In
+principle this can be used to deduce the overhead of XDP_REDIRECT net-core
+code infrastructure.
+
+Max XDP_TX performance:
+#+begin_example
+sudo ./xdp_rxq_info --dev mlx5p1 --act XDP_TX
+[...]
+Running XDP on dev:mlx5p1 (ifindex:7) action:XDP_TX options:swapmac
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      1       16,046,587  0          
+XDP-RX CPU      total   16,046,587 
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    1:1   16,046,598  0          
+rx_queue_index    1:sum 16,046,598 
+#+end_example
+
+** XDP-redirect bounce
+
+Use XDP-redirect to act like XDP_TX and redirect packets back-out same
+interface. This is done as-a-test to keep same net_device in cache and same
+driver code (I-cache) active.
+
+
