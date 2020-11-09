@@ -59,6 +59,46 @@ rx_queue_index    1:1   16,046,598  0
 rx_queue_index    1:sum 16,046,598 
 #+end_example
 
+Verifying the actual transmitted packets, as above XDP counter can only
+count the RX-events. Something is wrong, as we see only 9,184,940
+tx_packets_phy/sec (phy level transmits).
+
+#+begin_example
+Show adapter(s) (mlx5p1) statistics (ONLY that changed!)
+Ethtool(mlx5p1  ) stat:     253253 (        253,253) <= ch1_poll /sec
+Ethtool(mlx5p1  ) stat:     253253 (        253,253) <= ch_poll /sec
+Ethtool(mlx5p1  ) stat:   16208223 (     16,208,223) <= rx1_cache_reuse /sec
+Ethtool(mlx5p1  ) stat:    7023234 (      7,023,234) <= rx1_xdp_drop /sec
+Ethtool(mlx5p1  ) stat:     143515 (        143,515) <= rx1_xdp_tx_cqes /sec
+Ethtool(mlx5p1  ) stat:    7023234 (      7,023,234) <= rx1_xdp_tx_full /sec
+Ethtool(mlx5p1  ) stat:    9184953 (      9,184,953) <= rx1_xdp_tx_inlnw /sec
+Ethtool(mlx5p1  ) stat:     861089 (        861,089) <= rx1_xdp_tx_mpwqe /sec
+Ethtool(mlx5p1  ) stat:     975901 (        975,901) <= rx1_xdp_tx_nops /sec
+Ethtool(mlx5p1  ) stat:    9184953 (      9,184,953) <= rx1_xdp_tx_xmit /sec
+Ethtool(mlx5p1  ) stat:   44354640 (     44,354,640) <= rx_64_bytes_phy /sec
+Ethtool(mlx5p1  ) stat: 2838694013 (  2,838,694,013) <= rx_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:   16208181 (     16,208,181) <= rx_cache_reuse /sec
+Ethtool(mlx5p1  ) stat:   28146411 (     28,146,411) <= rx_out_of_buffer /sec
+Ethtool(mlx5p1  ) stat:   44354594 (     44,354,594) <= rx_packets_phy /sec
+Ethtool(mlx5p1  ) stat: 2838703690 (  2,838,703,690) <= rx_prio0_bytes /sec
+Ethtool(mlx5p1  ) stat:   44354740 (     44,354,740) <= rx_prio0_packets /sec
+Ethtool(mlx5p1  ) stat: 2661276172 (  2,661,276,172) <= rx_vport_unicast_bytes /sec
+Ethtool(mlx5p1  ) stat:   44354604 (     44,354,604) <= rx_vport_unicast_packets /sec
+Ethtool(mlx5p1  ) stat:    7023223 (      7,023,223) <= rx_xdp_drop /sec
+Ethtool(mlx5p1  ) stat:     143515 (        143,515) <= rx_xdp_tx_cqe /sec
+Ethtool(mlx5p1  ) stat:    7023222 (      7,023,222) <= rx_xdp_tx_full /sec
+Ethtool(mlx5p1  ) stat:    9184949 (      9,184,949) <= rx_xdp_tx_inlnw /sec
+Ethtool(mlx5p1  ) stat:     861089 (        861,089) <= rx_xdp_tx_mpwqe /sec
+Ethtool(mlx5p1  ) stat:     975901 (        975,901) <= rx_xdp_tx_nops /sec
+Ethtool(mlx5p1  ) stat:    9184949 (      9,184,949) <= rx_xdp_tx_xmit /sec
+Ethtool(mlx5p1  ) stat:  587836166 (    587,836,166) <= tx_bytes_phy /sec
+Ethtool(mlx5p1  ) stat:    9184940 (      9,184,940) <= tx_packets_phy /sec
+Ethtool(mlx5p1  ) stat:  587836799 (    587,836,799) <= tx_prio0_bytes /sec
+Ethtool(mlx5p1  ) stat:    9184951 (      9,184,951) <= tx_prio0_packets /sec
+Ethtool(mlx5p1  ) stat:  551096207 (    551,096,207) <= tx_vport_unicast_bytes /sec
+Ethtool(mlx5p1  ) stat:    9184940 (      9,184,940) <= tx_vport_unicast_packets /sec
+#+end_example
+
 ** XDP-redirect bounce
 
 Use XDP-redirect to act like XDP_TX and redirect packets back-out same
