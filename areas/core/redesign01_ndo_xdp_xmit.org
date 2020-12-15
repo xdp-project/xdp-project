@@ -1,0 +1,87 @@
+# -*- fill-column: 76; -*-
+#+Title: Redesign drop handling in ndo_xdp_xmit
+#+Options: ^:nil
+
+When XDP redirecting packets (=xdp_frame='s) out another NIC, the "remote"
+driver implement an NDO (Net Device Operation) called =ndo_xdp_xmit()=.
+(Hint this is called from =kernel/bpf/devmap.c= code, which implement a
+bulking layer for performance reasons).
+
+* Issue: drop semantics
+
+The current drop handling when driver TX-queue is full is sub-optimal for
+implementing (TX) queue handling for XDP.
+
+Current requirement for driver implementing the API is that, the driver must
+free the xdp_frame's that it was not able to transmit, via the call
+xdp_return_frame (optimised via =xdp_return_frame_rx_napi=).
+
+The driver usually returns a positive number for how many packets that were
+*sent*, but if a negative value is returned it is interpreted as an error
+(-errno) and the caller is responsible for freeing the =xdp_frame='s.
+
+** Current central code
+
+The current code of interest is [[https://elixir.bootlin.com/linux/v5.10/source/kernel/bpf/devmap.c#L344][bq_xmit_all]], which is located in kernel
+source file =kernel/bpf/devmap.c=.
+
+#+begin_src C
+static void bq_xmit_all(struct xdp_dev_bulk_queue *bq, u32 flags)
+{
+	struct net_device *dev = bq->dev;
+	int sent = 0, drops = 0, err = 0;
+	int i;
+
+	if (unlikely(!bq->count))
+		return;
+
+	for (i = 0; i < bq->count; i++) {
+		struct xdp_frame *xdpf = bq->q[i];
+
+		prefetch(xdpf);
+	}
+
+	sent = dev->netdev_ops->ndo_xdp_xmit(dev, bq->count, bq->q, flags);
+	if (sent < 0) {
+		err = sent;
+		sent = 0;
+		goto error;
+	}
+	drops = bq->count - sent;
+out:
+	bq->count = 0;
+
+	trace_xdp_devmap_xmit(bq->dev_rx, dev, sent, drops, err);
+	bq->dev_rx = NULL;
+	__list_del_clearprev(&bq->flush_node);
+	return;
+error:
+	/* If ndo_xdp_xmit fails with an errno, no frames have been
+	 * xmit'ed and it's our responsibility to them free all.
+	 */
+	for (i = 0; i < bq->count; i++) {
+		struct xdp_frame *xdpf = bq->q[i];
+
+		xdp_return_frame_rx_napi(xdpf);
+		drops++;
+	}
+	goto out;
+}
+#+end_src
+
+
+
+
+
+* Why change
+
+*Why change*: We want to change the current drop semantics, because it will
+allow us to implement better queue overflow handling. This is working
+towards the larger goal of a XDP TX queue-hook.
+
+* Proposal(#1) for new drop semantics
+
+The proposal is to make it the responsibility of the caller to free the
+xdp_frame's that were not transmitted.
+
+
