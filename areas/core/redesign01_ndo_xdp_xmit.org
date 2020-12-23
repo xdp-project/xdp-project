@@ -45,6 +45,39 @@ The advantage is flexibility, as e.g. the per-CPU data area (struct
 bpf_redirect_info) can be extended without affecting the UAPI. Decoupling
 the stages also allow us to create a "hidden" bulking mechanism.
 
+** Redirect into maps
+
+The "hidden" redirect bulking layer via maps. The BPF-maps concept is a
+generic key-value store with different types. The concept seems simple, but
+also very flexible as it is up-to each individual BPF map-type to define the
+meaning of the key and value.
+
+A redirect BPF-helper variant allows to redirect packets into a map:
+#+begin_src C
+long bpf_redirect_map(struct bpf_map *map, u32 key, u64 flags)
+#+end_src
+
+From XDP there are (currently) four map types that can be used in this
+BPF-helper as the target =map=:
+ - =BPF_MAP_TYPE_DEVMAP=
+ - =BPF_MAP_TYPE_CPUMAP=
+ - =BPF_MAP_TYPE_XSKMAP=
+ - =BPF_MAP_TYPE_DEVMAP_HASH=
+
+For the purpose of this document, we are interested in the "devmap" variant
+map types. This code is located in kernel git source file:
+[[https://elixir.bootlin.com/linux/latest/source/kernel/bpf/devmap.c][kernel/bpf/devmap.c]].
+
+*Stage(3)*: When =xdp_do_redirect()= have a map target, then it is fair to
+say that a 3rd stage of redirect happens. The packet is enqueued into the
+map (see code =__bpf_tx_xdp_map()=). For devmap the function
+=dev_map_enqueue()= is called, which ends in =bq_enqueue()=. The packet data
+structure =xdp_buff= is converted to =xdp_frame=, and is stored in a per-CPU
+temporary store (=struct xdp_dev_bulk_queue=) which used for bulking later.
+Thus, =xdp_do_redirect()= don't call the target device transmit operation
+=ndo_xdp_xmit()= immediately, there is a small intermediate bulking queue.
+
+Hint: the devmap.c code is the only caller of =ndo_xdp_xmit()=.
 
 * Issue: drop semantics
 
