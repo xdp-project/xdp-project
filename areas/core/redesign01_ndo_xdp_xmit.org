@@ -79,6 +79,49 @@ Thus, =xdp_do_redirect()= don't call the target device transmit operation
 
 Hint: the devmap.c code is the only caller of =ndo_xdp_xmit()=.
 
+** Driver XDP transmit function
+
+A driver that supports transmitting XDP redirected packets must implement
+the NDO (Net Device Operation) called =ndo_xdp_xmit()=.
+
+The function pointer prototype is defined in =include/linux/netdevice.h= and
+looks like this:
+
+#+begin_src C
+struct net_device_ops {
+ [...]
+	int	(*ndo_xdp_xmit)(struct net_device *dev, int n,
+				struct xdp_frame **xdp,
+				u32 flags);
+ [...]
+};
+#+end_src
+
+There are currently 20 drivers that implement this is:
+#+begin_src sh
+$ git grep --files-with-matches  '\.ndo_xdp_xmit\s*='
+drivers/net/ethernet/amazon/ena/ena_netdev.c
+drivers/net/ethernet/broadcom/bnxt/bnxt.c
+drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
+drivers/net/ethernet/freescale/dpaa2/dpaa2-eth.c
+drivers/net/ethernet/intel/i40e/i40e_main.c
+drivers/net/ethernet/intel/ice/ice_main.c
+drivers/net/ethernet/intel/igb/igb_main.c
+drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+drivers/net/ethernet/marvell/mvneta.c
+drivers/net/ethernet/marvell/mvpp2/mvpp2_main.c
+drivers/net/ethernet/mellanox/mlx5/core/en_main.c
+drivers/net/ethernet/qlogic/qede/qede_main.c
+drivers/net/ethernet/sfc/efx.c
+drivers/net/ethernet/socionext/netsec.c
+drivers/net/ethernet/ti/cpsw.c
+drivers/net/ethernet/ti/cpsw_new.c
+drivers/net/tun.c
+drivers/net/veth.c
+drivers/net/virtio_net.c
+drivers/net/xen-netfront.c
+#+end_src
+
 * Issue: drop semantics
 
 The current drop handling when driver TX-queue is full is sub-optimal for
