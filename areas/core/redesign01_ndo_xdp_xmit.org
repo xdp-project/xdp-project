@@ -13,6 +13,29 @@ To help the readers, that don't understand the gory details on how
 BPF-redirect works inside the kernel, this section explains some of the
 details.  (/Skip section if you already know/)
 
+** Explaining BPF redirect API stages
+
+Redirecting a packet in BPF is a two-stage process. (This section explains
+both XDP and TC-BPF redirect in a generic fashion).
+
+Stage(1): In the BPF-prog the BPF-programmer calls a BPF-helper function
+(there are actually some variants) that specifies an index (often ifindex)
+to redirect the packet, but the packet or context-object is not provided to
+helper. The BPF-helper will store the index in a per-CPU data area (struct
+bpf_redirect_info).
+
+Helper API:
+#+begin_src C
+int bpf_redirect(u32 ifindex, u64 flags);
+#+end_src
+
+Stage(2): After the BPF-prog is done, the kernel gets a return value from
+the BPF-prog that asked for a "redirect" operation (TC_ACT_REDIRECT or
+XDP_REDIRECT). The kernel then calls xxx_do_redirect() that gets only the
+packet as input. The remaining info needed is retrieved via the per-CPU data
+area (struct bpf_redirect_info).
+
+
 * Issue: drop semantics
 
 The current drop handling when driver TX-queue is full is sub-optimal for
