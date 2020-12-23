@@ -7,6 +7,121 @@ driver implement an NDO (Net Device Operation) called =ndo_xdp_xmit()=.
 (Hint this is called from =kernel/bpf/devmap.c= code, which implement a
 bulking layer for performance reasons).
 
+* Background understanding redirect
+
+To help the readers, that don't understand the gory details on how
+BPF-redirect works inside the kernel, this section explains some of the
+details.  (/Skip section if you already know/)
+
+** Explaining BPF redirect API stages
+
+Redirecting a packet in BPF is a two-stage process. (This section explains
+both XDP and TC-BPF redirect in a generic fashion).
+
+Stage(1): In the BPF-prog the BPF-programmer calls a BPF-helper function
+(there are actually some variants) that specifies an index (often ifindex)
+to redirect the packet, but the packet or context-object is not provided to
+helper. The BPF-helper will store the index in a per-CPU data area (struct
+bpf_redirect_info).
+
+Helper API and some variants:
+#+begin_src C
+long bpf_redirect(u32 ifindex, u64 flags);
+long bpf_redirect_map(struct bpf_map *map, u32 key, u64 flags);
+long bpf_redirect_peer(u32 ifindex, u64 flags);
+long bpf_redirect_neigh(u32 ifindex, struct bpf_redir_neigh *params, int plen, u64 flags);
+#+end_src
+
+Stage(2): After the BPF-prog is done, the kernel gets a return value from
+the BPF-prog that asked for a "redirect" operation (TC_ACT_REDIRECT or
+XDP_REDIRECT). The kernel then calls xxx_do_redirect() that gets only the
+packet as input. The remaining info needed is retrieved via the per-CPU data
+area (struct bpf_redirect_info).
+
+The drawback of this design is that the BPF-prog cannot know the fate of the
+packet, if the 2nd stage fails for some reason the BPF-prog doesn't know.
+
+The advantage is flexibility, as e.g. the per-CPU data area (struct
+bpf_redirect_info) can be extended without affecting the UAPI. Decoupling
+the stages also allow us to create a "hidden" bulking mechanism.
+
+** Redirect into maps
+
+The "hidden" redirect bulking layer via maps. The BPF-maps concept is a
+generic key-value store with different types. The concept seems simple, but
+also very flexible as it is up-to each individual BPF map-type to define the
+meaning of the key and value.
+
+A redirect BPF-helper variant allows to redirect packets into a map:
+#+begin_src C
+long bpf_redirect_map(struct bpf_map *map, u32 key, u64 flags);
+#+end_src
+
+From XDP there are (currently) four map types that can be used in this
+BPF-helper as the target =map=:
+ - =BPF_MAP_TYPE_DEVMAP=
+ - =BPF_MAP_TYPE_CPUMAP=
+ - =BPF_MAP_TYPE_XSKMAP=
+ - =BPF_MAP_TYPE_DEVMAP_HASH=
+
+For the purpose of this document, we are interested in the "devmap" variant
+map types. This code is located in kernel git source file:
+[[https://elixir.bootlin.com/linux/latest/source/kernel/bpf/devmap.c][kernel/bpf/devmap.c]].
+
+*Stage(3)*: When =xdp_do_redirect()= have a map target, then it is fair to
+say that a 3rd stage of redirect happens. The packet is enqueued into the
+map (see code =__bpf_tx_xdp_map()=). For devmap the function
+=dev_map_enqueue()= is called, which ends in =bq_enqueue()=. The packet data
+structure =xdp_buff= is converted to =xdp_frame=, and is stored in a per-CPU
+temporary store (=struct xdp_dev_bulk_queue=) which used for bulking later.
+Thus, =xdp_do_redirect()= don't call the target device transmit operation
+=ndo_xdp_xmit()= immediately, there is a small intermediate bulking queue.
+
+Hint: the devmap.c code is the only caller of =ndo_xdp_xmit()=.
+
+** Driver XDP transmit function
+
+A driver that supports transmitting XDP redirected packets must implement
+the NDO (Net Device Operation) called =ndo_xdp_xmit()=.
+
+The function pointer prototype is defined in =include/linux/netdevice.h= and
+looks like this:
+
+#+begin_src C
+struct net_device_ops {
+ [...]
+	int	(*ndo_xdp_xmit)(struct net_device *dev, int n,
+				struct xdp_frame **xdp,
+				u32 flags);
+ [...]
+};
+#+end_src
+
+There are currently 20 drivers that implement this is:
+#+begin_src sh
+$ git grep --files-with-matches  '\.ndo_xdp_xmit\s*='
+drivers/net/ethernet/amazon/ena/ena_netdev.c
+drivers/net/ethernet/broadcom/bnxt/bnxt.c
+drivers/net/ethernet/freescale/dpaa/dpaa_eth.c
+drivers/net/ethernet/freescale/dpaa2/dpaa2-eth.c
+drivers/net/ethernet/intel/i40e/i40e_main.c
+drivers/net/ethernet/intel/ice/ice_main.c
+drivers/net/ethernet/intel/igb/igb_main.c
+drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+drivers/net/ethernet/marvell/mvneta.c
+drivers/net/ethernet/marvell/mvpp2/mvpp2_main.c
+drivers/net/ethernet/mellanox/mlx5/core/en_main.c
+drivers/net/ethernet/qlogic/qede/qede_main.c
+drivers/net/ethernet/sfc/efx.c
+drivers/net/ethernet/socionext/netsec.c
+drivers/net/ethernet/ti/cpsw.c
+drivers/net/ethernet/ti/cpsw_new.c
+drivers/net/tun.c
+drivers/net/veth.c
+drivers/net/virtio_net.c
+drivers/net/xen-netfront.c
+#+end_src
+
 * Issue: drop semantics
 
 The current drop handling when driver TX-queue is full is sub-optimal for
@@ -68,10 +183,6 @@ error:
 	goto out;
 }
 #+end_src
-
-
-
-
 
 * Why change
 
