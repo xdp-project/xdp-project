@@ -7,6 +7,12 @@ driver implement an NDO (Net Device Operation) called =ndo_xdp_xmit()=.
 (Hint this is called from =kernel/bpf/devmap.c= code, which implement a
 bulking layer for performance reasons).
 
+* Background understanding redirect
+
+To help the readers, that don't understand the gory details on how
+BPF-redirect works inside the kernel, this section explains some of the
+details.  (/Skip section if you already know/)
+
 * Issue: drop semantics
 
 The current drop handling when driver TX-queue is full is sub-optimal for
@@ -68,10 +74,6 @@ error:
 	goto out;
 }
 #+end_src
-
-
-
-
 
 * Why change
 
