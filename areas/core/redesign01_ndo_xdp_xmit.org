@@ -27,9 +27,9 @@ bpf_redirect_info).
 Helper API and some variants:
 #+begin_src C
 long bpf_redirect(u32 ifindex, u64 flags);
-long bpf_redirect_map(struct bpf_map *map, u32 key, u64 flags)
-long bpf_redirect_peer(u32 ifindex, u64 flags)
-long bpf_redirect_neigh(u32 ifindex, struct bpf_redir_neigh *params, int plen, u64 flags)
+long bpf_redirect_map(struct bpf_map *map, u32 key, u64 flags);
+long bpf_redirect_peer(u32 ifindex, u64 flags);
+long bpf_redirect_neigh(u32 ifindex, struct bpf_redir_neigh *params, int plen, u64 flags);
 #+end_src
 
 Stage(2): After the BPF-prog is done, the kernel gets a return value from
@@ -54,7 +54,7 @@ meaning of the key and value.
 
 A redirect BPF-helper variant allows to redirect packets into a map:
 #+begin_src C
-long bpf_redirect_map(struct bpf_map *map, u32 key, u64 flags)
+long bpf_redirect_map(struct bpf_map *map, u32 key, u64 flags);
 #+end_src
 
 From XDP there are (currently) four map types that can be used in this
