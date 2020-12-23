@@ -24,9 +24,12 @@ to redirect the packet, but the packet or context-object is not provided to
 helper. The BPF-helper will store the index in a per-CPU data area (struct
 bpf_redirect_info).
 
-Helper API:
+Helper API and some variants:
 #+begin_src C
-int bpf_redirect(u32 ifindex, u64 flags);
+long bpf_redirect(u32 ifindex, u64 flags);
+long bpf_redirect_map(struct bpf_map *map, u32 key, u64 flags)
+long bpf_redirect_peer(u32 ifindex, u64 flags)
+long bpf_redirect_neigh(u32 ifindex, struct bpf_redir_neigh *params, int plen, u64 flags)
 #+end_src
 
 Stage(2): After the BPF-prog is done, the kernel gets a return value from
@@ -34,6 +37,13 @@ the BPF-prog that asked for a "redirect" operation (TC_ACT_REDIRECT or
 XDP_REDIRECT). The kernel then calls xxx_do_redirect() that gets only the
 packet as input. The remaining info needed is retrieved via the per-CPU data
 area (struct bpf_redirect_info).
+
+The drawback of this design is that the BPF-prog cannot know the fate of the
+packet, if the 2nd stage fails for some reason the BPF-prog doesn't know.
+
+The advantage is flexibility, as e.g. the per-CPU data area (struct
+bpf_redirect_info) can be extended without affecting the UAPI. Decoupling
+the stages also allow us to create a "hidden" bulking mechanism.
 
 
 * Issue: drop semantics
