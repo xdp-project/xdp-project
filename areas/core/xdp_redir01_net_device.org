@@ -1,0 +1,427 @@
+# -*- fill-column: 76; -*-
+#+Title: Optimize XDP redirect via changing net_device layout
+#+OPTIONS: ^:nil
+
+Reorganise struct =net_device= to reduce cache-line access for XDP redirect.
+
+
+* Baseline:
+
+Uname:
+ - 5.11.0-rc3-bpf-next-calico08-mtu+ #37 SMP PREEMPT
+
+#+begin_example
+[jbrouer@broadwell kernel-bpf-samples]$ sudo ./xdp_redirect_map i40e2 i40e2
+
+ifindex 6:   12118961 pkt/s
+ifindex 6:   12118385 pkt/s
+...
+ifindex 6:   12077358 pkt/s
+...
+ifindex 6:   12115792 pkt/s
+ifindex 6:   12115872 pkt/s
+ifindex 6:   12115061 pkt/s
+#+end_example
+
+#+begin_example
+$ perf stat -C2 -e cycles -e  instructions -e cache-references -e cache-misses \
+ -e L1-dcache-loads:k -e L1-dcache-load-misses:k  -e LLC-loads:k -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 2' (4 runs):
+
+     3.803.145.773      cycles                                                        ( +-  0,00% )
+     9.118.350.569      instructions              #    2,40  insn per cycle           ( +-  0,01% )
+        58.992.779      cache-references                                              ( +-  0,01% )
+               297      cache-misses              #    0,001 % of all cache refs      ( +- 71,72% )
+     2.725.528.060      L1-dcache-loads                                               ( +-  0,01% )
+       122.191.999      L1-dcache-load-misses     #    4,48% of all L1-dcache hits    ( +-  0,01% )
+        27.644.974      LLC-loads                                                     ( +-  0,01% )
+
+         1,0008481 +- 0,0000164 seconds time elapsed  ( +-  0,00% )
+#+end_example
+
+* Quick reorder
+
+#+begin_example
+ifindex 6:   12729273 pkt/s
+ifindex 6:   12723535 pkt/s
+ifindex 6:   12724046 pkt/s
+...
+ifindex 6:   12732861 pkt/s
+ifindex 6:   12732828 pkt/s
+ifindex 6:   12733740 pkt/s
+#+end_example
+
+(1/12115061-1/12733740)*10^9 = 4.01036398642000000000 ns
+
+#+begin_example
+$ perf stat -C4 -e cycles -e  instructions -e cache-references -e cache-misses -e L1-dcache-loads:k -e L1-dcache-load-misses:k  -e LLC-loads:k -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (4 runs):
+
+     3.803.004.798      cycles                                                        ( +-  0,00% )
+     9.579.675.974      instructions              #    2,52  insn per cycle           ( +-  0,02% )
+        62.255.331      cache-references                                              ( +-  0,02% )
+               977      cache-misses              #    0,002 % of all cache refs      ( +- 72,82% )
+     2.879.085.964      L1-dcache-loads                                               ( +-  0,02% )
+       124.281.700      L1-dcache-load-misses     #    4,32% of all L1-dcache hits    ( +-  0,00% )
+        27.509.255      LLC-loads                                                     ( +-  0,02% )
+
+         1,0008129 +- 0,0000146 seconds time elapsed  ( +-  0,00% )
+#+end_example
+
+I expected cache-accesses to be lower, but of-cause they increase as the packets
+per sec are increasing.
+
+The big-change shown in instructions (per cycle).
+- 2,40  insn per cycle - BEFORE
+- 2,52  insn per cycle - AFTER
+
+** Quick reorder: Code change
+
+#+begin_src diff
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index b7915484369c..f4afc05b0c9e 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1902,7 +1902,6 @@ struct net_device {
+        const struct iw_handler_def *wireless_handlers;
+        struct iw_public_data   *wireless_data;
+ #endif
+-       const struct net_device_ops *netdev_ops;
+        const struct ethtool_ops *ethtool_ops;
+ #ifdef CONFIG_NET_L3_MASTER_DEV
+        const struct l3mdev_ops *l3mdev_ops;
+@@ -1921,11 +1920,17 @@ struct net_device {
+ 
+        const struct header_ops *header_ops;
+ 
++       /* dev_map_enqueue -> __xdp_enqueue -> xdp_ok_fwd_dev
++        * Want cache-lines better packed
++        */
++       const struct net_device_ops *netdev_ops;
++
+        unsigned int            flags;
+        unsigned int            priv_flags;
+ 
+        unsigned short          gflags;
+-       unsigned short          padded;
++       //
++       unsigned short          hard_header_len;
+ 
+        unsigned char           operstate;
+        unsigned char           link_mode;
+@@ -1942,7 +1947,6 @@ struct net_device {
+        unsigned int            min_mtu;
+        unsigned int            max_mtu;
+        unsigned short          type;
+-       unsigned short          hard_header_len;
+        unsigned char           min_header_len;
+        unsigned char           name_assign_type;
+ 
+@@ -1959,6 +1963,8 @@ struct net_device {
+        unsigned short          neigh_priv_len;
+        unsigned short          dev_id;
+        unsigned short          dev_port;
++       unsigned short          padded;
++
+        spinlock_t              addr_list_lock;
+ 
+#+end_src
+
+** Quick reorder: pahole layout
+
+#+begin_src C
+struct net_device {
+        char                       name[16];             /*     0    16 */
+        struct netdev_name_node *  name_node;            /*    16     8 */
+        struct dev_ifalias *       ifalias;              /*    24     8 */
+        long unsigned int          mem_end;              /*    32     8 */
+        long unsigned int          mem_start;            /*    40     8 */
+        long unsigned int          base_addr;            /*    48     8 */
+        int                        irq;                  /*    56     4 */
+
+        /* XXX 4 bytes hole, try to pack */
+[...]
+        /* --- cacheline 8 boundary (512 bytes) --- */
+        const struct net_device_ops  * netdev_ops;       /*   512     8 */
+        unsigned int               flags;                /*   520     4 */ //touch
+        unsigned int               priv_flags;           /*   524     4 */
+        short unsigned int         gflags;               /*   528     2 */
+        short unsigned int         hard_header_len;      /*   530     2 */ //touch
+        unsigned char              operstate;            /*   532     1 */
+        unsigned char              link_mode;            /*   533     1 */
+        unsigned char              if_port;              /*   534     1 */
+        unsigned char              dma;                  /*   535     1 */
+        unsigned int               mtu;                  /*   536     4 */ //touch
+        unsigned int               min_mtu;              /*   540     4 */
+        unsigned int               max_mtu;              /*   544     4 */
+        short unsigned int         type;                 /*   548     2 */
+        unsigned char              min_header_len;       /*   550     1 */
+        unsigned char              name_assign_type;     /*   551     1 */
+        short unsigned int         needed_headroom;      /*   552     2 */
+        short unsigned int         needed_tailroom;      /*   554     2 */
+        unsigned char              perm_addr[32];        /*   556    32 */
+        /* --- cacheline 9 boundary (576 bytes) was 12 bytes ago --- */
+#+end_src
+
+
+* Ask Ahern
+
+David Ahern have tried to trim size of net_device:
+ - https://github.com/dsahern/linux/commit/cc30ef93c3a1074c2ac8ae9219278042f4baaa8c
+
+* Another patch
+
+More structured patch.
+
+Slightly better results:
+#+begin_example
+ifindex 6:   12852408 pkt/s
+ifindex 6:   12906785 pkt/s
+ifindex 6:   12875935 pkt/s
+#+end_example
+
+Somehow turbo-state kicked in:
+#+begin_example
+ifindex 6:   13518833 pkt/s
+ifindex 6:   13502071 pkt/s
+ifindex 6:   13521122 pkt/s
+#+end_example
+
+The turbo-state can be seen by 3.969 M-cycles.
+#+begin_example
+$ perf stat -C3 -e cycles -e  instructions -e cache-references -e cache-misses \
+  -e L1-dcache-loads:k -e L1-dcache-load-misses:k  -e LLC-loads:k -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 3' (4 runs):
+
+     3.969.671.698      cycles                                                        ( +-  0,36% )
+     9.952.693.254      instructions              #    2,51  insn per cycle           ( +-  0,32% )
+        66.327.170      cache-references                                              ( +-  0,32% )
+             1.742      cache-misses              #    0,003 % of all cache refs      ( +- 75,99% )
+     2.936.696.806      L1-dcache-loads                                               ( +-  0,32% )
+       131.274.760      L1-dcache-load-misses     #    4,47% of all L1-dcache hits    ( +-  0,32% )
+        29.340.353      LLC-loads                                                     ( +-  0,32% )
+
+         1,0009117 +- 0,0000462 seconds time elapsed  ( +-  0,00% )
+#+end_example
+
+** The patch
+
+#+begin_src diff
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index b7915484369c..71ba72e68414 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1855,7 +1855,6 @@ struct net_device {
+        unsigned long           mem_end;
+        unsigned long           mem_start;
+        unsigned long           base_addr;
+-       int                     irq;
+ 
+        /*
+         *      Some hardware also needs these fields (state,dev_list,
+@@ -1866,7 +1865,7 @@ struct net_device {
+        unsigned long           state;
+ 
+        struct list_head        dev_list;
+-       struct list_head        napi_list;
++       struct list_head        napi_list; // Written per-NAPI
+        struct list_head        unreg_list;
+        struct list_head        close_list;
+        struct list_head        ptype_all;
+@@ -1877,6 +1876,31 @@ struct net_device {
+                struct list_head lower;
+        } adj_list;
+ 
++       /* Read-mostly cache-line for fast-path access */
++       unsigned int            flags;
++       unsigned int            priv_flags;
++       const struct net_device_ops *netdev_ops;
++       int                     ifindex;
++
++       unsigned short          gflags;
++       unsigned short          hard_header_len;
++
++       /* Note : dev->mtu is often read without holding a lock.
++        * Writers usually hold RTNL.
++        * It is recommended to use READ_ONCE() to annotate the reads,
++        * and to use WRITE_ONCE() to annotate the writes.
++        */
++       unsigned int            mtu;
++       unsigned int            min_mtu;
++       unsigned int            max_mtu;
++       unsigned short          type;
++       unsigned char           min_header_len;
++       unsigned char           name_assign_type;
++
++       unsigned short          needed_headroom;
++       unsigned short          needed_tailroom;
++       int                     group;
++
+        netdev_features_t       features;
+        netdev_features_t       hw_features;
+        netdev_features_t       wanted_features;
+@@ -1885,10 +1909,7 @@ struct net_device {
+        const struct iw_handler_def *wireless_handlers;
+        struct iw_public_data   *wireless_data;
+ #endif
+-       const struct net_device_ops *netdev_ops;
+        const struct ethtool_ops *ethtool_ops;
+ #ifdef CONFIG_NET_L3_MASTER_DEV
+        const struct l3mdev_ops *l3mdev_ops;
+@@ -1921,34 +1941,12 @@ struct net_device {
+ 
+        const struct header_ops *header_ops;
+ 
+-       unsigned int            flags;
+-       unsigned int            priv_flags;
+-
+-       unsigned short          gflags;
+-       unsigned short          padded;
+-
+        unsigned char           operstate;
+        unsigned char           link_mode;
+ 
+        unsigned char           if_port;
+        unsigned char           dma;
+ 
+-       /* Note : dev->mtu is often read without holding a lock.
+-        * Writers usually hold RTNL.
+-        * It is recommended to use READ_ONCE() to annotate the reads,
+-        * and to use WRITE_ONCE() to annotate the writes.
+-        */
+-       unsigned int            mtu;
+-       unsigned int            min_mtu;
+-       unsigned int            max_mtu;
+-       unsigned short          type;
+-       unsigned short          hard_header_len;
+-       unsigned char           min_header_len;
+-       unsigned char           name_assign_type;
+-
+-       unsigned short          needed_headroom;
+-       unsigned short          needed_tailroom;
+-
+        /* Interface address info. */
+        unsigned char           perm_addr[MAX_ADDR_LEN];
+        unsigned char           addr_assign_type;
+@@ -1959,7 +1957,10 @@ struct net_device {
+        unsigned short          neigh_priv_len;
+        unsigned short          dev_id;
+        unsigned short          dev_port;
++       unsigned short          padded;
++
+        spinlock_t              addr_list_lock;
++       int                     irq;
+ 
+        struct netdev_hw_addr_list      uc;
+        struct netdev_hw_addr_list      mc;
+#+end_src
+
+** Struct pahole layout
+
+#+begin_src C
+struct net_device {
+        char                       name[16];             /*     0    16 */
+        struct netdev_name_node *  name_node;            /*    16     8 */
+        struct dev_ifalias *       ifalias;              /*    24     8 */
+        long unsigned int          mem_end;              /*    32     8 */
+        long unsigned int          mem_start;            /*    40     8 */
+        long unsigned int          base_addr;            /*    48     8 */
+        long unsigned int          state;                /*    56     8 */
+        /* --- cacheline 1 boundary (64 bytes) --- */
+        struct list_head           dev_list;             /*    64    16 */
+        struct list_head           napi_list;            /*    80    16 */
+        struct list_head           unreg_list;           /*    96    16 */
+        struct list_head           close_list;           /*   112    16 */
+        /* --- cacheline 2 boundary (128 bytes) --- */
+        struct list_head           ptype_all;            /*   128    16 */
+        struct list_head           ptype_specific;       /*   144    16 */
+        struct {
+                struct list_head   upper;                /*   160    16 */
+                struct list_head   lower;                /*   176    16 */
+        } adj_list;                                      /*   160    32 */
+        /* --- cacheline 3 boundary (192 bytes) --- */
+        unsigned int               flags;                /*   192     4 */
+        unsigned int               priv_flags;           /*   196     4 */
+        const struct net_device_ops  * netdev_ops;       /*   200     8 */
+        int                        ifindex;              /*   208     4 */
+        short unsigned int         gflags;               /*   212     2 */
+        short unsigned int         hard_header_len;      /*   214     2 */
+        unsigned int               mtu;                  /*   216     4 */
+        unsigned int               min_mtu;              /*   220     4 */
+        unsigned int               max_mtu;              /*   224     4 */
+        short unsigned int         type;                 /*   228     2 */
+        unsigned char              min_header_len;       /*   230     1 */
+        unsigned char              name_assign_type;     /*   231     1 */
+        short unsigned int         needed_headroom;      /*   232     2 */
+        short unsigned int         needed_tailroom;      /*   234     2 */
+        int                        group;                /*   236     4 */
+        netdev_features_t          features;             /*   240     8 */
+        netdev_features_t          hw_features;          /*   248     8 */
+        /* --- cacheline 4 boundary (256 bytes) --- */
+        netdev_features_t          wanted_features;      /*   256     8 */
+        netdev_features_t          vlan_features;        /*   264     8 */
+        netdev_features_t          hw_enc_features;      /*   272     8 */
+        netdev_features_t          mpls_features;        /*   280     8 */
+        netdev_features_t          gso_partial_features; /*   288     8 */
+        struct net_device_stats    stats;                /*   296   184 */
+        /* --- cacheline 7 boundary (448 bytes) was 32 bytes ago --- */
+        atomic_long_t              rx_dropped;           /*   480     8 */
+        atomic_long_t              tx_dropped;           /*   488     8 */
+        atomic_long_t              rx_nohandler;         /*   496     8 */
+        atomic_t                   carrier_up_count;     /*   504     4 */
+        atomic_t                   carrier_down_count;   /*   508     4 */
+        /* --- cacheline 8 boundary (512 bytes) --- */
+[...]
+#+end_src
+
+* Linux netstack forwarding
+
+** patched kernel
+
+#+begin_example
+[firesoul pktgen]$ ./pktgen_sample03_burst_single_flow.sh -vi mlx5p2 \
+ -d 198.18.1.3 -m 3c:fd:fe:b3:31:49 -t 12
+#+end_example
+
+#+begin_example
+ ip ne add 198.18.1.3 dev mlx5p1 lladdr 00:11:22:33:44:55
+ ip ne add 10.40.40.66 dev i40e2  lladdr 00:11:22:33:44:66
+#+end_example
+
+#+begin_example
+Average:        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil
+Average:           lo      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:        eth42     11,88     23,50      0,77      3,21      0,00      0,00      0,00      0,00
+Average:         igb1      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:       ixgbe1      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:        i40e1      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:        i40e2 2090320,00      0,00 122479,69      0,00      0,00      0,00      0,00      2,51
+Average:       mlx5p1      0,00 2090319,37      0,00 122479,65      0,00      0,00      0,00      1,00
+Average:       mlx5p2      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:       ixgbe2      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:       virbr0      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:    virbr0-nic      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+
+Average:        IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s
+Average:           lo      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:        eth42      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:         igb1      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:       ixgbe1      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:        i40e1      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:        i40e2      0,00      0,00      0,00 31578706,25      0,00      0,00      0,00      0,00      0,00
+Average:       mlx5p1      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:       mlx5p2      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:       ixgbe2      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:       virbr0      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+Average:    virbr0-nic      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00      0,00
+#+end_example
+
+
+Other direction:
+#+begin_example
+ ./pktgen_sample03_burst_single_flow.sh -vi mlx5p1 -d 10.40.40.66 -m ec:0d:9a:db:11:c4 -t 12
+#+end_example
+
