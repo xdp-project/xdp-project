@@ -43,6 +43,64 @@ Function netif_skb_features() access:
  - =dev->hw_enc_features= (if (skb->encapsulation))
  - =dev->netdev_ops->ndo_features_check=
 
+** Pahole layout
+
+#+begin_src C
+struct net_device {
+        char                       name[16];             /*     0    16 */
+        struct netdev_name_node *  name_node;            /*    16     8 */
+        struct dev_ifalias *       ifalias;              /*    24     8 */
+        long unsigned int          mem_end;              /*    32     8 */
+        long unsigned int          mem_start;            /*    40     8 */
+        long unsigned int          base_addr;            /*    48     8 */
+        long unsigned int          state;                /*    56     8 */
+        /* --- cacheline 1 boundary (64 bytes) --- */
+        struct list_head           dev_list;             /*    64    16 */
+        struct list_head           napi_list;            /*    80    16 */
+        struct list_head           unreg_list;           /*    96    16 */
+        struct list_head           close_list;           /*   112    16 */
+        /* --- cacheline 2 boundary (128 bytes) --- */
+        struct list_head           ptype_all;            /*   128    16 */
+        struct list_head           ptype_specific;       /*   144    16 */
+        struct {
+                struct list_head   upper;                /*   160    16 */
+                struct list_head   lower;                /*   176    16 */
+        } adj_list;                                      /*   160    32 */
+        /* --- cacheline 3 boundary (192 bytes) --- */
+        unsigned int               flags;                /*   192     4 */
+        unsigned int               priv_flags;           /*   196     4 */
+        const struct net_device_ops  * netdev_ops;       /*   200     8 */
+        int                        ifindex;              /*   208     4 */
+        short unsigned int         gflags;               /*   212     2 */
+        short unsigned int         hard_header_len;      /*   214     2 */
+        unsigned int               mtu;                  /*   216     4 */
+        short unsigned int         needed_headroom;      /*   220     2 */
+        short unsigned int         needed_tailroom;      /*   222     2 */
+        netdev_features_t          features;             /*   224     8 */
+        netdev_features_t          hw_features;          /*   232     8 */
+        netdev_features_t          wanted_features;      /*   240     8 */
+        netdev_features_t          vlan_features;        /*   248     8 */
+        /* --- cacheline 4 boundary (256 bytes) --- */
+        netdev_features_t          hw_enc_features;      /*   256     8 */
+        netdev_features_t          mpls_features;        /*   264     8 */
+        netdev_features_t          gso_partial_features; /*   272     8 */
+        unsigned int               min_mtu;              /*   280     4 */
+        unsigned int               max_mtu;              /*   284     4 */
+        short unsigned int         type;                 /*   288     2 */
+        unsigned char              min_header_len;       /*   290     1 */
+        unsigned char              name_assign_type;     /*   291     1 */
+        int                        group;                /*   292     4 */
+        struct net_device_stats    stats;                /*   296   184 */
+        /* --- cacheline 7 boundary (448 bytes) was 32 bytes ago --- */
+        atomic_long_t              rx_dropped;           /*   480     8 */
+        atomic_long_t              tx_dropped;           /*   488     8 */
+        atomic_long_t              rx_nohandler;         /*   496     8 */
+        atomic_t                   carrier_up_count;     /*   504     4 */
+        atomic_t                   carrier_down_count;   /*   508     4 */
+        /* --- cacheline 8 boundary (512 bytes) --- */
+[...]
+#+end_src
+
 * Baseline:
 
 Uname:
