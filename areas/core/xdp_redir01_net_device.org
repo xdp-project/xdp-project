@@ -4,6 +4,44 @@
 
 Reorganise struct =net_device= to reduce cache-line access for XDP redirect.
 
+* Patch desc
+
+#+begin_quote
+net: adjust net_device layout for cacheline usage
+
+The current layout of net_device is not optimal for cacheline usage.
+
+The member adj_list.lower linked list is split between cacheline 2 and 3.
+The ifindex is placed together with stats (struct net_device_stats),
+although most modern drivers don't update this stats member.
+
+The members netdev_ops, mtu and hard_header_len are placed on three
+different cachelines. These members are accessed for XDP redirect into
+devmap, which were noticeably with perf tool. When not using the map
+redirect variant (like TC-BPF does), then ifindex is also used, which is
+placed on a separate fourth cacheline. These members are also accessed
+during forwarding with regular network stack. The members priv_flags and
+flags are on fast-path for network stack transmit path in __dev_queue_xmit
+(located together with mtu cacheline).
+
+This patch creates a read mostly cacheline, with the purpose of keeping the
+above mentioned members on the same cacheline.
+
+Some netdev_features_t members also becomes part of this cacheline, which is
+on purpose, as function netif_skb_features() is on fast-path via
+validate_xmit_skb().
+#+end_quote
+
+** Notes on netdev_features_t members
+
+Is call netif_skb_features() used on fast-path?
+ - A: Yes, via validate_xmit_skb
+
+Function netif_skb_features() access:
+ - =dev->features=
+ - =dev->vlan_features= (if (skb_vlan_tagged(skb))
+ - =dev->hw_enc_features= (if (skb->encapsulation))
+ - =dev->netdev_ops->ndo_features_check=
 
 * Baseline:
 
@@ -52,7 +90,10 @@ ifindex 6:   12732828 pkt/s
 ifindex 6:   12733740 pkt/s
 #+end_example
 
-(1/12115061-1/12733740)*10^9 = 4.01036398642000000000 ns
+Calc improvements:
+ - (1/12115061-1/12733740)*10^9 = 4.01036398642000000000 ns
+ - ((12733740/12115061)-1)*100  = 5.11%
+
 
 #+begin_example
 $ perf stat -C4 -e cycles -e  instructions -e cache-references -e cache-misses -e L1-dcache-loads:k -e L1-dcache-load-misses:k  -e LLC-loads:k -r 4 sleep 1
@@ -181,6 +222,11 @@ ifindex 6:   12852408 pkt/s
 ifindex 6:   12906785 pkt/s
 ifindex 6:   12875935 pkt/s
 #+end_example
+
+Calc improvements:
+ - (1/12115061-1/12906785)*10^9 = 5.06325883639000000000 ns
+ - ((12906785/12115061)-1)*100  = 6.54%
+
 
 Somehow turbo-state kicked in:
 #+begin_example
