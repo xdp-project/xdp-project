@@ -22,7 +22,7 @@ redirect variant (like TC-BPF does), then ifindex is also used, which is
 placed on a separate fourth cacheline. These members are also accessed
 during forwarding with regular network stack. The members priv_flags and
 flags are on fast-path for network stack transmit path in __dev_queue_xmit
-(located together with mtu cacheline).
+(currently located together with mtu cacheline).
 
 This patch creates a read mostly cacheline, with the purpose of keeping the
 above mentioned members on the same cacheline.
@@ -100,6 +100,20 @@ struct net_device {
         /* --- cacheline 8 boundary (512 bytes) --- */
 [...]
 #+end_src
+
+
+** send patch
+
+#+begin_example
+stg mail --version='net-next V1' --cc meup \
+ --to ahern --cc bpf --to netdev \
+ --to jakub --to davem --cc dumazet \
+ --cc daniel --cc alexei \
+ reord-netdev
+#+end_example
+
+Message-ID: <161168277983.410784.12401225493601624417.stgit@firesoul>
+- https://lore.kernel.org/netdev/161168277983.410784.12401225493601624417.stgit@firesoul/
 
 * Baseline:
 
