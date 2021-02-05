@@ -194,5 +194,64 @@ towards the larger goal of a XDP TX queue-hook.
 
 The proposal is to make it the responsibility of the caller to free the
 xdp_frame's that were not transmitted.
+According to the new APIs, the driver running ndo_xdp_xmit pointer
+will break tx loop whenever the hw reports a tx error and it will just return
+to devmap caller the number of successfully transmitted frames. It will be
+devmap responsability to free dropped frames.
 
+#+begin_src C
+static void bq_xmit_all(struct xdp_dev_bulk_queue *bq, u32 flags)
+{
+	int sent = 0, drops = 0, err = 0;
+      ...
+
+	sent = dev->netdev_ops->ndo_xdp_xmit(dev, bq->count, bq->q, flags);
+	if (sent < 0) {
+		/* If ndo_xdp_xmit fails with an errno, no frames have
+		 * been xmit'ed.
+		 */
+		err = sent;
+		sent = 0;
+	}
+
+	drops = bq->count - sent;
+	if (unlikely(drops > 0)) {
+		/* If not all frames have been transmitted, it is our
+		 * responsibility to free them
+		 */
+		for (i = sent; i < bq->count; i++)
+			xdp_return_frame_rx_napi(bq->q[i]);
+	}
+
+      ...
+}
+#+end_src
+
+considering mvneta driver:
+
+#+begin_src C
+static int
+mvneta_xdp_xmit(struct net_device *dev, int num_frame,
+		struct xdp_frame **frames, u32 flags)
+{
+      ...
+
+	for (i = 0; i < num_frame; i++) {
+		ret = mvneta_xdp_submit_frame(pp, txq, frames[i], true);
+		if (ret != MVNETA_XDP_TX)
+			break;
+
+		nxmit_byte += frames[i]->len;
+		nxmit++;
+	}
+
+      ...
+
+	return nxmit;
+}
+#+end_src
+
+
+code available here:
+- https://github.com/LorenzoBianconi/bpf-next/tree/ndo_xdp_xmit_return_code_proposal
 
