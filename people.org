@@ -56,6 +56,7 @@ Driver developers:
 - Edward Cree (sfc)
 - Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp> (veth)
 - Ilias Apalodimas <ilias.apalodimas@linaro.org> (netsec)
+- Lorenzo Bianconi <lorenzo@kernel.org> (mvneta)
 
 Developers unsorted:
 - PJ (still waiting for data_meta work)
@@ -84,8 +85,8 @@ People to keep in loop:
 Drivers that will get XDP and use page_pool:
  - driver: mlx5
  - driver: mvpp2  board: Macchiatobin
- - driver: mvneta board: espressobin + Turris-Omnia
 
 Drivers with XDP and page_pool usage:
  - driver: netsec board: Socionext DeveloperBox
+ - driver: mvneta board: espressobin + Turris-Omnia
 #+INCLUDE: "sitemap.org" :minlevel 1
