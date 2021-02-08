@@ -10,7 +10,7 @@ Top-level headings indicate category, as explained in [[file:../xdp-project.org]
 
 Very few drivers support XDP_REDIRECT.
 
-HW drivers: ixgbe, i40e, mlx5, netsec, mvneta
+HW drivers: ixgbe, i40e, mlx5, netsec, mvneta, mvpp2
 
 SW drivers: veth, tun (tuntap), virtio_net
 
