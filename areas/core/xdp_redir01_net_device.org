@@ -327,6 +327,9 @@ $ perf stat -C3 -e cycles -e  instructions -e cache-references -e cache-misses \
 
 ** The patch
 
+Similar to patch that got applied upstream:
+ - 28af22c6c8df ("net: adjust net_device layout for cacheline usage")
+
 #+begin_src diff
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
 index b7915484369c..71ba72e68414 100644
@@ -543,3 +546,94 @@ Other direction:
  ./pktgen_sample03_burst_single_flow.sh -vi mlx5p1 -d 10.40.40.66 -m ec:0d:9a:db:11:c4 -t 12
 #+end_example
 
+* Follow up patch
+
+Eric Dumazet pointed out that some =netdev_features_t= are not used on
+hot-path.  Do followup patch with those changes.
+
+https://lore.kernel.org/netdev/52835f1f-96e1-b36e-2631-1182649ac3a8@gmail.com
+ <52835f1f-96e1-b36e-2631-1182649ac3a8@gmail.com>
+
+#+begin_quote
+net: followup adjust net_device layout for cacheline usage
+
+As Eric pointed out in response to commit 28af22c6c8df ("net: adjust
+net_device layout for cacheline usage") the netdev_features_t members
+wanted_features and hw_features are only used in control path.
+
+Thus, this patch reorder the netdev_features_t to let more members that
+are used in fast path into the 3rd cacheline. Whether these members are
+read depend on SKB properties, which are hinted as comments. The member
+mpls_features could not fit in the cacheline, but it was the least
+commonly used (depend on CONFIG_NET_MPLS_GSO).
+
+In the future we should consider relocating member gso_partial_features
+to be closer to member gso_max_segs. (see usage in gso_features_check()).
+
+Suggested-by: Eric Dumazet <edumazet@google.com>
+
+#+end_quote
+
+** pahole BEFORE
+
+#+begin_src C
+struct net_device {
+ [...]
+        /* --- cacheline 3 boundary (192 bytes) --- */
+        unsigned int               flags;                /*   192     4 */
+        unsigned int               priv_flags;           /*   196     4 */
+        const struct net_device_ops  * netdev_ops;       /*   200     8 */
+        int                        ifindex;              /*   208     4 */
+        short unsigned int         gflags;               /*   212     2 */
+        short unsigned int         hard_header_len;      /*   214     2 */
+        unsigned int               mtu;                  /*   216     4 */
+        short unsigned int         needed_headroom;      /*   220     2 */
+        short unsigned int         needed_tailroom;      /*   222     2 */
+        netdev_features_t          features;             /*   224     8 */
+        netdev_features_t          hw_features;          /*   232     8 */
+        netdev_features_t          wanted_features;      /*   240     8 */
+        netdev_features_t          vlan_features;        /*   248     8 */
+        /* --- cacheline 4 boundary (256 bytes) --- */
+        netdev_features_t          hw_enc_features;      /*   256     8 */
+        netdev_features_t          mpls_features;        /*   264     8 */
+        netdev_features_t          gso_partial_features; /*   272     8 */
+        unsigned int               min_mtu;              /*   280     4 */
+        unsigned int               max_mtu;              /*   284     4 */
+        short unsigned int         type;                 /*   288     2 */
+        unsigned char              min_header_len;       /*   290     1 */
+        unsigned char              name_assign_type;     /*   291     1 */
+        int                        group;                /*   292     4 */
+        struct net_device_stats    stats;                /*   296   184 */
+#+end_src
+
+** pahole AFTER
+
+#+begin_src C
+struct net_device {
+ [...]
+        /* --- cacheline 3 boundary (192 bytes) --- */
+        unsigned int               flags;                /*   192     4 */
+        unsigned int               priv_flags;           /*   196     4 */
+        const struct net_device_ops  * netdev_ops;       /*   200     8 */
+        int                        ifindex;              /*   208     4 */
+        short unsigned int         gflags;               /*   212     2 */
+        short unsigned int         hard_header_len;      /*   214     2 */
+        unsigned int               mtu;                  /*   216     4 */
+        short unsigned int         needed_headroom;      /*   220     2 */
+        short unsigned int         needed_tailroom;      /*   222     2 */
+        netdev_features_t          features;             /*   224     8 */
+        netdev_features_t          vlan_features;        /*   232     8 */
+        netdev_features_t          hw_enc_features;      /*   240     8 */
+        netdev_features_t          gso_partial_features; /*   248     8 */
+        /* --- cacheline 4 boundary (256 bytes) --- */
+        netdev_features_t          mpls_features;        /*   256     8 */
+        netdev_features_t          hw_features;          /*   264     8 */
+        netdev_features_t          wanted_features;      /*   272     8 */
+        unsigned int               min_mtu;              /*   280     4 */
+        unsigned int               max_mtu;              /*   284     4 */
+        short unsigned int         type;                 /*   288     2 */
+        unsigned char              min_header_len;       /*   290     1 */
+        unsigned char              name_assign_type;     /*   291     1 */
+        int                        group;                /*   292     4 */
+        struct net_device_stats    stats;                /*   296   184 */
+#+end_src
