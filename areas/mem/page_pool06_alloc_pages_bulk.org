@@ -2,24 +2,31 @@
 #+Title: Testing page-allocator API proposal for alloc_pages_bulk
 #+OPTIONS: ^:nil
 
-* Baseline test
+Testing experimental patch from Mel Gorman that add alloc_pages_bulk() API.
+
+This patch: https://lore.kernel.org/linux-mm/20210210130705.GC3629@suse.de/
+With this fix: https://lore.kernel.org/linux-mm/20210211091235.GC3697@techsingularity.net/
+
+* Use-case: page_pool
+
+The =alloc_pages_bulk()= use-case for page_pool is in
+=__page_pool_alloc_pages_slow()=, for then the pool goes empty.
 
 The mlx5 driver can easily empty the page_pool "cache", when redirected
 xdp_frame's are converted into SKBs.
 
-This happens both for veth and cpumap.
+This happens both for veth and cpumap, as SKBs (created from xdp_frame) is
+missing callback to page_pool.
 
-** baseline01: veth redirect
+** Test setup for veth
 
-Kernel: Linux broadwell 5.11.0-net-next
+It requires some setup and two XDP programs to trigger the case, where
+page_pool "cache" goes empty. And use of driver mlx5.
 
-When XDP-redirecting into a veth, we must remember to attach an XDP prog to
-the peer device.
+First: Create veth pair and enabled link up:
 
 #+begin_src
-# Create veth pair
 ip link add veth1 type veth peer name veth2
-
 ip link set veth1 up
 ip link set veth2 up
 #+end_src
@@ -30,13 +37,23 @@ ethtool -K veth1 gso off gro off tso off
 ethtool -K veth2 gso off gro off tso off
 #+end_example
 
+When XDP-redirecting into a veth, we must remember to attach an XDP prog to
+the peer device.
+
 Redirect frame from mlx5p1 into veth1 (peer veth2)
 - sudo ./xdp_redirect_map mlx5p1 veth1
 
 Create SKBs from xdp_frame via XDP_PASS on veth2:
 - sudo ./xdp_rxq_info --dev veth2 --act XDP_PASS
 
-As the MAC-addr doesn't match the SKB packets are dropped very early.
+As the MAC-addr doesn't match the SKB packets are dropped very early, but it
+suites our micro-benchmark test case.
+
+* Baseline test
+
+** baseline01: veth redirect
+
+Kernel: Linux broadwell 5.11.0-net-next
 
 #+begin_example
 Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
@@ -107,6 +124,8 @@ Kernel: Linux broadwell 5.11.0-net-next-alloc_pages_bulk+
 
 ** test01: veth redirect
 
+Same veth setup as above: [[#test-setup-for-veth][setup]]
+
 #+begin_example
 Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
 XDP stats       CPU     pps         issue-pps  
@@ -117,7 +136,6 @@ RXQ stats       RXQ:CPU pps         issue-pps
 rx_queue_index    0:5   4,066,023   0          
 rx_queue_index    0:sum 4,066,023  
 #+end_example
-
 
 #+begin_example
 Samples: 51K of event 'cycles', Event count (approx.): 46934149161
@@ -166,3 +184,4 @@ Samples: 51K of event 'cycles', Event count (approx.): 46934149161
 +    0,91%  [k] __build_skb_around                               -      -
      0,84%  [k] kfree_skb                                        -      -
 #+end_example
+
