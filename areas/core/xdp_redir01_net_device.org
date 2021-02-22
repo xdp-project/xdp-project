@@ -571,8 +571,18 @@ In the future we should consider relocating member gso_partial_features
 to be closer to member gso_max_segs. (see usage in gso_features_check()).
 
 Suggested-by: Eric Dumazet <edumazet@google.com>
-
 #+end_quote
+
+** send patch
+
+#+begin_src sh
+stg mail --version='net-next V1' --cc meup \
+ --to ahern --to netdev \
+ --to jakub --to davem --cc dumazet \
+ follow-up-patch
+#+end_src
+
+[[https://patchwork.kernel.org/project/netdevbpf/patch/161313782625.1008639.6000589679659428869.stgit@firesoul/][patchwork link]]
 
 ** pahole BEFORE
 
