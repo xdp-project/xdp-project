@@ -1,0 +1,168 @@
+# -*- fill-column: 76; -*-
+#+Title: Testing page-allocator API proposal for alloc_pages_bulk
+#+OPTIONS: ^:nil
+
+* Baseline test
+
+The mlx5 driver can easily empty the page_pool "cache", when redirected
+xdp_frame's are converted into SKBs.
+
+This happens both for veth and cpumap.
+
+** baseline01: veth redirect
+
+Kernel: Linux broadwell 5.11.0-net-next
+
+When XDP-redirecting into a veth, we must remember to attach an XDP prog to
+the peer device.
+
+#+begin_src
+# Create veth pair
+ip link add veth1 type veth peer name veth2
+
+ip link set veth1 up
+ip link set veth2 up
+#+end_src
+
+Disable GRO/GSO/TSO on the veth devices
+#+begin_example
+ethtool -K veth1 gso off gro off tso off
+ethtool -K veth2 gso off gro off tso off
+#+end_example
+
+Redirect frame from mlx5p1 into veth1 (peer veth2)
+- sudo ./xdp_redirect_map mlx5p1 veth1
+
+Create SKBs from xdp_frame via XDP_PASS on veth2:
+- sudo ./xdp_rxq_info --dev veth2 --act XDP_PASS
+
+As the MAC-addr doesn't match the SKB packets are dropped very early.
+
+#+begin_example
+Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      0       3,677,958   0          
+XDP-RX CPU      total   3,677,958  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:0   3,677,966   0          
+rx_queue_index    0:sum 3,677,966  
+
+#+end_example
+
+#+begin_example
+Samples: 81K of event 'cycles', Event count (approx.): 73929158590
+  Overhead  Symbol                                               IPC   [IPC Coverage]
++    4,87%  [k] __netif_receive_skb_core                         -      -
++    3,50%  [k] kmem_cache_free                                  -      -
++    3,26%  [k] dev_gro_receive                                  -      -
++    3,24%  [k] rmqueue                                          -      -
++    3,15%  [k] bpf_prog_943df0a1ce7ea5c2_xdp_prognum0           -      -
++    3,09%  [k] __xdp_release_frame                              -      -
++    2,99%  [k] memset_erms                                      -      -
++    2,89%  [k] get_page_from_freelist                           -      -
++    2,82%  [k] __alloc_pages_nodemask                           -      -
++    2,61%  [k] veth_xdp_rcv_one                                 -      -
++    2,54%  [k] free_unref_page_commit                           -      -
++    2,35%  [k] __list_del_entry_valid                           -      -
++    2,29%  [k] __netif_receive_skb_list_core                    -      -
++    2,13%  [k] dev_map_enqueue                                  -      -
++    2,07%  [k] mlx5e_xdp_handle                                 -      -
++    2,04%  [k] __xdp_build_skb_from_frame                       -      -
++    1,95%  [k] napi_gro_receive                                 -      -
++    1,94%  [k] xdp_do_redirect                                  -      -
++    1,85%  [k] netif_receive_skb_list_internal                  -      -
++    1,85%  [k] mlx5e_skb_from_cqe_mpwrq_linear                  -      -
++    1,84%  [k] mlx5e_handle_rx_cqe_mpwrq                        -      -
++    1,82%  [k] bpf_xdp_redirect_map                             -      -
++    1,74%  [k] kmem_cache_alloc_bulk                            -      -
++    1,71%  [k] ip_list_rcv                                      -      -
++    1,69%  [k] bpf_prog_a55118bafe28d557_xdp_redirect_map_prog  -      -
++    1,56%  [k] veth_xdp_rcv                                     -      -
++    1,48%  [k] __slab_free                                      -      -
++    1,45%  [k] free_unref_page_prepare.part.0                   -      -
++    1,43%  [k] eth_type_trans                                   -      -
++    1,40%  [k] dma_map_page_attrs                               -      -
++    1,30%  [k] mlx5e_poll_rx_cq                                 -      -
++    1,21%  [k] __list_add_valid                                 -      -
++    1,19%  [k] veth_xdp_xmit                                    -      -
++    1,11%  [k] free_unref_page                                  -      -
++    1,07%  [k] mlx5e_alloc_rx_mpwqe                             -      -
++    1,05%  [k] dma_unmap_page_attrs                             -      -
++    1,03%  [k] page_pool_release_page                           -      -
++    1,00%  [k] gro_normal_one                                   -      -
++    0,99%  [k] build_skb_around                                 -      -
++    0,94%  [k] __page_pool_alloc_pages_slow                     -      -
++    0,92%  [k] ip_rcv_core.isra.0                               -      -
++    0,90%  [k] prep_new_page                                    -      -
++    0,89%  [k] __build_skb_around                               -      -
++    0,81%  [k] free_pcp_prepare                                 -      -
+#+end_example
+
+
+* Using alloc_pages_bulk
+
+Kernel: Linux broadwell 5.11.0-net-next-alloc_pages_bulk+
+- With this fix [[https://patchwork.kernel.org/project/netdevbpf/patch/161402344429.1980160.4798557236979159924.stgit@firesoul/][to mlx5 driver]]
+
+** test01: veth redirect
+
+#+begin_example
+Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      5       4,066,028   0          
+XDP-RX CPU      total   4,066,028  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:5   4,066,023   0          
+rx_queue_index    0:sum 4,066,023  
+#+end_example
+
+
+#+begin_example
+Samples: 51K of event 'cycles', Event count (approx.): 46934149161
+  Overhead  Symbol                                               IPC   [IPC Coverage]
++    4,94%  [k] __netif_receive_skb_core                         -      -
++    4,02%  [k] kmem_cache_free                                  -      -
++    3,78%  [k] bpf_prog_943df0a1ce7ea5c2_xdp_prognum0           -      -
++    3,30%  [k] memset_erms                                      -      -
++    3,26%  [k] __xdp_release_frame                              -      -
++    3,23%  [k] dev_gro_receive                                  -      -
++    3,10%  [k] free_unref_page_commit                           -      -
++    3,06%  [k] veth_xdp_rcv_one                                 -      -
++    2,82%  [k] __list_del_entry_valid                           -      -
++    2,42%  [k] bpf_xdp_redirect_map                             -      -
++    2,40%  [k] __netif_receive_skb_list_core                    -      -
++    2,40%  [k] napi_gro_receive                                 -      -
++    2,21%  [k] __xdp_build_skb_from_frame                       -      -
++    2,16%  [k] mlx5e_skb_from_cqe_mpwrq_linear                  -      -
++    2,07%  [k] dev_map_enqueue                                  -      -
++    2,06%  [k] mlx5e_handle_rx_cqe_mpwrq                        -      -
++    2,01%  [k] ip_list_rcv                                      -      -
++    1,94%  [k] netif_receive_skb_list_internal                  -      -
++    1,92%  [k] kmem_cache_alloc_bulk                            -      -
++    1,91%  [k] bpf_prog_a55118bafe28d557_xdp_redirect_map_prog  -      -
++    1,90%  [k] veth_xdp_rcv                                     -      -
++    1,74%  [k] __list_add_valid                                 -      -
++    1,73%  [k] xdp_do_redirect                                  -      -
++    1,70%  [k] mlx5e_xdp_handle                                 -      -
++    1,63%  [k] free_unref_page_prepare.part.0                   -      -
++    1,61%  [k] dma_map_page_attrs                               -      -
++    1,53%  [k] __alloc_pages_bulk_nodemask                      -      -
++    1,43%  [k] __slab_free                                      -      -
++    1,42%  [k] mlx5e_poll_rx_cq                                 -      -
++    1,36%  [k] eth_type_trans                                   -      -
++    1,32%  [k] __page_pool_alloc_pages_slow                     -      -
++    1,22%  [k] free_unref_page                                  -      -
++    1,18%  [k] mlx5e_alloc_rx_mpwqe                             -      -
++    1,16%  [k] veth_xdp_xmit                                    -      -
++    1,09%  [k] build_skb_around                                 -      -
++    1,03%  [k] gro_normal_one                                   -      -
++    1,02%  [k] page_pool_release_page                           -      -
++    1,00%  [k] ip_rcv_core.isra.0                               -      -
++    1,00%  [k] dma_unmap_page_attrs                             -      -
++    0,99%  [k] __rmqueue_pcplist                                -      -
++    0,95%  [k] free_pcp_prepare                                 -      -
++    0,91%  [k] __build_skb_around                               -      -
+     0,84%  [k] kfree_skb                                        -      -
+#+end_example
