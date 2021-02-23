@@ -122,9 +122,11 @@ Samples: 81K of event 'cycles', Event count (approx.): 73929158590
 Kernel: Linux broadwell 5.11.0-net-next-alloc_pages_bulk+
 - With this fix [[https://patchwork.kernel.org/project/netdevbpf/patch/161402344429.1980160.4798557236979159924.stgit@firesoul/][to mlx5 driver]]
 
-** test01: veth redirect
+** test01: veth redirect (page_pool bulk 16)
 
 Same veth setup as above: [[#test-setup-for-veth][setup]]
+
+Results below with page_pool using bulk=16 for alloc_pages_bulk().
 
 #+begin_example
 Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
@@ -185,3 +187,19 @@ Samples: 51K of event 'cycles', Event count (approx.): 46934149161
      0,84%  [k] kfree_skb                                        -      -
 #+end_example
 
+** test02: veth redirect (page_pool bulk 64)
+
+Same veth setup as above: [[#test-setup-for-veth][setup]]
+
+Results below with page_pool using bulk=64 for alloc_pages_bulk().
+
+#+begin_example
+Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      1       4,297,656   0          
+XDP-RX CPU      total   4,297,656  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:1   4,297,649   0          
+rx_queue_index    0:sum 4,297,649  
+#+end_example
