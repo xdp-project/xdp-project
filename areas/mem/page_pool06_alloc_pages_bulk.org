@@ -235,10 +235,14 @@ rx_queue_index    0:sum 4,368,917
 
 #+begin_example
 stg mail --version='RFC net-next' --edit-cover --cc meup \
+ --to mel --cc chuck.lever@oracle.com \
+ --to mm --cc netdev --cc linux-nfs@vger.kernel.org --cc lkml \
  --in-reply-to='20210224102603.19524-1-mgorman@techsingularity.net' \
  03-reorder-add-page_pool_dma_map..mm-make-zone-free_area-order
 #+end_example
+Message-ID: <161419296941.2718959.12575257358107256094.stgit@firesoul>
 
+#+begin_quote
 Use bulk order-0 page allocator API for page_pool
 
 This is a followup to Mel Gorman's patchset:
@@ -246,6 +250,21 @@ This is a followup to Mel Gorman's patchset:
  - https://lore.kernel.org/netdev/20210224102603.19524-1-mgorman@techsingularity.net/
 
 Showing page_pool usage of the API for alloc_pages_bulk().
+#+end_quote
+
+** bench test veth
+
+Test again:
+#+begin_example
+Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      0       4,302,291   0          
+XDP-RX CPU      total   4,302,291  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:0   4,302,285   0          
+rx_queue_index    0:sum 4,302,285  
+#+end_example
 
 ** desc: net: page_pool: use alloc_pages_bulk in refill code path
 
@@ -265,3 +284,183 @@ the alloc_pages_bulk API (3,677,958 pps -> 4,368,926 pps).
 
 [1] https://github.com/xdp-project/xdp-project/blob/master/areas/mem/page_pool06_alloc_pages_bulk.org
 #+end_quote
+
+* Micro optimisations
+
+Document steps in micro optimizing page-alloactor code:
+- make zone->free_area[order] access faster
+
+** Observations
+
+The code del_page_from_free_list() generate a strange imul operation:
+#+begin_example
+imul   $0x58,%rax,%rax
+#+end_example
+
+#+begin_src C
+static inline void del_page_from_free_list(struct page *page, struct zone *zone,
+					   unsigned int order)
+{
+	/* clear reported state and update reported page count */
+	if (page_reported(page))
+		__ClearPageReported(page);
+
+	list_del(&page->lru);
+	__ClearPageBuddy(page);
+	set_page_private(page, 0);
+	zone->free_area[order].nr_free--;
+#+end_src
+
+Tracked this down to:
+#+begin_src C
+struct zone {
+    [...]
+	struct free_area	free_area[MAX_ORDER];
+#+end_src
+
+This happens when accessing free_area like this:
+#+begin_src C
+	zone->free_area[order].nr_free--;
+#+end_src
+
+Perf show hot-spot in: rmqueue_bulk.constprop.0 / rmqueue_bulk()
+#+begin_example
+       │         mov    0x8(%rbx),%rax                                                                                            ▒
+       │       __list_del():                                                                                                      ▒
+       │         mov    %rax,0x8(%rdx)                                                                                            ▒
+       │         mov    %rdx,(%rax)                                                                                               ▒
+       │       del_page_from_free_list():                                                                                         ▒
+ 44,54 │1  e2:   imul   $0x58,%rbp,%rbp                                                                                           ▒
+       │       expand():                                                                                                          ◆
+       │         mov    $0x1,%r9d                                                                                                 ▒
+       │         mov    %r13d,%ecx                                                                                                ▒
+       │       set_page_private():                                                                                                ▒
+       │         movq   $0x0,0x20(%rbx)                                                                                           ▒
+       │       __ClearPageBuddy():                                                                                                ▒
+       │         orl    $0x80,0x28(%rbx)                                                                                          ▒
+       │         lea    -0x1(%r13),%r11d                                                                                          ▒
+       │       expand():                                                                                                          ▒
+       │         shl    %cl,%r9d                                                                                                  ▒
+       │       list_del():                                                                                                        ▒
+       │         movabs $0xdead000000000100,%rax                                                                                  ▒
+       │         mov    %rax,(%rbx)                                                                                               ▒
+       │         add    $0x22,%rax                                                                                                ▒
+       │       expand():                                                                                                          ▒
+       │         movslq %r9d,%r14                                                                                                 ▒
+       │       list_del():                                                                                                        ▒
+       │         mov    %rax,0x8(%rbx)                                                                                            ▒
+       │       del_page_from_free_list():                                                                                         ▒
+       │         subq   $0x1,0x110(%r15,%rbp,1)                                                                                   ▒
+       │       expand():                                                                                                          ▒
+#+end_example
+
+** Why happening
+
+The size of struct free_area is 88 bytes or 0x58 hex.
+
+#+begin_src sh
+$ pahole -C free_area mm/page_alloc.o
+struct free_area {
+	struct list_head           free_list[5];         /*     0    80 */
+	/* --- cacheline 1 boundary (64 bytes) was 16 bytes ago --- */
+	long unsigned int          nr_free;              /*    80     8 */
+
+	/* size: 88, cachelines: 2, members: 2 */
+	/* last cacheline: 24 bytes */
+};
+#+end_src
+
+The reason for the code is to find the right struct free_area in struct
+zone.  The array of 11 comes from define MAX_ORDER.
+
+#+begin_example
+struct zone {
+        long unsigned int          _watermark[3];        /*     0    24 */
+ [...]
+        /* --- cacheline 3 boundary (192 bytes) --- */
+        struct zone_padding        _pad1_ __attribute__((__aligned__(64))); /*   192     0 */
+        struct free_area           free_area[11];        /*   192   968 */
+        /* --- cacheline 18 boundary (1152 bytes) was 8 bytes ago --- */
+        long unsigned int          flags;                /*  1160     8 */
+        spinlock_t                 lock;                 /*  1168     4 */
+
+        /* XXX 44 bytes hole, try to pack */
+
+        /* --- cacheline 19 boundary (1216 bytes) --- */
+        struct zone_padding        _pad2_ __attribute__((__aligned__(64))); /*  1216     0 */
+
+#+end_example
+
+The size 88 bytes or 0x58 hex. The compiler cannot find a shift
+operation to use and instead choose to use a imul to find the offset
+into the array free_area[].
+
+Asm code to lookout for:
+(objdump -Sr mm/page_alloc.o-use-imul)
+#+begin_src asm
+       zone->free_area[order].nr_free--;
+    75ee:       44 89 f0                mov    %r14d,%eax
+    75f1:       48 6b c0 58             imul   $0x58,%rax,%rax
+    75f5:       48 03 04 24             add    (%rsp),%rax
+    75f9:       49 83 ac 04 10 01 00    subq   $0x1,0x110(%r12,%rax,1)
+#+end_src
+
+It looks like it happens 45 times in =mm/page_alloc.o=:
+#+begin_src C
+$ objdump -Sr mm/page_alloc.o | grep imul | grep '0x58,' |wc -l
+45
+#+end_src
+
+Code notes for hot-path: The del_page_from_free_list() contains the
+zone->free_area[order].nr_free-- code, the __rmqueue_smallest was the
+hotspot that calls this. This is called by __rmqueue, which is called by
+rmqueue_bulk.
+
+** Explaining patch with fix
+
+#+begin_quote
+mm: make zone->free_area[order] access faster
+
+Avoid multiplication (imul) operations when accessing:
+ zone->free_area[order].nr_free
+
+This was really tricky to find. I was puzzled why perf reported that
+rmqueue_bulk was using 44% of the time in an imul operation:
+
+       │     del_page_from_free_list():
+ 44,54 │ e2:   imul   $0x58,%rax,%rax
+
+This operation was generated (by compiler) because the struct free_area
+have size 88 bytes or 0x58 hex. The compiler cannot find a shift
+operation to use and instead choose to use a imul to find the offset
+into the array free_area[].
+
+The patch align struct free_area to a cache-line, which cause the
+compiler avoid the imul operation. The imul operation is very fast on
+modern Intel CPUs. To help fast-path that decrement 'nr_free' move the
+member 'nr_free' to be first element, which saves one 'add' operation.
+
+Looking up instruction latency this exchange a 3-cycle 'imul' with a
+1-cycle 'shl', saving 2-cycles. It does trade some space to do this.
+
+Used: gcc (GCC) 9.3.1 20200408 (Red Hat 9.3.1-2)
+#+end_quote
+
+Notes about moving members around:
+
+Before: Move member 'nr_free':
+#+begin_src asm
+    760e:       44 89 f0                mov    %r14d,%eax
+    7611:       48 83 c0 02             add    $0x2,%rax
+    7615:       48 c1 e0 07             shl    $0x7,%rax
+    7619:       48 03 04 24             add    (%rsp),%rax
+    761d:       49 83 6c 04 10 01       subq   $0x1,0x10(%r12,%rax,1)
+#+end_src
+
+Move member 'nr_free':
+#+begin_src asm
+    75be:       44 89 f0                mov    %r14d,%eax
+    75c1:       48 c1 e0 07             shl    $0x7,%rax
+    75c5:       48 03 04 24             add    (%rsp),%rax
+    75c9:       49 83 ac 04 c0 00 00    subq   $0x1,0xc0(%r12,%rax,1)
+#+end_src
