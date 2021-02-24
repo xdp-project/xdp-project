@@ -2,9 +2,9 @@ var titleFooter = 'XDP as a building block for other FOSS projects'
 var authorName = 'Jesper Dangaard Brouer';
 var authorEmail = 'brouer@redhat.com';
 
-var logoWhite = '<img src="./reveal.js/images/Logo-RedHat-A-White-RGB.svg" />';
-var logoHat = '<img src="./reveal.js/images/Logo-RedHat-Hat-White-RGB.svg" />';
-var logoRed = '<img src="./reveal.js/images/Logo-RedHat-A-Reverse-RGB.svg" />';
+var logoWhite = '<img src="../reveal.js/images/Logo-RedHat-A-White-RGB.svg" />';
+var logoHat = '<img src="../reveal.js/images/Logo-RedHat-Hat-White-RGB.svg" />';
+var logoRed = '<img src="../reveal.js/images/Logo-RedHat-A-Reverse-RGB.svg" />';
 var authorHTML = [
     '<span class="footer">',
     '&nbsp;&nbsp;&nbsp;',
