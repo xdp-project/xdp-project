@@ -263,7 +263,11 @@ is tail-calling into.
 
 Netlink? Ethtool?
 
-** TODO Multiple XDP programs on a single interface
+** DONE Multiple XDP programs on a single interface
+CLOSED: [2020-12-15 Tue 13:18]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2020-12-15 Tue 13:18]
+:END:
 
 Being able to load multiple programs on the same XDP interface is an
 important use case if XDP is to see more widespread deployment (as otherwise
@@ -286,11 +290,18 @@ implementation works for loading a dispatcher with multiple programs, but
 only if they are all attached at the same time (until kernel support for
 re-attaching freplace programs land).
 
-*** TODO Implement freplace re-attachment
+*** DONE Implement freplace re-attachment
+CLOSED: [2020-12-15 Tue 13:17]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2020-12-15 Tue 13:17]
+:END:
 To support seamlessly attaching additional XDP programs onto an interface,
 we need the kernel to support re-attaching an existing freplace program in
 multiple places, so the programs can be attached to a new dispatcher which
 can then be atomically swapped onto the interface XDP hook.
+
+This is now supported in the 5.10 kernel, with the userspace support
+available in [[https://github.com/xdp-project/xdp-tools][libxdp and xdp-tools]].
 
 * Important medium-term tasks                                       :@medium:
 
@@ -528,14 +539,19 @@ Exposing either full conntrack, or the more light-weight flow tracking
 support would make things like stateful firewalls easier to implement.
 Probably need a concrete use case for this first, though.
 
-** TODO Port iproute2 to libbpf
+** DONE Port iproute2 to libbpf
+CLOSED: [2020-12-15 Tue 13:18]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2020-12-15 Tue 13:18]
+:END:
 
 The iproute2 XDP loader does not use libbpf, because its implementation
 predates the introduction of libbpf as the "official" upstream-blessed
 library. This means that there are compatibility issues between the way
 iproute2 handles maps, and the way libbpf-based loaders do.
 
-The easiest way to fix this is probably just to port iproute2 to use libbpf.
+The easiest way to fix this is probably just to port iproute2 to use libbpf,
+which has now been merged into upstream iproute2.
 
 ** TODO Metadata available to programs
 

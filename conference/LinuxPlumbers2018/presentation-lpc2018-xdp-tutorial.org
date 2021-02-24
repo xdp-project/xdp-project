@@ -5,10 +5,11 @@
 #+REVEAL_THEME: redhat
 #+REVEAL_TRANS: linear
 #+REVEAL_MARGIN: 0
-#+REVEAL_EXTRA_JS: { src: './reveal.js/js/custom-xdp-tutorial.js'}
-#+REVEAL_EXTRA_CSS: ./reveal.js/css/custom-xdp-tutorial.css
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/custom-xdp-tutorial.js'}
+#+REVEAL_EXTRA_CSS: ../reveal.js/css/custom-xdp-tutorial.css
 #+REVEAL_PLUGINS: (highlight)
-#+REVEAL_HIGHLIGHT_CSS: ./reveal.js/css/highlight/solarized-dark.css
+#+REVEAL_HIGHLIGHT_CSS: ../reveal.js/css/highlight/solarized-dark.css
+#+REVEAL_ROOT: ../reveal.js
 # atom-one-dark.css
 #+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
 #+OPTIONS: reveal_width:1600 reveal_height:900

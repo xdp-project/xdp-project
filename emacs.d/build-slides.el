@@ -1,5 +1,6 @@
 (setq user-emacs-directory (file-name-directory
-                            (file-truename (or load-file-name buffer-file-name))))
+                            (file-truename (or load-file-name buffer-file-name)))
+      comp-eln-load-path `(,(concat user-emacs-directory "/eln-cache")))
 
 (let ((inhibit-message t))
   (load-file (concat user-emacs-directory "/bootstrap-common.el")))

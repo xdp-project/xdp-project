@@ -74,11 +74,16 @@
   ;; Any errors in this Emacs go directly to the user's init-file and
   ;; abort init. Errors in the child Emacs spawned below create a
   ;; non-zero exit code, and are re-thrown.
-  (let ((min-version "24.4"))
+  (let ((min-version "25.1"))
     (when (version< emacs-version min-version)
       (error (concat "straight.el requires at least Emacs %s, "
                      "but you are running Emacs %s")
              min-version emacs-version)))
+
+  (when (boundp 'straight-repository-branch)
+    (unless (stringp straight-repository-branch)
+      (error "The `straight-repository-branch' must be a string (was: %S)"
+             straight-repository-branch)))
 
   ;; Load some libraries.
   (require 'cl-lib)
@@ -89,12 +94,19 @@
   (defvar url-http-end-of-headers)
   (defvar url-http-response-status)
 
+  ;; for windows os
+  (defun straight--windows-os-p ()
+    "Check if the current operating system is Windows."
+    (memq system-type '(ms-dos windows-nt cygwin)))
+
   (let ((version nil)
         (straight-profiles (if (boundp 'straight-profiles)
                                straight-profiles
                              '((nil . "default.el"))))
         (straight-install-dir (or (bound-and-true-p straight-base-dir)
-                                  user-emacs-directory)))
+                                  user-emacs-directory))
+        (print-length nil)
+        (print-level nil))
     ;; The only permissible error here is for a lockfile to be absent
     ;; entirely. Anything else triggers an abort so that we don't
     ;; accidentally do something the user doesn't expect (like if they
@@ -129,7 +141,7 @@
              (error "Malformed version lockfile: %S" lockfile-name))))))
     (unless version
       ;; If no lockfile present, use latest version.
-      (setq version :alpha))
+      (setq version :beta))
     (with-current-buffer
         (url-retrieve-synchronously
          (format
@@ -149,6 +161,7 @@
       ;; All of the following code is actually executed by the child
       ;; Emacs.
       (goto-char (point-min))
+      (princ ";; -*- coding: utf-8 -*-" (current-buffer))
       (print
        `(progn
           ;; Pass relevant variables into the child Emacs, if they
@@ -212,7 +225,7 @@
               ;; existing file. That's why we have to `delete-file'
               ;; above.
               (if (bound-and-true-p straight-use-symlinks)
-                  (if (executable-find "cmd")
+                  (if (straight--windows-os-p)
                       (call-process "cmd" nil nil nil "/c" "mklink"
                                     (subst-char-in-string ?/ ?\\ link-name)
                                     (subst-char-in-string ?/ ?\\ link-target))
@@ -234,7 +247,7 @@
                              (expand-file-name
                               invocation-name invocation-directory))
                             (runemacs-binary-path
-                             (when (memq system-type '(windows-nt ms-dos))
+                             (when (straight--windows-os-p)
                                (expand-file-name
                                 "runemacs.exe" invocation-directory))))
                         (if (and runemacs-binary-path

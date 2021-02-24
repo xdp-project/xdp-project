@@ -8,10 +8,10 @@
  ("git.el" . "a3396a7027a7d986598c6a2d6d5599bac918f3da")
  ("gnu-elpa-mirror" . "3decb53aacf461b99799351f549a9b0f93eb80f8")
  ("melpa" . "8fec46a8717fb5b0eedfba39b4b6001cce1c7145")
- ("org" . "bfe2f919fa21c8931c60e1d73d91d21c14a790b0")
+ ("org" . "9e98e9a731daf7bc11985edae29d01203027dcd0")
  ("org-re-reveal" . "14df7542f2a675f65501962e344e03d798cf0d39")
  ("packed" . "c41c3dfda86ae33832ffc146923e2a4675cbacfa")
  ("s.el" . "03410e6a7a2b11e47e1fea3b7d9899c7df26435e")
  ("straight.el" . "62ad3f9df3eae877766cd32c61e5623cdbb7f098")
- ("use-package" . "42db6b3d90ee57d0f5947d3b0bf4b0010bdf7b40"))
+ ("use-package" . "a7422fb8ab1baee19adb2717b5b47b9c3812a84c"))
 :pluto

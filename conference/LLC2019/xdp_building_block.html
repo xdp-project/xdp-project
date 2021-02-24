@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8"/>
 <title>XDP (eXpress Data Path) as a building block for other FOSS projects</title>
-<meta name="author" content="(Jesper Dangaard Brouer)"/>
+<meta name="author" content="Jesper Dangaard Brouer"/>
 <style type="text/css">
 .underline { text-decoration: underline; }
 </style>
-<link rel="stylesheet" href="./reveal.js/css/reveal.css"/>
+<link rel="stylesheet" href="../reveal.js/css/reveal.css"/>
 
-<link rel="stylesheet" href="./reveal.js/css/theme/redhat.css" id="theme"/>
+<link rel="stylesheet" href="../reveal.js/css/theme/redhat.css" id="theme"/>
 
-<link rel="stylesheet" href="./reveal.js/css/custom-adjust-logo.css"/>
+<link rel="stylesheet" href="../reveal.js/css/custom-adjust-logo.css"/>
 
 <!-- If the query includes 'print-pdf', include the PDF print sheet -->
 <script>
@@ -19,7 +19,7 @@
         var link = document.createElement( 'link' );
         link.rel = 'stylesheet';
         link.type = 'text/css';
-        link.href = './reveal.js/css/print/pdf.css';
+        link.href = '../reveal.js/css/print/pdf.css';
         document.getElementsByTagName( 'head' )[0].appendChild( link );
     }
 </script>
@@ -27,13 +27,14 @@
 <body>
 <div class="reveal">
 <div class="slides">
-<section id="sec-title-slide"><h1 class="title">XDP (eXpress Data Path) as a building block for other FOSS projects</h1>
+<section id="sec-title-slide">
+<h1 class="title">XDP (eXpress Data Path) as a building block for other FOSS projects</h1>
 <h2 class="author">Jesper Dangaard Brouer (Red Hat)<br/></h2>
 <h3>LLC (Lund Linux Con)<br/>Lund, Sweden, May 2019</h3>
 </section>
 <section>
-<section id="slide-sec-">
-<h2 id="orge4a5a4a">What will you learn?</h2>
+<section id="slide-org7141c03">
+<h2 id="org7141c03">What will you learn?</h2>
 <p>
 <small>
 Contents of this talk
@@ -59,8 +60,8 @@ Framing AF_XDP
 </ul>
 
 </section>
-<section id="slide-sec-">
-<h3 id="org9d4595e">What is XDP?</h3>
+<section id="slide-org6c9f3a1">
+<h3 id="org6c9f3a1">What is XDP?</h3>
 <p>
 XDP (eXpress Data Path) is a Linux <b>in-kernel</b> fast-path
 </p>
@@ -79,8 +80,8 @@ XDP (eXpress Data Path) is a Linux <b>in-kernel</b> fast-path
 </ul>
 
 </section>
-<section id="slide-sec-">
-<h3 id="org70623a0">What is AF_XDP?</h3>
+<section id="slide-org9d0baa2">
+<h3 id="org9d0baa2">What is AF_XDP?</h3>
 <p>
 <small>
 XDP is <i>in-kernel</i> processing&#x2026; how to get frames into userspace?
@@ -115,8 +116,8 @@ AF_XDP: Copy vs. Zero-Copy mode
 </ul>
 
 </section>
-<section id="slide-sec-">
-<h3 id="orgce888f7">Why is XDP needed?</h3>
+<section id="slide-org930fcc6">
+<h3 id="org930fcc6">Why is XDP needed?</h3>
 <p>
 This is about: <b>Kernel networking stack staying relevant</b>
 </p>
@@ -158,8 +159,8 @@ If you forgot OSI model:
 </p>
 
 </section>
-<section id="slide-sec-">
-<h3 id="org2046e4a">Existing solutions: Not first mover</h3>
+<section id="slide-org1eda346">
+<h3 id="org1eda346">Existing solutions: Not first mover</h3>
 <p>
 XDP is not first mover in this area
 </p>
@@ -186,8 +187,8 @@ Commercial solutions <i>similar to XDP</i>:
 </ul>
 
 </section>
-<section id="slide-sec-">
-<h3 id="org7f49fba">What makes XDP different and better?</h3>
+<section id="slide-org7693315">
+<h3 id="org7693315">What makes XDP different and better?</h3>
 <p>
 <b>Not bypass</b>, but <i>in-kernel fast-path</i>
 </p>
@@ -216,15 +217,15 @@ The killer feature of XDP is integration with Linux kernel,
 </section>
 </section>
 <section>
-<section id="slide-sec-" class="mid-slide">
-<h2 id="orge974ad6">XDP is a building block</h2>
+<section id="slide-orgd3018ef" class="mid-slide">
+<h2 id="orgd3018ef">XDP is a building block</h2>
 <p>
 Fundamental to understand that XDP is a building block
 </p>
 
 </section>
-<section id="slide-sec-">
-<h3 id="org72f8ddb">XDP is a building block</h3>
+<section id="slide-org00d7f7f">
+<h3 id="org00d7f7f">XDP is a building block</h3>
 <p>
 <small>
 It is fundamental to understand
@@ -260,8 +261,8 @@ eBPF (incl XDP) is <b>not a product in itself</b>
 </section>
 </section>
 <section>
-<section id="slide-sec-" class="mid-slide">
-<h2 id="org5a1f3a6">XDP use-cases</h2>
+<section id="slide-org6b98ec4" class="mid-slide">
+<h2 id="org6b98ec4">XDP use-cases</h2>
 <p>
 Areas and use-cases where XDP is <i>already being used</i>
 </p>
@@ -275,8 +276,8 @@ Touch upon <b>new potential</b> and opportunities
 </ul>
 
 </section>
-<section id="slide-sec-">
-<h3 id="orgd9a3616">Use-case: Anti-DDoS</h3>
+<section id="slide-org110d200">
+<h3 id="org110d200">Use-case: Anti-DDoS</h3>
 <p>
 The most obvious use case for XDP is <b>anti-DDoS</b>
 </p>
@@ -304,8 +305,8 @@ Companies already deployed XDP in production for anti-DDoS
 </ul>
 
 </section>
-<section id="slide-sec-">
-<h3 id="org67d3747">Use-case: L4 Load-balancer</h3>
+<section id="slide-orgc3eddd5">
+<h3 id="orgc3eddd5">Use-case: L4 Load-balancer</h3>
 <p>
 <i>Facebook</i> was using the kernel Load-balancer IPVS
 </p>
@@ -337,8 +338,8 @@ Companies already deployed XDP in production for anti-DDoS
 </section>
 </section>
 <section>
-<section id="slide-sec-" class="mid-slide">
-<h2 id="org410faf7">Evolving XDP via leveraging existing solutions</h2>
+<section id="slide-org67d90fd" class="mid-slide">
+<h2 id="org67d90fd">Evolving XDP via leveraging existing solutions</h2>
 <p>
 <small>
 XDP can (easily) be misused in the same way as kernel bypass solutions
@@ -354,8 +355,8 @@ Being smart about how XDP is integrated into existing Open Source solutions
 </ul>
 
 </section>
-<section id="slide-sec-">
-<h3 id="org0790c1a">Evolving XDP via BPF-helpers</h3>
+<section id="slide-orgd5263e8">
+<h3 id="orgd5263e8">Evolving XDP via BPF-helpers</h3>
 <p>
 <small>
 <b>We should encourage adding helpers instead of duplicating data in BPF maps</b>
@@ -394,8 +395,8 @@ Obvious <b>next target</b>: <i>Bridge lookup helper</i>
 
 
 </section>
-<section id="slide-sec-">
-<h3 id="orgdbfbab1">Transfer info between XDP and netstack</h3>
+<section id="slide-org4ce0048">
+<h3 id="org4ce0048">Transfer info between XDP and netstack</h3>
 <p>
 Ways to transfer <i>info between XDP and netstack</i>
 </p>
@@ -419,8 +420,8 @@ Ways to transfer <i>info between XDP and netstack</i>
 </section>
 </section>
 <section>
-<section id="slide-sec-">
-<h2 id="org2a3a1fd">XDP integration with OVS</h2>
+<section id="slide-orgd926d5f">
+<h2 id="orgd926d5f">XDP integration with OVS</h2>
 <p>
 XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 </p>
@@ -439,8 +440,8 @@ XDP/eBPF can integrate/offload Open vSwitch (OVS) in many ways
 </section>
 </section>
 <section>
-<section id="slide-sec-" class="mid-slide">
-<h2 id="org4b753bf">AF_XDP - moving frames into userspace</h2>
+<section id="slide-org1c97bd0" class="mid-slide">
+<h2 id="org1c97bd0">AF_XDP - moving frames into userspace</h2>
 <p>
 XDP is <i>in-kernel processing</i>
 </p>
@@ -458,10 +459,10 @@ Userspace AF_XDP socket pre-register user memory
 </p>
 
 </section>
-<section id="slide-sec-">
-<h3 id="org34faf96">AF_XDP Basics</h3>
+<section id="slide-org47b8476">
+<h3 id="org47b8476">AF_XDP Basics</h3>
 
-<div class="figure">
+<div id="org2dd8d0b" class="figure">
 <p><img src="images/af_xdp_v2.png" alt="af_xdp_v2.png" />
 </p>
 </div>
@@ -478,16 +479,16 @@ XDP program filters packets
 </section>
 </section>
 <section>
-<section id="slide-sec-" class="mid-slide">
-<h2 id="org5b2e8dc">Integration with AF_XDP</h2>
+<section id="slide-orga661c78" class="mid-slide">
+<h2 id="orga661c78">Integration with AF_XDP</h2>
 <p>
 How can <b>kernel-bypass</b> solutions use AF_XDP as a <i>building block</i>?
 </p>
 
 
 </section>
-<section id="slide-sec-">
-<h3 id="org82b0238">AF_XDP integration with DPDK</h3>
+<section id="slide-org2f6a16f">
+<h3 id="org2f6a16f">AF_XDP integration with DPDK</h3>
 <p>
 <b>AF_XDP poll-mode driver for DPDK</b>
 </p>
@@ -512,8 +513,8 @@ Advantages:
 
 
 </section>
-<section id="slide-sec-">
-<h3 id="orgbfe93f7">AF_XDP integration with VPP</h3>
+<section id="slide-orge5ffc72">
+<h3 id="orge5ffc72">AF_XDP integration with VPP</h3>
 <p>
 VPP (FD.io) <b>could</b> integrate via AF_XDP DPDK PMD
 </p>
@@ -532,8 +533,8 @@ A native AF_XDP driver would be more efficient
 
 
 </section>
-<section id="slide-sec-">
-<h3 id="orgf3e934a">AF_XDP integration with Snabb Switch</h3>
+<section id="slide-org8549df0">
+<h3 id="org8549df0">AF_XDP integration with Snabb Switch</h3>
 <p>
 <a href="https://github.com/snabbco/snabb/blob/master/README.md">Snabb Switch</a>
 </p>
@@ -557,11 +558,11 @@ A native AF_XDP driver would be more efficient
 </section>
 </section>
 <section>
-<section id="slide-sec-" class="mid-slide">
-<h2 id="org69119db">Explaining AF_XDP performance</h2>
+<section id="slide-org25b4a55" class="mid-slide">
+<h2 id="org25b4a55">Explaining AF_XDP performance</h2>
 </section>
-<section id="slide-sec-">
-<h3 id="org02b1c12">Where does AF_XDP performance come from?</h3>
+<section id="slide-orga4a2b98">
+<h3 id="orga4a2b98">Where does AF_XDP performance come from?</h3>
 <p>
 <i>Lock-free <a href="https://lwn.net/Articles/169961/">channel</a> directly from driver RX-queue into AF_XDP socket</i>
 </p>
@@ -588,8 +589,8 @@ A native AF_XDP driver would be more efficient
 </ul>
 
 </section>
-<section id="slide-sec-">
-<h3 id="orgce25fe5">Details: Actually <b>four</b> SPSC ring queues</h3>
+<section id="slide-org5547a34">
+<h3 id="org5547a34">Details: Actually <b>four</b> SPSC ring queues</h3>
 <p>
 AF_XDP <i>socket</i>: Has <i>two rings</i>: <b>RX</b> and <b>TX</b>
 </p>
@@ -608,8 +609,8 @@ AF_XDP <i>socket</i>: Has <i>two rings</i>: <b>RX</b> and <b>TX</b>
 </ul>
 
 </section>
-<section id="slide-sec-">
-<h3 id="org224be34">Gotcha by RX-queue id binding</h3>
+<section id="slide-org4997329">
+<h3 id="org4997329">Gotcha by RX-queue id binding</h3>
 <p>
 AF_XDP bound to <b><i>single RX-queue id</i></b> (for SPSC performance reasons)
 </p>
@@ -639,8 +640,8 @@ AF_XDP bound to <b><i>single RX-queue id</i></b> (for SPSC performance reasons)
 </section>
 </section>
 <section>
-<section id="slide-sec-">
-<h2 id="org800b8b9">Summary</h2>
+<section id="slide-org80d5bf7">
+<h2 id="org80d5bf7">Summary</h2>
 <ul>
 <li><i>XDP</i> = Linux <i>kernel</i> fast path</li>
 <li><b>AF_XDP</b> = packets to <b>userspace</b> from <i>XDP</i></li>
@@ -667,9 +668,8 @@ AF_XDP bound to <b><i>single RX-queue id</i></b> (for SPSC performance reasons)
 </section>
 </div>
 </div>
-<script src="./reveal.js/lib/js/head.min.js"></script>
-<script src="./reveal.js/js/reveal.js"></script>
-
+<script src="../reveal.js/lib/js/head.min.js"></script>
+<script src="../reveal.js/js/reveal.js"></script>
 <script>
 // Full list of configuration options available here:
 // https://github.com/hakimel/reveal.js#configuration
@@ -682,28 +682,28 @@ center: false,
 slideNumber: 'c',
 rollingLinks: false,
 keyboard: true,
+mouseWheel: false,
+fragmentInURL: false,
+hashOneBasedIndex: false,
+pdfSeparateFragments: true,
+
 overview: true,
 width: 1600,
 height: 900,
 margin: 0.00,
 
 theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
-transition: Reveal.getQueryHash().transition || 'linear', // default/cube/page/concave/zoom/linear/fade/none
+transition: Reveal.getQueryHash().transition || 'linear', // see README of reveal.js for options
 transitionSpeed: 'default',
-multiplex: {
-    secret: '', // null if client
-    id: '', // id, obtained from socket.io server
-    url: '' // Location of socket.io server
-},
 
-// Optional libraries used to extend on reveal.js
+// Optional libraries used to extend reveal.js
 dependencies: [
-{ src: './reveal.js/js/custom-llc2019.js'},
- { src: './reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
- { src: './reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
- { src: './reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
- { src: './reveal.js/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
- { src: './reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }]
+{ src: '../reveal.js/js/custom-llc2019.js'},
+ { src: '../reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: '../reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: '../reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
+ { src: '../reveal.js/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } }]
+
 });
 </script>
 </body>
