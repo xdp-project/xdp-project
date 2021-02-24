@@ -7,6 +7,10 @@ Testing experimental patch from Mel Gorman that add alloc_pages_bulk() API.
 This patch: https://lore.kernel.org/linux-mm/20210210130705.GC3629@suse.de/
 With this fix: https://lore.kernel.org/linux-mm/20210211091235.GC3697@techsingularity.net/
 
+Notice new patchset from Mel:
+ - Message-Id: <20210224102603.19524-1-mgorman@techsingularity.net>
+ - https://lore.kernel.org/netdev/20210224102603.19524-1-mgorman@techsingularity.net/
+
 * Use-case: page_pool
 
 The =alloc_pages_bulk()= use-case for page_pool is in
