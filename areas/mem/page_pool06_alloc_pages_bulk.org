@@ -207,3 +207,61 @@ RXQ stats       RXQ:CPU pps         issue-pps
 rx_queue_index    0:1   4,297,649   0          
 rx_queue_index    0:sum 4,297,649  
 #+end_example
+
+* Test with RFC patchset
+
+Test with new patchset from Mel:
+ - Message-Id: <20210224102603.19524-1-mgorman@techsingularity.net>
+ - https://lore.kernel.org/netdev/20210224102603.19524-1-mgorman@techsingularity.net/
+
+** initial test
+
+bulk=64
+
+#+begin_example
+Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      3       4,368,926   0          
+XDP-RX CPU      total   4,368,926  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:3   4,368,917   0          
+rx_queue_index    0:sum 4,368,917  
+#+end_example
+
+* patch notes
+
+** Follow up to Mel's patchset
+
+#+begin_example
+stg mail --version='RFC net-next' --edit-cover --cc meup \
+ --in-reply-to='20210224102603.19524-1-mgorman@techsingularity.net' \
+ 03-reorder-add-page_pool_dma_map..mm-make-zone-free_area-order
+#+end_example
+
+Use bulk order-0 page allocator API for page_pool
+
+This is a followup to Mel Gorman's patchset:
+ - Message-Id: <20210224102603.19524-1-mgorman@techsingularity.net>
+ - https://lore.kernel.org/netdev/20210224102603.19524-1-mgorman@techsingularity.net/
+
+Showing page_pool usage of the API for alloc_pages_bulk().
+
+** desc: net: page_pool: use alloc_pages_bulk in refill code path
+
+#+begin_quote
+There are cases where the page_pool need to refill with pages from the
+page allocator. Some workloads cause the page_pool to release pages
+instead of recycling these pages.
+
+For these workload it can improve performance to bulk alloc pages from
+the page-allocator to refill the alloc cache.
+
+For XDP-redirect workload with 100G mlx5 driver (that use page_pool)
+redirecting xdp_frame packets into a veth, that does XDP_PASS to create
+an SKB from the xdp_frame, which then cannot return the page to the
+page_pool. In this case, we saw[1] an improvement of 18.8% from using
+the alloc_pages_bulk API (3,677,958 pps -> 4,368,926 pps).
+
+[1] https://github.com/xdp-project/xdp-project/blob/master/areas/mem/page_pool06_alloc_pages_bulk.org
+#+end_quote
