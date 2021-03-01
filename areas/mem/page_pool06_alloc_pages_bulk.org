@@ -233,6 +233,7 @@ rx_queue_index    0:sum 4,368,917
 
 ** Follow up to Mel's patchset
 
+Patchset V1:
 #+begin_example
 stg mail --version='RFC net-next' --edit-cover --cc meup \
  --to mel --cc chuck.lever@oracle.com \
@@ -242,6 +243,16 @@ stg mail --version='RFC net-next' --edit-cover --cc meup \
 #+end_example
 Message-ID: <161419296941.2718959.12575257358107256094.stgit@firesoul>
 
+V2 with minor changes and dropping micro-optimisation:
+#+begin_example
+stg mail --version='RFC V2 net-next' --edit-cover --cc meup \
+ --to mel --cc chuck.lever@oracle.com \
+ --to mm --cc netdev --cc linux-nfs@vger.kernel.org --cc lkml \
+ --in-reply-to='20210224102603.19524-1-mgorman@techsingularity.net' \
+ 05-03-reorder-add-page_pool_dma_map..06-04-page_pool-use-alloc_pages_bulk
+#+end_example
+Message-ID: <161460522573.3031322.15721946341157092594.stgit@firesoul>
+
 #+begin_quote
 Use bulk order-0 page allocator API for page_pool
 
@@ -250,6 +261,9 @@ This is a followup to Mel Gorman's patchset:
  - https://lore.kernel.org/netdev/20210224102603.19524-1-mgorman@techsingularity.net/
 
 Showing page_pool usage of the API for alloc_pages_bulk().
+
+Maybe Mel Gorman will/can carry these patches?
+(to keep it together with the alloc_pages_bulk API)
 #+end_quote
 
 ** bench test veth
@@ -286,6 +300,9 @@ the alloc_pages_bulk API (3,677,958 pps -> 4,368,926 pps).
 #+end_quote
 
 * Micro optimisations
+
+*UPDATE*: Choosing to drop this patch, it is waste too much memory and
+it too fragile as it depends on compiler behaviour.
 
 Document steps in micro optimizing page-alloactor code:
 - make zone->free_area[order] access faster
