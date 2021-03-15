@@ -299,6 +299,85 @@ the alloc_pages_bulk API (3,677,958 pps -> 4,368,926 pps).
 [1] https://github.com/xdp-project/xdp-project/blob/master/areas/mem/page_pool06_alloc_pages_bulk.org
 #+end_quote
 
+
+* Test on Mel git-tree
+
+Tests based on Mel Gorman's git tree:
+ - git://git.kernel.org/pub/scm/linux/kernel/git/mel/linux.git
+
+Branch: mm-bulk-rebase-v4r2
+ - Changed the last patch with page_pool changes
+
+** stg mail
+
+Promised to followup in Message-ID: <20210315094038.22d6d79a@carbon>
+
+#+begin_example
+stg mail --version='mel-git' --edit-cover --cc meup \
+ --to mel --cc chuck.lever@oracle.com --cc alex \
+ --to mm --cc netdev --cc linux-nfs@vger.kernel.org --cc lkml \
+ --in-reply-to='20210315094038.22d6d79a@carbon' \
+ net-page_pool-use
+#+end_example
+
+#+begin_quote
+Subj: Followup: Update [PATCH 7/7] in Mel's series
+
+This patch is against Mel's git-tree:
+ git://git.kernel.org/pub/scm/linux/kernel/git/mel/linux.git
+
+Using branch: mm-bulk-rebase-v4r2 but replacing the last patch related to
+the page_pool using __alloc_pages_bulk().
+
+ https://git.kernel.org/pub/scm/linux/kernel/git/mel/linux.git/log/?h=mm-bulk-rebase-v4r2
+
+While implementing suggestions by Alexander Duyck, I realised that I could
+simplify the code further, and simply take the last page from the
+pool->alloc.cache given this avoids special casing the last page.
+
+I re-ran performance tests and the improvement have been reduced to 13% from
+18% before, but I don't think the rewrite of the specific patch have
+anything to do with this.
+#+end_quote
+
+Performance summary: +13% faster
+ - (3,810,013 pps -> 4,308,208 pps)
+ - ((4308208/3810013)-1)*100 = 13.07%
+
+Previous: 18.8% (3,677,958 pps -> 4,368,926 pps).
+ - Thus, slower than before.
+ - Mostly look like better baseline
+
+** Updated patch
+
+Alexander Duyck point out there was a cleaner way to implement
+changes in function =__page_pool_alloc_pages_slow()=.
+
+#+begin_example
+Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      3       4,308,208   0          
+XDP-RX CPU      total   4,308,208  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:3   4,308,208   0          
+rx_queue_index    0:sum 4,308,208  
+#+end_example
+
+** Pop patch using __alloc_pages_bulk
+
+#+begin_example
+Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      1       3,810,013   0          
+XDP-RX CPU      total   3,810,013  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:1   3,810,013   0          
+rx_queue_index    0:sum 3,810,013  
+#+end_example
+
+
 * Micro optimisations
 
 *UPDATE*: Choosing to drop this patch, it is waste too much memory and
