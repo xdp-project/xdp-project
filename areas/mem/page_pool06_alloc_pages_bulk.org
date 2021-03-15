@@ -311,6 +311,7 @@ Branch: mm-bulk-rebase-v4r2
 ** stg mail
 
 Promised to followup in Message-ID: <20210315094038.22d6d79a@carbon>
+- Below stg [[https://lore.kernel.org/netdev/161583677541.3715498.6118778324185171839.stgit@firesoul/][Message-ID]]
 
 #+begin_example
 stg mail --version='mel-git' --edit-cover --cc meup \
@@ -338,6 +339,9 @@ pool->alloc.cache given this avoids special casing the last page.
 I re-ran performance tests and the improvement have been reduced to 13% from
 18% before, but I don't think the rewrite of the specific patch have
 anything to do with this.
+
+Notes on tests:
+ https://github.com/xdp-project/xdp-project/blob/master/areas/mem/page_pool06_alloc_pages_bulk.org#test-on-mel-git-tree
 #+end_quote
 
 Performance summary: +13% faster
