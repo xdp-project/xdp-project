@@ -1,0 +1,22 @@
+# -*- fill-column: 76; -*-
+#+Title: XDP checksum evaluate and extend options
+#+Author: Jesper Dangaard Brouer
+#+Options: ^:nil
+
+XDP need to be extended to get info on the packet checksum from NIC
+hardware. This document evaluate and test different options.
+
+* Issue/use-case: xdp_frame to SKB
+
+When creating an SKB (=struct sk_buff=) based on =xdp_frame=, then some
+optional fields (originating from hardware offload-hints) are lacking.
+One of these are the *checksum* "indication".
+
+This result in creating an SKB with "CHECKSUM_NONE" (=skb->summed=).
+
+This issue is (obviously) that network stack have to calculate and check the
+packet checksum in software.
+
+Creating SKBs this way happens when XDP-redirecting frames into CPUMAP and
+=veth= devices (container use-case).
+
