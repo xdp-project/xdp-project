@@ -362,3 +362,47 @@ recv      	run:  1	 1000000	728.99	1371768.87	2624	1472	 demux:1
 recv      	run:  2	 1000000	730.43	1369047.89	2629	1472	 demux:1
 #+end_example
 
+*** Measurement: Trafgen UDP checksum zero
+
+Change trafgen conf to use UDP checksum zero:
+#+begin_example
+recv      	run: 339	 1000000	679.13	1472481.98	2444	1472	 demux:1
+recv      	run: 340	 1000000	676.17	1478920.63	2434	1472	 demux:1
+recv      	run: 341	 1000000	676.15	1478969.08	2434	1472	 demux:1
+#+end_example
+
+*** Measurements: perf diff
+
+#+begin_example
+# Event 'cycles'
+#
+# Baseline  Delta Abs    Symbol
+# ........  .........    .....................................................
+#
+               +7.73%    [k] csum_partial_copy_generic
+     5.69%     -5.68%    [k] copy_user_enhanced_fast_string
+     2.00%     -1.27%    [k] udp_recvmsg
+               +1.13%    [k] csum_and_copy_to_iter
+               +1.10%    [k] skb_copy_and_csum_datagram_msg
+    12.00%     -0.98%    [k] syscall_exit_to_user_mode
+     0.97%     -0.97%    [k] _copy_to_iter
+     1.53%     -0.79%    [k] skb_release_data
+               +0.73%    [k] __skb_datagram_iter
+               +0.59%    [k] do_csum
+     2.41%     +0.56%    [k] page_frag_free
+     5.54%     -0.46%    [k] entry_SYSCALL_64
+     4.68%     -0.37%    [k] syscall_return_via_sysret
+               +0.35%    [k] csum_and_copy_to_user
+     4.26%     -0.35%    [k] memset_erms
+     1.35%     -0.19%    [k] rmqueue_bulk.constprop.0
+     1.29%     -0.19%    [k] __udp4_lib_lookup
+               +0.16%    [k] csum_partial
+     1.74%     -0.16%    [k] free_pcppages_bulk
+     1.69%     -0.15%    [k] kmem_cache_alloc_bulk
+     1.03%     +0.10%    [k] __udp4_lib_rcv
+     1.20%     -0.10%    [k] __slab_free
+     0.13%     +0.09%    [k] __x86_retpoline_rax
+     0.71%     -0.09%    [k] eth_type_trans
+     0.90%     +0.08%    [k] udp_queue_rcv_one_skb
+     1.02%     -0.08%    [k] ip_rcv_core.isra.0
+#+end_example
