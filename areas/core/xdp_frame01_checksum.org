@@ -96,7 +96,7 @@ for the baseline XDP (DROP) use-cases that don't use/want this feature.
 
 Quantify: What is the overhead of this missing HW checksum indication?
 
-** UDP with checksum: UdpNoPorts drop case
+** UDP checksum overhead: UdpNoPorts drop case
 
 UDP packets can opt-out of checksumming by setting the checksum filed to
 zero, which the kernel *pktgen* tool does.
@@ -267,3 +267,16 @@ __udp_lib_checksum_complete at include/net/udp.h:112
 (inlined by) udp_lib_checksum_complete at include/net/udp.h:116
 (inlined by) __udp4_lib_rcv at net/ipv4/udp.c:2408
 #+end_example
+
+** UDP checksum overhead: socket delivery
+
+As DaveM have [[https://netdevconf.info/1.1/proceedings/slides/miller-hardware-checksumming.pdf][pointed]] out before,
+when the checksum check is done combined with a packet copy, then the
+overhead is much less.
+
+We can test this fairly easily with our UDP trafgen test, because UDP allows
+us to disable checksumming via providing zero as checksum value. Plus we can
+run a UDP sink program in userspace that consumes the packets (which cause a
+copy into userspace via UDP socket).
+
+
