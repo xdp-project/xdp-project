@@ -60,7 +60,9 @@ The pseudo header:
 #+end_example
 
 
-* Issue/use-case: xdp_frame to SKB
+* Overview of issues and use-cases
+
+** Issue/use-case: xdp_frame to SKB
 
 When creating an SKB (=struct sk_buff=) based on =xdp_frame=, then some
 optional fields (originating from hardware offload-hints) are lacking.
@@ -73,4 +75,20 @@ packet checksum in software.
 
 Creating SKBs this way happens when XDP-redirecting frames into CPUMAP and
 =veth= devices (container use-case).
+
+** Issue/use-case: xdp_frame to Guest-OS
+
+When XDP redirecting into a Guest-OS the same issue occurs, as the xdp_frame
+don't carry *checksum* "indication" from HW.
+
+** Use-case: DDoS mitigation
+
+When NIC HW detects a L3 or L4 checksum issue, the packet is (usually) still
+allowed to continue into other layers of the network stack.
+
+If the XDP-prog had access to the HW checksum "indication", then it could
+drop packets earlier, as part of the DDoS mitigation step.
+
+The *challenge here* is adding this feature *MUST NOT* cause a *slowdown*
+for the baseline XDP (DROP) use-cases that don't use/want this feature.
 
