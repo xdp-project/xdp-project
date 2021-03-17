@@ -371,6 +371,22 @@ recv      	run: 340	 1000000	676.17	1478920.63	2434	1472	 demux:1
 recv      	run: 341	 1000000	676.15	1478969.08	2434	1472	 demux:1
 #+end_example
 
+*** Measurements: compare results
+
+| UDP socket delivery | ns/pkt    |        pps | pps readable  |
+|---------------------+-----------+------------+---------------|
+| checksum            | 730.43 ns | 1369047.89 | 1,369,048 pps |
+| no-checksum         | 676.15 ns | 1478969.08 | 1,478,969 pps |
+|---------------------+-----------+------------+---------------|
+| diff                |  54.28 ns | -109921.19 |  -109,921 pps |
+
+Performance increase with 8% if we can avoid the checksumming step
+(((1478969.08/1369047.89)-1)*100).
+
+The UdpNoPorts had +91.79 ns slower compared to 54.28 ns.  Thus, we can
+conclude that it is there are less overhead when combining copy and
+checksumming, but the overhead is still significant.
+
 *** Measurements: perf diff
 
 #+begin_example
