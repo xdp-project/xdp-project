@@ -279,4 +279,86 @@ us to disable checksumming via providing zero as checksum value. Plus we can
 run a UDP sink program in userspace that consumes the packets (which cause a
 copy into userspace via UDP socket).
 
+*** Check code path with perf
+
+Step one: Check code path do combine copy and checksum.
+
+In perf top we clearly see =csum_partial_copy_generic= which should confirm
+this is happening. (Included CPU column below to show RX happens on CPU-3
+and udp_sink program runs on CPU-4).
+
+#+begin_example
+# Overhead  CPU  Symbol
+# ........  ...  .....................................................
+#
+    10.96%  004  [k] syscall_exit_to_user_mode                        
+     7.76%  004  [k] csum_partial_copy_generic                        
+     5.14%  004  [k] entry_SYSCALL_64                                 
+     4.35%  004  [k] syscall_return_via_sysret                        
+     3.81%  003  [k] memset_erms                                      
+     2.62%  004  [k] page_frag_free                                   
+     1.85%  003  [k] __list_del_entry_valid                           
+     1.57%  004  [k] free_pcppages_bulk                               
+     1.41%  003  [k] kmem_cache_alloc_bulk                            
+     1.38%  003  [k] __udp_enqueue_schedule_skb                       
+     1.27%  003  [k] rmqueue_bulk.constprop.0                         
+     1.26%  004  [k] skb_copy_and_csum_datagram_msg                   
+     1.22%  003  [k] __netif_receive_skb_core                         
+     1.17%  003  [k] __udp4_lib_lookup                                
+     1.12%  004  [k] kmem_cache_free                                  
+     1.10%  004  [k] csum_and_copy_to_iter                            
+     1.09%  003  [k] __udp4_lib_rcv                                   
+     1.04%  003  [k] ip_rcv_core.isra.0                               
+     1.01%  003  [k] udp4_lib_lookup2                                 
+     0.99%  003  [k] bpf_prog_943df0a1ce7ea5c2_xdp_prognum0           
+     0.97%  003  [k] udp_queue_rcv_one_skb                            
+     0.96%  004  [k] __slab_free                                      
+     0.91%  003  [k] __xdp_release_frame                              
+     0.86%  003  [k] sock_def_readable                                
+     0.86%  003  [k] dev_gro_receive                                  
+     0.85%  003  [k] __xdp_build_skb_from_frame                       
+     0.84%  004  [k] free_unref_page_commit                           
+     0.79%  003  [k] __list_add_valid                                 
+     0.77%  004  [k] udp_rmem_release                                 
+     0.77%  003  [k] __cgroup_bpf_run_filter_skb                      
+     0.77%  004  [.] __libc_recv                                      
+     0.75%  004  [k] __skb_datagram_iter                              
+     0.72%  004  [k] udp_recvmsg                                      
+     0.69%  003  [k] bpf_prog_a55118bafe28d557_xdp_redirect_map_native
+     0.68%  003  [k] nf_hook_slow_list                                
+     0.67%  003  [k] build_skb_around                                 
+#+end_example
+
+Perf call stack for: csum_partial_copy_generic
+#+begin_example
+udp_sink 90008 [004] 161320.394594:    1218198   cycles:
+        ffffffff81505e43 csum_partial_copy_generic+0x53 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff81506243 csum_and_copy_to_user+0x43 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff814b8f21 csum_and_copy_to_iter+0xb1 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff81796287 __skb_datagram_iter+0x2b7 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff81796585 skb_copy_and_csum_datagram_msg+0x85 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff81871680 udp_recvmsg+0x240 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff8187fbe2 inet_recvmsg+0xf2 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff817848b6 __sys_recvfrom+0x166 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff817848f5 __x64_sys_recvfrom+0x25 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff819a4c83 do_syscall_64+0x33 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff81a0007c entry_SYSCALL_64+0x7c (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+            7faf7b340960 __libc_recv+0x20 (/usr/lib64/libc-2.30.so)
+#+end_example
+
+*** Measurement: Trafgen UDP checksum
+
+The cmdline for [[https://github.com/netoptimizer/network-testing/blob/master/src/udp_sink.c][udp_sink]]:
+#+begin_src sh
+$ taskset -c 4 ./udp_sink -l6666 --repeat 10000 --recv
+#+end_src
+
+Output:
+#+begin_example
+$ sudo taskset -c 4 ./udp_sink -l6666 --repeat 10000 --recv
+          	run      count   	ns/pkt	pps		cycles	payload
+recv      	run:  0	 1000000	735.43	1359742.86	2647	1472	 demux:1
+recv      	run:  1	 1000000	728.99	1371768.87	2624	1472	 demux:1
+recv      	run:  2	 1000000	730.43	1369047.89	2629	1472	 demux:1
+#+end_example
 
