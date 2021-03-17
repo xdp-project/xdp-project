@@ -96,7 +96,7 @@ for the baseline XDP (DROP) use-cases that don't use/want this feature.
 
 Quantify: What is the overhead of this missing HW checksum indication?
 
-** UDP with checksum
+** UDP with checksum: UdpNoPorts drop case
 
 UDP packets can opt-out of checksumming by setting the checksum filed to
 zero, which the kernel *pktgen* tool does.
@@ -121,6 +121,11 @@ Performance results:
 | XDP-redirect into veth with csum   | UdpNoPorts: 2,178,586 pps |
 | XDP-redirect into veth *zero-csum* | UdpNoPorts: 2,723,200 pps |
 |                                    |                           |
+
+Calculate *overhead* (1500 Byte packet): 2,178,586 pps vs 2,723,200 pps
+ - +544,614 pps = (2723200 - 2178586)
+ - +91.79 ns slower = ((1/2178586-1/2723200)*10^9)
+ - 25% increase in pps if avoid checksum calc = ((2723200/2178586)-1)*100
 
 The *test setup* with XDP-redirect into veth (that does XDP_PASS) is the
 same as described in [[file:../mem/page_pool06_alloc_pages_bulk.org]].
