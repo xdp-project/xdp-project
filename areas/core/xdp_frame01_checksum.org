@@ -107,6 +107,11 @@ for the baseline XDP (DROP) use-cases that don't use/want this feature.
 
 Quantify: What is the overhead of this missing HW checksum indication?
 
+Answer: Based on tests below for 1500 bytes packets:
+ - UdpNoPorts-test isolate checksum overhead cost to 91.79 ns
+ - Combining csum-with-copy gives overhead cost of 54.28 ns
+ - Possible explanation: UdpNoPorts-test don't read packet payload
+
 ** UDP checksum overhead: UdpNoPorts drop case
 
 UDP packets can opt-out of checksumming by setting the checksum filed to
