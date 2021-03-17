@@ -6,6 +6,60 @@
 XDP need to be extended to get info on the packet checksum from NIC
 hardware. This document evaluate and test different options.
 
+* Background knowledge: Packet checksums
+
+Most people can *skip this section*. This is a written as reminder on what
+the packet checksum means and some details to refresh/remember.
+
+Most Internet protocols use the same checksum algorithm. Called the 16-bit
+one's complement sum. This include IP, ICMP, IGMP, UDP and TCP, although UDP
+and TCP include fields from the IP header (a pseudo header, more detail
+below). (As counter example SCTP uses a 32-bit checksum).
+
+** More checksums in one packet
+
+Remember that packets usually contain several checksums for the different
+layers (or encapsulations). For example IP/UDP and IP/TCP packets contains
+two checksums.
+
+(We ignore, the Ethernet FCS (frame check sequence), which a CRC
+32-bit/4Bytes place at the end of the payload, because XDP at driver L2
+frames with bad FCS will not be seen).
+
+The IP-header contains a header (L3) checksum, that is calculated over the
+IP header only.
+
+Both UDP and TCP have (16-bit ones complement) checksums that cover their
+headers and their data. Remember that this L4 checksum is stored at
+different offsets in the L4-header.
+
+Pitfall/detail: UDP/TCP length (in bytes) can be an odd number, but 16-bit
+checksum imply 2 bytes (16-bit) to calculate over. The trick is to pad/add a
+byte with zero.
+
+*Remember*: Both UDP and TCP include a 12-bytes (for IPv4) pseudo header.
+
+Quote [[https://tools.ietf.org/html/rfc768][RFC-768]]:
+#+begin_quote
+The pseudo  header  conceptually prefixed to the UDP header contains the
+source  address,  the destination  address,  the protocol,  and the  UDP
+length.   This information gives protection against misrouted datagrams.
+This checksum procedure is the same as is used in TCP.
+#+end_quote
+
+The pseudo header:
+#+begin_example
+ 0      7 8     15 16    23 24    31
++--------+--------+--------+--------+
+|         source address            |
++--------+--------+--------+--------+
+|        destination address        |
++--------+--------+--------+--------+
+|  zero  |protocol|   UDP length    |
++--------+--------+--------+--------+
+#+end_example
+
+
 * Issue/use-case: xdp_frame to SKB
 
 When creating an SKB (=struct sk_buff=) based on =xdp_frame=, then some
