@@ -109,17 +109,25 @@ To keep the kernel code path as short as possible, I'm sending to correct
 IP+MAC but there is no listen UDP socket, thus packets are getting dropped
 with nstat counter UdpNoPorts.
 
+*UPDATE*: The performance slowdown is not only due checksum missing, it is
+also caused by the test-case that cause =page_pool= in mlx5 to run dry, and
+do page allocations. Add result with trafgen use zero as UDP checksum
+("zero-csum").
+
 Performance results:
- - Normal netstack handling give =	UdpNoPorts: 3,343,400 pps
- - XDP-redirecting into veth     =	UdpNoPorts: 2,178,586 pps
+| Description of test                | nstat UdpNoPorts: pps     |
+|------------------------------------+---------------------------|
+| Normal netstack handling           | UdpNoPorts: 3,343,400 pps |
+| XDP-redirect into veth with csum   | UdpNoPorts: 2,178,586 pps |
+| XDP-redirect into veth *zero-csum* | UdpNoPorts: 2,723,200 pps |
+|                                    |                           |
 
+The *test setup* with XDP-redirect into veth (that does XDP_PASS) is the
+same as described in [[file:../mem/page_pool06_alloc_pages_bulk.org]].
+Side-note: Kernel used was the devel version with some page allocator
+optimizations (also described in linked file).
 
-The test setup with XDP-redirect into veth (that does XDP_PASS) is the same
-as described in [[file:../mem/page_pool06_alloc_pages_bulk.org]]. Side-note:
-Kernel used was the devel version with some page allocator optimizations
-(also described in linked file).
-
-The perf diff result (10 sec measurement) below:
+The perf diff result against netstack (10 sec measurement) below:
 
 #+begin_example
 # Event 'cycles'
