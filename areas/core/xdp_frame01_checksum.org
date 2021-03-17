@@ -92,3 +92,113 @@ drop packets earlier, as part of the DDoS mitigation step.
 The *challenge here* is adding this feature *MUST NOT* cause a *slowdown*
 for the baseline XDP (DROP) use-cases that don't use/want this feature.
 
+* Measurements: Assess overhead
+
+Quantify: What is the overhead of this missing HW checksum indication?
+
+** UDP with checksum
+
+UDP packets can opt-out of checksumming by setting the checksum filed to
+zero, which the kernel *pktgen* tool does.
+
+To solve that, here is a =trafgen= based config that generated large UDP
+packets with a correct UDP checksum:
+- https://github.com/netoptimizer/network-testing/blob/master/trafgen/udp_example03_checksum.trafgen
+
+To keep the kernel code path as short as possible, I'm sending to correct
+IP+MAC but there is no listen UDP socket, thus packets are getting dropped
+with nstat counter UdpNoPorts.
+
+Performance results:
+ - Normal netstack handling give =	UdpNoPorts: 3,343,400 pps
+ - XDP-redirecting into veth     =	UdpNoPorts: 2,178,586 pps
+
+
+The test setup with XDP-redirect into veth (that does XDP_PASS) is the same
+as described in [[file:../mem/page_pool06_alloc_pages_bulk.org]]. Side-note:
+Kernel used was the devel version with some page allocator optimizations
+(also described in linked file).
+
+The perf diff result (10 sec measurement) below:
+
+#+begin_example
+# Event 'cycles'
+#
+# Baseline  Delta Abs  Shared Object                                      Symbol                                               
+# ........  .........  .................................................  .....................................................
+#
+              +11.93%  [kernel.vmlinux]                                   [k] do_csum
+               +3.40%  [veth]                                             [k] 0x0000000000004c00
+     4.16%     -2.54%  [mlx5_core]                                        [k] mlx5e_fec_admin_field
+     4.99%     -2.41%  [kernel.vmlinux]                                   [k] kmem_cache_free
+               +1.92%  [kernel.vmlinux]                                   [k] memset_erms
+               +1.88%  bpf_prog_943df0a1ce7ea5c2_xdp_prognum0             [k] bpf_prog_943df0a1ce7ea5c2_xdp_prognum0
+     3.28%     -1.85%  [kernel.vmlinux]                                   [k] dev_gro_receive
+     1.85%     -1.85%  [kernel.vmlinux]                                   [k] kmem_cache_alloc
+               +1.80%  [kernel.vmlinux]                                   [k] __xdp_build_skb_from_frame
+     4.47%     -1.72%  [kernel.vmlinux]                                   [k] __netif_receive_skb_core
+     5.08%     -1.64%  [kernel.vmlinux]                                   [k] __udp4_lib_rcv
+               +1.62%  [kernel.vmlinux]                                   [k] free_unref_page_commit
+               +1.47%  [kernel.vmlinux]                                   [k] __xdp_release_frame
+     4.18%     -1.42%  [kernel.vmlinux]                                   [k] __udp4_lib_lookup
+               +1.35%  [kernel.vmlinux]                                   [k] bpf_xdp_redirect_map
+               +1.32%  bpf_prog_a55118bafe28d557_xdp_redirect_map_native  [k] bpf_prog_a55118bafe28d557_xdp_redirect_map_native
+     3.56%     -1.28%  [kernel.vmlinux]                                   [k] ip_rcv_core.isra.0
+               +1.20%  [kernel.vmlinux]                                   [k] __alloc_pages_bulk
+               +1.16%  [kernel.vmlinux]                                   [k] dev_map_enqueue
+     1.74%     -1.15%  [mlx5_core]                                        [k] mlx5e_tx_reporter_dump
+               +1.08%  [kernel.vmlinux]                                   [k] kmem_cache_alloc_bulk
+               +1.06%  [kernel.vmlinux]                                   [k] free_unref_page_prepare.part.0
+     0.07%     +1.03%  [kernel.vmlinux]                                   [k] __slab_free
+               +1.02%  [kernel.vmlinux]                                   [k] xdp_do_redirect
+               +0.99%  [kernel.vmlinux]                                   [k] dma_map_page_attrs
+               +0.97%  [kernel.vmlinux]                                   [k] __skb_checksum_complete
+     2.67%     -0.96%  [kernel.vmlinux]                                   [k] nf_hook_slow_list
+     2.25%     -0.87%  [kernel.vmlinux]                                   [k] __icmp_send
+     1.50%     -0.80%  [mlx5_core]                                        [k] mlx5e_tx_reporter_build_diagnose_output_sq_common
+               +0.78%  [kernel.vmlinux]                                   [k] build_skb_around
+     0.42%     +0.77%  [kernel.vmlinux]                                   [k] eth_type_trans
+     1.27%     -0.75%  [kernel.vmlinux]                                   [k] __build_skb_around
+               +0.75%  [kernel.vmlinux]                                   [k] free_unref_page
+               +0.74%  [kernel.vmlinux]                                   [k] __rmqueue_pcplist
+     2.02%     -0.71%  [kernel.vmlinux]                                   [k] ip_rcv_finish_core.isra.0
+     2.04%     -0.70%  [kernel.vmlinux]                                   [k] ip_route_use_hint
+     0.62%     +0.68%  [mlx5_core]                                        [k] mlx5e_port_ptp_open
+               +0.68%  [kernel.vmlinux]                                   [k] __skb_checksum
+               +0.68%  [kernel.vmlinux]                                   [k] __page_pool_alloc_pages_slow
+     1.80%     -0.66%  [kernel.vmlinux]                                   [k] netif_receive_skb_list_internal
+#+end_example
+
+So, I now have a test that shows the problem. It is very clear that +11.93%
+[k] do_csum function is taking too much time.
+
+Example call-stack for =do_csum= :
+#+begin_example
+ksoftirqd/2    24 [002] 68022.158164:    1133633   cycles: 
+        ffffffff81506047 do_csum+0x77 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff8150614d csum_partial+0xd (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff8178d5fa __skb_checksum+0x6a (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff8178dd91 __skb_checksum_complete+0x31 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff81873d24 __udp4_lib_rcv+0xb84 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff818361e5 ip_protocol_deliver_rcu+0xc5 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff81836325 ip_local_deliver_finish+0x55 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff8183639e ip_local_deliver+0x5e (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff8183657c ip_sublist_rcv_finish+0x7c (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff81836719 ip_sublist_rcv+0x189 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff818369aa ip_list_rcv+0x12a (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff817aabb2 __netif_receive_skb_list_core+0x292 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff817aad91 netif_receive_skb_list_internal+0x1c1 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff817aaf99 gro_normal_list.part.0+0x19 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffff817ab901 napi_gro_receive+0x61 (/boot/vmlinux-5.12.0-rc2-mel-git-alloc_pages_bulk+)
+        ffffffffa0031798 veth_xdp_rcv_skb+0x558 (/lib/modules/5.12.0-rc2-mel-git-alloc_pages_bulk+/kernel/drivers/net/veth.ko)
+#+end_example
+
+Decode =__udp4_lib_rcv+0xb84=:
+#+begin_example
+$ ./scripts/faddr2line vmlinux __udp4_lib_rcv+0xb84
+__udp4_lib_rcv+0xb84/0xb90:
+__udp_lib_checksum_complete at include/net/udp.h:112
+(inlined by) udp_lib_checksum_complete at include/net/udp.h:119
+(inlined by) udp_lib_checksum_complete at include/net/udp.h:116
+(inlined by) __udp4_lib_rcv at net/ipv4/udp.c:2408
+#+end_example
