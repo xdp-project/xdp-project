@@ -127,6 +127,58 @@ same as described in [[file:../mem/page_pool06_alloc_pages_bulk.org]].
 Side-note: Kernel used was the devel version with some page allocator
 optimizations (also described in linked file).
 
+*** perf diff results UDP checksum
+
+The perf diff result (10 sec measurement) with csum vs. zero-csum:
+
+#+begin_example
+# Event 'cycles'
+#
+# Baseline  Delta Abs  Shared Object                                      Symbol                              >
+# ........  .........  .................................................  ....................................>
+#
+              +14.72%  [kernel.vmlinux]                                   [k] do_csum
+     3.46%     -0.98%  [kernel.vmlinux]                                   [k] __udp4_lib_lookup
+               +0.97%  [kernel.vmlinux]                                   [k] __skb_checksum_complete
+     2.43%     -0.84%  [kernel.vmlinux]                                   [k] __xdp_release_frame
+               +0.67%  [kernel.vmlinux]                                   [k] __skb_checksum
+     2.87%     -0.65%  [kernel.vmlinux]                                   [k] ip_rcv_core.isra.0
+     3.37%     -0.56%  [kernel.vmlinux]                                   [k] __netif_receive_skb_core
+     1.94%     -0.50%  [kernel.vmlinux]                                   [k] dev_gro_receive
+     2.67%     -0.49%  [kernel.vmlinux]                                   [k] __list_del_entry_valid
+     2.09%     -0.47%  [kernel.vmlinux]                                   [k] __list_add_valid
+     2.44%     -0.47%  bpf_prog_943df0a1ce7ea5c2_xdp_prognum0             [k] bpf_prog_943df0a1ce7ea5c2_xdp_pr>
+     1.72%     -0.43%  [kernel.vmlinux]                                   [k] __icmp_send
+     4.01%     -0.43%  [veth]                                             [k] 0x0000000000004c05
+     2.85%     -0.40%  [kernel.vmlinux]                                   [k] kmem_cache_free
+     1.72%     -0.39%  [kernel.vmlinux]                                   [k] bpf_xdp_redirect_map
+     1.37%     -0.37%  [kernel.vmlinux]                                   [k] nf_hook_slow
+     0.90%     -0.34%  [kernel.vmlinux]                                   [k] free_pcp_prepare
+     2.01%     -0.33%  [kernel.vmlinux]                                   [k] nf_hook_slow_list
+     1.17%     -0.33%  [kernel.vmlinux]                                   [k] fib_validate_source
+     1.95%     -0.32%  [kernel.vmlinux]                                   [k] free_unref_page_commit
+     1.49%     -0.28%  [kernel.vmlinux]                                   [k] ip_route_use_hint
+     1.38%     -0.28%  [kernel.vmlinux]                                   [k] netif_receive_skb_list_internal
+     0.49%     -0.27%  [kernel.vmlinux]                                   [k] skb_release_head_state
+               +0.26%  [kernel.vmlinux]                                   [k] csum_partial
+     0.97%     -0.26%  [kernel.vmlinux]                                   [k] ip_list_rcv
+     0.69%     -0.24%  [kernel.vmlinux]                                   [k] gro_normal_one
+     1.11%     -0.24%  [kernel.vmlinux]                                   [k] ip_protocol_deliver_rcu
+     1.47%     -0.24%  [kernel.vmlinux]                                   [k] __slab_free
+     0.88%     -0.23%  [kernel.vmlinux]                                   [k] free_unref_page
+     1.39%     -0.23%  [mlx5_core]                                        [k] mlx5e_port_ptp_open
+     0.47%     -0.22%  [kernel.vmlinux]                                   [k] kfree_skb
+     1.22%     -0.22%  [kernel.vmlinux]                                   [k] ip_sublist_rcv
+     3.10%     -0.21%  [kernel.vmlinux]                                   [k] __udp4_lib_rcv
+     0.64%     -0.21%  [kernel.vmlinux]                                   [k] page_frag_free
+     1.39%     -0.21%  [kernel.vmlinux]                                   [k] napi_gro_receive
+     1.35%     -0.20%  [kernel.vmlinux]                                   [k] xdp_do_redirect
+     1.12%     -0.20%  [kernel.vmlinux]                                   [k] free_unref_page_prepare.part.0
+     1.58%     -0.20%  bpf_prog_a55118bafe28d557_xdp_redirect_map_native  [k] bpf_prog_a55118bafe28d557_xdp_re>
+#+end_example
+
+*** perf diff result against netstack
+
 The perf diff result against netstack (10 sec measurement) below:
 
 #+begin_example
