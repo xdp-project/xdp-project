@@ -425,6 +425,45 @@ ARRAY variant: time_bulk_page_alloc_free_array: step=bulk size
  Per elem: 110 cycles(tsc) 30.596 ns (step:128)
 #+end_example
 
+** page_pool: use alloc_pages_bulk_list
+
+#+begin_example
+unning XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      4       3,961,569   0          
+XDP-RX CPU      total   3,961,569  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:4   3,961,569   0          
+rx_queue_index    0:sum 3,961,569  
+#+end_example
+
+** page_pool: use alloc_pages_bulk_array
+
+#+begin_example
+Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      5       4,067,120   0          
+XDP-RX CPU      total   4,067,120  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:5   4,067,127   0          
+rx_queue_index    0:sum 4,067,127  
+#+end_example
+
+The results a not super stable, as after a while I get this result:
+#+begin_example
+Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      3       4,218,956   0          
+XDP-RX CPU      total   4,218,956  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:3   4,218,960   0          
+rx_queue_index    0:sum 4,218,960  
+#+end_example
+
+
 * Micro optimisations
 
 *UPDATE*: Choosing to drop this patch, it is waste too much memory and
