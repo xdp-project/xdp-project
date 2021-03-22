@@ -394,6 +394,8 @@ Notice these "per elem" measurements are alloc+free cost for order-0 pages
 page_bench04_bulk micro-benchmark on branch: mm-bulk-rebase-v5r9
  - https://lore.kernel.org/netdev/20210322130446.0a505db0@carbon/
 
+CPU: Intel(R) Xeon(R) CPU E5-1650 v4 @ 3.60GHz
+
 #+begin_example
 BASELINE
  single_page alloc+put: Per elem: 199 cycles(tsc) 55.472 ns
