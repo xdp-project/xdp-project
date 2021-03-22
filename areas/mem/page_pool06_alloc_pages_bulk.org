@@ -463,6 +463,88 @@ rx_queue_index    0:3   4,218,960   0
 rx_queue_index    0:sum 4,218,960  
 #+end_example
 
+** I-cache layout for __alloc_pages_bulk
+
+Looking at perf-report and ASM-code for __alloc_pages_bulk() then the code
+activated is suboptimal. The compiler guess wrong and place unlikely code in
+the beginning. Due to the use of WARN_ON_ONCE() macro the =UD2= asm
+instruction is added to the code, which confuse the I-cache prefetcher in
+the CPU.
+
+Perf-stat *BEFORE* during 4,174,649 pps:
+#+begin_example
+$ perf stat -C3 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -e L1-icache-load-misses -e icache.hit -e icache.misses -e icache.ifdata_stall -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 3' (4 runs):
+
+     3.967.401.581      cycles                                                        ( +-  0,02% )  (69,23%)
+     9.328.404.288      instructions              #    2,35  insn per cycle           ( +-  0,04% )  (76,92%)
+        40.081.612      cache-references                                              ( +-  0,06% )  (76,92%)
+             1.925      cache-misses              #    0,005 % of all cache refs      ( +- 85,44% )  (76,92%)
+     1.772.491.245      branches:k                                                    ( +-  0,03% )  (76,92%)
+         3.897.378      branch-misses:k           #    0,22% of all branches          ( +-  0,31% )  (76,92%)
+         4.909.219      l2_rqsts.all_code_rd                                          ( +-  0,32% )  (76,92%)
+         4.285.616      l2_rqsts.code_rd_hit                                          ( +-  0,30% )  (76,92%)
+           620.169      l2_rqsts.code_rd_miss                                         ( +-  0,38% )  (76,92%)
+         1.633.584      L1-icache-load-misses                                         ( +-  0,83% )  (76,92%)
+       920.823.524      icache.hit                                                    ( +-  0,03% )  (61,55%)
+         1.635.497      icache.misses                                                 ( +-  0,92% )  (61,55%)
+        15.893.532      icache.ifdata_stall                                           ( +-  1,38% )  (61,55%)
+#+end_example
+
+Above cycles 3.97 GHz indicate turbo-mode was engaged.
+
+Perf-stat *AFTER* during 4,284,779 pps:
+#+begin_example
+$ perf stat -C4 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -e L1-icache-load-misses -e icache.hit -e icache.misses -e icache.ifdata_stall -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (4 runs):
+
+     3.780.344.586      cycles                                                        ( +-  0,00% )  (69,23%)
+     9.208.083.065      instructions              #    2,44  insn per cycle           ( +-  0,01% )  (76,92%)
+        41.010.130      cache-references                                              ( +-  0,12% )  (76,92%)
+             2.063      cache-misses              #    0,005 % of all cache refs      ( +- 68,85% )  (76,92%)
+     1.770.974.127      branches:k                                                    ( +-  0,01% )  (76,92%)
+         3.378.947      branch-misses:k           #    0,19% of all branches          ( +-  0,10% )  (76,92%)
+         4.002.071      l2_rqsts.all_code_rd                                          ( +-  0,39% )  (76,92%)
+         3.596.114      l2_rqsts.code_rd_hit                                          ( +-  0,58% )  (76,92%)
+           406.726      l2_rqsts.code_rd_miss                                         ( +-  2,86% )  (76,92%)
+         1.315.880      L1-icache-load-misses                                         ( +-  0,55% )  (76,92%)
+       860.746.134      icache.hit                                                    ( +-  0,03% )  (61,55%)
+         1.315.046      icache.misses                                                 ( +-  0,52% )  (61,55%)
+         9.666.533      icache.ifdata_stall                                           ( +-  0,72% )  (61,55%)
+#+end_example
+
+When comparing these perf stats then it is important to realise that
+workload performance was increased +110,130 pps (4174649-4284779). Thus,
+take that into account as counts can be higher due to factor.
+
+Notice turbo-mode didn't kick in above 3.78GHz. But new measurement below it
+did get "turbo-mode" enabled.
+
+Perf-stat *AFTER* during 4,263,396 pps:
+#+begin_example
+ perf stat -C3 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -e L1-icache-load-misses -e icache.hit -e icache.misses -e icache.ifdata_stall -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 3' (4 runs):
+
+     3.972.084.312      cycles                                                        ( +-  0,02% )  (69,23%)
+     9.377.688.902      instructions              #    2,36  insn per cycle           ( +-  0,03% )  (76,92%)
+        41.732.726      cache-references                                              ( +-  0,05% )  (76,92%)
+             1.876      cache-misses              #    0,004 % of all cache refs      ( +- 78,93% )  (76,92%)
+     1.798.074.138      branches:k                                                    ( +-  0,03% )  (76,92%)
+         3.790.004      branch-misses:k           #    0,21% of all branches          ( +-  0,16% )  (76,92%)
+         8.131.686      l2_rqsts.all_code_rd                                          ( +-  0,09% )  (76,92%)
+         7.689.516      l2_rqsts.code_rd_hit                                          ( +-  0,11% )  (76,92%)
+           442.190      l2_rqsts.code_rd_miss                                         ( +-  0,72% )  (76,92%)
+         2.063.152      L1-icache-load-misses                                         ( +-  0,34% )  (76,92%)
+       949.080.913      icache.hit                                                    ( +-  0,04% )  (61,55%)
+         2.062.373      icache.misses                                                 ( +-  0,34% )  (61,55%)
+        13.514.870      icache.ifdata_stall                                           ( +-  0,66% )  (61,55%)
+#+end_example
+
+Above result is slightly strange: Turbo-mode, but slightly slower PPS
+benchmark and it have almost double l2_rqsts.all_code_rd.
 
 * Micro optimisations
 
