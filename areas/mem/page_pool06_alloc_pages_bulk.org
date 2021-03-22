@@ -425,6 +425,52 @@ ARRAY variant: time_bulk_page_alloc_free_array: step=bulk size
  Per elem: 110 cycles(tsc) 30.596 ns (step:128)
 #+end_example
 
+
+** Adjust: inline __rmqueue_pcplist
+
+When __alloc_pages_bulk() got introduced two callers of
+__rmqueue_pcplist exist and the compiler chooses to not inline
+this function.
+
+#+begin_src sh
+     ./scripts/bloat-o-meter vmlinux-before vmlinux-inline__rmqueue_pcplist
+    add/remove: 0/1 grow/shrink: 2/0 up/down: 164/-125 (39)
+    Function                                     old     new   delta
+    rmqueue                                     2197    2296     +99
+    __alloc_pages_bulk                          1921    1986     +65
+    __rmqueue_pcplist                            125       -    -125
+    Total: Before=19374127, After=19374166, chg +0.00%
+#+end_src
+
+modprobe page_bench04_bulk loops=$((10**7))
+
+Type:time_bulk_page_alloc_free_array
+ -  Per elem: 106 cycles(tsc) 29.595 ns (step:64)
+ - (measurement period time:0.295955434 sec time_interval:295955434)
+ - (invoke count:10000000 tsc_interval:1065447105)
+
+Before:
+ - Per elem: 110 cycles(tsc) 30.633 ns (step:64)
+
+#+begin_src diff
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 2cbb8da811ab..f60f51a97a7b 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3415,7 +3415,8 @@ static inline void zone_statistics(struct zone *preferred_zone, struct zone *z)
+ }
+ 
+ /* Remove page from the per-cpu list, caller must protect the list */
+-static struct page *__rmqueue_pcplist(struct zone *zone, int migratetype,
++static inline
++struct page *__rmqueue_pcplist(struct zone *zone, int migratetype,
+                        unsigned int alloc_flags,
+                        struct per_cpu_pages *pcp,
+                        struct list_head *list)
+#+end_src
+
+Below tests include above patch.
+
 ** page_pool: use alloc_pages_bulk_list
 
 #+begin_example
