@@ -590,7 +590,9 @@ Perf-stat *AFTER* during 4,263,396 pps:
 #+end_example
 
 Above result is slightly strange: Turbo-mode, but slightly slower PPS
-benchmark and it have almost double l2_rqsts.all_code_rd.
+benchmark and it have almost double l2_rqsts.all_code_rd. **UPDATE**: There
+were a pcp/pmcd service running that seems to disturb the accuracy of these
+measurements.
 
 * Micro optimisations
 
