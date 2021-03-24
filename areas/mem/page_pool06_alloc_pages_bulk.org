@@ -33,6 +33,7 @@ Testing experimental patch from Mel Gorman that add alloc_pages_bulk() API.
   - [[#use-list-variant][Use list variant]]
   - [[#use-array-variant][Use array variant]]
   - [[#strange-code-layout][Strange code layout]]
+  - [[#send-patches-to-mel][Send patches to Mel]]
 - [[#micro-optimisations][Micro optimisations]]
   - [[#observations][Observations]]
   - [[#why-happening][Why happening]]
@@ -627,6 +628,11 @@ measurements.
 
 * Test on Mel git-tree: mm-bulk-rebase-v6r5
 
+Mel Gorman's git tree:
+ - git://git.kernel.org/pub/scm/linux/kernel/git/mel/linux.git
+
+Branch: mm-bulk-rebase-v6r5
+
 ** baseline kernel
 
 Kernel: 5.12.0-rc4-mel-mm-bulk-rebase-v6r5-baseline
@@ -821,6 +827,36 @@ index d900e92884b2..bab456affe6a 100644
  
         /*
 #+end_src
+
+** Send patches to Mel
+
+#+begin_src sh
+stg mail --version='mel-git' --edit-cover --cc meup \
+ --to mel --cc chuck.lever@oracle.com --cc alex \
+ --to mm --cc netdev --cc linux-nfs@vger.kernel.org --cc lkml \
+ net-page_pool-refactor-dma_map..convert-page_pool_use_array_variant
+#+end_src
+https://lore.kernel.org/netdev/161662166301.940814.9765023867613542235.stgit@firesoul/
+
+Cover:
+#+begin_quote
+Subject: page_pool using alloc_pages_bulk API
+
+This patchset is against Mel's tree:
+ - git://git.kernel.org/pub/scm/linux/kernel/git/mel/linux.git
+ - Branch: mm-bulk-rebase-v6r5
+ - https://git.kernel.org/pub/scm/linux/kernel/git/mel/linux.git/log/?h=mm-bulk-rebase-v6r5
+
+The benchmarks are here:
+ - https://github.com/xdp-project/xdp-project/blob/master/areas/mem/page_pool06_alloc_pages_bulk.org#test-on-mel-git-tree-mm-bulk-rebase-v6r5
+
+The compiler choose a strange code layout see here:
+ - https://github.com/xdp-project/xdp-project/blob/master/areas/mem/page_pool06_alloc_pages_bulk.org#strange-code-layout
+ - Used: gcc (GCC) 9.3.1 20200408 (Red Hat 9.3.1-2)
+
+Intent is for Mel to pickup these patches.
+#+end_quote
+
 
 * Micro optimisations
 
