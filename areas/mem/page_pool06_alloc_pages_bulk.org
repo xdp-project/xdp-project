@@ -30,6 +30,7 @@ Testing experimental patch from Mel Gorman that add alloc_pages_bulk() API.
   - [[#i-cache-layout-for-__alloc_pages_bulk][I-cache layout for __alloc_pages_bulk]]
 - [[#test-on-mel-git-tree-mm-bulk-rebase-v6r5][Test on Mel git-tree: mm-bulk-rebase-v6r5]]
   - [[#baseline-kernel][baseline kernel]]
+  - [[#use-list-variant][Use list variant]]
 - [[#micro-optimisations][Micro optimisations]]
   - [[#observations][Observations]]
   - [[#why-happening][Why happening]]
@@ -635,6 +636,72 @@ XDP-RX CPU      total   3,771,046
 RXQ stats       RXQ:CPU pps         issue-pps  
 rx_queue_index    0:5   3,771,054   0          
 rx_queue_index    0:sum 3,771,054  
+#+end_example
+
+#+begin_example
+Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      0       3,690,327   0          
+XDP-RX CPU      total   3,690,327  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:0   3,690,335   0          
+rx_queue_index    0:sum 3,690,335  
+#+end_example
+
+#+begin_example
+[broadwell ~]
+$ perf stat -C0 -e cycles -e  instructions -e cache-references \
+ -e cache-misses -e branches:k -e branch-misses:k \
+ -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss \
+ -e L1-icache-load-misses -e icache.hit -e icache.misses \
+ -e icache.ifdata_stall -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 0' (4 runs):
+
+     3.781.104.906      cycles                                                        ( +-  0,01% )  (69,23%)
+     9.160.272.376      instructions              #    2,42  insn per cycle           ( +-  0,02% )  (76,93%)
+        38.754.093      cache-references                                              ( +-  0,14% )  (76,93%)
+             3.302      cache-misses              #    0,009 % of all cache refs      ( +- 38,71% )  (76,93%)
+     1.702.142.682      branches:k                                                    ( +-  0,02% )  (76,93%)
+         3.044.869      branch-misses:k           #    0,18% of all branches          ( +-  0,16% )  (76,93%)
+         4.327.779      l2_rqsts.all_code_rd                                          ( +-  1,06% )  (76,93%)
+         3.169.107      l2_rqsts.code_rd_hit                                          ( +-  1,81% )  (76,93%)
+         1.156.787      l2_rqsts.code_rd_miss                                         ( +-  1,67% )  (76,93%)
+         2.031.427      L1-icache-load-misses                                         ( +-  1,00% )  (76,93%)
+       862.034.302      icache.hit                                                    ( +-  0,03% )  (61,53%)
+         2.031.444      icache.misses                                                 ( +-  1,01% )  (61,53%)
+        26.138.294      icache.ifdata_stall                                           ( +-  1,43% )  (61,53%)
+#+end_example
+
+** Use list variant
+
+Kernel: 5.12.0-rc4-mel-mm-bulk-rebase-v6r5-jesper05-list+
+#+begin_example
+Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      4       3,940,242   0          
+XDP-RX CPU      total   3,940,242  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:4   3,940,243   0          
+rx_queue_index    0:sum 3,940,243  
+#+end_example
+
+#+begin_example
+     3.780.991.660      cycles                                                        ( +-  0,01% )  (69,23%)
+     8.983.214.383      instructions              #    2,38  insn per cycle           ( +-  0,03% )  (76,92%)
+        40.349.872      cache-references                                              ( +-  0,10% )  (76,92%)
+             3.040      cache-misses              #    0,008 % of all cache refs      ( +- 55,39% )  (76,92%)
+     1.717.544.811      branches:k                                                    ( +-  0,04% )  (76,92%)
+         3.718.282      branch-misses:k           #    0,22% of all branches          ( +-  0,06% )  (76,92%)
+         6.715.245      l2_rqsts.all_code_rd                                          ( +-  0,70% )  (76,92%)
+         5.728.355      l2_rqsts.code_rd_hit                                          ( +-  0,85% )  (76,92%)
+           985.961      l2_rqsts.code_rd_miss                                         ( +-  0,41% )  (76,92%)
+         2.528.346      L1-icache-load-misses                                         ( +-  0,81% )  (76,92%)
+       893.070.210      icache.hit                                                    ( +-  0,05% )  (61,54%)
+         2.524.908      icache.misses                                                 ( +-  0,76% )  (61,54%)
+        25.131.747      icache.ifdata_stall                                           ( +-  0,78% )  (61,54%)
 #+end_example
 
 
