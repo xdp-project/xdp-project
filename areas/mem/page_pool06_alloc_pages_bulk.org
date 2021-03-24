@@ -28,6 +28,8 @@ Testing experimental patch from Mel Gorman that add alloc_pages_bulk() API.
   - [[#page_pool-use-alloc_pages_bulk_list][page_pool: use alloc_pages_bulk_list]]
   - [[#page_pool-use-alloc_pages_bulk_array][page_pool: use alloc_pages_bulk_array]]
   - [[#i-cache-layout-for-__alloc_pages_bulk][I-cache layout for __alloc_pages_bulk]]
+- [[#test-on-mel-git-tree-mm-bulk-rebase-v6r5][Test on Mel git-tree: mm-bulk-rebase-v6r5]]
+  - [[#baseline-kernel][baseline kernel]]
 - [[#micro-optimisations][Micro optimisations]]
   - [[#observations][Observations]]
   - [[#why-happening][Why happening]]
@@ -618,6 +620,23 @@ Above result is slightly strange: Turbo-mode, but slightly slower PPS
 benchmark and it have almost double l2_rqsts.all_code_rd. **UPDATE**: There
 were a pcp/pmcd service running that seems to disturb the accuracy of these
 measurements.
+
+
+* Test on Mel git-tree: mm-bulk-rebase-v6r5
+
+** baseline kernel
+
+Kernel: 5.12.0-rc4-mel-mm-bulk-rebase-v6r5-baseline
+#+begin_example
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      5       3,771,046   0          
+XDP-RX CPU      total   3,771,046  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:5   3,771,054   0          
+rx_queue_index    0:sum 3,771,054  
+#+end_example
+
 
 * Micro optimisations
 
