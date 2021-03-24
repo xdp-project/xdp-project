@@ -31,6 +31,7 @@ Testing experimental patch from Mel Gorman that add alloc_pages_bulk() API.
 - [[#test-on-mel-git-tree-mm-bulk-rebase-v6r5][Test on Mel git-tree: mm-bulk-rebase-v6r5]]
   - [[#baseline-kernel][baseline kernel]]
   - [[#use-list-variant][Use list variant]]
+  - [[#use-array-variant][Use array variant]]
 - [[#micro-optimisations][Micro optimisations]]
   - [[#observations][Observations]]
   - [[#why-happening][Why happening]]
@@ -704,6 +705,67 @@ rx_queue_index    0:sum 3,940,243
         25.131.747      icache.ifdata_stall                                           ( +-  0,78% )  (61,54%)
 #+end_example
 
+** Use array variant
+
+Kernel: 5.12.0-rc4-mel-mm-bulk-rebase-v6r5-jesper05-array+
+#+begin_example
+Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      4       4,249,224   0          
+XDP-RX CPU      total   4,249,224  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:4   4,249,232   0          
+rx_queue_index    0:sum 4,249,232  
+#+end_example
+
+#+begin_example
+$ perf stat -C4 -e cycles -e  instructions -e cache-references -e cache-misses -e branches:k -e branch-misses:k -e l2_rqsts.all_code_rd -e l2_rqsts.code_rd_hit -e l2_rqsts.code_rd_miss -e L1-icache-load-misses -e icache.hit -e icache.misses -e icache.ifdata_stall -r 4 sleep 1
+
+ Performance counter stats for 'CPU(s) 4' (4 runs):
+
+     3.780.890.314      cycles                                                        ( +-  0,01% )  (69,22%)
+     9.246.317.219      instructions              #    2,45  insn per cycle           ( +-  0,04% )  (76,92%)
+        41.257.264      cache-references                                              ( +-  0,11% )  (76,92%)
+             2.234      cache-misses              #    0,005 % of all cache refs      ( +- 80,61% )  (76,92%)
+     1.756.311.941      branches:k                                                    ( +-  0,04% )  (76,92%)
+         3.365.731      branch-misses:k           #    0,19% of all branches          ( +-  1,21% )  (76,92%)
+         4.083.650      l2_rqsts.all_code_rd                                          ( +-  0,77% )  (76,92%)
+         3.424.494      l2_rqsts.code_rd_hit                                          ( +-  0,95% )  (76,92%)
+           659.806      l2_rqsts.code_rd_miss                                         ( +-  0,53% )  (76,92%)
+         1.544.119      L1-icache-load-misses                                         ( +-  0,65% )  (76,92%)
+       874.066.356      icache.hit                                                    ( +-  0,07% )  (61,54%)
+         1.542.576      icache.misses                                                 ( +-  0,63% )  (61,54%)
+        17.672.121      icache.ifdata_stall                                           ( +-  0,53% )  (61,54%)
+#+end_example
+
+Same kernel performance variations happens, this is lowest result:
+#+begin_example
+Running XDP on dev:veth2 (ifindex:12) action:XDP_PASS options:no_touch
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      4       4,014,404   0          
+XDP-RX CPU      total   4,014,404  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:4   4,014,402   0          
+rx_queue_index    0:sum 4,014,402  
+#+end_example
+
+#+begin_example
+     3.780.548.548      cycles                                                        ( +-  0,02% )  (69,22%)
+     8.952.399.813      instructions              #    2,37  insn per cycle           ( +-  0,04% )  (76,92%)
+        40.897.182      cache-references                                              ( +-  0,10% )  (76,92%)
+             7.464      cache-misses              #    0,018 % of all cache refs      ( +- 52,23% )  (76,92%)
+     1.695.347.517      branches:k                                                    ( +-  0,04% )  (76,92%)
+         3.747.167      branch-misses:k           #    0,22% of all branches          ( +-  0,42% )  (76,92%)
+         6.056.595      l2_rqsts.all_code_rd                                          ( +-  0,22% )  (76,92%)
+         5.168.875      l2_rqsts.code_rd_hit                                          ( +-  0,17% )  (76,92%)
+           886.584      l2_rqsts.code_rd_miss                                         ( +-  0,64% )  (76,92%)
+         2.105.558      L1-icache-load-misses                                         ( +-  0,81% )  (76,93%)
+       938.533.354      icache.hit                                                    ( +-  0,07% )  (61,54%)
+         2.105.882      icache.misses                                                 ( +-  0,74% )  (61,55%)
+        24.221.557      icache.ifdata_stall                                           ( +-  0,41% )  (61,54%)
+#+end_example
 
 * Micro optimisations
 
