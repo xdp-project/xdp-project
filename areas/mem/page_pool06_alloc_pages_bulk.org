@@ -32,6 +32,7 @@ Testing experimental patch from Mel Gorman that add alloc_pages_bulk() API.
   - [[#baseline-kernel][baseline kernel]]
   - [[#use-list-variant][Use list variant]]
   - [[#use-array-variant][Use array variant]]
+  - [[#strange-code-layout][Strange code layout]]
 - [[#micro-optimisations][Micro optimisations]]
   - [[#observations][Observations]]
   - [[#why-happening][Why happening]]
@@ -766,6 +767,44 @@ rx_queue_index    0:sum 4,014,402
          2.105.882      icache.misses                                                 ( +-  0,74% )  (61,55%)
         24.221.557      icache.ifdata_stall                                           ( +-  0,41% )  (61,54%)
 #+end_example
+
+** Strange code layout
+
+Kernel: 5.12.0-rc4-mel-mm-bulk-rebase-v6r5-jesper05-array+
+
+Strange code for alloc_pages_bulk, shows up as =__alloc_pages_bulk.part.0=.
+The compile choose to split-up function in two, which seems very strange.
+
+And ASM for __alloc_pages_bulk is very small:
+#+begin_src asm
+       │    ffffffff8122d930 <__alloc_pages_bulk>:
+       │    __alloc_pages_bulk():
+       │    → callq __fentry__
+100,00 │      test  %ecx,%ecx
+       │    ↓ jle   e
+       │    → jmpq  ffffffff8122d240 <__alloc_pages_bulk.part.0>
+       │ e:   xor   %eax,%eax
+       │    ← retq
+#+end_src
+
+Verified that it is related to below code.  With patch applied the
+=__alloc_pages_bulk.part.0= construct goes away:
+#+begin_src diff
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index d900e92884b2..bab456affe6a 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5002,8 +5002,8 @@ int __alloc_pages_bulk(gfp_t gfp, int preferred_nid,
+        unsigned int alloc_flags;
+        int nr_populated = 0;
+ 
+-       if (unlikely(nr_pages <= 0))
+-               return 0;
++//     if (unlikely(nr_pages <= 0))
++//             return 0;
+ 
+        /*
+#+end_src
 
 * Micro optimisations
 
