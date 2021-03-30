@@ -34,6 +34,8 @@ Testing experimental patch from Mel Gorman that add alloc_pages_bulk() API.
   - [[#use-array-variant][Use array variant]]
   - [[#strange-code-layout][Strange code layout]]
   - [[#send-patches-to-mel][Send patches to Mel]]
+- [[#test-on-mel-git-tree-mm-percpu-local_lock-v1r15][Test on Mel git-tree: mm-percpu-local_lock-v1r15]]
+  - [[#micro-benchmark-page_bench04_bulk-local_lock-v1r15][micro-benchmark: page_bench04_bulk (local_lock-v1r15)]]
 - [[#micro-optimisations][Micro optimisations]]
   - [[#observations][Observations]]
   - [[#why-happening][Why happening]]
@@ -825,6 +827,7 @@ The min to max variation:
  - 4448640 - 4016608 = 432032 pps
  - (1/4448640-1/4016608)*10^9 = -24.18 ns
  - (1-(4016608/4448640))*100 = 9.71%
+ - Avg value only changed 261 (4222960-4223221)
 
 ** Strange code layout
 
@@ -893,6 +896,49 @@ The compiler choose a strange code layout see here:
 Intent is for Mel to pickup these patches.
 #+end_quote
 
+
+* Test on Mel git-tree: mm-percpu-local_lock-v1r15
+
+Mel Gorman's git tree:
+ - git://git.kernel.org/pub/scm/linux/kernel/git/mel/linux.git
+
+Branch: mm-percpu-local_lock-v1r15
+
+** micro-benchmark: page_bench04_bulk (local_lock-v1r15)
+
+Notice these "per elem" measurements are alloc+free cost for order-0 pages
+
+uname:
+ - 5.12.0-rc4-mel-mm-percpu-local_lock-v1r15+ #52 SMP PREEMPT
+
+#+begin_example
+BASELINE
+ single_page alloc+put: 194 cycles(tsc) 54.106 ns
+
+LIST variant: time_bulk_page_alloc_free_list: step=bulk size
+
+ Per elem: 200 cycles(tsc) 55.667 ns (step:1)
+ Per elem: 143 cycles(tsc) 39.755 ns (step:2)
+ Per elem: 132 cycles(tsc) 36.758 ns (step:3)
+ Per elem: 128 cycles(tsc) 35.795 ns (step:4)
+ Per elem: 123 cycles(tsc) 34.339 ns (step:8)
+ Per elem: 120 cycles(tsc) 33.396 ns (step:16)
+ Per elem: 118 cycles(tsc) 32.806 ns (step:32)
+ Per elem: 115 cycles(tsc) 32.169 ns (step:64)
+ Per elem: 116 cycles(tsc) 32.258 ns (step:128)
+
+ARRAY variant: time_bulk_page_alloc_free_array: step=bulk size
+
+ Per elem: 195 cycles(tsc) 54.225 ns (step:1)
+ Per elem: 127 cycles(tsc) 35.492 ns (step:2)
+ Per elem: 117 cycles(tsc) 32.643 ns (step:3)
+ Per elem: 111 cycles(tsc) 30.992 ns (step:4)
+ Per elem: 106 cycles(tsc) 29.606 ns (step:8)
+ Per elem: 102 cycles(tsc) 28.532 ns (step:16)
+ Per elem: 99 cycles(tsc) 27.728 ns (step:32)
+ Per elem: 98 cycles(tsc) 27.252 ns (step:64)
+ Per elem: 97 cycles(tsc) 27.090 ns (step:128)
+#+end_example
 
 * Micro optimisations
 
