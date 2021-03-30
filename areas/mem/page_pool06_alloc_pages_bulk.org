@@ -815,6 +815,17 @@ The min to max variation:
  - (1/4448640-1/3797280)*10^9 = -38.56 nanosec
  - (1-(3797280/4448640))*100 = 14.64%
 
+Removing some outliers (35 records), that indicate that for 6 second
+periods the performance drops and then is restored afterwards:
+#+begin_example
+n=36968 cur-pps:4199584 avg=4223221 max=4448640 min=4016608
+#+end_example
+
+The min to max variation:
+ - 4448640 - 4016608 = 432032 pps
+ - (1/4448640-1/4016608)*10^9 = -24.18 ns
+ - (1-(4016608/4448640))*100 = 9.71%
+
 ** Strange code layout
 
 Kernel: 5.12.0-rc4-mel-mm-bulk-rebase-v6r5-jesper05-array+
