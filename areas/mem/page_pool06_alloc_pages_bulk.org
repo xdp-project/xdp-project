@@ -790,6 +790,31 @@ $ perf stat -C5 -e cycles -e  instructions -e branches:k -e branch-misses:k -e l
         17.786.226      icache.ifdata_stall                                           ( +-  0,18% )
 #+end_example
 
+*** Investigate variation seen
+
+To investigate the variation seen, I ran a longer test, capturing the output
+from =xdp_redirect_map= (samples every 2 sec) for approx 20 hours. (One
+caveat is that program does a simple =sleep(2)= and assumes the cost of
+BPF-map calls are zero and also that sleep period was accurate, this can
+also screw the results).
+
+The output was run through:
+#+begin_src sh
+ cat ~/out01-redir-mlx5p1-into-veth1 | \
+  awk 'BEGIN{max=0; min=0xFFFFFFFF; n=0; c=0}
+       /ifindex/ {n++; c+=$3; avg=c/n; max=($3 > max)?$3:max; min=($3 < min)?$3:min; printf("n=%d\tcur-pps:%d\tavg=%d max=%d min=%d\n", n, $3, avg, max, min)}'
+#+end_src
+
+Result was average: 4,222,960 pps
+#+begin_example
+n=37004 cur-pps:4199584 avg=4222960 max=4448640 min=3797280
+#+end_example
+
+The min to max variation:
+ - 4448640 - 3797280 = 651360 pps
+ - (1/4448640-1/3797280)*10^9 = -38.56 nanosec
+ - (1-(3797280/4448640))*100 = 14.64%
+
 ** Strange code layout
 
 Kernel: 5.12.0-rc4-mel-mm-bulk-rebase-v6r5-jesper05-array+
