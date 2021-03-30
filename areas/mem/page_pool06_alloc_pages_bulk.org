@@ -684,6 +684,21 @@ $ perf stat -C0 -e cycles -e  instructions -e cache-references \
         26.138.294      icache.ifdata_stall                                           ( +-  1,43% )  (61,53%)
 #+end_example
 
+*** BASELINE: Investigate variation seen
+
+As below run the test for a long time to establish variations happening in
+the system.
+
+Result was average: 3,743,497 pps
+#+begin_example
+n=8756  cur-pps:3871776 avg=3743497 max=3914720 min=3621229
+#+end_example
+
+The min to max variation:
+ - 3914720 - 3621229 =
+ - (1/3914720-1/3621229)*10^9 = -20.70 nanosec
+ - (1-(3621229/3914720))*100 = 7.50%
+
 ** Use list variant
 
 Kernel: 5.12.0-rc4-mel-mm-bulk-rebase-v6r5-jesper05-list+
@@ -828,6 +843,9 @@ The min to max variation:
  - (1/4448640-1/4016608)*10^9 = -24.18 ns
  - (1-(4016608/4448640))*100 = 9.71%
  - Avg value only changed 261 (4222960-4223221)
+
+AFTER removing the outliers, the variation comes close to the baseline
+variation testing done above (was -20.70 ns and 7.50%).
 
 ** Strange code layout
 
