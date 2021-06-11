@@ -28,6 +28,8 @@ This is a design question how this is solved for XDP.
 - [[#summary][Summary]]
 - [[#qdisc-etf][Qdisc: ETF]]
   - [[#drivers-supporting-hw-etf][Drivers supporting HW-ETF]]
+- [[#qdisc-taprio][Qdisc: taprio]]
+  - [[#drivers-supporting-hw-taprio][Drivers supporting HW-taprio]]
 - [[#driver-igc][Driver: igc]]
   - [[#setup-code-driver-igc][Setup code (driver: igc)]]
   - [[#tx-time-to-hardware-driver-igc][TX time to hardware (driver: igc)]]
@@ -75,6 +77,27 @@ drivers/net/ethernet/intel/igb/igb_main.c:      case TC_SETUP_QDISC_ETF:
 drivers/net/ethernet/intel/igc/igc_main.c:      case TC_SETUP_QDISC_ETF:
 drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:      case TC_SETUP_QDISC_ETF:
 #+end_src
+
+* Qdisc: taprio
+
+The TC 'taprio' qdisc is a "Time Aware Priority Scheduler".
+Kernel code: [[https://elixir.bootlin.com/linux/v5.13-rc5/source/net/sched/sch_taprio.c][net/sched/sch_taprio.c]].
+
+This qdisc is related to IEEE 802.1Qbv.
+
+** Drivers supporting HW-taprio
+
+#+begin_src sh
+$ gg TC_SETUP_QDISC_TAPRIO drivers/
+drivers/net/dsa/hirschmann/hellcreek.c: if (type != TC_SETUP_QDISC_TAPRIO)
+drivers/net/dsa/ocelot/felix_vsc9959.c: case TC_SETUP_QDISC_TAPRIO:
+drivers/net/dsa/sja1105/sja1105_main.c: case TC_SETUP_QDISC_TAPRIO:
+drivers/net/ethernet/freescale/enetc/enetc.c:   case TC_SETUP_QDISC_TAPRIO:
+drivers/net/ethernet/intel/igc/igc_main.c:      case TC_SETUP_QDISC_TAPRIO:
+drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:      case TC_SETUP_QDISC_TAPRIO:
+drivers/net/ethernet/ti/am65-cpsw-qos.c:        case TC_SETUP_QDISC_TAPRIO:
+#+end_src
+
 
 * Driver: igc
 
