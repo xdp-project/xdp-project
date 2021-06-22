@@ -55,7 +55,7 @@ CLOSED: [2019-03-04 Mon 15:45]
 Yes, MQ-HTB silo setup (example [[https://github.com/netoptimizer/network-testing/blob/master/tc/tc_mq_htb_setup.sh][tc_mq_htb_setup.sh]]) it works.
 
 BUT watch-out, as XPS (Transmit Packet Steering) will take precedence over
-any changes to =skb->queue_mapping=.  You need to disable XDP via mask=00 in
+any changes to =skb->queue_mapping=.  You need to disable XPS via mask=00 in
 files =/sys/class/net/DEV/queues/tx-*/xps_cpus= .
 
 To help people out, here is a script for easier setup of XPS:
