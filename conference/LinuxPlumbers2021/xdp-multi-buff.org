@@ -135,7 +135,7 @@ enum xdp_buff_flags {
 - [[https://github.com/torvalds/linux/blob/master/samples/pktgen/pktgen_sample03_burst_single_flow.sh][pktgen_sample03_burst_single_flow.sh]] (64B packet size)
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp-multi-buff-stack.png]]
-** Slide: XDP multi-buffers: new eBPF helpers (1/4)			   :export:
+** Slide: XDP multi-buffers: new eBPF helpers (1/5)			   :export:
 - /bpf_xdp_get_buff_len/:
   - eBPF helper to compute non-lienar buffer length
     - linear + paged
@@ -154,7 +154,7 @@ BPF_CALL_1(bpf_xdp_get_buff_len, struct  xdp_buff*, xdp)
 }
 #+end_src
 
-** Slide: XDP multi-buffers: new eBPF helpers (2/4)			   :export:
+** Slide: XDP multi-buffers: new eBPF helpers (2/5)			   :export:
 - /bpf_xdp_mb_adjust_tail/:
 #+begin_src C
 static int bpf_xdp_mb_adjust_tail(struct xdp_buff *xdp, int offset)
@@ -179,7 +179,7 @@ static int bpf_xdp_mb_adjust_tail(struct xdp_buff *xdp, int offset)
 }
 #+end_src
 
-** Slide: XDP multi-buffers: new eBPF helpers (3/4)			   :export:
+** Slide: XDP multi-buffers: new eBPF helpers (3/5)			   :export:
 - /bpf_xdp_adjust_data/:
 #+begin_src C
 BPF_CALL_2(bpf_xdp_adjust_data, struct xdp_buff *, xdp, u32, offset)
@@ -204,7 +204,7 @@ BPF_CALL_2(bpf_xdp_adjust_data, struct xdp_buff *, xdp, u32, offset)
 }
 #+end_src
 
-** Slide: XDP multi-buffers: new eBPF helpers (4/4)			   :export:
+** Slide: XDP multi-buffers: new eBPF helpers (4/5)			   :export:
 - /bpf_xdp_adjust_data()/ move data pointers in the selected fragment
   - *data* and *data_end* must be moved back to the original position
 #+begin_src C
@@ -226,6 +226,31 @@ out:
       return XDP_PASS;
 }
 #+end_src
+
+** Slide: XDP multi-buffers: new eBPF helpers (5/5)			   :export:
+- /bpf_xdp_output/ and /bpf_perf_event_output/:
+  - Helpers are updated and can copy the content of all buffers
+#+begin_src C
+static unsigned long bpf_xdp_copy(void *dst_buff, const void *ctx,
+                                  unsigned long off, unsigned long len)
+{
+        if (likely(!xdp_buff_is_mb(xdp))) {
+                memcpy(dst_buff, xdp->data + off, len);
+                return 0;
+        }
+        ...
+        /* If we need to copy data from the base buffer do it */
+        if (off < base_len) {
+                ...
+        }
+        /* Copy any remaining data from the fragments */
+        for (i = 0; len && i < sinfo->nr_frags; i++) {
+                ...
+        }
+        return 0;
+}
+#+end_src
+
 ** Slide: XDP multi-buffers: stack support				   :export:
 - XDP return path
 #+begin_src C
