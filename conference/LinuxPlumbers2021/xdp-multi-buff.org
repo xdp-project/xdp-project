@@ -31,18 +31,13 @@ Only sections with tag ":export:" will end-up in the presentation. The prefix
 "Slide:" is only syntax-sugar for the reader (and it removed before export by
 emacs).
 
-* Slide: Target audience                                             :export:
-- target audience is a kernel developer that wants to extend an existing XDP
-  capable driver to support /non-linear buffers/
-[[file:images/audience.jpg]]
-
 * Slide: XDP technical requirements                                  :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
 - Quick introduction to XDP
 - XDP technical requirements
-- xdp_buff and xdp_frame
+- XDP multi-buffs use-cases/requirements
 
 ** Slide: What is XDP?                                              :export:
 
@@ -74,30 +69,6 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 - Cannot allocate page fragments to support it (e.g. through napi_alloc_skb())
 - Rx buffers must be recycled to get high speed!
 
-** Slide: xdp_buff: let's not use the skb	(1/2)				   :export:
-- /xdp_buff/: metadata container for received frames
-  - valid only in the driver NAPI context
-  - *skb_shared_info* to rely on *build_skb()* for XDP_PASS
-#+ATTR_HTML: :class img-no-border
-[[file:images/xdp-buff.png]]
-** Slide: xdp_frame: let's not use the skb (2/2)			   :export:
-- /xdp_frame/: metadata container valid outside of the NAPI context
-  - *XDP_REDIRCT*
-  - no memory allocation in the hot path
-    - stored in the buffer headroom - memory constraints
-    - must fit in a single cache-line
-#+ATTR_HTML: :class img-no-border
-[[file:images/xdp-frame.png]]
-
-* Slide: XDP multi-buffers                                           :export:
-:PROPERTIES:
-:reveal_extra_attr: class="mid-slide"
-:END:
-*Work-in-progress*
-- General requirements/proposed solution
-- XDP multi-buff for mvneta
-- xdp_adjust_data eBPF helper
-
 ** Slide: Multi-buffers support for XDP					   :export:
  - */XDP multi-buffer/* use cases:
    - Jumbo frames
@@ -109,10 +80,37 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
    - Support non-linear buffer and */not slow down/* single buffer use case
    - How to satisfy /eBPF Direct-Access (DA)/ design?
 
+* Slide: XDP multi-buffers                                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+[[https://patchwork.kernel.org/project/netdevbpf/cover/cover.1631007211.git.lorenzo@kernel.org/][Work-in-progress]]
+- xdp_buff and xdp_frame
+- General requirements/proposed solution
+- XDP multi-buff for mvneta
+- xdp_adjust_data eBPF helper
+
+** Slide: xdp_buff: let's not use the skb	(1/2)				   :export:
+- /xdp_buff/: metadata container for received frames
+  - valid only in the driver NAPI context
+  - *skb_shared_info* to rely on *build_skb()* for XDP_PASS
+#+ATTR_HTML: :class img-no-border
+[[file:images/xdp-buff.png]]
+
+** Slide: xdp_frame: let's not use the skb (2/2)			   :export:
+- /xdp_frame/: metadata container valid outside of the NAPI context
+  - *XDP_REDIRCT*
+  - no memory allocation in the hot path
+    - stored in the buffer headroom - memory constraints
+    - must fit in a single cache-line
+#+ATTR_HTML: :class img-no-border
+[[file:images/xdp-frame.png]]
+
 ** Slide: XDP multi-buffers architecture					   :export:
 - *skb_shared_info* allows fast SKB conversion
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp-multibuff.png]]
+
 ** Slide: Keep single buffer fast!						   :export:
 - */flags/* capability field in *xdp_buff/xdp_frame*
   - /XDP_FLAGS_MULTI_BUFF/ bit
@@ -130,8 +128,77 @@ enum xdp_buff_flags {
 #+end_src
 - The drv will set /XDP_FLAGS_MULTI_BUFF/ only for multi-descriptor frames
 - XDP code will check fragments */only/* if  /XDP_FLAGS_MULTI_BUFF/ is set
+
+** Slide: XDP multi-buffers: new eBPF helpers (1/3)			   :export:
+- /bpf_xdp_get_buff_len/:
+  - eBPF helper to compute non-lienar buffer length
+    - linear + paged
+#+begin_src C
+BPF_CALL_1(bpf_xdp_get_buff_len, struct  xdp_buff*, xdp)
+{
+      u64 len = xdp->data_end - xdp->data; /* linear length */
+      
+      if (unlikely(xdp_buff_is_mb(xdp))) {
+            struct skb_shared_info *sinfo;
+            
+            sinfo = xdp_get_shared_info_from_buff(xdp);
+            len += sinfo->xdp_frags_size; /* paged length */
+      }
+      return len;
+}
+#+end_src
+
+** Slide: XDP multi-buffers: new eBPF helpers (2/3)			   :export:
+- /bpf_xdp_mb_adjust_tail/:
+#+begin_src C
+static int bpf_xdp_mb_adjust_tail(struct xdp_buff *xdp, int offset)
+{
+      struct skb_shared_info *sinfo = xdp_get_shared_info_from_buff(xdp);
+      if (offset >= 0) { /* increase last frag */
+            ...
+            skb_frag_size_set(frag, skb_frag_size(&sinfo->frags[sinfo->nr_frags - 1]) + offset);
+      } else { /* shirink frags */
+            for (i = sinfo->nr_frags - 1; i >= 0 && abs(offset) > 0; i--) {
+                  int shrink = min_t(int, abs(offset), skb_frag_size(&sinfo->frags[i]));
+                  if (unlikely(skb_frag_size(&sinfo->frags[i]) == shrink)) {
+                        ...
+                        __xdp_return(page_address(skb_frag_page(&sinfo->frags[i])), ...);
+                  } else {
+                        skb_frag_size_set(&sinfo->frags[i],
+                                          skb_frag_size(&sinfo->frags[i]) - shrink);
+                        break;
+                  }
+            }
+      }
+}
+#+end_src
+
+** Slide: XDP multi-buffers: new eBPF helpers (3/3)			   :export:
+- /bpf_xdp_adjust_data/:
+#+begin_src C
+BPF_CALL_2(bpf_xdp_adjust_data, struct xdp_buff *, xdp, u32, offset)
+{
+      struct skb_shared_info *sinfo = xdp_get_shared_info_from_buff(xdp);
+      u32 base_offset = xdp->mb.headlen, max_offset = xdp->mb.headlen;
+      
+      if (offset < xdp->mb.headlen) { /* linear area */
+            xdp->data = xdp->data_hard_start + xdp->mb.headroom + offset;
+            xdp->data_end = xdp->data_hard_start + xdp->mb.headroom + xdp->mb.headlen;
+            return 0;
+      }
+      for (i = 0; i < sinfo->nr_frags; i++) { /* paged area */
+            if (offset < base_offset + skb_frag_size(&sinfo->frags[i])) {
+                  xdp->data = skb_frag_address(&sinfo->frags[i]) + offset - base_offset;
+                  xdp->data_end = skb_frag_address(&sinfo->frags[i]) +
+                                  skb_frag_size(&sinfo->frags[i]);
+                  break;
+            }
+            base_offset += skb_frag_size(&sinfo->frags[i]);
+      }
+}
+#+end_src
+
 ** Slide: XDP multi-buffers: stack support				   :export:
-- XDP supported capabilities for /XDP_REDIRECT/
 - XDP return path
 #+begin_src C
 void xdp_return_frame_rx_napi(struct xdp_frame *xdpf)
@@ -161,7 +228,6 @@ out:
 
 #+ATTR_html: :width 75%
 [[file:images/espressobin-specs.png]]
-
 
 ** Slide: XDP multi-buffers support for mvneta (1/5)			   :export:
 - Modify drivers rx NAPI loop
@@ -246,77 +312,13 @@ mvneta_xdp_submit_frame(..., struct xdp_frame *xdpf, ...)
       ...
 }
 #+end_src
+
 ** Slide: XDP multi-buffers support for mvneta (5/5)			   :export:
 - we can now remove MTU constraints in /mvneta_xdp_setup (.ndo_bpf)/ to
   support Jumbo frames and GRO/TSO for XDP_REDIRECT
 #+ATTR_html: :width 75%
 [[file:images/ip-link.png]]
-** Slide: XDP multi-buffers: new eBPF helpers (1/3)			   :export:
-- /bpf_xdp_get_buff_len/:
-  - eBPF helper to compute non-lienar buffer length
-    - linear + paged
-#+begin_src C
-BPF_CALL_1(bpf_xdp_get_buff_len, struct  xdp_buff*, xdp)
-{
-      u64 len = xdp->data_end - xdp->data; /* linear length */
-      
-      if (unlikely(xdp_buff_is_mb(xdp))) {
-            struct skb_shared_info *sinfo;
-            
-            sinfo = xdp_get_shared_info_from_buff(xdp);
-            len += sinfo->xdp_frags_size; /* paged length */
-      }
-      return len;
-}
-#+end_src
-** Slide: XDP multi-buffers: new eBPF helpers (2/3)			   :export:
-- /bpf_xdp_mb_adjust_tail/:
-#+begin_src C
-static int bpf_xdp_mb_adjust_tail(struct xdp_buff *xdp, int offset)
-{
-      struct skb_shared_info *sinfo = xdp_get_shared_info_from_buff(xdp);
-      if (offset >= 0) { /* increase last frag */
-            ...
-            skb_frag_size_set(frag, skb_frag_size(&sinfo->frags[sinfo->nr_frags - 1]) + offset);
-      } else { /* shirink frags */
-            for (i = sinfo->nr_frags - 1; i >= 0 && abs(offset) > 0; i--) {
-                  int shrink = min_t(int, abs(offset), skb_frag_size(&sinfo->frags[i]));
-                  if (unlikely(skb_frag_size(&sinfo->frags[i]) == shrink)) {
-                        ...
-                        __xdp_return(page_address(skb_frag_page(&sinfo->frags[i])), ...);
-                  } else {
-                        skb_frag_size_set(&sinfo->frags[i],
-                                          skb_frag_size(&sinfo->frags[i]) - shrink);
-                        break;
-                  }
-            }
-      }
-}
-#+end_src
-** Slide: XDP multi-buffers: new eBPF helpers (3/3)			   :export:
-- /bpf_xdp_adjust_data/:
-#+begin_src C
-BPF_CALL_2(bpf_xdp_adjust_data, struct xdp_buff *, xdp, u32, offset)
-{
-      struct skb_shared_info *sinfo = xdp_get_shared_info_from_buff(xdp);
-      u32 base_offset = xdp->mb.headlen, max_offset = xdp->mb.headlen;
-      
-      if (offset < xdp->mb.headlen) { /* linear area */
-            xdp->data = xdp->data_hard_start + xdp->mb.headroom + offset;
-            xdp->data_end = xdp->data_hard_start + xdp->mb.headroom + xdp->mb.headlen;
-            return 0;
-      }
-      for (i = 0; i < sinfo->nr_frags; i++) { /* paged area */
-            if (offset < base_offset + skb_frag_size(&sinfo->frags[i])) {
-                  xdp->data = skb_frag_address(&sinfo->frags[i]) + offset - base_offset;
-                  xdp->data_end = skb_frag_address(&sinfo->frags[i]) +
-                                  skb_frag_size(&sinfo->frags[i]);
-                  break;
-            }
-            base_offset += skb_frag_size(&sinfo->frags[i]);
-      }
-}
-#+end_src
+
 ** Slide: XDP multi-buffers: future development (1/2)			   :export:
 - XDP driver capabilities
   - XDP multi-buff for *XDP_REDIRECT*
