@@ -271,10 +271,6 @@ out:
 	__xdp_return(xdpf->data, &xdpf->mem, true, NULL);
 }
 #+end_src
-** Marvell ESPRESSObin - mvneta
-
-#+ATTR_html: :width 75%
-[[file:images/espressobin-specs.png]]
 
 ** Slide: XDP multi-buffers support for mvneta (1/5)			   :export:
 - Modify drivers rx NAPI loop
