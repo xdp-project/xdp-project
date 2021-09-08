@@ -371,8 +371,9 @@ mvneta_xdp_submit_frame(..., struct xdp_frame *xdpf, ...)
   - virtio-net
   - ...
 ** Slide: XDP multi-buffers: future development (2/2)			   :export:
-- XDP /multicast/ extension
-  - reserve buffers to push/pop headers (e.g *VLAN* tag) w/o allocating memory relying on hw */Scatter-Gather (SG)/* support
+- Relying on hw */Scatter-Gather (SG)/* support to modify shared buffers w/o allocating memory
+  - reserve buffers to push/pop headers (e.g *VLAN* tag)
+  - XDP /multicast/
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp-sg.png]]
 
