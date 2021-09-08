@@ -156,6 +156,7 @@ BPF_CALL_1(bpf_xdp_get_buff_len, struct  xdp_buff*, xdp)
 
 ** Slide: XDP multi-buffers: new eBPF helpers (2/5)			   :export:
 - /bpf_xdp_mb_adjust_tail/:
+  - run by *bpf_xdp_adjust_tail()* helper for */mb/* xdp_buff
 #+begin_src C
 static int bpf_xdp_mb_adjust_tail(struct xdp_buff *xdp, int offset)
 {
@@ -163,9 +164,8 @@ static int bpf_xdp_mb_adjust_tail(struct xdp_buff *xdp, int offset)
       if (offset >= 0) { /* increase last frag */
             ...
             skb_frag_size_set(frag, skb_frag_size(&sinfo->frags[sinfo->nr_frags - 1]) + offset);
-      } else { /* shirink frags */
+      } else { /* shrink frags */
             for (i = sinfo->nr_frags - 1; i >= 0 && abs(offset) > 0; i--) {
-                  int shrink = min_t(int, abs(offset), skb_frag_size(&sinfo->frags[i]));
                   if (unlikely(skb_frag_size(&sinfo->frags[i]) == shrink)) {
                         ...
                         __xdp_return(page_address(skb_frag_page(&sinfo->frags[i])), ...);
