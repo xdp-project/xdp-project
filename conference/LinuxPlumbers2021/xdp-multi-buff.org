@@ -234,20 +234,20 @@ out:
 static unsigned long bpf_xdp_copy(void *dst_buff, const void *ctx,
                                   unsigned long off, unsigned long len)
 {
-        if (likely(!xdp_buff_is_mb(xdp))) {
+        if (likely(!xdp_buff_is_mb(xdp))) { /* single buffer */
                 memcpy(dst_buff, xdp->data + off, len);
                 return 0;
         }
         ...
-        /* If we need to copy data from the base buffer do it */
-        if (off < base_len) {
+        if (off < base_len) { /* copy data from the base buffer do it */
                 ...
+                memcpy(dst_buff, xdp->data + off, copy_len);
         }
-        /* Copy any remaining data from the fragments */
-        for (i = 0; len && i < sinfo->nr_frags; i++) {
+        sinfo = xdp_get_shared_info_from_buff(xdp);
+        for (i = 0; len && i < sinfo->nr_frags; i++) { /* copy frag remaining data */
                 ...
+                memcpy(dst_buff, skb_frag_address(&sinfo->frags[i]) + frag_off, copy_len);
         }
-        return 0;
 }
 #+end_src
 
