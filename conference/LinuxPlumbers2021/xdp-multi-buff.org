@@ -37,7 +37,7 @@ emacs).
 :END:
 - Quick introduction to XDP
 - XDP technical requirements
-- XDP multi-buffs use-cases/requirements
+- XDP multi-buffers use-cases/requirements
 
 ** Slide: What is XDP?                                              :export:
 
@@ -88,7 +88,7 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 - xdp_buff and xdp_frame
 - General requirements/proposed solution
 - xdp_adjust_data eBPF helper
-- XDP multi-buff for mvneta
+- XDP multi-buffers for mvneta
 
 ** Slide: xdp_buff: let's not use the skb	(1/2)				   :export:
 - /xdp_buff/: metadata container for received frames
@@ -137,7 +137,7 @@ enum xdp_buff_flags {
 [[file:images/xdp-multi-buff-stack.png]]
 ** Slide: XDP multi-buffers: new eBPF helpers (1/5)			   :export:
 - /bpf_xdp_get_buff_len/:
-  - eBPF helper to compute non-lienar buffer length
+  - eBPF helper to compute non-linear buffer length
     - linear + paged
 #+begin_src C
 BPF_CALL_1(bpf_xdp_get_buff_len, struct  xdp_buff*, xdp)
