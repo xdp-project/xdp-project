@@ -351,11 +351,11 @@ static int mvneta_xdp_submit_frame(..., struct xdp_frame *xdpf, ...)
                   dma_addr = page_pool_get_dma_addr(page);
                   dma_sync_single_for_device(dev, dma_addr, len, DMA_BIDIRECTIONAL);
             }
+            ...
+            tx_desc->buf_phys_addr = dma_addr;
+            tx_desc->data_size = len;
+            ...
       }
-      ...
-      tx_desc->buf_phys_addr = dma_addr;
-      tx_desc->data_size = len;
-      ...
 }
 #+end_src
 
