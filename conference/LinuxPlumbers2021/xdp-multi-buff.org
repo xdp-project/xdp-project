@@ -70,7 +70,7 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 - Rx buffers must be recycled to get high speed!
 
 ** Slide: Multi-buffers support for XDP					   :export:
- - */XDP multi-buffer/* use cases:
+ - */XDP multi-buffers/* use cases:
    - Jumbo frames
    - GRO/TSO for XDP_REDIRECT
    - [[https://legacy.netdevconf.info/0x14/session.html?talk-the-path-to-tcp-4k-mtu-and-rx-zerocopy][Packet header split]]
@@ -117,7 +117,7 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 #+begin_src C
 struct xdp_buff {
       ...
-      u16 flags; /* supported values defined in xdp_flags */
+      u32 flags; /* supported values defined in xdp_buff_flags */
       ...
 };
 
@@ -150,6 +150,7 @@ BPF_CALL_1(bpf_xdp_get_buff_len, struct  xdp_buff*, xdp)
             sinfo = xdp_get_shared_info_from_buff(xdp);
             len += sinfo->xdp_frags_size; /* paged length */
       }
+
       return len;
 }
 #+end_src
@@ -185,8 +186,8 @@ static int bpf_xdp_mb_adjust_tail(struct xdp_buff *xdp, int offset)
 BPF_CALL_2(bpf_xdp_adjust_data, struct xdp_buff *, xdp, u32, offset)
 {
       struct skb_shared_info *sinfo = xdp_get_shared_info_from_buff(xdp);
-      u32 base_offset = xdp->mb.headlen, max_offset = xdp->mb.headlen;
-      
+      u32 base_offset = xdp->mb.headlen; /* xdp->mb.headlen is linear length */
+      ...
       if (offset < xdp->mb.headlen) { /* linear area */
             xdp->data = xdp->data_hard_start + xdp->mb.headroom + offset;
             xdp->data_end = xdp->data_hard_start + xdp->mb.headroom + xdp->mb.headlen;
@@ -215,7 +216,7 @@ int _xdp_adjust_frags(struct xdp_md *xdp)
       ... 
       int base_offset = bpf_xdp_adjust_data(xdp, 5000);
       ...
-      data_end = (void *)(long)xdp->data_end;
+      data_end = (void *)(long)xdp->data_end; /* must be reloaded */
       data = (void *)(long)xdp->data;
       ... 
       if (*data != 0xaa) /* marker */
@@ -239,7 +240,7 @@ static unsigned long bpf_xdp_copy(void *dst_buff, const void *ctx,
                 return 0;
         }
         ...
-        if (off < base_len) { /* copy data from the base buffer do it */
+        if (off < base_len) { /* copy data from the base buffer */
                 ...
                 memcpy(dst_buff, xdp->data + off, copy_len);
         }
@@ -278,12 +279,13 @@ out:
     - =mvneta_swbm_rx_frame()=
     - =mvneta_swbm_add_rx_fragment()=
       - set /XDP_FLAGS_MULTI_BUFF/ for multi-descriptor frames
-  - Run the eBPF program when all descriptors are processed
+  - Run the eBPF program when */all/* descriptors are processed
   - Change /XDP_TX/ and /ndo_xdp_xmit/ to map non-linear buffers
     - =mvneta_xdp_submit_frame()=
   - Remove MTU check loading the eBPF program
     - =mvneta_xdp_setup()=
 ** Slide: XDP multi-buffers support for mvneta (2/5)			   :export:
+- =mvneta_swbm_add_rx_fragment()= runs on nth descriptor (n > 1)
 #+begin_src C
 void mvneta_swbm_add_rx_fragment(struct xdp_buff *xdp, ...)
 {
@@ -301,7 +303,7 @@ void mvneta_swbm_add_rx_fragment(struct xdp_buff *xdp, ...)
             }
       }
       ...
-      sinfo->xdp_frags_tsize = sinfo->nr_frags * PAGE_SIZE; /* non-linear truesize */
+      sinfo->xdp_frags_truesize = sinfo->nr_frags * PAGE_SIZE; /* non-linear truesize */
       ...
 }
 #+end_src
@@ -315,14 +317,14 @@ struct sk_buff *mvneta_swbm_build_skb(struct xdp_buff *xdp, ..)
       skb = build_skb(xdp->data_hard_start, PAGE_SIZE);
       ...
       if (unlikely(xdp_buff_is_mb(xdp)))
-            xdp_update_skb_shared_info(skb, sinfo->nr_frags, ...);
+            xdp_update_skb_shared_info(skb, sinfo->nr_frags, sinfo->xdp_frags_size,
+                                       sinfo->xdp_frags_truesize, ...);
       ...
 }
 
 static inline void
-xdp_update_skb_shared_info(struct sk_buff *skb, u8 nr_frags,
-                           unsigned int size, unsigned int truesize,
-                           bool pfmemalloc)
+xdp_update_skb_shared_info(struct sk_buff *skb, u8 nr_frags, unsigned int size,
+                           unsigned int truesize, bool pfmemalloc)
 {
       skb_shinfo(skb)->nr_frags = nr_frags;
       skb->len += size;
@@ -333,12 +335,13 @@ xdp_update_skb_shared_info(struct sk_buff *skb, u8 nr_frags,
 #+end_src
 ** Slide: XDP multi-buffers support for mvneta (4/5)			   :export:
 #+begin_src C
-static int
-mvneta_xdp_submit_frame(..., struct xdp_frame *xdpf, ...)
+static int mvneta_xdp_submit_frame(..., struct xdp_frame *xdpf, ...)
 {
       struct skb_shared_info *sinfo = xdp_get_shared_info_from_frame(xdpf);
       ...
-      for (i = 0; i < sinfo->nr_frags; i++) {
+      for (i = 0; i < sinfo->nr_frags + 1; i++) {
+            skb_frag_t *frag  = i ? &sinfo->frags[i - 1] : NULL;
+            int len = frag ? skb_frag_size(frag) : xdpf->len;
             if (dma_map) { /* ndo_xdp_xmit */
                   void *data = unlikely(frag) ? skb_frag_address(frag) : xdpf->data;
                   dma_addr = dma_map_single(dev, data, len, DMA_TO_DEVICE);
@@ -364,7 +367,7 @@ mvneta_xdp_submit_frame(..., struct xdp_frame *xdpf, ...)
 
 ** Slide: XDP multi-buffers: future development (1/2)			   :export:
 - XDP driver capabilities
-  - XDP multi-buff for *XDP_REDIRECT*
+  - XDP multi-buffers for *XDP_REDIRECT*
 - driver support
   - intel i40e (work-in-progress)
   - ena (work-in-progress)
