@@ -87,8 +87,8 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 [[https://patchwork.kernel.org/project/netdevbpf/list/?series=544967][Work-in-progress]]
 - xdp_buff and xdp_frame
 - General requirements/proposed solution
-- XDP multi-buff for mvneta
 - xdp_adjust_data eBPF helper
+- XDP multi-buff for mvneta
 
 ** Slide: xdp_buff: let's not use the skb	(1/2)				   :export:
 - /xdp_buff/: metadata container for received frames
