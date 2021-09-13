@@ -46,8 +46,8 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
    - Read, modify, drop, redirect or pass
    - For L2-L3 use-cases: seeing x10 performance improvements!
  - *Avoiding* /memory allocations/
-   - no SKB allocations and no-init (memset zero 4 cache-lines)
- - /Bulk/ processing of frames
+   - No SKB allocations and no-init (memset zero 4 cache-lines)
+ - Adaptive *bulk* processing of frames
  - Very /early access/ to frame (in driver code *after DMA sync*)
  - Ability to */skip/ (large parts) of kernel /code/*
    - Evolve XDP via /BPF-helpers/
