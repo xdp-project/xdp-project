@@ -107,7 +107,7 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 [[file:images/xdp-frame.png]]
 
 ** Slide: XDP multi-buffers architecture					   :export:
-- *skb_shared_info* allows fast SKB conversion
+- Use same layout as *skb_shared_info* allows /faster SKB conversion/
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp-multibuff.png]]
 
