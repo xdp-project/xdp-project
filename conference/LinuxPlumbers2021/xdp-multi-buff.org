@@ -71,12 +71,12 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 
 ** Slide: Multi-buffers support for XDP					   :export:
  - */XDP multi-buffers/* use cases:
-   - Jumbo frames
+   - /Enable/ *Jumbo frames* (larger than 3502 MTU settings)
    - GRO/TSO for XDP_REDIRECT
    - [[https://legacy.netdevconf.info/0x14/session.html?talk-the-path-to-tcp-4k-mtu-and-rx-zerocopy][Packet header split]]
    - Handling GRO SKBs in veth/cpumap/generic-XDP
  - Constraints:
-   - Fast conversion from *xdp_buff/xdf_frame* to SKBs
+   - Fast conversion from *xdp_buff/xdp_frame* to SKBs
    - Support non-linear buffer and */not slow down/* single buffer use case
    - How to satisfy /eBPF Direct-Access (DA)/ design?
 
