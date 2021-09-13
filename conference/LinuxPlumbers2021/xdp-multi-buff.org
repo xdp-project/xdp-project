@@ -56,13 +56,13 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp_architecture.png]]
 
-** Slide: XDP requirements                                          :export:
+** Slide: XDP *current* requirements                                :export:
 
 - XDP frame in *physical contiguous memory*
   - BPF /Direct-Access/ for validating correctness
   - No paged frames support, data cannot be split across pages
   - Read and Write access to the DMA buffers
-  - Disable jumbo frames (packet < PAGE_SIZE) loading a BPF program
+  - */Disable/* *jumbo frames* (packet < PAGE_SIZE) loading a BPF program
 - XDP /headroom/ *for xdp_frame* area
   - add push/pop header through bpf_xdp_adjust_head()
 - Reserve /tailroom/ *for skb_shared_info* and *rely on build_skb()* on XDP_PASS
