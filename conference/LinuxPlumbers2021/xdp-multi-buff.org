@@ -69,7 +69,7 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 - Cannot allocate page fragments to support it (e.g. through napi_alloc_skb())
 - Rx buffers must be recycled to get high speed!
 
-** Slide: Multi-buffers support for XDP					   :export:
+** Slide: Multi-buffers support for XDP                             :export:
  - */XDP multi-buffers/* use cases:
    - /Enable/ *Jumbo frames* (larger than 3502 MTU settings)
    - GRO/TSO for XDP_REDIRECT
@@ -84,20 +84,21 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
+
 /Work-in-progress/ upstream [[https://patchwork.kernel.org/project/netdevbpf/list/?series=544967][patchset V14]]
 - xdp_buff and xdp_frame
 - General requirements/proposed solution
 - xdp_adjust_data BPF helper
 - XDP multi-buffers for mvneta
 
-** Slide: xdp_buff: let's not use the skb	(1/2)				   :export:
+** Slide: xdp_buff: let's not use the skb	(1/2)               :export:
 - /xdp_buff/: metadata container for received frames
   - valid only in the driver NAPI context
   - *skb_shared_info* to rely on *build_skb()* for XDP_PASS
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp-buff.png]]
 
-** Slide: xdp_frame: let's not use the skb (2/2)			   :export:
+** Slide: xdp_frame: let's not use the skb	(2/2)               :export:
 - /xdp_frame/: metadata container valid outside of the NAPI context
   - *XDP_REDIRCT*
   - no memory allocation in the hot path
@@ -106,12 +107,12 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp-frame.png]]
 
-** Slide: XDP multi-buffers architecture					   :export:
+** Slide: XDP multi-buffers architecture                            :export:
 - Use same layout as *skb_shared_info* allows /faster SKB conversion/
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp-multibuff.png]]
 
-** Slide: Keep single buffer fast!						   :export:
+* Slide: Keep single buffer fast!                                    :export:
 - Add */flags/* capability field in *xdp_buff/xdp_frame*
   - /XDP_FLAGS_MULTI_BUFF/ bit
 #+begin_src C
@@ -136,7 +137,15 @@ enum xdp_buff_flags {
 - [[https://github.com/torvalds/linux/blob/master/samples/pktgen/pktgen_sample03_burst_single_flow.sh][pktgen_sample03_burst_single_flow.sh]] (64B packet size)
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp-multi-buff-stack.png]]
-** Slide: XDP multi-buffers: new BPF helpers (1/5)			   :export:
+
+* Slide: XDP multi-buff patchset - BPF-helpers                       :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+/New/ *BPF-helpers*
+
+** Slide: XDP multi-buffers: new BPF helpers (1/5)                  :export:
 - /bpf_xdp_get_buff_len/:
   - BPF helper to compute non-linear buffer length
     - linear + paged
@@ -253,7 +262,7 @@ static unsigned long bpf_xdp_copy(void *dst_buff, const void *ctx,
 }
 #+end_src
 
-** Slide: XDP multi-buffers: stack support				   :export:
+* Slide: XDP multi-buffers: stack support                            :export:
 - XDP return path
 #+begin_src C
 void xdp_return_frame_rx_napi(struct xdp_frame *xdpf)
@@ -274,7 +283,14 @@ out:
 }
 #+end_src
 
-** Slide: XDP multi-buffers support for mvneta (1/5)			   :export:
+* Slide: XDP multi-buff patchset - *driver* changes                  :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Changes for Marvell *driver*: /mvneta/
+
+** Slide: XDP multi-buffers support for mvneta (1/5)                :export:
 - Modify drivers rx NAPI loop
   - Process all RX descriptor segments building *xdp_buff*
     - =mvneta_swbm_rx_frame()=
@@ -366,7 +382,8 @@ static int mvneta_xdp_submit_frame(..., struct xdp_frame *xdpf, ...)
 #+ATTR_html: :width 75%
 [[file:images/ip-link.png]]
 
-** Slide: XDP multi-buffers: future development (1/2)			   :export:
+* Slide: Future development                                          :export:
+** Slide: XDP multi-buffers: future development (1/2)               :export:
 - XDP driver capabilities
   - XDP multi-buffers for *XDP_REDIRECT*
 - driver support
@@ -374,7 +391,7 @@ static int mvneta_xdp_submit_frame(..., struct xdp_frame *xdpf, ...)
   - ena (work-in-progress)
   - virtio-net
   - ...
-** Slide: XDP multi-buffers: future development (2/2)			   :export:
+** Slide: XDP multi-buffers: future development (2/2)               :export:
 - Relying on hw */Scatter-Gather (SG)/* support to modify shared buffers w/o allocating memory
   - reserve buffers to push/pop headers (e.g *VLAN* tag)
   - XDP /multicast/
