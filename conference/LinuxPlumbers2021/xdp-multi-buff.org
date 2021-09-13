@@ -78,7 +78,7 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
  - Constraints:
    - Fast conversion from *xdp_buff/xdp_frame* to SKBs
    - Support non-linear buffer and */not slow down/* single buffer use case
-   - How to satisfy /eBPF Direct-Access (DA)/ design?
+   - How to satisfy /BPF Direct-Access (DA)/ design?
 
 * Slide: XDP multi-buffers                                           :export:
 :PROPERTIES:
@@ -87,7 +87,7 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 [[https://patchwork.kernel.org/project/netdevbpf/list/?series=544967][Work-in-progress]]
 - xdp_buff and xdp_frame
 - General requirements/proposed solution
-- xdp_adjust_data eBPF helper
+- xdp_adjust_data BPF helper
 - XDP multi-buffers for mvneta
 
 ** Slide: xdp_buff: let's not use the skb	(1/2)				   :export:
@@ -135,9 +135,9 @@ enum xdp_buff_flags {
 - [[https://github.com/torvalds/linux/blob/master/samples/pktgen/pktgen_sample03_burst_single_flow.sh][pktgen_sample03_burst_single_flow.sh]] (64B packet size)
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp-multi-buff-stack.png]]
-** Slide: XDP multi-buffers: new eBPF helpers (1/5)			   :export:
+** Slide: XDP multi-buffers: new BPF helpers (1/5)			   :export:
 - /bpf_xdp_get_buff_len/:
-  - eBPF helper to compute non-linear buffer length
+  - BPF helper to compute non-linear buffer length
     - linear + paged
 #+begin_src C
 BPF_CALL_1(bpf_xdp_get_buff_len, struct  xdp_buff*, xdp)
@@ -155,7 +155,7 @@ BPF_CALL_1(bpf_xdp_get_buff_len, struct  xdp_buff*, xdp)
 }
 #+end_src
 
-** Slide: XDP multi-buffers: new eBPF helpers (2/5)			   :export:
+** Slide: XDP multi-buffers: new BPF helpers (2/5)			   :export:
 - /bpf_xdp_mb_adjust_tail/:
   - run by *bpf_xdp_adjust_tail()* helper for */mb/* xdp_buff
 #+begin_src C
@@ -180,7 +180,7 @@ static int bpf_xdp_mb_adjust_tail(struct xdp_buff *xdp, int offset)
 }
 #+end_src
 
-** Slide: XDP multi-buffers: new eBPF helpers (3/5)			   :export:
+** Slide: XDP multi-buffers: new BPF helpers (3/5)			   :export:
 - /bpf_xdp_adjust_data/:
 #+begin_src C
 BPF_CALL_2(bpf_xdp_adjust_data, struct xdp_buff *, xdp, u32, offset)
@@ -205,7 +205,7 @@ BPF_CALL_2(bpf_xdp_adjust_data, struct xdp_buff *, xdp, u32, offset)
 }
 #+end_src
 
-** Slide: XDP multi-buffers: new eBPF helpers (4/5)			   :export:
+** Slide: XDP multi-buffers: new BPF helpers (4/5)			   :export:
 - /bpf_xdp_adjust_data()/ move data pointers in the selected fragment
   - *data* and *data_end* must be moved back to the original position
 #+begin_src C
@@ -228,7 +228,7 @@ out:
 }
 #+end_src
 
-** Slide: XDP multi-buffers: new eBPF helpers (5/5)			   :export:
+** Slide: XDP multi-buffers: new BPF helpers (5/5)			   :export:
 - /bpf_xdp_output/ and /bpf_perf_event_output/:
   - Helpers are updated and can copy the content of all buffers
 #+begin_src C
@@ -279,10 +279,10 @@ out:
     - =mvneta_swbm_rx_frame()=
     - =mvneta_swbm_add_rx_fragment()=
       - set /XDP_FLAGS_MULTI_BUFF/ for multi-descriptor frames
-  - Run the eBPF program when */all/* descriptors are processed
+  - Run the BPF program when */all/* descriptors are processed
   - Change /XDP_TX/ and /ndo_xdp_xmit/ to map non-linear buffers
     - =mvneta_xdp_submit_frame()=
-  - Remove MTU check loading the eBPF program
+  - Remove MTU check loading the BPF program
     - =mvneta_xdp_setup()=
 ** Slide: XDP multi-buffers support for mvneta (2/5)			   :export:
 - =mvneta_swbm_add_rx_fragment()= runs on nth descriptor (n > 1)
