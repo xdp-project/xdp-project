@@ -112,7 +112,7 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 [[file:images/xdp-multibuff.png]]
 
 ** Slide: Keep single buffer fast!						   :export:
-- */flags/* capability field in *xdp_buff/xdp_frame*
+- Add */flags/* capability field in *xdp_buff/xdp_frame*
   - /XDP_FLAGS_MULTI_BUFF/ bit
 #+begin_src C
 struct xdp_buff {
@@ -126,8 +126,9 @@ enum xdp_buff_flags {
       ...
 };
 #+end_src
-- The drv will set /XDP_FLAGS_MULTI_BUFF/ only for multi-descriptor frames
-- XDP code will check fragments */only/* if  /XDP_FLAGS_MULTI_BUFF/ is set
+- Driver will set /XDP_FLAGS_MULTI_BUFF/ only for multi-descriptor frames
+- XDP code will check fragments */only/* if /XDP_FLAGS_MULTI_BUFF/ is set
+  - Point: Avoid touching cache-line (for skb_shared_info) unless needed
 
 ** Slide: XDP multi-buffers overhead					   :export:
 - Intel(R) Xeon(R) CPU E5-2690 v4 @ 2.60GHz
