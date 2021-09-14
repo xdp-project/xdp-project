@@ -112,7 +112,7 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp-multibuff.png]]
 
-* Slide: Keep single buffer fast!                                    :export:
+** Slide: Keep single buffer fast!                                    :export:
 - Add */flags/* capability field in *xdp_buff/xdp_frame*
   - /XDP_FLAGS_MULTI_BUFF/ bit
 #+begin_src C
@@ -138,7 +138,28 @@ enum xdp_buff_flags {
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp-multi-buff-stack.png]]
 
-* Slide: XDP multi-buff patchset - BPF-helpers                       :export:
+** Slide: XDP multi-buffers: stack support                            :export:
+- XDP return path
+#+begin_src C
+void xdp_return_frame_rx_napi(struct xdp_frame *xdpf)
+{
+	struct skb_shared_info *sinfo = xdp_get_shared_info_from_frame(xdpf);
+	int i;
+
+	if (likely(!xdp_frame_is_mb(xdpf)))
+		goto out;
+
+	for (i = 0; i < sinfo->nr_frags; i++) {
+		struct page *page = skb_frag_page(&sinfo->frags[i]);
+
+		__xdp_return(page_address(page), &xdpf->mem, true, NULL);
+	}
+out:
+	__xdp_return(xdpf->data, &xdpf->mem, true, NULL);
+}
+#+end_src
+
+* Slide: XDP multi-buffers patchset - BPF-helpers                       :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -178,7 +199,6 @@ static int bpf_xdp_mb_adjust_tail(struct xdp_buff *xdp, int offset)
       } else { /* shrink frags */
             for (i = sinfo->nr_frags - 1; i >= 0 && abs(offset) > 0; i--) {
                   if (unlikely(skb_frag_size(&sinfo->frags[i]) == shrink)) {
-                        ...
                         __xdp_return(page_address(skb_frag_page(&sinfo->frags[i])), ...);
                   } else {
                         skb_frag_size_set(&sinfo->frags[i],
@@ -262,28 +282,7 @@ static unsigned long bpf_xdp_copy(void *dst_buff, const void *ctx,
 }
 #+end_src
 
-* Slide: XDP multi-buffers: stack support                            :export:
-- XDP return path
-#+begin_src C
-void xdp_return_frame_rx_napi(struct xdp_frame *xdpf)
-{
-	struct skb_shared_info *sinfo = xdp_get_shared_info_from_frame(xdpf);
-	int i;
-
-	if (likely(!xdp_frame_is_mb(xdpf)))
-		goto out;
-
-	for (i = 0; i < sinfo->nr_frags; i++) {
-		struct page *page = skb_frag_page(&sinfo->frags[i]);
-
-		__xdp_return(page_address(page), &xdpf->mem, true, NULL);
-	}
-out:
-	__xdp_return(xdpf->data, &xdpf->mem, true, NULL);
-}
-#+end_src
-
-* Slide: XDP multi-buff patchset - *driver* changes                  :export:
+* Slide: XDP multi-buffers patchset - *driver* changes                  :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -383,6 +382,10 @@ static int mvneta_xdp_submit_frame(..., struct xdp_frame *xdpf, ...)
 [[file:images/ip-link.png]]
 
 * Slide: Future development                                          :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
 ** Slide: XDP multi-buffers: future development (1/2)               :export:
 - XDP driver capabilities
   - XDP multi-buffers for *XDP_REDIRECT*
