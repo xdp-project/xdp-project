@@ -1,0 +1,24 @@
+name: Pages deploy
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Prepare packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install emacs-nox
+      - name: Build
+        run: make
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@4.1.5
+        with:
+          branch: master
+          folder: build
+          repository-name: xdp-project/xdp-project.github.io
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
