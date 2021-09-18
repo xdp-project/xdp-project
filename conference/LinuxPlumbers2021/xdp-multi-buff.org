@@ -394,6 +394,9 @@ static int mvneta_xdp_submit_frame(..., struct xdp_frame *xdpf, ...)
   - ena (work-in-progress)
   - virtio-net
   - ...
+- xdp_adjust_data BPF helper
+  - continue upstream discussion
+
 ** Slide: XDP multi-buffers: future development (2/2)               :export:
 - Relying on hw */Scatter-Gather (SG)/* support to modify shared buffers w/o allocating memory
   - reserve buffers to push/pop headers (e.g *VLAN* tag)
