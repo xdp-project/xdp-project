@@ -395,7 +395,9 @@ static int mvneta_xdp_submit_frame(..., struct xdp_frame *xdpf, ...)
   - virtio-net
   - ...
 - xdp_adjust_data BPF helper
-  - continue upstream discussion
+   - void *xdp_mb_pointer(... , u32 len, void *buf)
+     - ~ =skb_header_pointer()=
+   - void *xdp_mb_pointer_flush(..., u32 len, void *buf)
 
 ** Slide: XDP multi-buffers: future development (2/2)               :export:
 - Relying on hw */Scatter-Gather (SG)/* support to modify shared buffers w/o allocating memory
