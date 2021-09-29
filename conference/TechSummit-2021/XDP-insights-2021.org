@@ -248,7 +248,15 @@ If you forgot OSI model:
 
 @@html:</small>@@
 
-* Slide: Multiple XDP programs on a single interface                :export:
+* Slide: XDP pain points /resolved/                                  :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+[[https://github.com/xdp-project/xdp-project/blob/master/conference/LinuxPlumbers2019/xdp-distro-view.org][Followup]] to Linux Plumber 2019: [[https://www.linuxplumbersconf.org/event/4/contributions/460/][XDP the distro view]]
+ - Some of the *pain points* have been /resolved/
+
+** Slide: Multiple XDP programs on a single interface               :export:
 
 @@html:<small>@@
 [[https://github.com/xdp-project/xdp-project/blob/master/conference/LinuxPlumbers2019/xdp-distro-view.org][Followup]] to Linux Plumber 2019: [[https://www.linuxplumbersconf.org/event/4/contributions/460/][XDP the distro view]]
@@ -259,7 +267,20 @@ The library [[https://github.com/xdp-project/xdp-tools/blob/master/lib/libxdp/][
  - See [[https://github.com/xdp-project/xdp-tools/blob/master/lib/libxdp/README.org#the-dispatcher-program][dispatcher]] API (=xdp_multiprog__*=) in README
  - Depend on kernel feature =freplace= (read as: function replace)
 
+** Slide: XDP "tcpdump" packet capture                              :export:
 
+Tool 'tcpdump' does *not see all packets* anymore.
+  - E.g XDP_DROP and XDP_REDIRECT etc.
+
+New tool '[[https://github.com/xdp-project/xdp-tools/tree/master/xdp-dump][xdpdump]]' (available via [[https://github.com/xdp-project/xdp-tools][xdp-tools]])
+ - Debug XDP programs already loaded on an interface
+ - Packets can be *dumped/inspected*:
+   - /Before/ on *entry* to XDP program
+   - /After/ at *exit* from an XDP program
+     - Furthermore: at *exit* the XDP /action/ is also /captured/
+     - /Can inspect XDP_DROP packets!/
+ - Use Kernel features =fentry= + =fexit=
+   - Also works with multi-prog dispatcher API
 
 * Emacs end-tricks                                                 :noexport:
 
