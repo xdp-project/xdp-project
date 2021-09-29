@@ -164,6 +164,20 @@ Some */quick advice/* to follow
  - Get Kernel with /BTF/ (BPF Type Format) support
  - Use *new* /BPF-maps/ definitions (".maps" section) /with BTF/ support
 
+* Slide: BPF development is hard                                     :export:
+
+/BPF superpowers/ - *not easy to use* - */sorry/*
+ - Taming and learning is challenging
+
+Know this: *BPF development is hard*
+ - Requires understanding internal kernel functions
+ - Avail BPF features depend on LLVM compiler versions
+ - Developers will experience: /Verfier/ */rejecting/* programs
+ - Coding in Restricted C and passing *verifier is frustrating*
+   - Corner-cases due to LLVM can be the issue
+ - Troubleshooting event based BPF-prog running kernel side is challenging
+
+
 * Emacs end-tricks                                                 :noexport:
 
 This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
