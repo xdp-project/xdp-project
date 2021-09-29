@@ -40,6 +40,16 @@ programmable packet processing in the Operating System Kernel.
 
 Talk will also cover future work and planned extensions to XDP.
 
+* Brainstorm notes                                                 :noexport:
+
+Make them aware of BPF/XDP communities
+ - Mention: xdp-newbies@vger.kernel.org
+
+BPF 7-years (and XDP 5 years)
+ - Congrats, *but* evolution of BPF features
+ - Evolved
+ - Resulted in many out-dated Google search articles
+ - Old outdated approaches are used as best-practices 
 
 * Slide: TEST-slide                                                  :export:
 
