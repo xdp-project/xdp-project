@@ -200,6 +200,18 @@ Focus on BPF for networking
  - /TC-BPF/ hooks are *equally important* for practical use-cases
  - BPF hooks for cgroups can also be useful for containers
 
+** Slide: What is XDP?                                              :export:
+
+XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
+ - /New programmable layer in-front/ of traditional network stack
+   - Read, modify, drop, redirect or pass
+   - For L2-L3 use-cases: seeing x10 performance improvements!
+ - *Avoiding* /memory allocations/
+   - No SKB allocations and no-init (memset zero 4 cache-lines)
+ - Adaptive *bulk* processing of frames
+ - Very /early access/ to frame (in driver code *after DMA sync*)
+ - Ability to */skip/ (large parts) of kernel /code/*
+   - Evolve XDP via /BPF-helpers/
 
 * Emacs end-tricks                                                 :noexport:
 
