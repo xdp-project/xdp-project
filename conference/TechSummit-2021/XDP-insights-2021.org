@@ -12,7 +12,6 @@
 #+OPTIONS: reveal_width:1600 reveal_height:900
 #+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
 
-
 * For conference: Tech Summit at Fastly                            :noexport:
 
 Request from Fastly engineer Sanjay Rao (know from Netfilter workshop):
@@ -189,6 +188,17 @@ Remember to *reach out to* /BPF communities/
  - XDP-newbies: mailto:xdp-newbies@vger.kernel.org
  - GitHub project: https://github.com/xdp-project
  - IRC on [[https://www.oftc.net/][oftc.net]] channel /#xdp/
+
+* Slide: BPF networking                                              :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Focus on BPF for networking
+
+ - /XDP/ (eXpress Data Path) is *our focus*
+ - /TC-BPF/ hooks are *equally important* for practical use-cases
+ - BPF hooks for cgroups can also be useful for containers
 
 
 * Emacs end-tricks                                                 :noexport:
