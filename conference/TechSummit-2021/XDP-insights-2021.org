@@ -248,6 +248,18 @@ If you forgot OSI model:
 
 @@html:</small>@@
 
+* Slide: Multiple XDP programs on a single interface                :export:
+
+@@html:<small>@@
+[[https://github.com/xdp-project/xdp-project/blob/master/conference/LinuxPlumbers2019/xdp-distro-view.org][Followup]] to Linux Plumber 2019: [[https://www.linuxplumbersconf.org/event/4/contributions/460/][XDP the distro view]]
+@@html:</small>@@
+
+The library [[https://github.com/xdp-project/xdp-tools/blob/master/lib/libxdp/][libxdp]] (available via [[https://github.com/xdp-project/xdp-tools][xdp-tools]])
+ - Have option of loading *multiple XDP programs* on a /single interface/
+ - See [[https://github.com/xdp-project/xdp-tools/blob/master/lib/libxdp/README.org#the-dispatcher-program][dispatcher]] API (=xdp_multiprog__*=) in README
+ - Depend on kernel feature =freplace= (read as: function replace)
+
+
 
 * Emacs end-tricks                                                 :noexport:
 
