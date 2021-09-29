@@ -51,7 +51,13 @@ BPF 7-years (and XDP 5 years)
  - Resulted in many out-dated Google search articles
  - Old outdated approaches are used as best-practices 
 
-* Slide: TEST-slide                                                  :export:
+* Slide: Overview: What will you /learn/?                            :export:
+
+First part: Covers *what is BPF?*
+ - How this technology fundamentally change the existing OS-model
+
+*/FIXME/*: Add MORE to this slide
+
 
 * Colors in slides                                                 :noexport:
 
