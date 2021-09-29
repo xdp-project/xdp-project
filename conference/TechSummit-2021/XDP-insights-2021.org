@@ -58,10 +58,15 @@ BPF 7-years (and XDP 5 years)
 
 * Slide: Overview: What will you /learn/?                            :export:
 
-First part: Covers *what is BPF?*
- - How this technology fundamentally change the existing OS-model
+/What is BPF/ *really* ?
+ - How this technology fundamentally *change existing OS-model*
 
-*/FIXME/*: Add MORE to this slide
+Taming /BPF superpower/ - is *not easy*
+ - BPF "user experience" - could be better!
+
+/What is XDP/?
+ - and what *pain points* have recently been /resolved/
+
 
 * Slide: What is BPF ?                                               :export:
 
