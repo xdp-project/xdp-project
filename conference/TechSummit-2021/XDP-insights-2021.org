@@ -162,20 +162,29 @@ Some */quick advice/* to follow
  - Get Kernel with /BTF/ (BPF Type Format) support
  - Use *new* /BPF-maps/ definitions (".maps" section) /with BTF/ support
 
-* Slide: BPF development is hard                                     :export:
+
+* Slide: Taming /BPF superpowers/ - *not easy*                       :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
 
 /BPF superpowers/ - *not easy to use* - */sorry/*
  - Taming and learning is challenging
 
+BPF make extending Kernel /easier/ *than Kernel modules*
+ - *Don't confused with "easy to use"*
+
+** Slide: BPF development is hard                                   :export:
+
 Know this: *BPF development is hard*
  - Requires understanding internal kernel functions
- - Avail BPF features depend on LLVM compiler versions
+ - Avail BPF /features/ depend on LLVM *compiler versions*
  - Developers will experience: /Verfier/ */rejecting/* programs
  - Coding in Restricted C and passing *verifier is frustrating*
    - Corner-cases due to LLVM can be the issue
  - Troubleshooting event based BPF-prog running kernel side is challenging
 
-* Slide: BPF user experience - could be better                       :export:
+** Slide: BPF user experience - could be better                     :export:
 
 BPF is /great/ revolutionary *technology*!
  - */BUT/* /end-user/ deployment *experience* can be *rough*
@@ -184,9 +193,9 @@ Recommend watching recent LPC 2021 talk by CloudFlare
  - Talk: [[https://linuxplumbersconf.org/event/11/contributions/933/][BPF user experience rough edges]]
  - Covers 9 common pitfalls (with sad pandas)
 
-* Slide: BPF communities                                             :export:
+** Slide: BPF communities                                           :export:
 
-Remember to *reach out to* /BPF communities/
+Remember to *reach out to* /BPF communities/ when stuck
 
  - BPF Kernel developers: mailto:bpf@vger.kernel.org
  - Slack channel: https://ebpf.io/slack
@@ -197,7 +206,7 @@ Remember to *reach out to* /BPF communities/
  - GitHub project: https://github.com/xdp-project
  - IRC on [[https://www.oftc.net/][oftc.net]] channel /#xdp/
 
-* Slide: BPF example code                                            :export:
+** Slide: BPF example code                                          :export:
 
 *Best documentation* is BPF /example code/
 
