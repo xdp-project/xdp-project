@@ -40,6 +40,13 @@ programmable packet processing in the Operating System Kernel.
 
 Talk will also cover future work and planned extensions to XDP.
 
+* Colors in slides                                                 :noexport:
+
+Text colors on slides are chosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
 * Brainstorm notes                                                 :noexport:
 
 Make them aware of BPF/XDP communities
@@ -58,13 +65,29 @@ First part: Covers *what is BPF?*
 
 */FIXME/*: Add MORE to this slide
 
+* Slide: What is BPF ?                                               :export:
 
-* Colors in slides                                                 :noexport:
+From: https://ebpf.io/what-is-ebpf
+#+begin_quote
+eBPF is a revolutionary technology that can run sandboxed programs in the Linux
+kernel without changing kernel source code or loading a kernel module
+#+end_quote
 
-Text colors on slides are chosen via org-mode italic/bold high-lighting:
- - /italic/ = /green/
- - *bold*   = *yellow*
- - */italic-bold/* = red
+/BPF/ is a *technology name*: */no longer an acronym/*
+
+*Rate of innovation* at the operating system level: */Traditionally slow/*
+ - BPF enables things at OS-level that were not possible before
+ - BPF will /radically increase/ rate of innovation
+
+** Slide: *Traditional* Kernel development process
+
+[[file:images/bpf_comic01_scale.png]]
+
+** Slide: *BPF* development process
+
+[[file:images/bpf_comic02_scale.png]]
+
+
 
 * Emacs end-tricks                                                 :noexport:
 
