@@ -125,6 +125,20 @@ Closer look at the BPF components:
  - *Sandboxed* by the BPF /Verifier/
    * Limits and verifies memory access and instructions limit
 
+* Slide: BPF concepts: context, maps and helpers                     :export:
+
+Each BPF *runtime hook* gets a *pointer to a* /context/ struct
+ - BPF bytecode has access to context (read/write limited)
+   * Verifier adjust bytecode when accessing struct members (for safety)
+
+The BPF program itself is stateless
+ - *Concept BPF* /maps/ can be used to create state
+ - Maps are basically *key = value* construct
+ - Maps can hide complex features implemented on Kernel side
+
+*BPF* /helpers/ are used for
+ - *Calling Kernel functions*, to obtain info/state from kernel
+
 * Slide: BPF functional areas                                        :export:
 
 BPF have hooks ALL over the kernel
