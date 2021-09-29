@@ -188,6 +188,17 @@ Remember to *reach out to* /BPF communities/
  - GitHub project: https://github.com/xdp-project
  - IRC on [[https://www.oftc.net/][oftc.net]] channel /#xdp/
 
+* Slide: BPF example code                                            :export:
+
+*Best documentation* is BPF /example code/
+
+Under /XDP-project/: [[https://github.com/xdp-project/bpf-examples][github.com/xdp-project/]]
+ - [[https://github.com/xdp-project/bpf-examples][bpf-examples]] - Practical BPF examples and build environment
+ - [[https://github.com/xdp-project/xdp-tutorial][xdp-tutorial]] - Tutorial with assignments (*/Warning/*: use old BPF-maps)
+ - [[https://github.com/xdp-project/xdp-tools][xdp-tools]] - Tools (xdpdump) + libxdp for /multiple XDP-progs/ on interface
+ - [[https://github.com/xdp-project/xdp-cpumap-tc][xdp-cpumap-tc]] - Show XDP + TC-BPF solving Qdisc lock scaling
+
+
 * Slide: BPF networking                                              :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
