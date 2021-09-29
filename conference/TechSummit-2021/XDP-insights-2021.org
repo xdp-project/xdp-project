@@ -109,7 +109,23 @@ As /System Developers/: */Adjust your mental model/*
  - /No need/ to bring everything into *userspace*
  - Can task be solve via /kernel-side/ *inline* processing and manipulation?
 
+Utilize *BPF* /superpowers/
+ - Linux Kernel have become a flexible tool at your disposal
+ - Run *your own* BPF /kernel-mode application/ inside the kernel
 
+* Slide: BPF components                                            :export:
+
+Closer look at the BPF components:
+
+ - /Bytecode/ - Architecture independent *Instruction Set*
+   * /JIT/ to native machine instructions (after loading into kernel)
+
+ - /Runtime environment/ - Linux kernel
+   * *Event based* BPF-hooks all over the kernel
+   * Per hook limited access to kernel functions via *BPF-helpers*
+
+ - *Sandboxed* by the BPF /Verifier/
+   * Limits and verifies memory access and instructions limit
 
 * Emacs end-tricks                                                 :noexport:
 
