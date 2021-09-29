@@ -127,6 +127,18 @@ Closer look at the BPF components:
  - *Sandboxed* by the BPF /Verifier/
    * Limits and verifies memory access and instructions limit
 
+* Slide: BPF functional areas                                        :export:
+
+BPF have hooks ALL over the kernel
+ - More interesting: What *functional areas* are these being used?
+
+What (current) areas are BPF being used within?
+ - /Networking/ (ahead as BPF started in networking)
+   - Network control and data plane implemented in BPF (TC-BPF/XDP)
+   - TCP Congestion Control implemented in BPF
+ - /Security/
+ - /Observability/ (tracing)
+
 * Emacs end-tricks                                                 :noexport:
 
 This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
