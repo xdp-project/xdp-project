@@ -87,7 +87,7 @@ kernel without changing kernel source code or loading a kernel module
 
 [[file:images/bpf_comic02_scale.png]]
 
-* Slide: What is BPF from OS-vendor perspective                    :export:
+* Slide: What is BPF from OS-vendor perspective                      :export:
 
 From an OS vendor (like Red Hat) perspective
 - BPF is a  */fundamental change/* to a 50-year old *kernel model*
@@ -98,10 +98,18 @@ From an OS vendor (like Red Hat) perspective
   - Kernel developers: Do lose some control
   - ... but positive for rate of innovation
 
-** Slide: A new Operating System Model                            :export:
+** Slide: A new Operating System Model                              :export:
 
 Modern Linux: becoming Microkernel-ish ([[http://www.brendangregg.com/blog/2019-12-02/bpf-a-new-type-of-software.html][from Brendan Gregg]])
 [[file:images/bpf-os-model02.jpg]]
+
+** Slide: Adjust mental model of system development                 :export:
+
+As /System Developers/: */Adjust your mental model/*
+ - /No need/ to bring everything into *userspace*
+ - Can task be solve via /kernel-side/ *inline* processing and manipulation?
+
+
 
 * Emacs end-tricks                                                 :noexport:
 
