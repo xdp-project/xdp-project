@@ -82,11 +82,11 @@ kernel without changing kernel source code or loading a kernel module
  - BPF enables things at OS-level that were not possible before
  - BPF will /radically increase/ rate of innovation
 
-** Slide: *Traditional* Kernel development process
+** Slide: *Traditional* Kernel development process                  :export:
 
 [[file:images/bpf_comic01_scale.png]]
 
-** Slide: *BPF* development process
+** Slide: *BPF* development process                                 :export:
 
 [[file:images/bpf_comic02_scale.png]]
 
@@ -116,7 +116,7 @@ Utilize *BPF* /superpowers/
  - Linux Kernel have become a flexible tool at your disposal
  - Run *your own* BPF /kernel-mode application/ inside the kernel
 
-* Slide: BPF components                                            :export:
+* Slide: BPF components                                              :export:
 
 Closer look at the BPF components:
 
@@ -166,7 +166,7 @@ Happy birthday BPF!
  - XDP initial commit is approx 5 years + 2 months
 
 Exciting things ahead
- - [[https://ebpf.io/charter/][eBPF Foundation]] (ebpf.io/charter) work towards standardisation
+ - [[https://ebpf.io/charter/][eBPF Foundation]] (ebpf.io/charter) work towards *standardisation*
  - Microsoft Windows introduce BPF in their kernel
 
 ** Slide: Digital age and *out-of-date* documentation               :export:
@@ -318,6 +318,7 @@ New tool '[[https://github.com/xdp-project/xdp-tools/tree/master/xdp-dump][xdpdu
      - /Can inspect XDP_DROP packets!/
  - Use Kernel features =fentry= + =fexit=
    - Also works with multi-prog dispatcher API
+
 
 * Emacs end-tricks                                                 :noexport:
 
