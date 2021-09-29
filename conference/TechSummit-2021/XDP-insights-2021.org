@@ -5,7 +5,6 @@
 #+REVEAL_THEME: redhat
 #+REVEAL_TRANS: linear
 #+REVEAL_MARGIN: 0
-#+REVEAL_EXTRA_CSS: ../reveal.js/css/theme/asciinema-player.css
 #+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
 #+REVEAL_ROOT: ../reveal.js
 #+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
@@ -217,6 +216,26 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp_architecture.png]]
 
+* Slide: Why is XDP needed?                                        :export:
+
+This is about *the Kernel networking stack staying relevant*
+ - For emerging use-cases and areas
+
+Linux /networking stack/ optimized for layers *L4-L7*
+ - Missing something to address L2-L3 use-cases
+
+/XDP operate/ at layers *L2-L3*
+ - *L4* /load-balancer/ possible when *no IP-fragmentation* occurs
+
+@@html:<small>@@
+
+If you forgot OSI model:
+ - L2=Ethernet
+ - L3=IPv4/IPv6
+ - L4=TCP/UDP
+ - L7=Applications
+
+@@html:</small>@@
 
 
 * Emacs end-tricks                                                 :noexport:
