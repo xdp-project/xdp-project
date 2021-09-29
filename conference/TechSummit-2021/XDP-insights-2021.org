@@ -177,6 +177,19 @@ Know this: *BPF development is hard*
    - Corner-cases due to LLVM can be the issue
  - Troubleshooting event based BPF-prog running kernel side is challenging
 
+* Slide: BPF communities                                             :export:
+
+Remember to *reach out to* /BPF communities/
+
+ - BPF Kernel developers: mailto:bpf@vger.kernel.org
+ - Slack channel: https://ebpf.io/slack
+ - LLVM compiler questions: mailto:iovisor-dev@lists.iovisor.org
+
+/XDP/ communities
+ - XDP-newbies: mailto:xdp-newbies@vger.kernel.org
+ - GitHub project: https://github.com/xdp-project
+ - IRC on [[https://www.oftc.net/][oftc.net]] channel /#xdp/
+
 
 * Emacs end-tricks                                                 :noexport:
 
