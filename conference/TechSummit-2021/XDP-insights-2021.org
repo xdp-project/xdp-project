@@ -320,6 +320,19 @@ New tool '[[https://github.com/xdp-project/xdp-tools/tree/master/xdp-dump][xdpdu
    - Also works with multi-prog dispatcher API
 
 
+* Slide: XDP future development                                      :export:
+
+XDP /multi-buff/
+ - Allowing larger MTUs, Jumbo-frames and GRO/GSO compatibility
+
+XDP-/hints/
+ - Extracting NIC hardware hints (from RX-descriptor)
+ - Traditional hints: RX-hash, RX-checksum, VLAN, RX-timestamp
+
+Drivers /without/ *SKB* knowledge
+ - based only on =xdp_frame=
+ - Depend on both XDP-hints + XDP multi-buff
+
 * Emacs end-tricks                                                 :noexport:
 
 This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
