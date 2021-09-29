@@ -175,6 +175,15 @@ Know this: *BPF development is hard*
    - Corner-cases due to LLVM can be the issue
  - Troubleshooting event based BPF-prog running kernel side is challenging
 
+* Slide: BPF user experience - could be better                       :export:
+
+BPF is /great/ revolutionary *technology*!
+ - */BUT/* /end-user/ deployment *experience* can be *rough*
+
+Recommend watching recent LPC 2021 talk by CloudFlare
+ - Talk: [[https://linuxplumbersconf.org/event/11/contributions/933/][BPF user experience rough edges]]
+ - Covers 9 common pitfalls (with sad pandas)
+
 * Slide: BPF communities                                             :export:
 
 Remember to *reach out to* /BPF communities/
