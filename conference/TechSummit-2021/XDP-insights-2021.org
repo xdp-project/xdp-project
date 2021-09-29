@@ -139,6 +139,31 @@ What (current) areas are BPF being used within?
  - /Security/
  - /Observability/ (tracing)
 
+* Slide: /Happy/ 7th /Birthday/ BPF                                  :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Happy birthday BPF!
+ - 7 years old (See Alexei's post [[https://lore.kernel.org/all/20210926203409.kn3gzz2eaodflels@ast-mbp.dhcp.thefacebook.com/][Sunday 26 September 2021]])
+ - XDP initial commit is approx 5 years + 2 months
+
+Exciting things ahead
+ - [[https://ebpf.io/charter/][eBPF Foundation]] (ebpf.io/charter) work towards standardisation
+ - Microsoft Windows introduce BPF in their kernel
+
+** Slide: Digital age and *out-of-date* documentation               :export:
+
+BPF + LLVM features evolved over time
+ - Google search results: /Many/ but *out-dated articles*
+ - See *outdated approaches* are used as best-practices */:-(/*
+
+Some */quick advice/* to follow
+ - Use /latest/ *LLVM compiler* (and =-target bpf=)
+ - Install /latest/ *pahole tool* (used for BTF generation)
+ - Get Kernel with /BTF/ (BPF Type Format) support
+ - Use *new* /BPF-maps/ definitions (".maps" section) /with BTF/ support
+
 * Emacs end-tricks                                                 :noexport:
 
 This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
