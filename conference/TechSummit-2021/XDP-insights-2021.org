@@ -59,7 +59,7 @@ BPF 7-years (and XDP 5 years)
 * Slide: Overview: What will you /learn/?                            :export:
 
 /What is BPF/ *really* ?
- - How this technology fundamentally *change existing OS-model*
+ - How this technology fundamentally *changes existing OS-model*
 
 Taming /BPF superpower/ - is *not easy*
  - BPF "user experience" - could be better!
@@ -110,10 +110,10 @@ Modern Linux: becoming Microkernel-ish ([[http://www.brendangregg.com/blog/2019-
 
 As /System Developers/: */Adjust your mental model/*
  - /No need/ to bring everything into *userspace*
- - Can task be solve via /kernel-side/ *inline* processing and manipulation?
+ - Can task be solved via /kernel-side/ *inline* processing and manipulation?
 
 Utilize *BPF* /superpowers/
- - Linux Kernel have become a flexible tool at your disposal
+ - Linux Kernel has become a flexible tool at your disposal
  - Run *your own* BPF /kernel-mode application/ inside the kernel
 
 * Slide: BPF components                                              :export:
@@ -134,11 +134,11 @@ Closer look at the BPF components:
 
 Each BPF *runtime hook* gets a *pointer to a* /context/ struct
  - BPF bytecode has access to context (read/write limited)
-   * Verifier adjust bytecode when accessing struct members (for safety)
+   * Verifier adjusts bytecode when accessing struct members (for safety)
 
 The BPF program itself is stateless
- - *Concept BPF* /maps/ can be used to create state
- - Maps are basically *key = value* construct
+ - BPF /maps/ can be used to create state
+ - Maps are basically *key = value* containers
  - Maps can hide complex features implemented on Kernel side
 
 *BPF* /helpers/ are used for
@@ -146,7 +146,7 @@ The BPF program itself is stateless
 
 * Slide: BPF functional areas                                        :export:
 
-BPF have hooks ALL over the kernel
+BPF has hooks ALL over the kernel
  - More interesting: What *functional areas* are these being used?
 
 What (current) areas are BPF being used within?
@@ -166,7 +166,7 @@ Happy birthday BPF!
  - XDP initial commit is approx 5 years + 2 months
 
 Exciting things ahead
- - [[https://ebpf.io/charter/][eBPF Foundation]] (ebpf.io/charter) work towards *standardisation*
+ - [[https://ebpf.io/charter/][eBPF Foundation]] (ebpf.io/charter) working towards *standardisation*
  - Microsoft Windows introduce BPF in their kernel
 
 ** Slide: Digital age and *out-of-date* documentation               :export:
@@ -190,14 +190,14 @@ Some */quick advice/* to follow
 /BPF superpowers/ - *not easy to use* - */sorry/*
  - Taming and learning is challenging
 
-BPF make extending Kernel /easier/ *than Kernel modules*
- - *Don't confused with "easy to use"*
+BPF makes extending Kernel /easier/ *than Kernel modules*
+ - *Don't confuse this with "easy to use"*
 
 ** Slide: BPF development is hard                                   :export:
 
 Know this: *BPF development is hard*
  - Requires understanding internal kernel functions
- - Avail BPF /features/ depend on LLVM *compiler versions*
+ - Available BPF /features/ depend on LLVM *compiler versions*
  - Developers will experience: /Verfier/ */rejecting/* programs
  - Coding in Restricted C and passing *verifier is frustrating*
    - Corner-cases due to LLVM can be the issue
@@ -231,7 +231,7 @@ Remember to *reach out to* /BPF communities/ when stuck
 
 Under /XDP-project/: [[https://github.com/xdp-project/bpf-examples][github.com/xdp-project/]]
  - [[https://github.com/xdp-project/bpf-examples][bpf-examples]] - Practical BPF examples and build environment
- - [[https://github.com/xdp-project/xdp-tutorial][xdp-tutorial]] - Tutorial with assignments (*/Warning/*: use old BPF-maps)
+ - [[https://github.com/xdp-project/xdp-tutorial][xdp-tutorial]] - Tutorial with assignments (*/Warning/*: uses old BPF-maps)
  - [[https://github.com/xdp-project/xdp-tools][xdp-tools]] - Tools (xdpdump) + libxdp for /multiple XDP-progs/ on interface
  - [[https://github.com/xdp-project/xdp-cpumap-tc][xdp-cpumap-tc]] - Show XDP + TC-BPF solving Qdisc lock scaling
 
@@ -254,7 +254,7 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
    - Read, modify, drop, redirect or pass
    - For L2-L3 use-cases: seeing x10 performance improvements!
  - *Avoiding* /memory allocations/
-   - No SKB allocations and no-init (memset zero 4 cache-lines)
+   - No SKB allocations and no-init (only zeroes 4 cache-lines per pkt)
  - Adaptive *bulk* processing of frames
  - Very /early access/ to frame (in driver code *after DMA sync*)
  - Ability to */skip/ (large parts) of kernel /code/*
