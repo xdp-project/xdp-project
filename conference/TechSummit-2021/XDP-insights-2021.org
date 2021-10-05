@@ -197,6 +197,7 @@ BPF makes extending Kernel /easier/ *than Kernel modules*
 ** Slide: BPF development is hard                                   :export:
 
 Know this: *BPF development is hard*
+ - *Mental model* mind-shift: Coding "/kernel-mode applications/"
  - Requires understanding internal kernel functions
  - Available BPF /features/ depend on LLVM *compiler versions*
  - Developers will experience: /Verfier/ */rejecting/* programs
