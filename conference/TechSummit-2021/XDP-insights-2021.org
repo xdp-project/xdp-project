@@ -287,6 +287,20 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp_architecture.png]]
 
+* Slide: XDP performance: both *latency* /and/ *throughput*          :export:
+
+XDP throughput and packet-per-second (PPS) performance super
+ - Real design *goal* is /improving/ *latency* /and/ *throughput* at same time
+
+Designed with /adaptive/ *bulking*
+ - Run as part of NAPI-poll (softirq) processing (/max 64/ frame budget)
+ - Pickup frames from *RX-ring* /if available/ (*/no waiting for bulks/*)
+ - End of drivers NAPI-poll function flush any pending xdp_frames
+ - Another driver *egress REDIRECT* (/devmap/) flush every /16/ frames
+ - REDIRECT to *another CPU* (/cpumap/) flush every /8/ frames
+ - As load increase, bulking opportunities happen, system scale to load
+
+
 * Slide: XDP pain points /resolved/                                  :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
