@@ -300,6 +300,19 @@ Designed with /adaptive/ *bulking*
  - REDIRECT to *another CPU* (/cpumap/) flush every /8/ frames
  - As load increase, bulking opportunities happen, system scale to load
 
+* Slide: XDP scaling across CPUs                                     :export:
+
+XDP /redirect/ to *another CPU* (via BPF /cpumap/ type)
+ - Scalability mechanism: let XDP control on that CPU netstack runs
+
+Allow to combine /fast/ */DDoS/* handing and *slower* /netstack/ on /same hardware/
+ - Some CPUs run dedicated /fast-path/ packet processing
+ - Delicate to other CPUs via XDP-redirect
+ - *Remote* /CPUs/ receive *raw* /xdp_frames/, next steps:
+   - Can (optionally) run XDP-prog for further filtering
+   - /Bulk allocate/ *SKBs* and /start/ *network stack* on this /CPU/
+ - */Attacker/* hitting netstack/app /slow-path/ *cannot influence* /fast-path/
+
 
 * Slide: XDP pain points /resolved/                                  :export:
 :PROPERTIES:
