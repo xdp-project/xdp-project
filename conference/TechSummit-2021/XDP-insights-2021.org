@@ -266,13 +266,13 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp_architecture.png]]
 
-* Slide: Why is XDP needed?                                        :export:
+* Slide: Why was an eXpress Data Path (XDP) needed?                  :export:
 
-This is about *the Kernel networking stack staying relevant*
- - For emerging use-cases and areas
+Linux /networking stack/ assumes layers *L4-L7* are needed for every packet
+ - Root-cause of slowdown: (relative) high initial RX cost per packet
 
-Linux /networking stack/ optimized for layers *L4-L7*
- - Missing something to address L2-L3 use-cases
+Needed to stay relevant as NIC speeds increase (time between packet small)
+ - New faster and earlier networking layer was needed to keep up.
 
 /XDP operate/ at layers *L2-L3*
  - *L4* /load-balancer/ possible when *no IP-fragmentation* occurs
