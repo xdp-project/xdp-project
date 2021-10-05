@@ -130,14 +130,14 @@ Closer look at the BPF components:
  - *Sandboxed* by the BPF /Verifier/
    * Limits and verifies memory access and instructions limit
 
-* Slide: BPF concepts: context, maps and helpers                     :export:
+* Slide: BPF /concepts/: context, maps and helpers                   :export:
 
 Each BPF *runtime hook* gets a *pointer to a* /context/ struct
  - BPF bytecode has access to context (read/write limited)
    * Verifier adjusts bytecode when accessing struct members (for safety)
 
 The BPF program itself is stateless
- - BPF /maps/ can be used to create state
+ - BPF /maps/ can be used to *create state*
  - Maps are basically *key = value* containers
  - Maps can hide complex features implemented on Kernel side
 
@@ -252,7 +252,7 @@ Focus on BPF for networking
 XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
  - /New programmable layer in-front/ of traditional network stack
    - Read, modify, drop, redirect or pass
-   - For L2-L3 use-cases: seeing x10 performance improvements!
+   - For L2-L3 use-cases: seeing /x10 performance/ improvements!
  - *Avoiding* /memory allocations/
    - No SKB allocations and no-init (SKB zeroes 4 cache-lines per pkt)
  - Adaptive *bulk* processing of frames
