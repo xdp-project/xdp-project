@@ -188,7 +188,8 @@ Some */quick advice/* to follow
 :END:
 
 /BPF superpowers/ - *not easy to use* - */sorry/*
- - Taming and learning is challenging
+ - Gain kernel level building block, that can be safely updated runtime
+ - Taming and learning-curve is challenging
 
 BPF makes extending Kernel /easier/ *than Kernel modules*
  - *Don't confuse this with "easy to use"*
