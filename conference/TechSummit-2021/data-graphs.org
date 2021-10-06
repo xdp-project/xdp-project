@@ -17,6 +17,7 @@ From xdp-paper: bench01_baseline.org
 |     5 | 24.995919 |    16.442723 |  7.497838 |  3.380752 |
 |     6 | 29.443869 |    19.518401 |  8.726498 |  4.001466 |
 
+** iptables graph
 
 #+BEGIN_SRC python :var fname="images/iptables_drop.svg" :var data=linux_iptables_drop :results file
 from matplotlib.legend_handler import HandlerLine2D
@@ -51,3 +52,83 @@ return fname
 #+RESULTS:
 [[file:images/iptables_drop.svg]]
 
+* XDP data
+
+From xdp-paper: bench01_baseline.org
+ - converted to Mpps
+
+Tuning done for PCI-express to scale:
+#+begin_quote
+Update (<2018-06-19 Tue>): Jesper found that the maximum scaled drop
+rate can be improved by enabling the mlx5 priv-flags
+rx_cqe_compress=on (and rx_striding_rq=off).  This confirms the PCIe
+bottleneck, as rx_cqe_compress reduce the transactions on PCIe by
+compressing the RX descriptors.
+
+One issue is that with rx_cqe_compress=on, the per core performance is
+slightly slower as it requires more CPU cycles to "decompress" the
+descriptors.
+#+end_quote
+
+#+tblname: xdp_drop_data_rx_cqe_compress
+| RXQs DROP | no_touch RX=1024 | no_touch RX=512 | read RX=1024 | read RX=512 |
+|-----------+------------------+-----------------+--------------+-------------|
+|         1 |        23.902641 |       23.863471 | 22.653821    |             |
+|         2 |        45.463076 |       45.514709 | 44.345271    |             |
+|         3 |        65.800412 |       67.796536 | cache-misses |             |
+|         4 |        84.563313 |       88.821307 | starts...    |             |
+|         5 |        99.105872 |       99.357978 |              |   98.758694 |
+|         6 |       108.118978 |      108.607056 |              |  105.077478 |
+
+Enable rx_cqe_compress=on cmdline:
+
+: ethtool --set-priv-flags mlx5p1 rx_cqe_compress on
+
+#+BEGIN_EXAMPLE
+$ ethtool --show-priv-flags mlx5p1
+Private flags for mlx5p1:
+rx_cqe_moder   : on
+tx_cqe_moder   : off
+rx_cqe_compress: on
+rx_striding_rq : off
+#+END_EXAMPLE
+
+** XDP graph
+
+#+BEGIN_SRC python :var fname="images/xdp_vs_iptables_drop.svg" :var ipt_data=linux_iptables_drop :var xdp_data=xdp_drop_data_rx_cqe_compress :results file
+from matplotlib.legend_handler import HandlerLine2D
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.rcParams['figure.figsize'] = [8.0+4.9, 4.5]
+
+cores, d_raw, d_filter, d_conntrack, d_firewalld = zip(*ipt_data)
+rxqs, d_xdp1024, d_xdp512, d_xdpR1, d_xdpR2 = zip(*xdp_data)
+
+plt.xkcd()
+fig = plt.figure()
+
+axes1 = fig.add_subplot(1,1, 1)
+axes1.plot(cores, d_raw, marker='o', label='iptables-raw')
+
+axes2 = fig.add_subplot(1,1, 1)
+axes2.plot(cores, d_filter, marker='x', label='iptables-filter')
+
+axes3 = fig.add_subplot(1,1, 1)
+axes3.plot(cores, d_conntrack, marker='x', label='conntrack')
+
+axes4 = fig.add_subplot(1,1, 1)
+axes4.plot(cores, d_firewalld, marker='x', label='standard-firewalld')
+
+axes5 = fig.add_subplot(1,1, 1)
+axes5.plot(cores, d_xdp512, marker='x', label='XDP_DROP')
+
+
+legend = plt.legend(loc='upper left')
+
+plt.title('RX-drop: XDP vs iptables')
+fig.savefig(fname)
+return fname
+#+END_SRC
+
+#+RESULTS:
+[[file:images/xdp_vs_iptables_drop.svg]]
