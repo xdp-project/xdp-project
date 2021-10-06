@@ -1,0 +1,53 @@
+#  -*- fill-column: 79; -*-
+#+TITLE: Org file with data to generate graphs
+
+
+* Linux iptables drop
+
+From xdp-paper: bench01_baseline.org
+ - converted to Mpps
+
+#+tblname: linux_iptables_drop
+| Cores | table raw | table filter | conntrack | firewalld |
+|-------+-----------+--------------+-----------+-----------|
+|     1 |  5.051787 |     3.319718 |  1.819409 |  0.721284 |
+|     2 | 10.226514 |     6.707809 |  3.274018 |  1.403399 |
+|     3 | 15.104793 |     9.944065 |  4.713610 |  2.036345 |
+|     4 | 20.075858 |    13.235307 |  6.189412 |  2.657446 |
+|     5 | 24.995919 |    16.442723 |  7.497838 |  3.380752 |
+|     6 | 29.443869 |    19.518401 |  8.726498 |  4.001466 |
+
+
+#+BEGIN_SRC python :var fname="images/iptables_drop.svg" :var data=linux_iptables_drop :results file
+from matplotlib.legend_handler import HandlerLine2D
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.rcParams['figure.figsize'] = [8.0+4.9, 4.5]
+
+cores, d_raw, d_filter, d_conntrack, d_firewalld = zip(*data)
+
+plt.xkcd()
+fig = plt.figure()
+
+axes1 = fig.add_subplot(1,1, 1)
+axes1.plot(cores, d_raw, marker='o', label='iptables-raw')
+
+axes2 = fig.add_subplot(1,1, 1)
+axes2.plot(cores, d_filter, marker='x', label='iptables-filter')
+
+axes3 = fig.add_subplot(1,1, 1)
+axes3.plot(cores, d_conntrack, marker='x', label='conntrack')
+
+axes4 = fig.add_subplot(1,1, 1)
+axes4.plot(cores, d_firewalld, marker='x', label='standard-firewalld')
+
+legend = plt.legend(loc='upper left')
+
+plt.title('iptables - RX-drop')
+fig.savefig(fname)
+return fname
+#+END_SRC
+
+#+RESULTS:
+[[file:images/iptables_drop.svg]]
+
