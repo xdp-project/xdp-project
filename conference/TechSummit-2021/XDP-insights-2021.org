@@ -299,12 +299,18 @@ System used for testing
  - NIC driver *mlx5*: Mellanox /ConnectX-5/ Ex (MT28800)
 
 ** Slide: XDP performance                                           :export:
-
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp_vs_iptables_drop.svg]]
 
 *XDP_DROP*: 100Gbit/s mlx5 max out at /108 Mpps/ (CPU E5-1650v4 @3.60GHz)
  - */PCIe tuning needed/* - NIC compress RX-descriptors (=rx_cqe_compress on=)
+
+** Slide: Zoom-in: on *iptables* /performance/ *tuning*             :export:
+#+ATTR_HTML: :class img-no-border
+[[file:images/iptables_drop.svg]]
+
+*iptables* can be /tuned/ to perform and scale well
+ - Especially if *avoiding* involving /conntrack/
 
 * Slide: XDP performance: both *latency* /and/ *throughput*          :export:
 
