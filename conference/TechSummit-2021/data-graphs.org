@@ -37,14 +37,14 @@ axes2 = fig.add_subplot(1,1, 1)
 axes2.plot(cores, d_filter, marker='x', label='iptables-filter')
 
 axes3 = fig.add_subplot(1,1, 1)
-axes3.plot(cores, d_conntrack, marker='x', label='conntrack')
+axes3.plot(cores, d_conntrack, marker='v', label='conntrack')
 
 axes4 = fig.add_subplot(1,1, 1)
-axes4.plot(cores, d_firewalld, marker='x', label='standard-firewalld')
+axes4.plot(cores, d_firewalld, marker='s', label='standard-firewalld')
 
 legend = plt.legend(loc='upper left')
 
-plt.title('iptables - RX-drop')
+plt.title('RX-drop (in Mpps): iptables tuning')
 fig.savefig(fname)
 return fname
 #+END_SRC
@@ -114,18 +114,18 @@ axes2 = fig.add_subplot(1,1, 1)
 axes2.plot(cores, d_filter, marker='x', label='iptables-filter')
 
 axes3 = fig.add_subplot(1,1, 1)
-axes3.plot(cores, d_conntrack, marker='x', label='conntrack')
+axes3.plot(cores, d_conntrack, marker='v', label='conntrack')
 
 axes4 = fig.add_subplot(1,1, 1)
-axes4.plot(cores, d_firewalld, marker='x', label='standard-firewalld')
+axes4.plot(cores, d_firewalld, marker='s', label='standard-firewalld')
 
 axes5 = fig.add_subplot(1,1, 1)
-axes5.plot(cores, d_xdp512, marker='x', label='XDP_DROP')
+axes5.plot(cores, d_xdp512, marker='*', label='XDP_DROP')
 
 
 legend = plt.legend(loc='upper left')
 
-plt.title('RX-drop: XDP vs iptables')
+plt.title('RX-drop (in Mpps): XDP vs. iptables')
 fig.savefig(fname)
 return fname
 #+END_SRC
