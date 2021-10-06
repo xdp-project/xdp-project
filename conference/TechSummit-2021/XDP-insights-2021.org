@@ -287,6 +287,25 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp_architecture.png]]
 
+* Slide: Performance graphs                                          :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Performance measurements taken from our [[https://github.com/xdp-project/xdp-paper/][XDP-paper]]
+
+System used for testing
+ - Intel(R) Xeon(R) CPU *E5-1650* v4 @ /3.60GHz/
+ - NIC driver *mlx5*: Mellanox /ConnectX-5/ Ex (MT28800)
+
+** Slide: XDP performance                                           :export:
+
+#+ATTR_HTML: :class img-no-border
+[[file:images/xdp_vs_iptables_drop.svg]]
+
+*XDP_DROP*: 100Gbit/s mlx5 max out at /108 Mpps/ (CPU E5-1650v4 @3.60GHz)
+ - */PCIe tuning needed/* - NIC compress RX-descriptors (=rx_cqe_compress on=)
+
 * Slide: XDP performance: both *latency* /and/ *throughput*          :export:
 
 XDP throughput and packet-per-second (PPS) performance super
