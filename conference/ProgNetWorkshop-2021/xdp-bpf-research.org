@@ -1,0 +1,189 @@
+# -*- fill-column: 79; -*-
+#+TITLE: XDP and BPF research projects
+#+AUTHOR: Toke Høiland-Jørgensen <toke@redhat.com>
+#+EMAIL: toke@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: Programmable Networking workshop                 :noexport:
+
+Workshop w/IBM research on possible collaborations on programmable networking.
+
+Title: Research projects on XDP and BPF
+ - Programmable queueing and in-band latency monitoring and 
+
+* Colors in slides                                                 :noexport:
+
+Text colors on slides are chosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Slide: Outline                                                     :export:
+
+- Intro: What is BPF and XDP?
+- Two research projects:
+  - Queueing for XDP
+  - In-band latency measurement w/BPF
+
+* Slide: What is BPF ?                                               :export:
+
+From: https://ebpf.io/what-is-ebpf
+#+begin_quote
+eBPF is a revolutionary technology that can run sandboxed programs in the Linux
+kernel without changing kernel source code or loading a kernel module
+#+end_quote
+
+/BPF/ is a *technology name*: */no longer an acronym/*
+
+*Rate of innovation* at the operating system level: */Traditionally slow/*
+ - BPF enables things at OS-level that were not possible before
+ - BPF will /radically increase/ rate of innovation
+
+** Slide: *Traditional* Kernel development process                  :export:
+
+[[file:images/bpf_comic01_scale.png]]
+
+** Slide: *BPF* development process                                 :export:
+
+[[file:images/bpf_comic02_scale.png]]
+
+* Slide: BPF components                                              :export:
+
+Closer look at the BPF components:
+
+ - /Bytecode/ - Architecture independent *Instruction Set*
+   * /JIT/ to native machine instructions (after loading into kernel)
+
+ - /Runtime environment/ - Linux kernel
+   * *Event based* BPF-hooks all over the kernel
+   * Per hook limited access to kernel functions via *BPF-helpers*
+
+ - *Sandboxed* by the BPF /Verifier/
+   * Limits and verifies memory access and instructions limit
+
+* Slide: BPF networking                                              :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Focus on BPF for networking
+
+ - /XDP/ (eXpress Data Path) for fast processing at ingress
+ - /TC-BPF/ hooks inside the regular stack
+ - BPF hooks for cgroups can also be useful for containers
+
+* Slide: Why was an eXpress Data Path (XDP) needed?                  :export:
+
+Linux /networking stack/ assumes layers *L4-L7* are needed for every packet
+ - Root-cause of slowdown: (relative) high initial RX cost per packet
+
+Needed to stay relevant as NIC speeds increase (time between packet small)
+ - New faster and earlier networking layer was needed to keep up.
+
+/XDP operate/ at layers *L2-L3*
+ - *L4* /load-balancer/ possible when *no IP-fragmentation* occurs
+
+* Slide: What is XDP?                                                :export:
+
+XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
+ - /New programmable layer in-front/ of traditional network stack
+   - Read, modify, drop, redirect or pass
+   - For L2-L3 use-cases: seeing /x10 performance/ improvements!
+ - *Avoiding* /memory allocations/
+   - No SKB allocations and no-init (SKB zeroes 4 cache-lines per pkt)
+ - Adaptive *bulk* processing of frames
+ - Very /early access/ to frame (in driver code *after DMA sync*)
+ - Ability to */skip/ (large parts) of kernel /code/*
+   - Evolve XDP via /BPF-helpers/
+
+** Slide: XDP architecture                                          :export:
+#+ATTR_HTML: :class img-no-border
+[[file:images/xdp_architecture.png]]
+
+* Slide: XDP and BPF research projects :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+- Research collaboration between Red Hat and Karlstad University in Sweden
+- Two PhD students working on BPF/XDP items
+- Two engineers @ Red Hat as point of contact (Jesper and myself)
+
+https://research.redhat.com/blog/research_project/building-the-next-generation-of-programmable-networking-powered-by-linux/
+
+* Slide: Research project: Queueing in XDP                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: XDP operation - before and after                     :export:
+
+#+HTML: <div class="figure two-column">
+
+#+ATTR_HTML: :class figure-bg :style padding: 0px 10px; height: 560px
+[[file:images/xdp-network.png]]
+
+#+ATTR_HTML: :class figure-bg  :style padding: 0px 10px; height: 560px
+[[file:images/qdpq-network.png]]
+
+#+HTML: </div>
+
+** Design of XDP queueing mechanism                                 :export:
+
+#+ATTR_HTML: :class img-no-border figure-bg :style height: 560px
+[[file:images/xdpq-overview.png]]
+
+
+* Slide: Research project: In-band latency measurement               :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: The 'passive ping' utility :export:
+Kathy Nichols developed =pping=, the passive ping utility:
+
+https://github.com/pollere/pping
+
+- Measures latency of TCP flows using timestamps.
+- Implemented in C++ using libpcap -> quite a bit of overhead
+
+** Slide: Using BPF for "always-on" pping                           :export:
+
+#+ATTR_HTML: :class img-no-border figure-bg :style height: 560px
+[[file:images/pping-design.png]]
+
+
+** Slide: pping preformance (preliminary!)                          :export:
+
+#+ATTR_HTML: :class img-no-border figure-bg :style height: 560px
+[[file:images/pping-performance.png]]
+
+* Slide: Questions, comments?                                        :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Projects are on Github:
+
+- https://github.com/xdp-project/bpf-examples
+- https://github.com/xdp-project/bpf-research
+
+
+* Emacs end-tricks                                                 :noexport:
+
+This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
+in the compiled version.
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# <h2 class=\"author\">Toke Høiland-Jørgensen<br/><small>Principal Kernel Engineer</small></h2>
+# <h3>IBM Research Network Programming Workshop</br>October 2021</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
