@@ -186,7 +186,7 @@ references with `org-export-get-reference'."
 (advice-add #'org-export-get-date :override #'custom/org-export-get-date)
 
 (unless (getenv "DEBUG")
-  (advice-add 'org-publish-needed-p :override '(lambda (&rest args) t))
+  (advice-add 'org-publish-needed-p :override #'(lambda (&rest args) t))
   (advice-add 'org-id-update-id-locations :around #'silence-messages)
   (advice-add 'org-id-locations-load :around #'silence-messages)
   (advice-add 'org-publish-reset-cache :around #'silence-messages)
