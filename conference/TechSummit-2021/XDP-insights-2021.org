@@ -458,6 +458,6 @@ in the compiled version.
 # org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
 # <h3 class=\"title\">Programmable Runtime Extending Linux Kernel for Packet Processing</h3>
 # <h2 class=\"author\">Jesper Dangaard Brouer<br/>Senior Principal Kernel Engineer</h2>
-# <h3>Tech Summit, Fastly</br>October 2021</h3>"
+# <h3>Tech Summit</br>October 2021</h3>"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
 # End:
