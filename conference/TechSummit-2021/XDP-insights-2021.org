@@ -346,14 +346,15 @@ What is /AF_XDP/? (the *Address Family* /XDP/ socket)
  - XDP/BPF-prog filters packets using *REDIRECT* into AF_XDP socket
  - Delivers raw L2 frames into userspace (via memory mapped ring buffer)
 
-Realize: in-kernel XDP *BPF-prog step* opens /opportunities/
+Realize: *in-kernel* XDP /BPF-prog/ *step* opens /opportunities/
  - Can augment/modify packets prior to AF_XDP delivery
-   - E.g. record a timestamp at this early stage
+   - E.g. record a /timestamp/ at this *early* stage
+ - Use CPUMAP redirect: Move *netstack traffic* to /other CPUs/
 
 @@html:<small>@@
 
 */WARNING/*: Next slides: *Deep dive* into AF_XDP /details/
- - Most casual reader of these slide deck can *skip these details*
+ - Most casual readers of slide deck can *skip these details*
 
 @@html:</small>@@
 
