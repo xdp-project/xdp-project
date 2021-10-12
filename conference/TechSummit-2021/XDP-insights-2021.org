@@ -287,6 +287,14 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 #+ATTR_HTML: :class img-no-border
 [[file:images/xdp_architecture.png]]
 
+* Slide: What is AF_XDP?                                             :export:
+
+What is /AF_XDP/? (the *Address Family* /XDP/ socket)
+ - Hybrid *kernel-bypass* facility, /selectively move frames out of kernel/
+ - XDP/BPF-prog filters packets using *REDIRECT* into AF_XDP socket
+ - Delivers raw L2 frames into userspace
+
+
 * Slide: Performance graphs                                          :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
