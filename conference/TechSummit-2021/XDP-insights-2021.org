@@ -292,8 +292,11 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 What is /AF_XDP/? (the *Address Family* /XDP/ socket)
  - Hybrid *kernel-bypass* facility, /selectively move frames out of kernel/
  - XDP/BPF-prog filters packets using *REDIRECT* into AF_XDP socket
- - Delivers raw L2 frames into userspace
+ - Delivers raw L2 frames into userspace (via memory mapped ring buffer)
 
+Realize: in-kernel XDP *BPF-prog step* opens /opportunities/
+ - Can augment/modify packets prior to AF_XDP delivery
+   - E.g. record a timestamp at this early stage
 
 * Slide: Performance graphs                                          :export:
 :PROPERTIES:
