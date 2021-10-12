@@ -298,6 +298,47 @@ Realize: in-kernel XDP *BPF-prog step* opens /opportunities/
  - Can augment/modify packets prior to AF_XDP delivery
    - E.g. record a timestamp at this early stage
 
+@@html:<small>@@
+
+*/WARNING/*: Next slides: *Deep dive* into AF_XDP /details/
+ - Most casual reader of these slide deck can *skip these details*
+
+@@html:</small>@@
+
+** Slide: Where does AF_XDP performance come from?                  :export:
+
+/Lock-free [[https://lwn.net/Articles/169961/][channel]] directly from driver/ *RX-queue* /into AF_XDP socket/
+- Single-Producer/Single-Consumer (SPSC) descriptor ring queues
+- *Single*-/Producer/ (SP) via bind to specific RX-*/queue id/*
+  * NAPI-softirq assures only 1-CPU process 1-RX-queue id (per sched)
+- *Single*-/Consumer/ (SC) via 1-Application
+- *Bounded* buffer pool (UMEM) allocated by userspace (register with kernel)
+  * Descriptor(s) in ring(s) point into UMEM
+  * /No memory allocation/, but return frames to UMEM in timely manner
+- [[http://www.lemis.com/grog/Documentation/vj/lca06vj.pdf][Transport signature]] Van Jacobson talked about
+  * Replaced by XDP/eBPF program choosing to XDP_REDIRECT
+
+** Slide: Details: Actually *four* SPSC ring queues                 :export:
+
+AF_XDP /socket/: Has /two rings/: *RX* and *TX*
+ - Descriptor(s) in ring points into UMEM
+/UMEM/ consists of a number of equally sized chunks
+ - Has /two rings/: *FILL* ring and *COMPLETION* ring
+ - FILL ring: application gives kernel area to RX fill
+ - COMPLETION ring: kernel tells app TX is done for area (can be reused)
+
+** Slide: Gotcha by RX-queue id binding                             :export:
+
+AF_XDP bound to */single RX-queue id/* (for SPSC performance reasons)
+- NIC by default spreads flows with RSS-hashing over RX-queues
+  * Traffic likely not hitting queue you expect
+- You *MUST* configure NIC *HW filters* to /steer to RX-queue id/
+  * Out of scope for XDP setup
+  * Use ethtool or TC HW offloading for filter setup
+- *Alternative* work-around
+  * /Create as many AF_XDP sockets as RXQs/
+  * Have userspace poll()/select on all sockets
+
 * Slide: Performance graphs                                          :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
