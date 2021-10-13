@@ -67,6 +67,8 @@ Taming /BPF superpower/ - is *not easy*
 /What is XDP/?
  - and what *pain points* have recently been /resolved/
 
+/What is AF_XDP/?
+ - How is this connected with XDP and deep-dive into tech details
 
 * Slide: What is BPF ?                                               :export:
 
