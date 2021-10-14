@@ -40,7 +40,7 @@ Snabbswitch and other implementations based on similar approach (DPDK).
 There has been work in the Linux kernel to speed up Linux forwarding speed
 by indroducing a flowoffload packet path:
 
-https://www.kernel.org/doc/Documentation/networking/nf_flowtable.txt
+https://www.kernel.org/doc/html/latest/networking/nf_flowtable.html
 
 ** Recent events
 
