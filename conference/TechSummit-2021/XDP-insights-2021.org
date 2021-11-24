@@ -108,6 +108,15 @@ From an OS vendor (like Red Hat) perspective
 Modern Linux: becoming Microkernel-ish ([[http://www.brendangregg.com/blog/2019-12-02/bpf-a-new-type-of-software.html][from Brendan Gregg]])
 [[file:images/bpf-os-model02.jpg]]
 
+** Slide: Replacing kernel modules                                  :export:
+
+*/Known/* examples: /Replacing/ *Kernel module* with *BPF*
+ - [[https://sysdig.com/opensource/falco/][Sysdig]]/[[https://github.com/falcosecurityFalco][Falco]]: Started with Kernel module, now BPF [[https://sysdig.com/blog/sysdig-and-falco-now-powered-by-ebpf/][since 2019]]
+   - Competitor: [[https://github.com/aquasecurity][Aqua Security]] also BPF based
+   - */Proprietary/*: [[https://www.crowdstrike.com/][CrowdStrike]] intrusion detection using kmod (customer ask)
+ - [[https://cumucore.com/][Cumucore]] Telco 5G/UPF: XDP replace GTP kernel module (*/closed source/*)
+   - /FOSS/ *alternative*: GitHub [[https://github.com/navarrothiago/upf-bpf][UPF-BPF]]
+
 ** Slide: Adjust mental model of system development                 :export:
 
 As /System Developers/: */Adjust your mental model/*
