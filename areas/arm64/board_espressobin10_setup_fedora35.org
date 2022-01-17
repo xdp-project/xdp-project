@@ -1,0 +1,776 @@
+#+Title: V3: Setup notes for board ESPRESSObin
+
+These notes are on howto setup and install Fedora 35 on an ESPRESSObin board.
+For how to setup the same board using Fedora 31, please see
+file:board_espressobin09_setup.org.
+
+For more information and official binaries, see the ESPRESSObin board homepage:
+ - http://espressobin.net/tech-spec/
+
+In this article, we will show you how to create a bootable SD card with
+Fedora 35. This process entails modifying the official Fedora 35 raw image to
+support the ESPRESSObin and creating a bootable image by flashing it on an SD
+card.
+
+
+* Why Fedora 35
+
+The main reason for choosing Fedora 35, is that this distro include LLVM13.
+This is connected with LLVM13 can produce BTF (BPF Type Format).
+
+* Board info in U-Boot
+
+Jesper's new board:
+#+begin_example
+U-Boot 2017.03-armada-17.10.2-g255b9cc9c1 (Jun 10 2019 - 17:35:12 +0800)
+
+Model: Marvell Armada 3720 Community Board ESPRESSOBin
+       CPU    @ 1200 [MHz]
+       L2     @ 800 [MHz]
+       TClock @ 200 [MHz]
+       DDR    @ 750 [MHz]
+DRAM:  1 GiB
+U-Boot DT blob at : 000000003f716298
+Comphy-0: USB3          5 Gbps    
+Comphy-1: PEX0          2.5 Gbps  
+Comphy-2: SATA0         6 Gbps    
+#+end_example
+
+** original printenv
+
+List existing env via printenv:
+
+#+begin_example
+Marvell>> printenv
+baudrate=115200
+bootargs=console=ttyMV0,115200 earlycon=ar3700_uart,0xd0012000 root=/dev/mmcblk0p1 rw rootwait net.ifnames=00
+bootcmd=mmc dev 0; ext4load mmc 0:1 $kernel_addr $image_name;ext4load mmc 0:1 $fdt_addr $fdt_name;setenv boor
+bootdelay=2
+console=console=ttyMV0,115200 earlycon=ar3700_uart,0xd0012000
+eth1addr=00:51:82:11:22:01
+eth2addr=00:51:82:11:22:02
+eth3addr=00:51:82:11:22:03
+ethact=neta@30000
+ethaddr=F0:AD:4E:0A:A5:2B
+ethprime=eth0
+fdt_addr=0x4f00000
+fdt_high=0xffffffffffffffff
+fdt_name=boot/armada-3720-community-v7.dtb
+fdtcontroladdr=3f716298
+gatewayip=10.4.50.254
+get_images=tftpboot $kernel_addr $image_name; tftpboot $fdt_addr $fdt_name; run get_ramfs
+get_ramfs=if test "${ramfs_name}" != "-"; then setenv ramfs_addr 0x8000000; tftpboot $ramfs_addr $ramfs_namei
+hostname=marvell
+image_name=boot/Image
+initrd_addr=0xa00000
+initrd_size=0x2000000
+ipaddr=0.0.0.0
+kernel_addr=0x5000000
+loadaddr=0x5000000
+netdev=eth0
+netmask=255.255.255.0
+ramfs_addr=0x8000000
+ramfs_name=-
+root=root=/dev/nfs rw
+rootpath=/srv/nfs/
+serverip=0.0.0.0
+set_bootargs=setenv bootargs $console $root ip=$ipaddr:$serverip:$gatewayip:$netmask:$hostname:$netdev:none s
+stderr=serial@12000
+stdin=serial@12000
+stdout=serial@12000
+
+Environment size: 1477/65532 bytes
+#+end_example
+
+* Creating a Fedora 35 bootable image
+
+This section describes the manual process of creating a bootable Fedora 35 image
+for the ESPRESSObin. The Fedora 35 image does not come with support for
+ESPRESSObin out of the box. Therefore, we must add the missing DeviceTree file
+to make the image bootable. Most small devices cannot query what hardware is
+available and how the manufacturer decided to wire it. Therefore, most devices
+use standardized DeviceTree files that describe to the kernel and bootloader the
+hardware layout. Without it, the kernel cannot communicate with the devices, and
+we cannot use the ESPRESSObin.
+
+The following instructions explain how we modify the official Fedora 35 image to
+include the DeviceTree files and make it bootable.
+
+** Official Fedora ARM installer
+
+As of this writing, the official Fedora ARM installer does not support
+ESPRESSObin as a target. Please refer to the official documentation for other
+targets, and to check if the =arm-image-installer= tool has gotten support for
+the ESPRESSObin.
+- https://fedoraproject.org/wiki/Architectures/ARM/Installation
+
+  (If you want to add support for the ESPRESSObin to =arm-image-installer=, you
+  can check the /usr/share/arm-image-installer/boards.d directory for example
+  scripts. Those scripts are short and easy. You will also need to create a
+  =.itb= file that contains the DeviceTree information for the U-Boot
+  bootloader)
+
+** Download F35 image for aarch64
+
+Download the *server edition* of "Fedora 35: Raw image for aarch64"
+- Here: https://getfedora.org/en/server/download/
+- [[https://ftp.lysator.liu.se/pub/fedora/linux//releases/35/Server/aarch64/images/Fedora-Server-35-1.2.aarch64.raw.xz][Deep-link: Fedora-Server-35-1.2.aarch64.raw.xz]]
+
+All the Fedora Alternate Architectures image variants are here:
+- https://alt.fedoraproject.org/alt/
+
+** Mounting raw image
+
+The Fedora35 RAW image contains an MBR partition table with three partitions as
+follows:
+
+#+begin_example
+$ sudo gdisk -l /dev/loop18  # Redundant lines removed from output
+GPT fdisk (gdisk) version 1.0.8
+
+Partition table scan:
+  MBR: MBR only
+  BSD: not present
+  APM: not present
+  GPT: not present
+
+Number  Start (sector)    End (sector)  Size       Code  Name
+   1            2048         1230847   600.0 MiB   0700  Microsoft basic data
+   2         1230848         3327999   1024.0 MiB  8300  Linux filesystem
+   3         3328000        14680063   5.4 GiB     8E00  Linux LVM
+#+end_example
+
+- The first partition is a FAT32 filesystem containing bootloader files and DeviceTree files for different architectures.
+- The second partition is an XFS filesystem that contains the Linux kernel and its initramfs image used to boot the system.
+- The third partition is a physical LVM volume that contains the XFS root filesystem.
+
+In our final image, we are only going to have one ext4 partition with our root
+filesystem. The board's U-Boot firmware will handle loading the kernel and the
+DeviceTree information. Therefore, we only need to extract the root filesystem
+from the Fedora35 image.
+
+*** Mounting raw image partitions
+It is easiest to map the image to a loopback block device using the =losetup=
+command to change the image's partitions.
+
+#+begin_src sh
+$ xz -d Fedora-Server-35-1.2.aarch64.raw.xz  # uncompress the image
+$ sudo losetup -f -P Fedora-Server-35-1.2.aarch64.raw
+$ losetup -a  # Redundant lines removed from output
+/dev/loop... []: (...)
+/dev/loop18: []: (/home/frey/espressobin/Fedora-Server-35-1.2.aarch64.raw)
+/dev/loop... []: (...)
+#+end_src
+
+Later, when you have finished all steps. You can remove the loopback devices
+after unmounting all filesystems using =sudo losetup -d /dev/loop18=.
+
+After adding the RAW Fedora image to the loopback device, the kernel should
+create block devices for each partition with the postfix p1, p2, and p3.
+
+#+begin_src sh
+$ ls /dev/loop18*
+/dev/loop18  /dev/loop18p1  /dev/loop18p2  /dev/loop18p3
+#+end_src
+
+If you do not see the partitions, you can try to have the kernel read the
+partitions from the MBR using either the =partprobe= or =kpartx= commands.
+
+*** Mounting the LVM root logical volume
+
+To access the LVM logical volume with the root filesystem, we need to make the
+kernel aware of the LVM volume group in p3 and the containing root logical
+volume.
+
+To mount the LVM volume, you need to enable the LVM volume group that contains
+the root logical volume. You can scan for logical volumes using the use the
+lvscan command to find the inactive volume groups. To activate the volume group,
+run the following command:
+
+#+begin_src sh
+$ sudo lvscan
+  /dev/sda: open failed: No medium found
+  /dev/sdb: open failed: No medium found
+  inactive          '/dev/fedora/root' [5,41 GiB] inherit
+$ sudo pvdisplay  # Redundant lines removed from output
+  --- Physical volume ---
+  PV Name               /dev/loop18p3
+  VG Name               fedora_fedora
+  PV Size               5.41 GiB / not usable 3.00 MiB
+  Allocatable           yes (but full)
+  PE Size               4.00 MiB
+  Total PE              1385
+  Free PE               0
+  Allocated PE          1385
+  PV UUID               QSZIHQ-zti6-8zM2-gCrb-XXWT-LFVT-csiI54
+$ sudo vgchange -a y fedora_fedora
+  1 logical volume(s) in volume group "fedora_fedora" now active
+,#+end_src sh
+
+The pvdisplay command shows the name of the volume group connected to the
+loopback device to activate. However, if you want to enable all volume groups on
+all block devices, run the following command:
+
+,#+begin_src sh
+$ sudo vgchange -ay
+  1 logical volume(s) in volume group "fedora_fedora" now active
+#+end_src
+
+This option should be safe for most users.
+
+*** Mounting the root filesystem /dev/fedora_fedora/root
+
+The root logical volume should now be visible under =/dev/fedora_fedora/root=.
+To get a functioning image, we must have access to the file permissions and
+ownership for the following steps.
+
+#+begin_example
+sudo mkdir /mnt/fedora-rootfs
+sudo mount /dev/fedora_fedora/root /mnt/fedora-rootfs
+#+end_example
+
+** Prepare a new root filesystem for our new image
+
+After we have a mounted root filesystem under =/mnt/fedora-rootfs=, we need to
+create a local copy with our required changes to make it bootable on the
+ESPRESSOBin.
+
+Copy the files using the =rsync= files over to a local directory. You must run
+the command as root to get the correct file attributes and user ids.
+
+#+begin_src sh
+mkdir rootfs-f35
+sudo rsync -av /mnt/fedora-rootfs/ rootfs-f35/
+#+end_src
+
+First, we must remove the root password so that we can log into the ESPRESSOBin. We do that by eliminating the =!locked= from the password field of the shadow file.
+
+*** Enable a passwordless root account
+
+#+begin_src sh
+$ sudo head -n 1 rootfs-f35/etc/shadow
+root:=!locked=:18908:0:99999:7:::
+$ sudo vim rootfs-f35/etc/shadow
+$ sudo head -n 1 rootfs-f35/etc/shadow
+root::18908:0:99999:7:::
+#+end_src
+
+*** Fix the /etc/fstab
+
+The default =/etc/fstab= file refers to the LVM root volume. However, our new
+setup will only have one partition with an ext4 filesystem as the root.
+Therefore, we must fix our =fstab= file to reflect those changes.
+
+The old =/etc/fstab= file contains the following entries.
+#+begin_example
+/dev/mapper/fedora_fedora-root            /               xfs     defaults                   0 0
+UUID=f2e2a0e4-3fe4-41d0-9d2e-67b030fc546b /boot           xfs     defaults                   0 0
+UUID=4A3B-E027                            /boot/efi       vfat    umask=0077,shortname=winnt 0 2
+#+end_example
+
+Change the lines to:
+#+begin_example
+/dev/mmcblk0p1   /                    ext4     defaults        0 0
+#+end_example
+
+This change will ensure that the bootstrapping process mounts the root
+filesystem correctly when your ESPRESSOBin boots.
+
+** Create tarball
+
+Create the tarball, with =-p= to preserves the permissions of the files put
+in the archive for restoration later:
+
+#+begin_src sh
+cd rootfs-f35/
+sudo tar -cvpzf ../rootfs.tar.gz --one-file-system .
+#+end_src
+
+* Create SDcard
+
+Given [[http://espressobin.net/tech-spec/][Espressobin download]] doesn't have Fedora 35, we have to create a boot
+image from scratch.
+
+Follow the instructions here:
+- http://wiki.espressobin.net/tiki-index.php?page=Boot+from+removable+storage+-+Buildroot
+
+** sdcard: Partition
+
+On my system, sdcard device name was also /dev/sdb. Created partition
+/dev/sdb1 and =ext4= formatted it like this:
+
+#+begin_src sh
+#(on laptop)
+mkfs.ext4 -O ^metadata_csum,^64bit /dev/sdb1
+#+end_src
+
+Mount on laptop
+
+#+begin_src sh
+#(on laptop)
+mkdir -p /mnt/sdcard
+mount /dev/sdb1 /mnt/sdcard
+#+end_src
+
+** sdcard: rootfs data
+
+Now it's time to use the 'rootfs.tar.gz' file that we created above.
+
+Simply extract this rootfs into /mnt/sdcard/:
+
+#+begin_src sh
+#(on laptop)
+sudo tar -xpvf rootfs.tar.gz -C /mnt/sdcard --numeric-owner
+#+end_src
+
+** sdcard: Update kernel
+
+The contents in /mnt/sdcard/boot/ is empty.  Thus, upload a kernel.
+
+Follow compile instruction in [[file:arm02_cross_compile_setup.org]].
+(Mount sdcard on laptop)
+
+In the kernel source, after compiling, the binary 'Image' file is located in
+=arch/arm64/boot/Image=
+
+#+begin_example
+# git kernel source
+cp arch/arm64/boot/Image /mnt/sdcard/boot/
+#+end_example
+
+For booting the 'dtb' file is also needed. The file for espressobin is
+called: =arch/arm64/boot/dts/marvell/armada-3720-espressobin.dtb=
+
+Copy over that file too:
+#+begin_src sh
+cp arch/arm64/boot/dts/marvell/armada-3720-espressobin.dtb /mnt/sdcard/boot/
+#+end_src
+
+Contents in /mnt/sdcard/boot/ :
+#+begin_example
+[laptop sdcard]# ll /mnt/sdcard/boot/
+total 26972
+-rw-r--r--. 1 root root    10826 Nov 20 12:34 armada-3720-espressobin.dtb
+-rwxr-xr-x. 1 root root 27603456 Nov 20 12:34 Image
+#+end_example
+
+Remember to unmount:
+#+begin_src sh
+sudo umount /mnt/sdcard
+#+end_src
+
+* Setup U-Boot on Espressobin
+
+Again follow
+- http://wiki.espressobin.net/tiki-index.php?page=Boot+from+removable+storage+-+Buildroot
+
+** Initial failed boot
+Without any setup boards fails to boot with following output:
+
+#+begin_example
+U-Boot 2017.03-armada-17.10.2-g255b9cc9c1 (Jun 10 2019 - 17:35:12 +0800)
+
+Model: Marvell Armada 3720 Community Board ESPRESSOBin
+       CPU    @ 1200 [MHz]
+       L2     @ 800 [MHz]
+       TClock @ 200 [MHz]
+       DDR    @ 750 [MHz]
+DRAM:  1 GiB
+U-Boot DT blob at : 000000003f716298
+Comphy-0: USB3          5 Gbps    
+Comphy-1: PEX0          2.5 Gbps  
+Comphy-2: SATA0         6 Gbps    
+SATA link 0 timeout.
+AHCI 0001.0300 32 slots 1 ports 6 Gbps 0x1 impl SATA mode
+flags: ncq led only pmp fbss pio slum part sxs 
+PCIE-0: Link down
+MMC:   sdhci@d0000: 0, sdhci@d8000: 1
+SF: Detected gd25lq32d with page size 256 Bytes, erase size 64 KiB, total 4 MiB
+Net:   eth0: neta@30000 [PRIME]
+Hit any key to stop autoboot:  0 
+switch to partitions #0, OK
+mmc0 is current device
+9027813 bytes read in 400 ms (21.5 MiB/s)
+ ** File not found boot/armada-3720-community-v7.dtb **
+Bad Linux ARM64 Image magic!
+Marvell>>
++end_example
+
+** Setting U-Boot parameters
+
+Listing contents of mmc:
+
+#+begin_example
+Marvell>> ext4ls mmc 0:1 boot
+<DIR>       4096 .
+<DIR>       4096 ..
+           10590 armada-3720-espressobin.dtb
+         9027813 Image
+        72276159 initramfs-5.3.7-301.fc31.aarch64.img
+Marvell>>
+#+end_example
+
+First, set the proper boot image name and device tree path and name:
+#+begin_example
+Marvell>> setenv image_name boot/Image
+Marvell>> setenv fdt_name boot/armada-3720-espressobin.dtb
+#+end_example
+
+Next, define the bootmmc variable which we will use to boot from the microSD
+card:
+#+begin_example
+setenv bootmmc 'mmc dev 0; ext4load mmc 0:1 $kernel_addr $image_name;ext4load mmc 0:1 $fdt_addr $fdt_name;setenv bootargs $console root=/dev/mmcblk0p1 rw rootwait; booti $kernel_addr - $fdt_addr'
+saveenv
+#+end_example
+
+Booting fails:
+#+begin_example
+Marvell>> run bootmmc
+switch to partitions #0, OK
+mmc0 is current device
+9027813 bytes read in 400 ms (21.5 MiB/s)
+10590 bytes read in 6 ms (1.7 MiB/s)
+Bad Linux ARM64 Image magic!
+#+end_example
+
+** Update kernel on SDcard
+
+The kernel on SDcard seems be broken, try to update it.
+Follow compile instruction in [[file:arm02_cross_compile_setup.org]].
+
+Mount sdcard on laptop again.
+
+In the kernel source, after compiling, the binary 'Image' file is located in
+=arch/arm64/boot/Image=
+
+#+begin_example
+cp Image /mnt/sdcard/boot/
+umount /mnt/sdcard
+#+end_example
+
+Booting kernel worked.
+
+But new distro challenges:
+#+begin_example
+You are in emergency mode. After logging in, type "journalctl -xb" to view
+system logs, "systemctl reboot" to reboot, "systemctl default" or "exit"
+to boot into
+Cannot open access to console, the root account is locked.
+See sulogin(8) man page for more details.
+
+Press Enter to continue.
+#+end_example
+
+* Network setup
+
+Keeping network simple via old-style =/etc/sysconfig/network-scripts/=
+files.
+
+** Network interfaces
+
+Network interfaces available:
+#+begin_example
+[root@localhost /]# ip link ls
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: bond0: <BROADCAST,MULTICAST,MASTER> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether de:27:5e:43:ee:50 brd ff:ff:ff:ff:ff:ff
+3: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1508 qdisc mq state UP mode DEFAULT group default qlen 1024
+    link/ether 6e:a2:a3:96:32:71 brd ff:ff:ff:ff:ff:ff
+4: wan@eth0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state LOWERLAYERDOWN mode DEFAULT group default qlen 1000
+    link/ether 2a:42:5f:1f:43:fb brd ff:ff:ff:ff:ff:ff
+5: lan0@eth0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state LOWERLAYERDOWN mode DEFAULT group default qlen 1000
+    link/ether f6:e0:e5:99:b5:22 brd ff:ff:ff:ff:ff:ff
+6: lan1@eth0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state LOWERLAYERDOWN mode DEFAULT group default qlen 1000
+    link/ether 8a:a3:cf:35:00:5a brd ff:ff:ff:ff:ff:ff
+#+end_example
+
+#+begin_example
+ethtool -i wan | grep driver
+driver: dsa
+#+end_example
+
+** Setup network old style (failed)
+
+File: /etc/sysconfig/network-scripts/ifcfg-wan
+
+#+begin_example
+NM_CONTROLLED="no"
+NAME="wan"
+ONBOOT="yes"
+TYPE="Ethernet"
+BOOTPROTO="none"
+DEFROUTE="no"
+IPV4_FAILURE_FATAL="no"
+IPV6INIT="no"
+IPV6_AUTOCONF="no"
+IPV6_DEFROUTE="no"
+IPV6_FAILURE_FATAL="no"
+#IPV6_PEERDNS="yes"
+#IPV6_PEERROUTES="yes"
+IPADDR=192.168.42.44
+PREFIX=24
+#+end_example
+
+Very strange, command =ifup= says it cannot load the file, even-though it
+does exist:
+#+begin_example
+[root@localhost /]# ls -l /etc/sysconfig/network-scripts/ifcfg-wan
+-rw-r--r-- 1 root root 245 Oct 10 09:19 /etc/sysconfig/network-scripts/ifcfg-wan
+
+[root@localhost /]# ifup wan
+Could not load file '/etc/sysconfig/network-scripts/ifcfg-wan'
+Error: unknown connection '/etc/sysconfig/network-scripts/ifcfg-wan'.
+#+end_example
+
+** Setup network new style (NetworkManager)
+
+Still want/need to strictly use cmdline tools for network setup, given the
+access is over USB serial cable (via minicom).
+
+*** List current setup via nmcli
+Trying out =nmcli= command:
+#+begin_src sh
+# nmcli
+wan: connected to Wired connection 4
+        "wan"
+        ethernet (mv88e6085), 2A:42:5F:1F:43:FB, hw, mtu 1500
+        ip4 default
+        inet4 192.168.42.226/24
+        route4 0.0.0.0/0
+        route4 192.168.42.0/24
+        inet6 fe80::3d09:5fb4:404c:bc9b/64
+        route6 fe80::/64
+        route6 ff00::/8
+
+eth0: connecting (getting IP configuration) to Wired connection 1
+        "eth0"
+        ethernet (mvneta), 6E:A2:A3:96:32:71, hw, mtu 1508
+
+lan0: unavailable
+        "lan0"
+        ethernet (mv88e6085), F6:E0:E5:99:B5:22, hw, mtu 1500
+
+lan1: unavailable
+        "lan1"
+        ethernet (mv88e6085), 8A:A3:CF:35:00:5A, hw, mtu 1500
+#+end_src
+
+*** Task: Setup static IP-address in 'wan'
+
+List connections:
+#+begin_example
+# nmcli connection
+NAME                UUID                                  TYPE      DEVICE 
+Wired connection 4  7b62939e-5b3c-3876-84f6-87aa08be43f3  ethernet  wan    
+Wired connection 1  475e922f-bf29-3517-847a-697dc42b699c  ethernet  --     
+Wired connection 2  162d9794-6481-3ab7-a3ac-258d93167b3d  ethernet  --     
+Wired connection 3  cff3dfb2-2788-3209-b681-0225fd02a60e  ethernet  --     
+#+end_example
+
+We guess that UUID '7b62939e-5b3c-3876-84f6-87aa08be43f3' is the connection
+we want to modify.
+
+#+begin_src sh
+nmcli connection modify 7b62939e-5b3c-3876-84f6-87aa08be43f3 IPv4.address 192.168.42.44/24
+nmcli connection modify 7b62939e-5b3c-3876-84f6-87aa08be43f3 IPv4.gateway 192.168.42.1
+nmcli connection modify 7b62939e-5b3c-3876-84f6-87aa08be43f3 IPv4.dns 1.1.1.1
+nmcli connection modify 7b62939e-5b3c-3876-84f6-87aa08be43f3 IPv4.method manual
+#+end_src
+
+Restart network to apply changes:
+
+#+begin_src sh
+nmcli connection down 7b62939e-5b3c-3876-84f6-87aa08be43f3 ;\
+nmcli connection up   7b62939e-5b3c-3876-84f6-87aa08be43f3
+#+end_src
+
+
+* Installing extra software
+
+** Installing LLVM version 13
+
+It is a priority to get LLVM9 working on arm64.
+#+begin_example
+dnf install -y llvm
+
+Last metadata expiration check: 0:00:03 ago on Tue 19 Nov 2019 09:20:48 AM EST.
+Dependencies resolved.
+================================================================================
+ Package           Architecture    Version                 Repository      Size
+================================================================================
+Installing:
+ llvm                       aarch64  13.0.0~rc1-1.fc35  fedora              14 M
+Installing dependencies:
+ llvm-libs                  aarch64  13.0.0~rc1-1.fc35  fedora              24 M
+Transaction Summary
+================================================================================
+Install  2 Packages
+
+Total download size: 38 M
+Installed size: 141 M
+#+end_example
+
+Success and 'llc --version' shows a lot of targets, including BPF.
+#+begin_example
+# llc --version
+LLVM (http://llvm.org/):
+  LLVM version 13.0.0
+  Optimized build.
+  Default target: aarch64-unknown-linux-gnu
+  Host CPU: cortex-a53
+
+  Registered Targets:
+    aarch64    - AArch64 (little endian)
+    aarch64_32 - AArch64 (little endian ILP32)
+    aarch64_be - AArch64 (big endian)
+    amdgcn     - AMD GCN GPUs
+    arm        - ARM
+    arm64      - ARM64 (little endian)
+    arm64_32   - ARM64 (little endian ILP32)
+    armeb      - ARM (big endian)
+    avr        - Atmel AVR Microcontroller
+    bpf        - BPF (host endian)
+    bpfeb      - BPF (big endian)
+    bpfel      - BPF (little endian)
+    hexagon    - Hexagon
+    lanai      - Lanai
+    mips       - MIPS (32-bit big endian)
+    mips64     - MIPS (64-bit big endian)
+    mips64el   - MIPS (64-bit little endian)
+    mipsel     - MIPS (32-bit little endian)
+    msp430     - MSP430 [experimental]
+    nvptx      - NVIDIA PTX 32-bit
+    nvptx64    - NVIDIA PTX 64-bit
+    ppc32      - PowerPC 32
+    ppc32le    - PowerPC 32 LE
+    ppc64      - PowerPC 64
+    ppc64le    - PowerPC 64 LE
+    r600       - AMD GPUs HD2XXX-HD6XXX
+    riscv32    - 32-bit RISC-V
+    riscv64    - 64-bit RISC-V
+    sparc      - Sparc
+    sparcel    - Sparc LE
+    sparcv9    - Sparc V9
+    systemz    - SystemZ
+    thumb      - Thumb
+    thumbeb    - Thumb (big endian)
+    wasm32     - WebAssembly 32-bit
+    wasm64     - WebAssembly 64-bit
+    x86        - 32-bit X86: Pentium-Pro and above
+    x86-64     - 64-bit X86: EM64T and AMD64
+    xcore      - XCore
+#+end_example
+
+Also install =clang=:
+
+#+begin_example
+dnf install -y clang
+#+end_example
+
+** Developer packages
+
+Installing devel packages for building the kernel. We usually cross compile
+kernel on a faster build host and push/rsync it to target host (see
+[[https://github.com/netoptimizer/prototype-kernel/tree/master/scripts][scripts]]).
+
+For testing samples/bpf/ and compiling libbpf we also want the build tools
+avail on the ARM64/aarch64 target system.
+
+#+begin_src sh
+dnf builddep kernel
+#+end_src
+
+** Extra software packages
+
+For building xdp-tcpdump install: =libpcap-devel=
+
+#+begin_src sh
+dnf install -y bpftool
+dnf install -y perf
+dnf install -y vim
+#+end_src
+
+Getting pahole:
+#+begin_src sh
+dnf install -y dwarves
+#+end_src
+
+** Dependencies for compiling bpftool
+
+#+begin_example
+dnf install binutils-devel  # bfd.h
+dnf builddep -y bpftool
+dnf install -y readline-devel  # readline/readline.h
+#+end_example
+
+
+** BCC and bpftrace
+
+#+begin_example
+dnf install -y bcc
+
+Dependencies resolved.
+=============================================================================================================================
+ Package                         Architecture              Version                           Repository                 Size
+=============================================================================================================================
+Installing:
+ bcc                             aarch64                   0.10.0-2.fc31                     fedora                     11 M
+Installing dependencies:
+ kernel-devel                    aarch64                   5.3.11-300.fc31                   updates                    11 M
+ bcc-tools                       aarch64                   0.10.0-2.fc31                     fedora                    398 k
+ clang8.0-libs                   aarch64                   8.0.0-5.fc31                      fedora                     13 M
+ llvm8.0-libs                    aarch64                   8.0.0-10.fc31                     fedora                     19 M
+ python3-bcc                     noarch                    0.10.0-2.fc31                     fedora                     76 k
+#+end_example
+
+Package for building bpftrace from git-tree:
+#+begin_src sh
+dnf install -y bcc-devel
+dnf install -y cmake stow bcc
+#+end_src
+
+Getting all build dependencies for bpftrace via: =dnf builddep bpftrace=
+
+#+begin_example
+sudo dnf builddep -y bpftrace
+
+Dependencies resolved.
+=============================================================================================================================
+ Package                          Architecture           Version                                Repository              Size
+=============================================================================================================================
+Installing:
+ clang-devel                      aarch64                9.0.0-1.fc31                           fedora                 1.7 M
+ llvm-devel                       aarch64                9.0.0-1.fc31                           fedora                 2.6 M
+Installing dependencies:
+ libedit-devel                    aarch64                3.1-29.20191025cvs.fc31                updates                 40 k
+ clang-tools-extra                aarch64                9.0.0-1.fc31                           fedora                 596 k
+ ncurses-c++-libs                 aarch64                6.1-12.20190803.fc31                   fedora                  37 k
+ ncurses-devel                    aarch64                6.1-12.20190803.fc31                   fedora                 503 k
+#+end_example
+
+Also install F35 version: =dnf install -y bpftrace=
+
+* Setup adjustments
+
+Notes about some setup adjustments.
+
+#+begin_src sh
+hostnamectl set-hostname espressobin
+#+end_src
+
+Loading libs from /usr/local/ 
+
+#+begin_src sh
+cat >> /etc/ld.so.conf.d/usr_local.conf << EOF
+/usr/local/lib
+/usr/local/lib64
+EOF
+#+end_src
+
+** Disable audit
+
+#+begin_example
+systemctl disable auditd.service
+systemctl mask systemd-journald-audit.socket
+#+end_example
