@@ -24,3 +24,54 @@ Colors are choosen via org-mode italic/bold high-lighting:
  - /italic/ = /green/
  - *bold*   = *yellow*
  - */italic-bold/* = red
+
+* Brainstorm
+
+XDP-hints dates back to NetDevConf [[https://www.youtube.com/watch?v=uD1_oAHpUmU][Nov 2017]] (by [[https://legacy.netdevconf.info/2.2/papers/waskiewicz-xdpacceleration-talk.pdf][PJ Waskiewicz]])
+
+Basic idea:
+ - Provide (or extract) NIC hardware offload hints
+ - Store info in XDP metadata (located before pkt header)
+
+XDP metadata area avail since [[https://www.spinics.net/lists/netdev/msg456525.html][Sep 2017]] (by Daniel Borkmann)
+ - Space is limited (currently 32 bytes)
+
+Main reason XDP-hints work stalled
+ - No consensus on layout of XDP metadata
+ - BTF was not ready at that time
+
+Introduce BTF
+ - Why we believe BTF can resolve layout problem
+
+
+Define/introduce problem space
+ - XDP currently don't have access to hardware offload "hints"
+ - Traditional hints: RX-hash, RX-checksum, VLAN, RX-timestamp
+
+XDP-/hints/
+ - Extracting NIC hardware hints (from RX-descriptor)
+ - Traditional hints: RX-hash, RX-checksum, VLAN, RX-timestamp
+
+Explaining tech quirks for XDP metadata
+ - Grows "backwards" from where packets starts
+ - Must be 4 byte aligned
+ - Limited size (currently) 32 bytes
+
+
+BTF from kernel modules
+
+Challenges with BTF from kernel modules
+ - BTF IDs are no-longer unique, but per module
+
+Three types of BTF IDs
+ - Kernel BTF IDs (unique for running kernel)
+ - Kernel module BTF IDs (offset start at highest kernel id)
+ - BPF-prog "local" BTF IDs
+
+
+Users/consumers of BTF layout
+ - BPF-progs (either XDP or TC hooks)
+ - Chained BPF-progs can update/communicate state via metadata
+ - AF_XDP can consume BTF info in userspace to decode metadata area
+
+
