@@ -45,7 +45,6 @@ Explaining tech quirks for XDP metadata
  - Must be 4 byte aligned
  - Limited size (currently) 32 bytes
 
-
 BTF from kernel modules
 
 Challenges with BTF from kernel modules
@@ -171,6 +170,22 @@ Main reason XDP-hints work *stalled*
 #+begin_src sh
  # bpftool btf dump file /sys/kernel/btf/vmlinux format c
 #+end_src
+
+* Slide: More components: CO-RE + BTF + libbpf                       :export:
+
+[[https://nakryiko.com/posts/bpf-portability-and-co-re/#compiler-support][Blogpost]] on BPF *CO-RE* (/Compile Once – Run Everywhere/) (Andrii Nakryiko)
+ - Explains how BTF is one piece of the puzzle
+ - BPF ELF object files are made /portable across kernel versions via CO-RE/
+ - LLVM *compiler emit BTF relocations* (for BPF code accessing struct fields)
+   - Look for =preserve_access_index= attribute tricks
+
+BPF-prog (binary ELF object) loader *libbpf* /combines pieces/
+ - Tailor BPF-prog code to a particular running kernel
+ - Looks at *BPF-prog recorded BTF* type and relocation information
+   - /matches/ them to BTF information provided by *running kernel*
+   - /updates necessary offsets/ and other relocatable data
+ - Kernel struct can change layout, iff member name+size stays same
+
 
 * Slide: End: /Questions?/                                         :noexport:
 :PROPERTIES:
