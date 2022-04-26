@@ -27,19 +27,6 @@ Colors are choosen via org-mode italic/bold high-lighting:
 
 * Brainstorm
 
-XDP-hints dates back to NetDevConf [[https://www.youtube.com/watch?v=uD1_oAHpUmU][Nov 2017]] (by [[https://legacy.netdevconf.info/2.2/papers/waskiewicz-xdpacceleration-talk.pdf][PJ Waskiewicz]])
-
-Basic idea:
- - Provide (or extract) NIC hardware offload hints
- - Store info in XDP metadata (located before pkt header)
-
-XDP metadata area avail since [[https://www.spinics.net/lists/netdev/msg456525.html][Sep 2017]] (by Daniel Borkmann)
- - Space is limited (currently 32 bytes)
-
-Main reason XDP-hints work stalled
- - No consensus on layout of XDP metadata
- - BTF was not ready at that time
-
 Introduce BTF
  - Why we believe BTF can resolve layout problem
 
@@ -155,10 +142,24 @@ NIC *hardware* provide offload hints in (RX or TX) *descriptor*
  - Advanced: /TX-timestamp/ HW store TX-time and on completion read-back
  - Advanced: /TX-LaunchTime/ ask HW to send packet at specific time in future
 
+* Slide: What are XDP-hints                                          :export:
 
-* Slide: What is XDP-hints                                         :noexport:
+/XDP-hints/ dates back to NetDevConf [[https://www.youtube.com/watch?v=uD1_oAHpUmU][Nov 2017]] (by [[https://legacy.netdevconf.info/2.2/papers/waskiewicz-xdpacceleration-talk.pdf][PJ Waskiewicz]])
+ - Purpose: /Let XDP access HW offload hints/
 
-* Slide: End: /Questions?/                                           :export:
+Basic idea:
+ - Provide or extract (from descriptor) NIC hardware offload hints
+ - *Store info in XDP metadata area* (located before pkt header)
+
+XDP /metadata area/ avail since [[https://www.spinics.net/lists/netdev/msg456525.html][Sep 2017]] (by Daniel Borkmann)
+ - *Space is limited* (currently 32 bytes)
+
+Main reason XDP-hints work *stalled*
+ - */No consensus/* on *layout* of XDP metadata
+ - /BTF/ was *not ready* at that time
+
+
+* Slide: End: /Questions?/                                         :noexport:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
