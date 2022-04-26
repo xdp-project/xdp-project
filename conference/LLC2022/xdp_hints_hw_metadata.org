@@ -136,9 +136,27 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
    - Evolve XDP via /BPF-helpers/
  - */Pitfall/*: Lost traditional HW offloads (e.g. RX-hash, checksum etc.)
 
-** Slide: XDP architecture                                          :export:
+** Slide: XDP architecture                                        :noexport:
 #+ATTR_HTML: :class img-no-border
 [[file:../TechSummit-2021/images/xdp_architecture.png]]
+
+* Slide: What are *traditional* hardware offload hints?              :export:
+
+NIC *hardware* provide offload hints in (RX or TX) *descriptor*
+ - */Netstack extended SKB/* packet data-struct to store+use these
+
+*RX descriptors* can e.g. provide:
+ - RX-/checksum/ validation, RX-/hash/ value, RX-/timestamp/
+ - RX-/VLAN/ provides VLAN ID/tag non-inline
+
+*TX descriptors* can e.g. ask hardware to perform actions:
+ - *TX*-/checksum/: Ask hardware to compute checksums on transmission
+ - TX-/VLAN/: Ask hardware in insert VLAN id
+ - Advanced: /TX-timestamp/ HW store TX-time and on completion read-back
+ - Advanced: /TX-LaunchTime/ ask HW to send packet at specific time in future
+
+
+* Slide: What is XDP-hints                                         :noexport:
 
 * Slide: End: /Questions?/                                           :export:
 :PROPERTIES:
