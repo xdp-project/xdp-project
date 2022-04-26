@@ -89,3 +89,13 @@ Point out code that runtime fill BTF-ID
 #+begin_src C
 __u32 btf_id = bpf_core_type_id_local(struct xdp_hints_rx_time);
 #+end_src
+
+
+Inspirational: BTF based XDP-hints
+ - Bringing the flexibility of BPF
+   to NIC hardware offload
+
+ - Unlocking hardware vendors ability to innovate
+   - End-users can consume new HW capabilities
+     without having to extend the kernel SKB data-structure
+
