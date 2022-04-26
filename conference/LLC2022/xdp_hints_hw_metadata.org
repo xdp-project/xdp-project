@@ -28,17 +28,7 @@ Colors are choosen via org-mode italic/bold high-lighting:
 * Brainstorm
 
 Introduce BTF
- - Ref blog by Andrii Nakryiko
  - Why we believe BTF can resolve layout problem
-
-
-Define/introduce problem space
- - XDP currently don't have access to hardware offload "hints"
- - Traditional hints: RX-hash, RX-checksum, VLAN, RX-timestamp
-
-XDP-/hints/
- - Extracting NIC hardware hints (from RX-descriptor)
- - Traditional hints: RX-hash, RX-checksum, VLAN, RX-timestamp
 
 Explaining tech quirks for XDP metadata
  - Grows "backwards" from where packets starts
@@ -54,7 +44,6 @@ Three types of BTF IDs
  - Kernel BTF IDs (unique for running kernel)
  - Kernel module BTF IDs (offset start at highest kernel id)
  - BPF-prog "local" BTF IDs
-
 
 Users/consumers of BTF layout
  - BPF-progs (either XDP or TC hooks)
