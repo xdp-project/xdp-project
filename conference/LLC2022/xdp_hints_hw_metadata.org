@@ -177,9 +177,8 @@ Main reason XDP-hints work *stalled*
  - Explains how BTF is one piece of the puzzle
  - BPF ELF object files are made /portable across kernel versions via CO-RE/
  - LLVM *compiler emit BTF relocations* (for BPF code accessing struct fields)
-   - Look for =preserve_access_index= attribute tricks
 
-BPF-prog (binary ELF object) loader *libbpf* /combines pieces/
+BPF-prog (binary ELF object) /loader/ *libbpf* /combines pieces/
  - Tailor BPF-prog code to a particular running kernel
  - Looks at *BPF-prog recorded BTF* type and relocation information
    - /matches/ them to BTF information provided by *running kernel*
