@@ -28,6 +28,7 @@ Colors are choosen via org-mode italic/bold high-lighting:
 * Brainstorm
 
 Introduce BTF
+ - Ref blog by Andrii Nakryiko
  - Why we believe BTF can resolve layout problem
 
 
@@ -158,6 +159,18 @@ Main reason XDP-hints work *stalled*
  - */No consensus/* on *layout* of XDP metadata
  - /BTF/ was *not ready* at that time
 
+* Slide: Introducing BTF - BPF Type Format                           :export:
+
+[[https://www.kernel.org/doc/html/latest/bpf/btf.html][BTF]] compact Type Format (based on compilers DWARF debug type info)
+ - Great [[https://facebookmicrosites.github.io/bpf/blog/2018/11/14/btf-enhancement.html][blogpost]] by Andrii Nakryiko
+   - 124MB of DWARF data compressed to 1.5MB compact BTF type data
+ - Suitable to be /included in Linux kernel image/ by default
+   - See file =/sys/kernel/btf/vmlinux= avail in most distro kernels
+ - Kernel's runtime data structures have become *self-describing via BTF*
+
+#+begin_src sh
+ # bpftool btf dump file /sys/kernel/btf/vmlinux format c
+#+end_src
 
 * Slide: End: /Questions?/                                         :noexport:
 :PROPERTIES:
