@@ -71,7 +71,21 @@ Three types of BTF IDs
 
 Users/consumers of BTF layout
  - BPF-progs (either XDP or TC hooks)
+ - XDP to SKB steps (in veth and cpumap) for traditional HW offloads
+   - e.g. RX-hash, RX-checksum, VLAN, RX-timestamp
  - Chained BPF-progs can update/communicate state via metadata
  - AF_XDP can consume BTF info in userspace to decode metadata area
 
+Works today:
+ - Let XDP BPF-prog determine BTF-layout as local-BPF
+   - e.g. produce software RX-timestamp at XDP layer
+ - Have AF_XDP program lookup BTF-layout in BPF-object file (setup time)
+   - Runtime use matching on local BTF-ID and decode information
 
+Point out code that runtime fill BTF-ID
+ - How can BPF-prog assign own static runtime created BTF-ID?
+   - libbpf hides resolving these IDs at BPF-load time
+
+#+begin_src C
+__u32 btf_id = bpf_core_type_id_local(struct xdp_hints_rx_time);
+#+end_src
