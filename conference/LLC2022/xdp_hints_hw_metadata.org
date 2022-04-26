@@ -99,3 +99,23 @@ Inspirational: BTF based XDP-hints
    - End-users can consume new HW capabilities
      without having to extend the kernel SKB data-structure
 
+* Slide: End: /Questions?/                                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Resources:
+ - XDP-project - [[https://github.com/xdp-project/][GitHub.com/xdp-project]]
+   - Get an easy start with [[https://github.com/xdp-project/bpf-examples][xdp-project/bpf-examples]]
+
+* Emacs end-tricks                                                 :noexport:
+
+This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
+in the compiled version.
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# <h2 class=\"author\">Jesper Dangaard Brouer<br/>Senior Principal Kernel Engineer</h2>
+# <h3>Lund Linux Con</br>April 2022</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
