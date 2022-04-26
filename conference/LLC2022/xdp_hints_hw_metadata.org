@@ -99,6 +99,28 @@ Inspirational: BTF based XDP-hints
    - End-users can consume new HW capabilities
      without having to extend the kernel SKB data-structure
 
+* Slide: */Reminder/*: What is BPF ?                                 :export:
+
+From: https://ebpf.io/what-is-ebpf
+#+begin_quote
+BPF is a revolutionary technology that can run sandboxed programs in the Linux
+kernel without changing kernel source code or loading a kernel module
+#+end_quote
+
+/BPF/ is a *technology name*: */no longer an acronym/*
+
+*Rate of innovation* at the operating system level: */Traditionally slow/*
+ - BPF enables things at OS-level that were not possible before
+ - BPF will /radically increase/ rate of innovation
+
+** Slide: *Traditional* Kernel development process                  :export:
+
+[[file:../TechSummit-2021/images/bpf_comic01_scale.png]]
+
+** Slide: *BPF* development process                                 :export:
+
+[[file:../TechSummit-2021/images/bpf_comic02_scale.png]]
+
 * Slide: End: /Questions?/                                           :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
