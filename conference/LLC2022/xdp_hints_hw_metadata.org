@@ -36,6 +36,12 @@ Explaining tech quirks for XDP metadata
  - Limited size (currently) 32 bytes
 
 BTF from kernel modules
+ - Add in commit 36e68442d1af ("bpf: Load and verify kernel module BTFs")
+   - (Author: Andrii Nakryiko)
+   -  https://git.kernel.org/torvalds/c/36e68442d1af
+   - $ git describe --contains  36e68442d1afd
+     - v5.11-rc1~169^2~259^2~11^2~1
+
 
 Challenges with BTF from kernel modules
  - BTF IDs are no-longer unique, but per module
@@ -179,7 +185,7 @@ BPF-prog (binary ELF object) /loader/ *libbpf* /combines pieces/
 
 * Slide: [[https://github.com/xdp-project/bpf-examples/blob/master/ktrace-CO-RE/ktrace01_kern.c][Code-Example]]: Partial struct + runtime BTF-id               :export:
 
-BPF-prog can define /partial struct/ with few member
+BPF-prog can define /partial struct/ with few members
  - libbpf match + "removes" *triple-underscore* after /real struct name/
  - *preserve_access_index* will be matched against kernel data-structure
 
@@ -199,6 +205,23 @@ int BPF_KPROBE(udp_send_skb, struct sk_buff___local *skb)
 #+end_src
 
 Notice: Can get *btf_id* for /sk_buff/ used by *running* /kernel/
+
+* Slide: BTF type IDs and their usage                                :export:
+
+BTF system have *type ID's* to refer to each-other (in compress format)
+ - Zero is not a valid BTF ID and numbering (usually) *starts from one*
+   - Userspace can dump and see numbering via /=bpftool btf dump file=/
+
+/Kernel's BTF/ data files are located in *=/sys/kernel/btf/=* (modules since [[https://git.kernel.org/torvalds/c/36e68442d1af][v5.11]])
+ - Main file *vmlinux* contains every type /compiled into kernel/
+ - All *module files* offset ID numbering to start at *last* /vmlinux/ *ID*
+   - Allows module to reference vmlinux type IDs (for compression)
+
+/Userspace/ BPF-prog ELF-object files also contains *BTF sections*
+ - This is known as /local/ BTF and numbering starts at one
+ - BPF-prog can query own local BTF id via: *=bpf_core_type_id_local()=*
+
+
 
 * Slide: End: /Questions?/                                         :noexport:
 :PROPERTIES:
