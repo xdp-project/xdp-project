@@ -57,6 +57,9 @@ Works today:
    - e.g. produce software RX-timestamp at XDP layer
  - Have AF_XDP program lookup BTF-layout in BPF-object file (setup time)
    - Runtime use matching on local BTF-ID and decode information
+ - Idea: store bpf_id as last member in metadata
+    - Easily access via negative (-4 bytes) offset from pkt start
+
 
 Point out code that runtime fill BTF-ID
  - How can BPF-prog assign own static runtime created BTF-ID?
@@ -174,6 +177,28 @@ BPF-prog (binary ELF object) /loader/ *libbpf* /combines pieces/
    - /updates necessary offsets/ and other relocatable data
  - Kernel struct can change layout, iff member name+size stays same
 
+* Slide: [[https://github.com/xdp-project/bpf-examples/blob/master/ktrace-CO-RE/ktrace01_kern.c][Code-Example]]: Partial struct + runtime BTF-id               :export:
+
+BPF-prog can define /partial struct/ with few member
+ - libbpf match + "removes" *triple-underscore* after /real struct name/
+ - *preserve_access_index* will be matched against kernel data-structure
+
+#+begin_src C
+struct sk_buff___local {
+	__u32 hash;
+} __attribute__((preserve_access_index));
+
+SEC("kprobe/udp_send_skb.isra.0")
+int BPF_KPROBE(udp_send_skb, struct sk_buff___local *skb)
+{
+	__u32 h; __u32 btf_id;
+	BPF_CORE_READ_INTO(&h, skb, hash); /* skb->hash */
+	btf_id = bpf_core_type_id_kernel(struct sk_buff___local);
+	bpf_printk("skb->hash=0x%x btf_id(skb)=%d", h, btf_id);
+}
+#+end_src
+
+Notice: Can get *btf_id* for /sk_buff/ used by *running* /kernel/
 
 * Slide: End: /Questions?/                                         :noexport:
 :PROPERTIES:
