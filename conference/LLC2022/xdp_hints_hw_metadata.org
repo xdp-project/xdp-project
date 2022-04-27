@@ -235,7 +235,26 @@ BTF system have *type ID's* to refer to each-other (in compress format)
  - This is known as /local/ BTF and numbering starts at one
  - BPF-prog can query own local BTF id via: *=bpf_core_type_id_local()=*
 
+* Slide: Back to XDP-hints                                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
 
+Back to /XDP-hints/ and /XDP/ *metadata* /area/
+
+** Slide: XDP metadata requirements                                 :export:
+
+XDP metadata area have some *properties*
+ - *Grows "backwards"* from where packets starts
+ - Must be 4 byte aligned
+ - Limited size (currently) 32 bytes
+
+BPF-prog can expand/grow area via helper: /=bpf_xdp_adjust_meta=/
+ - pkt-data pointers are invalidated after calling this
+ - /Verifier/ require *boundary checks* to access metadata area
+
+Common gotcha: Compiler likes to pad C-struct ending
+ - Avoid/fix via: *=__attribute__((packed))=*
 
 * Slide: End: /Questions?/                                         :noexport:
 :PROPERTIES:
