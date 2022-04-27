@@ -156,6 +156,20 @@ Main reason XDP-hints work *stalled*
  - */No consensus/* on *layout* of XDP metadata
  - /BTF/ was *not ready* at that time
 
+* Slide: XDP-hints layout defined via /BTF layout/                   :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+My *proposal*: /Use BTF to define the layout of XDP metadata/
+ - Each NIC driver can choose its own BTF layout
+ - Slightly *challenging requirement*:
+   - NIC driver can change layout per pkt basis (e.g timestamps PTP pkts)
+
+Open question: /Will BTF be a fit for this use-case?/
+
+Next slides: Explaining *BTF technical details*
+
 * Slide: Introducing BTF - BPF Type Format                           :export:
 
 [[https://www.kernel.org/doc/html/latest/bpf/btf.html][BTF]] compact Type Format (based on compilers DWARF debug type info)
@@ -169,7 +183,7 @@ Main reason XDP-hints work *stalled*
  # bpftool btf dump file /sys/kernel/btf/vmlinux format c
 #+end_src
 
-* Slide: More components: CO-RE + BTF + libbpf                       :export:
+** Slide: More components: CO-RE + BTF + libbpf                     :export:
 
 [[https://nakryiko.com/posts/bpf-portability-and-co-re/#compiler-support][Blogpost]] on BPF *CO-RE* (/Compile Once – Run Everywhere/) (Andrii Nakryiko)
  - Explains how BTF is one piece of the puzzle
@@ -183,7 +197,7 @@ BPF-prog (binary ELF object) /loader/ *libbpf* /combines pieces/
    - /updates necessary offsets/ and other relocatable data
  - Kernel struct can change layout, iff member name+size stays same
 
-* Slide: [[https://github.com/xdp-project/bpf-examples/blob/master/ktrace-CO-RE/ktrace01_kern.c][Code-Example]]: Partial struct + runtime BTF-id               :export:
+** Slide: [[https://github.com/xdp-project/bpf-examples/blob/master/ktrace-CO-RE/ktrace01_kern.c][Code-Example]]: Partial struct + runtime BTF-id             :export:
 
 BPF-prog can define /partial struct/ with few members
  - libbpf match + "removes" *triple-underscore* after /real struct name/
@@ -206,7 +220,7 @@ int BPF_KPROBE(udp_send_skb, struct sk_buff___local *skb)
 
 Notice: Can get *btf_id* for /sk_buff/ used by *running* /kernel/
 
-* Slide: BTF type IDs and their usage                                :export:
+** Slide: BTF type IDs and their usage                              :export:
 
 BTF system have *type ID's* to refer to each-other (in compress format)
  - Zero is not a valid BTF ID and numbering (usually) *starts from one*
