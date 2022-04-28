@@ -282,6 +282,7 @@ Next slides: *Proposed* /solutions/ with pros and cons
 Kernel-side: Could *extend* /=xdp_buff=/ + /=xdp_frame=/ with "btf_id" or ptr
  - /Pros/: Gives BPF-prog access to reading /=ctx->btf_id=/
    - */Cons/*: /AF_XDP/ *cannot read* this ctx->btf_id
+   - *Unknown*: Can /chained BPF-progs/ *update/write* ctx->btf_id *?*
  - /Pros/: /Kernel internally/ can (likely) store *pointer to btf* struct
    - */Cons/*: This needs reference counting and race handling
  - /Pros/: *XDP to SKB* conversion (should be) easier to extract offloads
@@ -289,6 +290,18 @@ Kernel-side: Could *extend* /=xdp_buff=/ + /=xdp_frame=/ with "btf_id" or ptr
 
 Details: If */dropping/* /layout per pkt/ requirement
  - Possible to /store btf pointer in/ *=xdp_rxq_info=*
+
+** Slide: Solution(B): /Decouple/ with *btf_id* /in metadata/
+
+Place *"btf_id" value* /inside metadata/ area, *as last member*
+ - last member: due to "grows" backwards, important for AF_XDP decoding
+ - Extend /=xdp_buff=/ + /=xdp_frame=/ with flags that BTF is "enabled"
+
+This cause /decoupling via btf_id/ as becomes *struct "version"* number
+ - /Pros/: Easy to handle change /layout per pkt/
+   - as BPF-prog (or AF_XDP) /multiplex on btf_id's/ known to "them"
+ - */Cons/*: *XDP to SKB* conversion */harder/* as kernel cannot trust btf_id
+   - /Solution/: Add new /BPF-hook/ at *XDP to SKB* point (BPF-prog update skb)
 
 
 * Slide: End: /Questions?/                                         :noexport:
