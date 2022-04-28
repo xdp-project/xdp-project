@@ -267,6 +267,28 @@ Common gotcha: Compiler likes to pad C-struct ending
  - *Chained* /BPF-progs/ can *communicate state* via metadata
  - *AF_XDP* can consume /BTF/ info in userspace to /decode metadata area/
 
+* Slide: XDP-hints exploring solutions using BTF                     :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+*Design not fully done* yet
+ - Upstream interaction will likely change solution anyhow
+
+Next slides: *Proposed* /solutions/ with pros and cons
+
+** Slide: Solution(A): Kernel internal focused                      :export:
+
+Kernel-side: Could *extend* /=xdp_buff=/ + /=xdp_frame=/ with "btf_id" or ptr
+ - /Pros/: Gives BPF-prog access to reading /=ctx->btf_id=/
+   - */Cons/*: /AF_XDP/ *cannot read* this ctx->btf_id
+ - /Pros/: /Kernel internally/ can (likely) store *pointer to btf* struct
+   - */Cons/*: This needs reference counting and race handling
+ - /Pros/: *XDP to SKB* conversion (should be) easier to extract offloads
+   - *Unknown*: Will it be harder to support change /layout per pkt/ *???*
+
+Details: If */dropping/* /layout per pkt/ requirement
+ - Possible to /store btf pointer in/ *=xdp_rxq_info=*
 
 
 * Slide: End: /Questions?/                                         :noexport:
