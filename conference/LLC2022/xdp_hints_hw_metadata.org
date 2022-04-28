@@ -51,7 +51,6 @@ Three types of BTF IDs
  - BPF-prog "local" BTF IDs
 
 
-
 Users/consumers of BTF layout
  - BPF-progs (either XDP or TC hooks)
  - XDP to SKB steps (in veth and cpumap) for traditional HW offloads
@@ -284,24 +283,39 @@ Kernel-side: Could *extend* /=xdp_buff=/ + /=xdp_frame=/ with "btf_id" or ptr
    - */Cons/*: /AF_XDP/ *cannot read* this ctx->btf_id
    - *Unknown*: Can /chained BPF-progs/ *update/write* ctx->btf_id *?*
  - /Pros/: /Kernel internally/ can (likely) store *pointer to btf* struct
-   - */Cons/*: This needs reference counting and race handling
+   - */Cons/*: This needs reference counting and race/lifetime handling
  - /Pros/: *XDP to SKB* conversion (should be) easier to extract offloads
    - *Unknown*: Will it be harder to support change /layout per pkt/ *???*
 
 Details: If */dropping/* /layout per pkt/ requirement
  - Possible to /store btf pointer in/ *=xdp_rxq_info=*
 
-** Slide: Solution(B): /Decouple/ with *btf_id* /in metadata/
+** Slide: Solution(B): /Decouple/ with *btf_id* /in metadata/       :export:
 
 Place *"btf_id" value* /inside metadata/ area, *as last member*
  - last member: due to "grows" backwards, important for AF_XDP decoding
- - Extend /=xdp_buff=/ + /=xdp_frame=/ with flags that BTF is "enabled"
+ - Extend /=xdp_buff=/ + /=xdp_frame=/ (+AF_XDP) with flags that BTF is "enabled"
+   - */Notice/*: Need *3 flags* for BTF "origin" (vmlinux, module or local)
 
 This cause /decoupling via btf_id/ as becomes *struct "version"* number
  - /Pros/: Easy to handle change /layout per pkt/
    - as BPF-prog (or AF_XDP) /multiplex on btf_id's/ known to "them"
  - */Cons/*: *XDP to SKB* conversion */harder/* as kernel cannot trust btf_id
    - /Solution/: Add new /BPF-hook/ at *XDP to SKB* point (BPF-prog update skb)
+
+** Slide: Solution(C): Combined proposal                            :export:
+
+Still place *"btf_id" value* /inside metadata/ area, *as last member*
+ - *BUT* is considered /cached version/ from *kernel stored pointer to btf*
+   - */Cons/*: reference counting and lifetime handling still needed
+
+/Pros/: *XDP to SKB* conversion /can work/
+ - via check if btf_id match btf-ptr id before trusting BTF layout
+ - Details: For "lifetime" module BTF driver could disable this step on teardown
+
+/Pros/: *Chained* /BPF-progs/ works
+ - (last_member) /btf_id/ becomes a /communication channel/
+   - *Unknown*: How to communicate BTF "origin" (vmlinux, module or local)?
 
 
 * Slide: End: /Questions?/                                         :noexport:
