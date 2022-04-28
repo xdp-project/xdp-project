@@ -42,7 +42,6 @@ BTF from kernel modules
    - $ git describe --contains  36e68442d1afd
      - v5.11-rc1~169^2~259^2~11^2~1
 
-
 Challenges with BTF from kernel modules
  - BTF IDs are no-longer unique, but per module
 
@@ -50,6 +49,8 @@ Three types of BTF IDs
  - Kernel BTF IDs (unique for running kernel)
  - Kernel module BTF IDs (offset start at highest kernel id)
  - BPF-prog "local" BTF IDs
+
+
 
 Users/consumers of BTF layout
  - BPF-progs (either XDP or TC hooks)
@@ -255,6 +256,18 @@ BPF-prog can expand/grow area via helper: /=bpf_xdp_adjust_meta=/
 
 Common gotcha: Compiler likes to pad C-struct ending
  - Avoid/fix via: *=__attribute__((packed))=*
+
+** Slide: Expected *users* of the XDP-hints                         :export:
+
+/Users/consumers/ of XDP-hints in *BTF layout*
+ - *BPF-progs* first obvious consumer (either XDP or TC hooks)
+ - *XDP to SKB* conversion (in veth and cpumap) for traditional HW offloads
+   - e.g. RX-hash, RX-checksum, VLAN, RX-timestamp
+   - Have potential to /simplify NIC drivers significantly/
+ - *Chained* /BPF-progs/ can *communicate state* via metadata
+ - *AF_XDP* can consume /BTF/ info in userspace to /decode metadata area/
+
+
 
 * Slide: End: /Questions?/                                         :noexport:
 :PROPERTIES:
