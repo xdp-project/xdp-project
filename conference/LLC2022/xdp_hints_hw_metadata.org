@@ -27,6 +27,7 @@ Colors are choosen via org-mode italic/bold high-lighting:
 
 * Brainstorm
 
+
 Introduce BTF
  - Why we believe BTF can resolve layout problem
 
@@ -127,8 +128,8 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 
 * Slide: What are *traditional* hardware offload hints?              :export:
 
-NIC *hardware* provide offload hints in (RX or TX) *descriptor*
- - */Netstack extended SKB/* packet data-struct to store+use these
+NIC *hardware* provide offload hints in RX (and TX) *descriptors*
+ - */Netstack have extended SKB/* packet data-struct to store+use these
 
 *RX descriptors* can e.g. provide:
  - RX-/checksum/ validation, RX-/hash/ value, RX-/timestamp/
@@ -316,6 +317,28 @@ Still place *"btf_id" value* /inside metadata/ area, *as last member*
 /Pros/: *Chained* /BPF-progs/ works
  - (last_member) /btf_id/ becomes a /communication channel/
    - *Unknown*: How to communicate BTF "origin" (vmlinux, module or local)?
+
+
+
+* Idea
+
+Idea let NIC define an encapsulating union "xdp_hints" with structs
+
+#+begin_src C
+union xdp_hints {
+  struct hint_generic {
+    u32 rx_hash32;
+    u32 flags;
+    u32 btf_id;
+  };
+
+  struct hint_timestamps {
+    u64 rx_timestamp;
+    u32 btf_id;
+  };
+};
+
+#+end_src
 
 
 * Slide: End: /Questions?/                                         :noexport:
