@@ -325,6 +325,18 @@ Goal: hardware should produce XDP-hints
 Consider defining Endianess: Big vs Little endian
  - In XDP-hints struct layout
 
+* Idea: Define "generic" xdp_hints common struct                     :export:
+
+/Kernel/ (*/not module/*) *=struct xdp_hints_common=* (vmlinux BTF id)
+ - Should cover today /known SKB offload hints/
+ - Could have /some/ *defines as UAPI* in bpf.h (e.g. hash-type, csum-type)
+
+NIC drivers can let their xdp_hints include common struct as member
+ - Can extend with NIC specific hints by adding *flag* in xdp_buff/xdp_frame
+   - That indicate /layout is compatible/ with "xdp_hints_common"
+
+/Pros/: Easier to implement XDP to SKB transition
+ - *Cons*: Goes against the fully dynamic BTF based layout
 
 
 * Idea
