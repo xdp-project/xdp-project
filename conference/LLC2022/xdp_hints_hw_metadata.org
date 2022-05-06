@@ -85,6 +85,16 @@ Inspirational: BTF based XDP-hints
    - End-users can consume new HW capabilities
      without having to extend the kernel SKB data-structure
 
+Motivation for XDP to SKB conversion
+
+Moonshot: NIC drivers without SKB knowledge
+ - End-goal with XDP to SKB conversion
+ - Make it possible to write NIC drivers Ethernet L2 "only"
+
+Pros: Avoids taking the SKB "socket" overhead at driver level
+ -  Next step: Speedups Linux bridging and routing (with xdp_frame)
+
+
 * Slide: */Reminder/*: What is BPF ?                                 :export:
 
 From: https://ebpf.io/what-is-ebpf
