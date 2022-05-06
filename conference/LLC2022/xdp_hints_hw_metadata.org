@@ -328,13 +328,6 @@ Still place *"btf_id" value* /inside metadata/ area, *as last member*
  - (last_member) /btf_id/ becomes a /communication channel/
    - *Unknown*: How to communicate BTF "origin" (vmlinux, module or local)?
 
-* Slide: Hardware considerations                                     :export:
-
-Goal: hardware should produce XDP-hints
-
-Consider defining Endianess: Big vs Little endian
- - In XDP-hints struct layout
-
 * Idea: Define "generic" xdp_hints common struct                     :export:
 
 /Kernel/ (*/not module/*) *=struct xdp_hints_common=* (vmlinux BTF id)
@@ -369,6 +362,15 @@ union xdp_hints {
 
 #+end_src
 
+
+* Slide: Hardware considerations                                   :noexport:
+
+Goal: Hardware should produce XDP-hints
+ - Easy as DMA area next-to datameta
+
+Consider defining Endianess: Big vs Little endian
+ - In XDP-hints struct layout
+ - Given BTF is flexible, can be added later when HW appears
 
 * Slide: End: /Questions?/                                         :noexport:
 :PROPERTIES:
