@@ -360,6 +360,21 @@ NIC /drivers/ can let their /xdp_hints/ *include common struct as member*
  - *Cons*: Goes against the fully dynamic BTF based layout
 
 
+* Slide: Metadata + BTF = communication channel                      :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+
+Using *metadata* area to /communication state/
+ - Create /structure via BTF/
+
+Relevant for:
+ - *Chained* /BPF-progs/ (between XDP to TC hooks, also BPF tail-calls)
+ - *XDP-prog* sending info to userspace /AF_XDP/ sockets
+
+Already: *Works today!*
+
 
 * Slide: Hardware considerations                                   :noexport:
 
