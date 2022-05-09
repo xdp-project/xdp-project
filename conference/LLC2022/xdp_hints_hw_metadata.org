@@ -27,7 +27,6 @@ Colors are choosen via org-mode italic/bold high-lighting:
 
 * Brainstorm
 
-
 Introduce BTF
  - Why we believe BTF can resolve layout problem
 
@@ -350,6 +349,7 @@ How does userspace (and libbpf) know:
 
 New *UAPI* /might/ *not* be needed:
  - Remember: /BTF info/ avail via *=/sys/kernel/btf/=*
+   - both for /vmlinux/ and /modules/
  - libbpf parse and resolve relocations via these
 
 Struct /naming-convention/ for xdp_hints
@@ -360,7 +360,7 @@ Struct /naming-convention/ for xdp_hints
 
 /Each/ *NIC driver* have /=union=/ named *xdp_hints_union*
  - Struct's added to union, mean driver *can* use this BTF layout
- - Notice: "sub" struct's automatically gets own BTF ID's
+ - Notice: Union "sub" struct's automatically gets own BTF ID's
  - Essentially: Way to describe/support NIC using *layouts per packet*
 
 Complications: /metadata grows/ *backwards*
@@ -375,7 +375,7 @@ Idea: *Partly* */UAPI/kABI/* approach
 
 /Kernel/ (*/not module/*) *=struct xdp_hints_common=* (vmlinux BTF id)
  - Should cover today /known SKB offload hints/
- - Could have /some/ *defines as UAPI* in bpf.h (e.g. hash-type, csum-type)
+ - Could have /some/ *defines as UAPI* in bpf.h (e.g. flags hash-type, csum-type)
 
 NIC /drivers/ can let their /xdp_hints/ *include common struct as member*
  - Can *extend* with /NIC specific hints/ by adding *flag* in xdp_buff/xdp_frame
