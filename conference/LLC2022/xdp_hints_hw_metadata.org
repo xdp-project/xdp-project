@@ -167,7 +167,7 @@ Main reason XDP-hints work *stalled*
 My *proposal*: /Use BTF to define the layout of XDP metadata/
  - Each NIC driver can choose its own BTF layout
  - Slightly *challenging requirement*:
-   - NIC driver can change layout per pkt basis (e.g timestamps PTP pkts)
+   - NIC driver can *change* /layout per pkt/ basis (e.g timestamps PTP pkts)
 
 Open question: /Will BTF be a fit for this use-case?/
 
@@ -349,13 +349,27 @@ How does userspace (and libbpf) know:
  - What BTF layout does this driver provide?
 
 New *UAPI* /might/ *not* be needed:
- - Remember: BTF info avail via =/sys/kernel/btf/=
+ - Remember: /BTF info/ avail via *=/sys/kernel/btf/=*
  - libbpf parse and resolve relocations via these
 
-Struct naming-convention for xdp_hints
- - Could be way for drivers to "export" available BTF-layouts
+Struct /naming-convention/ for xdp_hints
+ - Could be way for drivers to "export" available BTF-layouts?
 
-** Slide: Define "generic" xdp_hints common struct            :export:
+
+** Slide: *Proposal*: Encapsulating C-code union?                   :export:
+
+/Each/ *NIC driver* have /=union=/ named *xdp_hints_union*
+ - Struct's added to union, mean driver *can* use this BTF layout
+ - Notice: "sub" struct's automatically gets own BTF ID's
+ - Essentially: Way to describe/support NIC using *layouts per packet*
+
+Complications: /metadata grows/ *backwards*
+ - *Padding* needed if union should /match memory layout/
+   - Cons: Union padding quickly get "ugly" in C-code
+   - Pros: Easier for driver C-code with one type for metadata area
+
+
+** Slide: Define "generic" xdp_hints common struct                  :export:
 
 Idea: *Partly* */UAPI/kABI/* approach
 
