@@ -85,14 +85,6 @@ Inspirational: BTF based XDP-hints
    - End-users can consume new HW capabilities
      without having to extend the kernel SKB data-structure
 
-Motivation for XDP to SKB conversion
-
-Moonshot: NIC drivers without SKB knowledge
- - End-goal with XDP to SKB conversion
- - Make it possible to write NIC drivers Ethernet L2 "only"
-
-Pros: Avoids taking the SKB "socket" overhead at driver level
- -  Next step: Speedups Linux bridging and routing (with xdp_frame)
 
 
 * Slide: */Reminder/*: What is BPF ?                                 :export:
@@ -239,7 +231,7 @@ BTF system have *type ID's* to refer to each-other (in compress format)
 
 /Kernel's BTF/ data files are located in *=/sys/kernel/btf/=* (modules since [[https://git.kernel.org/torvalds/c/36e68442d1af][v5.11]])
  - Main file *vmlinux* contains every type /compiled into kernel/
- - All *module files* offset ID numbering to start at *last* /vmlinux/ *ID*
+ - All *module files* /offset/ ID numbering to start at *last* /vmlinux/ *ID*
    - Allows module to reference vmlinux type IDs (for compression)
 
 /Userspace/ BPF-prog ELF-object files also contains *BTF sections*
@@ -276,6 +268,17 @@ Common gotcha: Compiler likes to pad C-struct ending
    - Have potential to /simplify NIC drivers significantly/
  - *Chained* /BPF-progs/ can *communicate state* via metadata
  - *AF_XDP* can consume /BTF/ info in userspace to /decode metadata area/
+
+** Slide: Motivation for XDP to SKB conversion                      :export:
+
+*Moonshot*: /NIC drivers without SKB knowledge/
+ - End-goal with XDP to SKB conversion
+ - Make it possible to write NIC drivers Ethernet L2 "only"
+
+Pros: /Avoids/ taking the SKB *"socket" overhead* at driver level
+ - Next step: Speedups Linux bridging and routing (with xdp_frame)
+   - Meaning: Normal Linux netstack get speedup for routing use-cases
+
 
 * Slide: XDP-hints exploring solutions using BTF                     :export:
 :PROPERTIES:
