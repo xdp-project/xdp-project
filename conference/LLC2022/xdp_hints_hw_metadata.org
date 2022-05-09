@@ -30,11 +30,6 @@ Colors are choosen via org-mode italic/bold high-lighting:
 Introduce BTF
  - Why we believe BTF can resolve layout problem
 
-Explaining tech quirks for XDP metadata
- - Grows "backwards" from where packets starts
- - Must be 4 byte aligned
- - Limited size (currently) 32 bytes
-
 BTF from kernel modules
  - Add in commit 36e68442d1af ("bpf: Load and verify kernel module BTFs")
    - (Author: Andrii Nakryiko)
@@ -50,14 +45,6 @@ Three types of BTF IDs
  - Kernel module BTF IDs (offset start at highest kernel id)
  - BPF-prog "local" BTF IDs
 
-
-Users/consumers of BTF layout
- - BPF-progs (either XDP or TC hooks)
- - XDP to SKB steps (in veth and cpumap) for traditional HW offloads
-   - e.g. RX-hash, RX-checksum, VLAN, RX-timestamp
- - Chained BPF-progs can update/communicate state via metadata
- - AF_XDP can consume BTF info in userspace to decode metadata area
-
 Works today:
  - Let XDP BPF-prog determine BTF-layout as local-BPF
    - e.g. produce software RX-timestamp at XDP layer
@@ -66,16 +53,6 @@ Works today:
  - Idea: store bpf_id as last member in metadata
     - Easily access via negative (-4 bytes) offset from pkt start
 
-
-Point out code that runtime fill BTF-ID
- - How can BPF-prog assign own static runtime created BTF-ID?
-   - libbpf hides resolving these IDs at BPF-load time
-
-#+begin_src C
-__u32 btf_id = bpf_core_type_id_local(struct xdp_hints_rx_time);
-#+end_src
-
-
 Inspirational: BTF based XDP-hints
  - Bringing the flexibility of BPF
    to NIC hardware offload
@@ -83,8 +60,6 @@ Inspirational: BTF based XDP-hints
  - Unlocking hardware vendors ability to innovate
    - End-users can consume new HW capabilities
      without having to extend the kernel SKB data-structure
-
-
 
 * Slide: */Reminder/*: What is BPF ?                                 :export:
 
@@ -384,26 +359,6 @@ NIC /drivers/ can let their /xdp_hints/ *include common struct as member*
 /Pros/: Easier to implement *XDP to SKB* /transition/
  - *Cons*: Goes against the fully dynamic BTF based layout
 
-
-* Idea
-
-Idea let NIC define an encapsulating union "xdp_hints" with structs
-
-#+begin_src C
-union xdp_hints {
-  struct hint_generic {
-    u32 rx_hash32;
-    u32 flags;
-    u32 btf_id;
-  };
-
-  struct hint_timestamps {
-    u64 rx_timestamp;
-    u32 btf_id;
-  };
-};
-
-#+end_src
 
 
 * Slide: Hardware considerations                                   :noexport:
