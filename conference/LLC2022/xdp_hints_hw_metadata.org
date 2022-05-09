@@ -375,6 +375,19 @@ Relevant for:
 
 Already: *Works today!*
 
+** Slide: Example use-case: XDP-prog to AF_XDP                      :export:
+
+[[https://github.com/xdp-project/bpf-examples][Code]]: How to transfer info *from* /XDP-prog/ *to* /AF_XDP/ *via* /BTF/
+ - GitHub XDP-project: bpf-examples/ [[https://github.com/xdp-project/bpf-examples/tree/master/AF_XDP-interaction][AF_XDP-interaction]]
+ - Use-case: XDP RX-timestamp for Real-Time [[https://en.wikipedia.org/wiki/TTEthernet][TTEthernet]] sync (PCF frames)
+ - Changes /layout per packet/ via /btf_id/ as last member
+
+Uses: *local* /BTF/ info in BPF-prog *ELF object*
+ - Thus, no kernel extensions needed
+
+Shows /userspace/ C-code *decoding* /BTF/ format
+ - Extracts /offset/ + /size/  for *named struct members*
+
 
 * Slide: Hardware considerations                                   :noexport:
 
