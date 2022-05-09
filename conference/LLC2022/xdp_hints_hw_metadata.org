@@ -355,9 +355,9 @@ New *UAPI* /might/ *not* be needed:
 Struct naming-convention for xdp_hints
  - Could be way for drivers to "export" available BTF-layouts
 
-** Idea: Define "generic" xdp_hints common struct                   :export:
+** Slide: Define "generic" xdp_hints common struct            :export:
 
-*Partly* */UAPI/kABI/* approach
+Idea: *Partly* */UAPI/kABI/* approach
 
 /Kernel/ (*/not module/*) *=struct xdp_hints_common=* (vmlinux BTF id)
  - Should cover today /known SKB offload hints/
