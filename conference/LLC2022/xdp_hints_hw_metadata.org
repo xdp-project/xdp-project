@@ -332,7 +332,30 @@ Still place *"btf_id" value* /inside metadata/ area, *as last member*
  - (last_member) /btf_id/ becomes a /communication channel/
    - *Unknown*: How to communicate BTF "origin" (vmlinux, module or local)?
 
-* Idea: Define "generic" xdp_hints common struct                     :export:
+
+* Slide: What BTF layout does a driver provide?                      :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+How to solve "exporting" /available/ *BTF-layouts*
+ - per NIC driver
+
+Is a new UAPI needed?
+
+** Slide: What BTF layout does this driver provide?                 :export:
+
+How does userspace (and libbpf) know:
+ - What BTF layout does this driver provide?
+
+New *UAPI* /might/ *not* be needed:
+ - Remember: BTF info avail via =/sys/kernel/btf/=
+ - libbpf parse and resolve relocations via these
+
+Struct naming-convention for xdp_hints
+ - Could be way for drivers to "export" available BTF-layouts
+
+** Idea: Define "generic" xdp_hints common struct                   :export:
 
 *Partly* */UAPI/kABI/* approach
 
