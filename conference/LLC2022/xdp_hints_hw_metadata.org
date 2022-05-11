@@ -393,6 +393,7 @@ Already: *Works today!*
 
 Uses: *local* /BTF/ info in BPF-prog *ELF object*
  - Thus, no kernel extensions needed
+ - BPF-prog gets own local BTF id via: *=bpf_core_type_id_local()=*
 
 Shows /userspace/ C-code *decoding* /BTF/ format
  - Extracts /offset/ + /size/  for *named struct members*
