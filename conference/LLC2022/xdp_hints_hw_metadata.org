@@ -422,8 +422,23 @@ Resources:
    - Tell us if this is /IPv4/: *UDP or TCP*
    - /IPv6/: *UDP or TCP*, and if /extension headers/ are present
 
+** Traditional hint: RX-checksum - *impl. details*                  :export:
 
-** Traditional hint: RX-checksum
+net_device feature flags avail for checksum capabilities
+ - e.g. NETIF_F_{HW,IP,IPV6}_CSUM
+
+/Kernel/ store *checksum type* (in =skb->ip_summed= 2-bits)
+ - CHECKSUM_{NONE,UNNECESSARY,COMPLETE,PARTIAL}
+
+CHECKSUM_COMPLETE fills skb->csum (union with csum_start+csum_offset)
+
+CHECKSUM_PARTIAL need skb_checksum_start_offset (skb->csum_start)
+ - Depend on =skb->csum_start= + =skb->csum_offset=
+
+Encap: skb->csum_level consecutive checksums found in pkt
+ - Minus ones verified as CHECKSUM_UNNECESSARY
+
+** Traditional hint: VLAN
 
 
 * Emacs end-tricks                                                 :noexport:
