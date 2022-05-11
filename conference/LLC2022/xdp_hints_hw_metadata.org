@@ -84,7 +84,7 @@ kernel without changing kernel source code or loading a kernel module
 [[file:../TechSummit-2021/images/bpf_comic02_scale.png]]
 
 
-* Slide: */Reminder/* What is XDP?                                   :export:
+* Slide: */Reminder/*: What is XDP?                                  :export:
 
 XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
  - /Programmable layer in-front/ of traditional network stack
@@ -104,8 +104,8 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
 
 * Slide: What are *traditional* hardware offload hints?              :export:
 
-NIC *hardware* provide offload hints in RX (and TX) *descriptors*
- - */Netstack have extended SKB/* packet data-struct to store+use these
+NIC *hardware* provides offload hints in RX (and TX) *descriptors*
+ - */The netstack SKB/* packet data-struct stores+uses these
 
 *RX descriptors* can e.g. provide:
  - RX-/checksum/ validation, RX-/hash/ value, RX-/timestamp/
@@ -113,8 +113,8 @@ NIC *hardware* provide offload hints in RX (and TX) *descriptors*
 
 *TX descriptors* can e.g. ask hardware to perform actions:
  - *TX*-/checksum/: Ask hardware to compute checksums on transmission
- - TX-/VLAN/: Ask hardware in insert VLAN id
- - Advanced: /TX-timestamp/ HW store TX-time and on completion read-back
+ - TX-/VLAN/: Ask hardware to insert VLAN tag
+ - Advanced: /TX-timestamp/ HW stores TX-time and feeds back on completion
  - Advanced: /TX-LaunchTime/ ask HW to send packet at specific time in future
 
 * Slide: What are XDP-hints                                          :export:
@@ -141,15 +141,15 @@ Main reason XDP-hints work *stalled*
 My *proposal*: /Use BTF to define the layout of XDP metadata/
  - Each NIC driver can choose its own BTF layout
  - Slightly *challenging requirement*:
-   - NIC driver can *change* /layout per pkt/ basis (e.g timestamps PTP pkts)
+   - NIC driver can *change* /layout per pkt/ (e.g timestamp only in PTP pkts)
 
-Open question: /Will BTF be a fit for this use-case?/
+Open question: /Will BTF be a good fit for this use-case?/
 
 Next slides: Explaining *BTF technical details*
 
 * Slide: Introducing BTF - BPF Type Format                           :export:
 
-[[https://www.kernel.org/doc/html/latest/bpf/btf.html][BTF]] compact Type Format (based on compilers DWARF debug type info)
+[[https://www.kernel.org/doc/html/latest/bpf/btf.html][BTF]] compact Type Format (based on compiler's DWARF debug type info)
  - Great [[https://facebookmicrosites.github.io/bpf/blog/2018/11/14/btf-enhancement.html][blogpost]] by Andrii Nakryiko
    - 124MB of DWARF data compressed to 1.5MB compact BTF type data
  - Suitable to be /included in Linux kernel image/ by default
@@ -165,7 +165,7 @@ Next slides: Explaining *BTF technical details*
 [[https://nakryiko.com/posts/bpf-portability-and-co-re/#compiler-support][Blogpost]] on BPF *CO-RE* (/Compile Once – Run Everywhere/) (Andrii Nakryiko)
  - Explains how BTF is one piece of the puzzle
  - BPF ELF object files are made /portable across kernel versions via CO-RE/
- - LLVM *compiler emit BTF relocations* (for BPF code accessing struct fields)
+ - LLVM *compiler emits BTF relocations* (for BPF code accessing struct fields)
 
 BPF-prog (binary ELF object) /loader/ *libbpf* /combines pieces/
  - Tailor BPF-prog code to a particular running kernel
@@ -177,7 +177,7 @@ BPF-prog (binary ELF object) /loader/ *libbpf* /combines pieces/
 ** Slide: [[https://github.com/xdp-project/bpf-examples/blob/master/ktrace-CO-RE/ktrace01_kern.c][Code-Example]]: Partial struct + runtime BTF-id             :export:
 
 BPF-prog can define /partial struct/ with few members
- - libbpf match + "removes" *triple-underscore* after /real struct name/
+ - libbpf matches + "removes" *triple-underscore* after /real struct name/
  - *preserve_access_index* will be matched against kernel data-structure
 
 #+begin_src C
@@ -199,7 +199,7 @@ Notice: Can get *btf_id* for /sk_buff/ used by *running* /kernel/
 
 ** Slide: BTF type IDs and their usage                              :export:
 
-BTF system have *type ID's* to refer to each-other (in compress format)
+BTF system has *type IDs* to refer to each-other (in compressed format)
  - Zero is not a valid BTF ID and numbering (usually) *starts from one*
    - Userspace can dump and see numbering via /=bpftool btf dump file=/
 
@@ -221,14 +221,14 @@ Back to /XDP-hints/ and /XDP/ *metadata* /area/
 
 ** Slide: XDP metadata requirements                                 :export:
 
-XDP metadata area have some *properties*
+XDP metadata area has some *properties*
  - *Grows "backwards"* from where packets starts
  - Must be 4 byte aligned
  - Limited size (currently) 32 bytes
 
 BPF-prog can expand/grow area via helper: /=bpf_xdp_adjust_meta=/
  - pkt-data pointers are invalidated after calling this
- - /Verifier/ require *boundary checks* to access metadata area
+ - /Verifier/ requires *boundary checks* to access metadata area
 
 Common gotcha: Compiler likes to pad C-struct ending
  - Avoid/fix via: *=__attribute__((packed))=*
@@ -239,7 +239,7 @@ Common gotcha: Compiler likes to pad C-struct ending
  - *BPF-progs* first obvious consumer (either XDP or TC hooks)
  - *XDP to SKB* conversion (in veth and cpumap) for traditional HW offloads
    - e.g. RX-hash, RX-checksum, VLAN, RX-timestamp
-   - Have potential to /simplify NIC drivers significantly/
+   - Can potentially /simplify NIC drivers significantly/
  - *Chained* /BPF-progs/ can *communicate state* via metadata
  - *AF_XDP* can consume /BTF/ info in userspace to /decode metadata area/
 
@@ -256,7 +256,7 @@ Pros: /Avoids/ taking the SKB *"socket" overhead* at driver level
 ** Slide: Hardware motivation and considerations                    :export:
 
 /Goal/: *Hardware* should *produce XDP-hints*
- - Easy as DMA area next-to datameta
+ - Easy as DMA area next to metadata
 
 Consider defining Endianess: Big vs Little endian
  - In XDP-hints struct layout
@@ -273,7 +273,7 @@ Consider defining Endianess: Big vs Little endian
 
 Next slides: *Proposed* /solutions/ with pros and cons
 
-** Slide: Solution(A): Kernel internal focused                      :export:
+** Slide: Solution(A): Internal kernel focus                        :export:
 
 Kernel-side: Could *extend* /=xdp_buff=/ + /=xdp_frame=/ with "btf_id" or ptr
  - /Pros/: Gives BPF-prog access to reading /=ctx->btf_id=/
@@ -282,7 +282,7 @@ Kernel-side: Could *extend* /=xdp_buff=/ + /=xdp_frame=/ with "btf_id" or ptr
  - /Pros/: /Kernel internally/ can (likely) store *pointer to btf* struct
    - */Cons/*: This needs reference counting and */race/lifetime handling/*
  - /Pros/: *XDP to SKB* conversion (should be) easier to extract offloads
-   - *Unknown*: Will it be harder to support change /layout per pkt/ *???*
+   - *Unknown*: Will it be harder to support different /layout per pkt/ *???*
 
 Details: If */dropping/* requirement /layout per pkt/
  - Possible to /store btf pointer in/ *=xdp_rxq_info=*
@@ -295,11 +295,11 @@ Place *"btf_id" value* /inside metadata/ area, *as last member*
    - */Notice/*: Need *3 flags* for BTF "origin" (vmlinux, module or local)
      - *module* resolved via /=xdp_rxq_info=/ *or* /=xdp_frame->dev_rx=/
 
-This cause /decoupling via btf_id/ as becomes *struct "version"* number
- - /Pros/: Easy to handle change /layout per pkt/
-   - as BPF-prog (or AF_XDP) /multiplex on btf_id's/ known to "them"
+This achieves /decoupling via btf_id/ as it becomes *struct's "version"* number
+ - /Pros/: Easy to handle different /layout per pkt/
+   - as BPF-prog (or AF_XDP) can /multiplex on btf_ids/ known to "them"
  - */Cons/*: *XDP to SKB* conversion */harder/* as kernel cannot trust btf_id
-   - /Solution/: Add new /BPF-hook/ at *XDP to SKB* point (BPF-prog update skb)
+   - /Solution/: Add new /BPF hook/ at *XDP to SKB* point (BPF prog builds skb)
 
 ** Slide: Solution(C): Combined proposal                            :export:
 
@@ -308,7 +308,7 @@ Still place *"btf_id" value* /inside metadata/ area, *as last member*
    - */Cons/*: reference counting and */lifetime handling still needed/*
 
 /Pros/: *XDP to SKB* conversion /can work/
- - via check if btf_id match btf-ptr id before trusting BTF layout
+ - via check if btf_id matches btf-ptr id before trusting BTF layout
  - Details: For "lifetime" module BTF driver could disable this step on teardown
 
 /Pros/: *Chained* /BPF-progs/ works
@@ -334,7 +334,7 @@ How does userspace (and libbpf) know:
 New *UAPI* /might/ *not* be needed:
  - Remember: /BTF info/ avail via *=/sys/kernel/btf/=*
    - both for /vmlinux/ and /modules/
- - libbpf parse and resolve relocations via these
+ - libbpf parses and resolves relocations via these
 
 Struct /naming-convention/ for xdp_hints
  - Could be way for drivers to "export" available BTF-layouts?
@@ -342,14 +342,14 @@ Struct /naming-convention/ for xdp_hints
 
 ** Slide: *Proposal*: Encapsulating C-code union?                   :export:
 
-/Each/ *NIC driver* have /=union=/ named *xdp_hints_union*
- - Struct's added to union, mean driver *can* use this BTF layout
- - Notice: Union "sub" struct's automatically gets own BTF ID's
+/Each/ *NIC driver* could have a /=union=/ named *xdp_hints_union*
+ - Structss added to union, means driver *may* use this BTF layout
+ - Notice: Union "sub" structs automatically gets own BTF IDs
  - Essentially: Way to describe/support NIC using *layouts per packet*
 
 Complications: /metadata grows/ *backwards*
  - *Padding* needed if union should /match memory layout/
-   - Cons: Union padding quickly get "ugly" in C-code
+   - Cons: Union padding quickly gets "ugly" in C-code
    - Pros: Easier for driver C-code with one type for metadata area
 
 
@@ -358,12 +358,12 @@ Complications: /metadata grows/ *backwards*
 Idea: *Partly* */UAPI/kABI/* approach
 
 /Kernel/ (*/not module/*) *=struct xdp_hints_common=* (vmlinux BTF id)
- - Should cover today /known SKB offload hints/
+ - Should cover today's /known SKB offload hints/
  - Could have /some/ *defines as UAPI* in bpf.h (e.g. flags hash-type, csum-type)
 
 NIC /drivers/ can let their /xdp_hints/ *include common struct as member*
  - Can *extend* with /NIC specific hints/ by adding *flag* in xdp_buff/xdp_frame
-   - That indicate /layout is compatible/ with "xdp_hints_common"
+   - That indicates /layout is compatible/ with "xdp_hints_common"
 
 /Pros/: Easier to implement *XDP to SKB* /transition/
  - *Cons*: Goes against the fully dynamic BTF based layout
@@ -417,7 +417,7 @@ Resources:
  - pkt_hash_types: PKT_HASH_TYPE_{NONE,L2,L3,L4} (bit skb->l4_hash)
  - SKB bit (=skb->sw_hash=) if software computed hash
 
-/Hardware/ provide as *RSS-hash* ([[https://docs.microsoft.com/en-us/windows-hardware/drivers/network/rss-hashing-types][standardised]] by Microsoft)
+/Hardware/ provides *RSS-hash* ([[https://docs.microsoft.com/en-us/windows-hardware/drivers/network/rss-hashing-types][standardised]] by Microsoft)
  - Kernel drops info, /RSS/ hashing type *identify*:
    - Tell us if this is /IPv4/: *UDP or TCP*
    - /IPv6/: *UDP or TCP*, and if /extension headers/ are present
@@ -439,17 +439,17 @@ ethtool --{show-}features: rx-vlan-offload + tx-vlan-offload
 net_device feature flags avail for checksum capabilities
  - e.g. NETIF_F_{HW,IP,IPV6}_CSUM
 
-/Kernel/ store *checksum type* (in =skb->ip_summed= 2-bits)
+/Kernel/ stores *checksum type* (in =skb->ip_summed= 2-bits)
  - CHECKSUM_{NONE,UNNECESSARY,COMPLETE,PARTIAL}
 
 CHECKSUM_COMPLETE fills skb->csum (union with csum_start+csum_offset)
 
-CHECKSUM_PARTIAL need skb_checksum_start_offset (skb->csum_start)
- - Depend on =skb->csum_start= + =skb->csum_offset=
+CHECKSUM_PARTIAL needs skb_checksum_start_offset (skb->csum_start)
+ - Depends on =skb->csum_start= + =skb->csum_offset=
 
-Encap: skb->csum_level consecutive checksums found in pkt
+Encap: =skb->csum_level= consecutive checksums found in pkt
  - Minus ones verified as CHECKSUM_UNNECESSARY
- - Encap case also set bit skb->encapsulation
+ - Encap case also sets bit skb->encapsulation
 
 ** Traditional hint: TX-checksum - *impl. details*                  :export:
 
@@ -458,8 +458,8 @@ Requests net_device to update packet checksum fields
  - features: NETIF_F_{IP,IPV6,HW}_CSUM
 
 CHECKSUM_PARTIAL meaning at TX
- - Do checksumming from skb->csum_start up to the end
- - In pkt store checksum at offset skb->csum_start + skb->csum_offset
+ - Do checksumming from =skb->csum_start= up to the end
+ - In pkt store checksum at offset =skb->csum_start + skb->csum_offset=
 
 
 * Emacs end-tricks                                                 :noexport:
