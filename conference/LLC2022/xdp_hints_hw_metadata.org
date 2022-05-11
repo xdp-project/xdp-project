@@ -1,0 +1,475 @@
+# -*- fill-column: 79; -*-
+#+TITLE: XDP hints via BPF Type Format (BTF) system
+#+AUTHOR: Jesper Dangaard Brouer <hawk@kernel.org>
+#+EMAIL: brouer@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: Lund Linux Con (LLC) 2022
+
+This presentation will be given at [[https://lundlinuxcon.org/][LLC 2022] the
+Lund Linux Con.
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation.
+
+Colors are choosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Brainstorm
+
+Introduce BTF
+ - Why we believe BTF can resolve layout problem
+
+BTF from kernel modules
+ - Add in commit 36e68442d1af ("bpf: Load and verify kernel module BTFs")
+   - (Author: Andrii Nakryiko)
+   -  https://git.kernel.org/torvalds/c/36e68442d1af
+   - $ git describe --contains  36e68442d1afd
+     - v5.11-rc1~169^2~259^2~11^2~1
+
+Challenges with BTF from kernel modules
+ - BTF IDs are no-longer unique, but per module
+
+Three types of BTF IDs
+ - Kernel BTF IDs (unique for running kernel)
+ - Kernel module BTF IDs (offset start at highest kernel id)
+ - BPF-prog "local" BTF IDs
+
+Works today:
+ - Let XDP BPF-prog determine BTF-layout as local-BPF
+   - e.g. produce software RX-timestamp at XDP layer
+ - Have AF_XDP program lookup BTF-layout in BPF-object file (setup time)
+   - Runtime use matching on local BTF-ID and decode information
+ - Idea: store bpf_id as last member in metadata
+    - Easily access via negative (-4 bytes) offset from pkt start
+
+Inspirational: BTF based XDP-hints
+ - Bringing the flexibility of BPF
+   to NIC hardware offload
+
+ - Unlocking hardware vendors ability to innovate
+   - End-users can consume new HW capabilities
+     without having to extend the kernel SKB data-structure
+
+* Slide: */Reminder/*: What is BPF ?                                 :export:
+
+From: https://ebpf.io/what-is-ebpf
+#+begin_quote
+BPF is a revolutionary technology that can run sandboxed programs in the Linux
+kernel without changing kernel source code or loading a kernel module
+#+end_quote
+
+/BPF/ is a *technology name*: */no longer an acronym/*
+
+*Rate of innovation* at the operating system level: */Traditionally slow/*
+ - BPF enables things at OS-level that were not possible before
+ - BPF will /radically increase/ rate of innovation
+
+** Slide: *Traditional* Kernel development process                  :export:
+
+[[file:../TechSummit-2021/images/bpf_comic01_scale.png]]
+
+** Slide: *BPF* development process                                 :export:
+
+[[file:../TechSummit-2021/images/bpf_comic02_scale.png]]
+
+
+* Slide: */Reminder/* What is XDP?                                   :export:
+
+XDP (eXpress Data Path) is a Linux *in-kernel* fast-path
+ - /Programmable layer in-front/ of traditional network stack
+   - Read, modify, drop, redirect or pass
+   - For L2-L3 use-cases: seeing /x10 performance/ improvements!
+ - *Avoiding* /memory allocations/
+   - No SKB allocations and no-init (SKB zeroes 4 cache-lines per pkt)
+ - Adaptive *bulk* processing of frames
+ - Very /early access/ to frame (in driver code *after DMA sync*)
+ - Ability to */skip/ (large parts) of kernel /code/*
+   - Evolve XDP via /BPF-helpers/
+ - */Pitfall/*: *Lost* /traditional HW offloads/ (e.g. RX-hash, checksum etc.)
+
+** Slide: XDP architecture                                        :noexport:
+#+ATTR_HTML: :class img-no-border
+[[file:../TechSummit-2021/images/xdp_architecture.png]]
+
+* Slide: What are *traditional* hardware offload hints?              :export:
+
+NIC *hardware* provide offload hints in RX (and TX) *descriptors*
+ - */Netstack have extended SKB/* packet data-struct to store+use these
+
+*RX descriptors* can e.g. provide:
+ - RX-/checksum/ validation, RX-/hash/ value, RX-/timestamp/
+ - RX-/VLAN/ provides VLAN ID/tag non-inline
+
+*TX descriptors* can e.g. ask hardware to perform actions:
+ - *TX*-/checksum/: Ask hardware to compute checksums on transmission
+ - TX-/VLAN/: Ask hardware in insert VLAN id
+ - Advanced: /TX-timestamp/ HW store TX-time and on completion read-back
+ - Advanced: /TX-LaunchTime/ ask HW to send packet at specific time in future
+
+* Slide: What are XDP-hints                                          :export:
+
+/XDP-hints/ dates back to NetDevConf [[https://www.youtube.com/watch?v=uD1_oAHpUmU][Nov 2017]] (by [[https://legacy.netdevconf.info/2.2/papers/waskiewicz-xdpacceleration-talk.pdf][PJ Waskiewicz]])
+ - Purpose: /Let XDP access HW offload hints/
+
+Basic idea:
+ - Provide or extract (from descriptor) NIC hardware offload hints
+ - *Store info in XDP metadata area* (located before pkt header)
+
+XDP /metadata area/ avail since [[https://www.spinics.net/lists/netdev/msg456525.html][Sep 2017]] (by Daniel Borkmann)
+ - *Space is limited* (currently 32 bytes)
+
+Main reason XDP-hints work *stalled*
+ - */No consensus/* on *layout* of XDP metadata
+ - /BTF/ was *not ready* at that time
+
+* Slide: XDP-hints layout defined via /BTF layout/                   :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+My *proposal*: /Use BTF to define the layout of XDP metadata/
+ - Each NIC driver can choose its own BTF layout
+ - Slightly *challenging requirement*:
+   - NIC driver can *change* /layout per pkt/ basis (e.g timestamps PTP pkts)
+
+Open question: /Will BTF be a fit for this use-case?/
+
+Next slides: Explaining *BTF technical details*
+
+* Slide: Introducing BTF - BPF Type Format                           :export:
+
+[[https://www.kernel.org/doc/html/latest/bpf/btf.html][BTF]] compact Type Format (based on compilers DWARF debug type info)
+ - Great [[https://facebookmicrosites.github.io/bpf/blog/2018/11/14/btf-enhancement.html][blogpost]] by Andrii Nakryiko
+   - 124MB of DWARF data compressed to 1.5MB compact BTF type data
+ - Suitable to be /included in Linux kernel image/ by default
+   - See file =/sys/kernel/btf/vmlinux= avail in most distro kernels
+ - Kernel's runtime data structures have become *self-describing via BTF*
+
+#+begin_src sh
+ # bpftool btf dump file /sys/kernel/btf/vmlinux format c
+#+end_src
+
+** Slide: More components: CO-RE + BTF + libbpf                     :export:
+
+[[https://nakryiko.com/posts/bpf-portability-and-co-re/#compiler-support][Blogpost]] on BPF *CO-RE* (/Compile Once – Run Everywhere/) (Andrii Nakryiko)
+ - Explains how BTF is one piece of the puzzle
+ - BPF ELF object files are made /portable across kernel versions via CO-RE/
+ - LLVM *compiler emit BTF relocations* (for BPF code accessing struct fields)
+
+BPF-prog (binary ELF object) /loader/ *libbpf* /combines pieces/
+ - Tailor BPF-prog code to a particular running kernel
+ - Looks at *BPF-prog recorded BTF* type and relocation information
+   - /matches/ them to BTF information provided by *running kernel*
+   - /updates necessary offsets/ and other relocatable data
+ - Kernel struct can change layout, iff member name+size stays same
+
+** Slide: [[https://github.com/xdp-project/bpf-examples/blob/master/ktrace-CO-RE/ktrace01_kern.c][Code-Example]]: Partial struct + runtime BTF-id             :export:
+
+BPF-prog can define /partial struct/ with few members
+ - libbpf match + "removes" *triple-underscore* after /real struct name/
+ - *preserve_access_index* will be matched against kernel data-structure
+
+#+begin_src C
+struct sk_buff___local {
+	__u32 hash;
+} __attribute__((preserve_access_index));
+
+SEC("kprobe/udp_send_skb.isra.0")
+int BPF_KPROBE(udp_send_skb, struct sk_buff___local *skb)
+{
+	__u32 h; __u32 btf_id;
+	BPF_CORE_READ_INTO(&h, skb, hash); /* skb->hash */
+	btf_id = bpf_core_type_id_kernel(struct sk_buff___local);
+	bpf_printk("skb->hash=0x%x btf_id(skb)=%d", h, btf_id);
+}
+#+end_src
+
+Notice: Can get *btf_id* for /sk_buff/ used by *running* /kernel/
+
+** Slide: BTF type IDs and their usage                              :export:
+
+BTF system have *type ID's* to refer to each-other (in compress format)
+ - Zero is not a valid BTF ID and numbering (usually) *starts from one*
+   - Userspace can dump and see numbering via /=bpftool btf dump file=/
+
+/Kernel's BTF/ data files are located in *=/sys/kernel/btf/=* (modules since [[https://git.kernel.org/torvalds/c/36e68442d1af][v5.11]])
+ - Main file *vmlinux* contains every type /compiled into kernel/
+ - All *module files* /offset/ ID numbering to start at *last* /vmlinux/ *ID*
+   - Allows module to reference vmlinux type IDs (for compression)
+
+/Userspace/ BPF-prog ELF-object files also contains *BTF sections*
+ - This is known as /local/ BTF and numbering starts at one
+ - BPF-prog can query own local BTF id via: *=bpf_core_type_id_local()=*
+
+* Slide: Back to XDP-hints                                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Back to /XDP-hints/ and /XDP/ *metadata* /area/
+
+** Slide: XDP metadata requirements                                 :export:
+
+XDP metadata area have some *properties*
+ - *Grows "backwards"* from where packets starts
+ - Must be 4 byte aligned
+ - Limited size (currently) 32 bytes
+
+BPF-prog can expand/grow area via helper: /=bpf_xdp_adjust_meta=/
+ - pkt-data pointers are invalidated after calling this
+ - /Verifier/ require *boundary checks* to access metadata area
+
+Common gotcha: Compiler likes to pad C-struct ending
+ - Avoid/fix via: *=__attribute__((packed))=*
+
+** Slide: Expected *users* of the XDP-hints                         :export:
+
+/Users/consumers/ of XDP-hints in *BTF layout*
+ - *BPF-progs* first obvious consumer (either XDP or TC hooks)
+ - *XDP to SKB* conversion (in veth and cpumap) for traditional HW offloads
+   - e.g. RX-hash, RX-checksum, VLAN, RX-timestamp
+   - Have potential to /simplify NIC drivers significantly/
+ - *Chained* /BPF-progs/ can *communicate state* via metadata
+ - *AF_XDP* can consume /BTF/ info in userspace to /decode metadata area/
+
+** Slide: Motivation for XDP to SKB conversion                      :export:
+
+*Moonshot*: /NIC drivers without SKB knowledge/
+ - End-goal with XDP to SKB conversion
+ - Make it possible to write NIC drivers Ethernet L2 "only"
+
+Pros: /Avoids/ taking the SKB *"socket" overhead* at driver level
+ - Next step: Speedups Linux bridging and routing (with xdp_frame)
+   - Meaning: Normal Linux netstack get speedup for routing use-cases
+
+** Slide: Hardware motivation and considerations                    :export:
+
+/Goal/: *Hardware* should *produce XDP-hints*
+ - Easy as DMA area next-to datameta
+
+Consider defining Endianess: Big vs Little endian
+ - In XDP-hints struct layout
+ - Given BTF is flexible, can be added later when HW appears
+
+
+* Slide: XDP-hints exploring solutions using BTF                     :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+*Design not fully done* yet
+ - Upstream interaction will likely change solution anyhow
+
+Next slides: *Proposed* /solutions/ with pros and cons
+
+** Slide: Solution(A): Kernel internal focused                      :export:
+
+Kernel-side: Could *extend* /=xdp_buff=/ + /=xdp_frame=/ with "btf_id" or ptr
+ - /Pros/: Gives BPF-prog access to reading /=ctx->btf_id=/
+   - */Cons/*: /AF_XDP/ *cannot read* this ctx->btf_id
+   - *Unknown*: Can /chained BPF-progs/ *update/write* ctx->btf_id *?*
+ - /Pros/: /Kernel internally/ can (likely) store *pointer to btf* struct
+   - */Cons/*: This needs reference counting and */race/lifetime handling/*
+ - /Pros/: *XDP to SKB* conversion (should be) easier to extract offloads
+   - *Unknown*: Will it be harder to support change /layout per pkt/ *???*
+
+Details: If */dropping/* requirement /layout per pkt/
+ - Possible to /store btf pointer in/ *=xdp_rxq_info=*
+
+** Slide: Solution(B): /Decouple/ with *btf_id* /in metadata/       :export:
+
+Place *"btf_id" value* /inside metadata/ area, *as last member*
+ - last member: due to "grows" backwards, important *for AF_XDP* /decoding/
+ - Extend /=xdp_buff=/ + /=xdp_frame=/ (+AF_XDP) with flags that BTF is "enabled"
+   - */Notice/*: Need *3 flags* for BTF "origin" (vmlinux, module or local)
+     - *module* resolved via /=xdp_rxq_info=/ *or* /=xdp_frame->dev_rx=/
+
+This cause /decoupling via btf_id/ as becomes *struct "version"* number
+ - /Pros/: Easy to handle change /layout per pkt/
+   - as BPF-prog (or AF_XDP) /multiplex on btf_id's/ known to "them"
+ - */Cons/*: *XDP to SKB* conversion */harder/* as kernel cannot trust btf_id
+   - /Solution/: Add new /BPF-hook/ at *XDP to SKB* point (BPF-prog update skb)
+
+** Slide: Solution(C): Combined proposal                            :export:
+
+Still place *"btf_id" value* /inside metadata/ area, *as last member*
+ - *BUT* is considered /cached version/ from *kernel stored pointer to btf*
+   - */Cons/*: reference counting and */lifetime handling still needed/*
+
+/Pros/: *XDP to SKB* conversion /can work/
+ - via check if btf_id match btf-ptr id before trusting BTF layout
+ - Details: For "lifetime" module BTF driver could disable this step on teardown
+
+/Pros/: *Chained* /BPF-progs/ works
+ - (last_member) /btf_id/ becomes a /communication channel/
+   - *Unknown*: How to communicate BTF "origin" (vmlinux, module or local)?
+
+
+* Slide: What BTF layout does a driver provide?                      :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+How to solve "exporting" /available/ *BTF-layouts*
+ - per NIC driver
+
+Is a new UAPI needed?
+
+** Slide: What BTF layout does this driver provide?                 :export:
+
+How does userspace (and libbpf) know:
+ - What BTF layout does this driver provide?
+
+New *UAPI* /might/ *not* be needed:
+ - Remember: /BTF info/ avail via *=/sys/kernel/btf/=*
+   - both for /vmlinux/ and /modules/
+ - libbpf parse and resolve relocations via these
+
+Struct /naming-convention/ for xdp_hints
+ - Could be way for drivers to "export" available BTF-layouts?
+
+
+** Slide: *Proposal*: Encapsulating C-code union?                   :export:
+
+/Each/ *NIC driver* have /=union=/ named *xdp_hints_union*
+ - Struct's added to union, mean driver *can* use this BTF layout
+ - Notice: Union "sub" struct's automatically gets own BTF ID's
+ - Essentially: Way to describe/support NIC using *layouts per packet*
+
+Complications: /metadata grows/ *backwards*
+ - *Padding* needed if union should /match memory layout/
+   - Cons: Union padding quickly get "ugly" in C-code
+   - Pros: Easier for driver C-code with one type for metadata area
+
+
+** Slide: Define "generic" xdp_hints common struct                  :export:
+
+Idea: *Partly* */UAPI/kABI/* approach
+
+/Kernel/ (*/not module/*) *=struct xdp_hints_common=* (vmlinux BTF id)
+ - Should cover today /known SKB offload hints/
+ - Could have /some/ *defines as UAPI* in bpf.h (e.g. flags hash-type, csum-type)
+
+NIC /drivers/ can let their /xdp_hints/ *include common struct as member*
+ - Can *extend* with /NIC specific hints/ by adding *flag* in xdp_buff/xdp_frame
+   - That indicate /layout is compatible/ with "xdp_hints_common"
+
+/Pros/: Easier to implement *XDP to SKB* /transition/
+ - *Cons*: Goes against the fully dynamic BTF based layout
+
+
+* Slide: Metadata + BTF = communication channel                      :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+
+Using *metadata* area to /communication state/
+ - Create /structure via BTF/
+
+Relevant for:
+ - *Chained* /BPF-progs/ (between XDP to TC hooks, also BPF tail-calls)
+ - *XDP-prog* sending info to userspace /AF_XDP/ sockets
+
+Already: *Works today!*
+
+** Slide: Example use-case: XDP-prog to AF_XDP                      :export:
+
+[[https://github.com/xdp-project/bpf-examples][Code]]: How to transfer info *from* /XDP-prog/ *to* /AF_XDP/ *via* /BTF/
+ - GitHub XDP-project: bpf-examples/ [[https://github.com/xdp-project/bpf-examples/tree/master/AF_XDP-interaction][AF_XDP-interaction]]
+ - Use-case: XDP RX-timestamp for Real-Time [[https://en.wikipedia.org/wiki/TTEthernet][TTEthernet]] sync (PCF frames)
+ - Changes /layout per packet/ via /btf_id/ as last member
+
+Uses: *local* /BTF/ info in BPF-prog *ELF object*
+ - Thus, no kernel extensions needed
+ - BPF-prog gets own local BTF id via: *=bpf_core_type_id_local()=*
+
+Shows /userspace/ C-code *decoding* /BTF/ format
+ - Extracts /offset/ + /size/  for *named struct members*
+
+* Slide: End: /Questions?/                                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Resources:
+ - XDP-project - [[https://github.com/xdp-project/][GitHub.com/xdp-project]]
+   - Get an easy start with [[https://github.com/xdp-project/bpf-examples][xdp-project/bpf-examples]]
+ - XDP-hints mailing list: *xdp-hints* /@/ *xdp-project.net*
+   - https://lists.xdp-project.net/
+
+* Extra slides
+
+** Traditional hint: RX-hash - *implementation details*             :export:
+
+/Kernel/ SKB: *Hash* value (only) 32-bit
+ - pkt_hash_types: PKT_HASH_TYPE_{NONE,L2,L3,L4} (bit skb->l4_hash)
+ - SKB bit (=skb->sw_hash=) if software computed hash
+
+/Hardware/ provide as *RSS-hash* ([[https://docs.microsoft.com/en-us/windows-hardware/drivers/network/rss-hashing-types][standardised]] by Microsoft)
+ - Kernel drops info, /RSS/ hashing type *identify*:
+   - Tell us if this is /IPv4/: *UDP or TCP*
+   - /IPv6/: *UDP or TCP*, and if /extension headers/ are present
+
+
+** Traditional hint: *VLAN* both RX and TX - *impl.*                :export:
+
+/net_device/ *feature flags* for /enabling/ VLANs offload hints:
+ - NETIF_F_HW_VLAN_{CTAG,STAG}_{RX,TX}_BIT
+ - C-tag = inner tag Customer-tag, S-tag = outer tag Service-provider-tag
+
+Kernel *SKB* /fields/:
+ - vlan_present (1-bit), vlan_tci (16-bits), vlan_proto (BE 16-bit)
+
+ethtool --{show-}features: rx-vlan-offload + tx-vlan-offload
+
+** Traditional hint: RX-checksum - *impl. details*                  :export:
+
+net_device feature flags avail for checksum capabilities
+ - e.g. NETIF_F_{HW,IP,IPV6}_CSUM
+
+/Kernel/ store *checksum type* (in =skb->ip_summed= 2-bits)
+ - CHECKSUM_{NONE,UNNECESSARY,COMPLETE,PARTIAL}
+
+CHECKSUM_COMPLETE fills skb->csum (union with csum_start+csum_offset)
+
+CHECKSUM_PARTIAL need skb_checksum_start_offset (skb->csum_start)
+ - Depend on =skb->csum_start= + =skb->csum_offset=
+
+Encap: skb->csum_level consecutive checksums found in pkt
+ - Minus ones verified as CHECKSUM_UNNECESSARY
+ - Encap case also set bit skb->encapsulation
+
+** Traditional hint: TX-checksum - *impl. details*                  :export:
+
+Requests net_device to update packet checksum fields
+ - SKB reusing types in =skb->ip_summed= (2-bits)
+ - features: NETIF_F_{IP,IPV6,HW}_CSUM
+
+CHECKSUM_PARTIAL meaning at TX
+ - Do checksumming from skb->csum_start up to the end
+ - In pkt store checksum at offset skb->csum_start + skb->csum_offset
+
+
+* Emacs end-tricks                                                 :noexport:
+
+This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
+in the compiled version.
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# <h2 class=\"author\">Jesper Dangaard Brouer<br/>Senior Principal Kernel Engineer</h2>
+# <h3>Lund Linux Con</br>April 2022</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
