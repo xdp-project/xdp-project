@@ -422,6 +422,17 @@ Resources:
    - Tell us if this is /IPv4/: *UDP or TCP*
    - /IPv6/: *UDP or TCP*, and if /extension headers/ are present
 
+
+** Traditional hint: VLAN both RX and TX - *impl.*           :export:
+
+net_device feature flags for VLANs offload hints:
+ - NETIF_F_HW_VLAN_{CTAG,STAG}_{RX,TX}_BIT
+ - C-tag = inner tag Customer-tag, P-tag = outer tag Provider-tag
+
+Kernel SKB fields:
+ - vlan_present (1-bit), vlan_tci (16-bits), vlan_proto (BE 16-bit)
+
+
 ** Traditional hint: RX-checksum - *impl. details*                  :export:
 
 net_device feature flags avail for checksum capabilities
@@ -437,9 +448,6 @@ CHECKSUM_PARTIAL need skb_checksum_start_offset (skb->csum_start)
 
 Encap: skb->csum_level consecutive checksums found in pkt
  - Minus ones verified as CHECKSUM_UNNECESSARY
-
-** Traditional hint: VLAN
-
 
 * Emacs end-tricks                                                 :noexport:
 
