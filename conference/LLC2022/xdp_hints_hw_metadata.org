@@ -398,7 +398,7 @@ Uses: *local* /BTF/ info in BPF-prog *ELF object*
 Shows /userspace/ C-code *decoding* /BTF/ format
  - Extracts /offset/ + /size/  for *named struct members*
 
-* Slide: End: /Questions?/                                         :noexport:
+* Slide: End: /Questions?/                                           :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
