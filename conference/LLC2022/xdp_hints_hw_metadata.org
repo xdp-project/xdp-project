@@ -409,6 +409,23 @@ Resources:
  - XDP-hints mailing list: *xdp-hints* /@/ *xdp-project.net*
    - https://lists.xdp-project.net/
 
+* Extra slides
+
+** Traditional hint: RX-hash - *implementation details*             :export:
+
+/Kernel/ SKB: *Hash* value (only) 32-bit
+ - pkt_hash_types: PKT_HASH_TYPE_{NONE,L2,L3,L4} (bit skb->l4_hash)
+ - SKB bit (=skb->sw_hash=) if software computed hash
+
+/Hardware/ provide as *RSS-hash* ([[https://docs.microsoft.com/en-us/windows-hardware/drivers/network/rss-hashing-types][standardised]] by Microsoft)
+ - Kernel drops info, /RSS/ hashing type *identify*:
+   - Tell us if this is /IPv4/: *UDP or TCP*
+   - /IPv6/: *UDP or TCP*, and if /extension headers/ are present
+
+
+** Traditional hint: RX-checksum
+
+
 * Emacs end-tricks                                                 :noexport:
 
 This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
