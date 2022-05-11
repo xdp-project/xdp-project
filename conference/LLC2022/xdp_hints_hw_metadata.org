@@ -253,6 +253,15 @@ Pros: /Avoids/ taking the SKB *"socket" overhead* at driver level
  - Next step: Speedups Linux bridging and routing (with xdp_frame)
    - Meaning: Normal Linux netstack get speedup for routing use-cases
 
+** Slide: Hardware motivation and considerations                    :export:
+
+/Goal/: *Hardware* should *produce XDP-hints*
+ - Easy as DMA area next-to datameta
+
+Consider defining Endianess: Big vs Little endian
+ - In XDP-hints struct layout
+ - Given BTF is flexible, can be added later when HW appears
+
 
 * Slide: XDP-hints exploring solutions using BTF                     :export:
 :PROPERTIES:
@@ -387,16 +396,6 @@ Uses: *local* /BTF/ info in BPF-prog *ELF object*
 
 Shows /userspace/ C-code *decoding* /BTF/ format
  - Extracts /offset/ + /size/  for *named struct members*
-
-
-* Slide: Hardware considerations                                   :noexport:
-
-Goal: Hardware should produce XDP-hints
- - Easy as DMA area next-to datameta
-
-Consider defining Endianess: Big vs Little endian
- - In XDP-hints struct layout
- - Given BTF is flexible, can be added later when HW appears
 
 * Slide: End: /Questions?/                                         :noexport:
 :PROPERTIES:
