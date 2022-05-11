@@ -423,15 +423,16 @@ Resources:
    - /IPv6/: *UDP or TCP*, and if /extension headers/ are present
 
 
-** Traditional hint: VLAN both RX and TX - *impl.*           :export:
+** Traditional hint: *VLAN* both RX and TX - *impl.*                :export:
 
-net_device feature flags for VLANs offload hints:
+/net_device/ *feature flags* for /enabling/ VLANs offload hints:
  - NETIF_F_HW_VLAN_{CTAG,STAG}_{RX,TX}_BIT
- - C-tag = inner tag Customer-tag, P-tag = outer tag Provider-tag
+ - C-tag = inner tag Customer-tag, S-tag = outer tag Service-provider-tag
 
-Kernel SKB fields:
+Kernel *SKB* /fields/:
  - vlan_present (1-bit), vlan_tci (16-bits), vlan_proto (BE 16-bit)
 
+ethtool --{show-}features: rx-vlan-offload + tx-vlan-offload
 
 ** Traditional hint: RX-checksum - *impl. details*                  :export:
 
@@ -448,6 +449,18 @@ CHECKSUM_PARTIAL need skb_checksum_start_offset (skb->csum_start)
 
 Encap: skb->csum_level consecutive checksums found in pkt
  - Minus ones verified as CHECKSUM_UNNECESSARY
+ - Encap case also set bit skb->encapsulation
+
+** Traditional hint: TX-checksum - *impl. details*                  :export:
+
+Requests net_device to update packet checksum fields
+ - SKB reusing types in =skb->ip_summed= (2-bits)
+ - features: NETIF_F_{IP,IPV6,HW}_CSUM
+
+CHECKSUM_PARTIAL meaning at TX
+ - Do checksumming from skb->csum_start up to the end
+ - In pkt store checksum at offset skb->csum_start + skb->csum_offset
+
 
 * Emacs end-tricks                                                 :noexport:
 
