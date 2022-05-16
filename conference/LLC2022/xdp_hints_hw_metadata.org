@@ -13,7 +13,7 @@
 
 * For conference: Lund Linux Con (LLC) 2022
 
-This presentation will be given at [[https://lundlinuxcon.org/][LLC 2022] the
+This presentation will be given at [[https://lundlinuxcon.org/][LLC 2022]] the
 Lund Linux Con.
 
 * Slides below                                                     :noexport:
