@@ -66,12 +66,20 @@ My *proposal*: /Use BTF to define the layout of XDP metadata/
 Open question:
  - /Will BTF be a good fit for this use-case?/
 
-Next slides: Explaining *BTF technical details*
-
-* Slide: Introducing BTF - BPF Type Format                           :export:
+* Next slides: Explaining *BTF technical details*  :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
 
 */Assume LPC crowd knows what BTF is/*
  - Slides are here primarily for people downloading these later
+
+Focused on getting mind share on:
+  - What are BTF IDs ?
+    - Especially: /BTF/ *object* /vs./ *type* /IDs/
+
+** Slide: Introducing BTF - BPF Type Format                         :export:
+
 
 [[https://www.kernel.org/doc/html/latest/bpf/btf.html][BTF]] compact Type Format (based on compiler's DWARF debug type info)
  - Great [[https://facebookmicrosites.github.io/bpf/blog/2018/11/14/btf-enhancement.html][blogpost]] by Andrii Nakryiko
