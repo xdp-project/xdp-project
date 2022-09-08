@@ -228,14 +228,67 @@ This achieves /decoupling via btf_id/ as it becomes *struct's "version"* number
  - */Cons/*: *XDP to SKB* conversion */harder/* as kernel cannot trust btf_id
    - Given BPF-prog can overwrite ID in metadata area
 
-** Slide: Solution(B): Extend with common struct
+** Slide: Solution(B): Extend with common struct                    :export:
 
 Create /=xdp_hints_common=/ struct with netstack known hints
  - Still place *"btf_full_id" value* /inside metadata/ area, *as last member*
  - Extend /=xdp_buff=/ with *flag*: "compat with common hints"
  - Helps *XDP to SKB* use-case
 
+Userspace MUST not consider this common struct UAPI
+ - Kernel can change this anytime
+ - Userspace MUST use BTF info to decode layout
 
+This is proposal in RFC v2 patchset
+ - [[https://lore.kernel.org/bpf/166256538687.1434226.15760041133601409770.stgit@firesoul/T/#t][[RFCv2] XDP-hints: XDP gaining access to HW offload hints via BTF]]
+
+** Slide: Layout of xdp_hints_common                                :export:
+
+
+
+#+begin_src C
+struct xdp_hints_common {
+	union {
+		__wsum		csum;
+		struct {
+			__u16	csum_start;
+			__u16	csum_offset;
+		};
+	};
+	u16 rx_queue;
+	u16 vlan_tci;
+	u32 rx_hash32;
+	u32 xdp_hints_flags;
+	u64 btf_full_id; /* BTF object + type ID */
+} __attribute__((aligned(4))) __attribute__((packed));
+#+end_src
+
+Member /=xdp_hints_flags=/ is further described via
+ - BTF type *=enum xdp_hints_flags=*
+
+** Slide: BTF type enum xdp_hints_flags
+
+#+begin_src C
+enum xdp_hints_flags {
+        HINT_FLAG_CSUM_TYPE_BIT0 = 1,
+        HINT_FLAG_CSUM_TYPE_BIT1 = 2,
+        HINT_FLAG_CSUM_TYPE_MASK = 3,
+        HINT_FLAG_CSUM_LEVEL_BIT0 = 4,
+        HINT_FLAG_CSUM_LEVEL_BIT1 = 8,
+        HINT_FLAG_CSUM_LEVEL_MASK = 12,
+        HINT_FLAG_CSUM_LEVEL_SHIFT = 2,
+        HINT_FLAG_RX_HASH_TYPE_BIT0 = 16,
+        HINT_FLAG_RX_HASH_TYPE_BIT1 = 32,
+        HINT_FLAG_RX_HASH_TYPE_MASK = 48,
+        HINT_FLAG_RX_HASH_TYPE_SHIFT = 4,
+        HINT_FLAG_RX_QUEUE = 128,
+        HINT_FLAG_VLAN_PRESENT = 256,
+        HINT_FLAG_VLAN_PROTO_ETH_P_8021Q = 512,
+        HINT_FLAG_VLAN_PROTO_ETH_P_8021AD = 1024,
+};
+#+end_src
+
+*/Not UAPI/*: BPF-prog + userspace MUST decode via BTF
 
 * Slide: End: /Questions?/                                         :noexport:
 :PROPERTIES:
