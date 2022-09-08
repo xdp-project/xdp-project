@@ -173,7 +173,8 @@ body {
 .reveal h1 {
   text-shadow: none; }
 
-.reveal .img-slide h3 {
+.reveal .img-slide h3,
+.reveal .img-slide h2 {
     position: absolute;
     top: .2em;
     right: 1em;
