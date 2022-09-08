@@ -288,6 +288,21 @@ enum xdp_hints_flags {
 };
 #+end_src
 
+** Slide: Driver specific struct
+
+Example: Driver specific struct
+ - Simply include common struct as last member
+
+#+begin_src C
+struct xdp_hints_i40e {
+	struct i40e_rx_ptype_decoded i40e_hash_ptype;
+	struct xdp_hints_common common;
+};
+#+end_src
+
+Driver devel must make sure =btf_full_id= is last member
+ - Watch out for C-compiler padding
+ - And comply with metadata 4 byte alignment rules
 
 * Slide: End: /Questions?/                                         :noexport:
 :PROPERTIES:
