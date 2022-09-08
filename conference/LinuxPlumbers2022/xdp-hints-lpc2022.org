@@ -207,6 +207,36 @@ Consider defining Endianess: Big vs Little endian
  - In XDP-hints struct layout
  - Given /BTF is flexible/, can be *added later* when HW appears
 
+* Slide: XDP-hints exploring solutions using BTF                     :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+*Design not fully done* yet
+ - Upstream interaction will likely change solution anyhow
+
+** Slide: Solution(A): /Decouple/ with *btf_id* /in metadata/       :export:
+
+Place /full/ *"btf_id" value* /inside metadata/ area, *as last member*
+ - last member: due to "grows" backwards, important *for AF_XDP* /decoding/
+ - Extend /=xdp_buff=/ + /=xdp_frame=/ (+AF_XDP) with flags that BTF is "enabled"
+   - */Notice/*: Full BTF ID identify which module via BTF object ID
+
+This achieves /decoupling via btf_id/ as it becomes *struct's "version"* number
+ - /Pros/: Easy to handle different /layout per pkt/
+   - as BPF-prog (or AF_XDP) can /multiplex on btf_ids/ known to "them"
+ - */Cons/*: *XDP to SKB* conversion */harder/* as kernel cannot trust btf_id
+   - Given BPF-prog can overwrite ID in metadata area
+
+** Slide: Solution(B): Extend with common struct
+
+Create /=xdp_hints_common=/ struct with netstack known hints
+ - Still place *"btf_full_id" value* /inside metadata/ area, *as last member*
+ - Extend /=xdp_buff=/ with *flag*: "compat with common hints"
+ - Helps *XDP to SKB* use-case
+
+
+
 * Slide: End: /Questions?/                                         :noexport:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
