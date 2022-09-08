@@ -25,6 +25,37 @@ Colors are choosen via org-mode italic/bold high-lighting:
  - *bold*   = *yellow*
  - */italic-bold/* = red
 
+* Slide: What are XDP-hints                                          :export:
+
+/XDP-hints/ dates back to NetDevConf [[https://www.youtube.com/watch?v=uD1_oAHpUmU][Nov 2017]] (by [[https://legacy.netdevconf.info/2.2/papers/waskiewicz-xdpacceleration-talk.pdf][PJ Waskiewicz]])
+ - Purpose: /Let XDP access HW offload hints/
+
+Basic idea:
+ - Provide or extract (from descriptor) NIC hardware offload hints
+ - *Store info in XDP metadata area* (located before pkt header)
+
+XDP /metadata area/ avail since [[https://www.spinics.net/lists/netdev/msg456525.html][Sep 2017]] (by Daniel Borkmann)
+ - *Space is limited* (currently 32 bytes)
+
+Main reason XDP-hints work *stalled*
+ - */No consensus/* on *layout* of XDP metadata
+ - /BTF/ was *not ready* at that time
+
+* Slide: What are *traditional* hardware offload hints?              :export:
+
+NIC *hardware* provides offload hints in RX (and TX) *descriptors*
+ - */The netstack SKB/* packet data-struct stores+uses these
+
+*RX descriptors* can e.g. provide:
+ - RX-/checksum/ validation, RX-/hash/ value, RX-/timestamp/
+ - RX-/VLAN/ provides VLAN ID/tag non-inline
+
+*TX descriptors* can e.g. ask hardware to perform actions:
+ - *TX*-/checksum/: Ask hardware to compute checksums on transmission
+ - TX-/VLAN/: Ask hardware to insert VLAN tag
+ - Advanced: /TX-timestamp/ HW stores TX-time and feeds back on completion
+ - Advanced: /TX-LaunchTime/ ask HW to send packet at specific time in future
+
 * Slide: End: /Questions?/                                         :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
