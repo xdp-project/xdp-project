@@ -358,6 +358,15 @@ Complications: /metadata grows/ *backwards*
    - Cons: Union padding quickly gets "ugly" in C-code
    - Pros: Easier for driver C-code with one type for metadata area
 
+* Slide: Future work                                                 :export:
+
+Mostly covered RX-side:
+ - *Future* work /TX-side/: ask hardware to perform actions
+
+Help userspace developers decode BTF
+ - Code more [[https://github.com/xdp-project/bpf-examples/tree/master/AF_XDP-interaction][examples]] and perhaps make lib
+ - Listing of avail xdp_hints_* (via btftool?)
+
 * Slide: End: /Questions?/                                         :noexport:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
