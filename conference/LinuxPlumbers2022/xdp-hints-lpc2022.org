@@ -56,6 +56,18 @@ NIC *hardware* provides offload hints in RX (and TX) *descriptors*
  - Advanced: /TX-timestamp/ HW stores TX-time and feeds back on completion
  - Advanced: /TX-LaunchTime/ ask HW to send packet at specific time in future
 
+* Slide: XDP-hints layout defined via /BTF layout/                   :export:
+
+My *proposal*: /Use BTF to define the layout of XDP metadata/
+ - Each NIC driver can choose its own BTF layout
+ - Slightly *challenging requirement*:
+   - NIC driver can *change* /layout per pkt/ (e.g timestamp only in PTP pkts)
+
+Open question:
+ - /Will BTF be a good fit for this use-case?/
+
+Next slides: Explaining *BTF technical details*
+
 * Slide: Introducing BTF - BPF Type Format                           :export:
 
 */Assume LPC crowd knows what BTF is/*
