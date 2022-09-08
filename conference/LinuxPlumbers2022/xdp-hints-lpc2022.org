@@ -56,6 +56,72 @@ NIC *hardware* provides offload hints in RX (and TX) *descriptors*
  - Advanced: /TX-timestamp/ HW stores TX-time and feeds back on completion
  - Advanced: /TX-LaunchTime/ ask HW to send packet at specific time in future
 
+* Slide: Introducing BTF - BPF Type Format                           :export:
+
+[[https://www.kernel.org/doc/html/latest/bpf/btf.html][BTF]] compact Type Format (based on compiler's DWARF debug type info)
+ - Great [[https://facebookmicrosites.github.io/bpf/blog/2018/11/14/btf-enhancement.html][blogpost]] by Andrii Nakryiko
+   - 124MB of DWARF data compressed to 1.5MB compact BTF type data
+ - Suitable to be /included in Linux kernel image/ by default
+   - See file =/sys/kernel/btf/vmlinux= avail in most distro kernels
+ - Kernel's runtime data structures have become *self-describing via BTF*
+
+#+begin_src sh
+ # bpftool btf dump file /sys/kernel/btf/vmlinux format c
+#+end_src
+
+** Slide: More components: CO-RE + BTF + libbpf                     :export:
+
+[[https://nakryiko.com/posts/bpf-portability-and-co-re/#compiler-support][Blogpost]] on BPF *CO-RE* (/Compile Once – Run Everywhere/) (Andrii Nakryiko)
+ - Explains how BTF is one piece of the puzzle
+ - BPF ELF object files are made /portable across kernel versions via CO-RE/
+ - LLVM *compiler emits BTF relocations* (for BPF code accessing struct fields)
+
+BPF-prog (binary ELF object) /loader/ *libbpf* /combines pieces/
+ - Tailor BPF-prog code to a particular running kernel
+ - Looks at *BPF-prog recorded BTF* type and relocation information
+   - /matches/ them to BTF information provided by *running kernel*
+   - /updates necessary offsets/ and other relocatable data
+ - Kernel struct can change layout, iff member name+size stays same
+
+** Slide: [[https://github.com/xdp-project/bpf-examples/blob/master/ktrace-CO-RE/ktrace01_kern.c][Code-Example]]: Partial struct + runtime BTF-id             :export:
+
+BPF-prog can define /partial struct/ with few members
+ - libbpf matches + "removes" *triple-underscore* after /real struct name/
+ - *preserve_access_index* will be matched against kernel data-structure
+
+#+begin_src C
+struct sk_buff___local {
+	__u32 hash;
+} __attribute__((preserve_access_index));
+
+SEC("kprobe/udp_send_skb.isra.0")
+int BPF_KPROBE(udp_send_skb, struct sk_buff___local *skb)
+{
+	__u32 h; __u32 btf_id;
+	BPF_CORE_READ_INTO(&h, skb, hash); /* skb->hash */
+	btf_id = bpf_core_type_id_kernel(struct sk_buff___local);
+	bpf_printk("skb->hash=0x%x btf_id(skb)=%d", h, btf_id);
+}
+#+end_src
+
+Notice: Can get *btf_id* for /sk_buff/ used by *running* /kernel/
+
+** Slide: BTF type IDs and their usage                              :export:
+
+BTF system has *type IDs* to refer to each-other (in compressed format)
+ - Zero is not a valid BTF ID and numbering (usually) *starts from one*
+   - Userspace can dump and see numbering via /=bpftool btf dump file=/
+
+/Kernel's BTF/ data files are located in *=/sys/kernel/btf/=* (modules since [[https://git.kernel.org/torvalds/c/36e68442d1af][v5.11]])
+ - Main file *vmlinux* contains every type /compiled into kernel/
+ - All *module files* /offset/ ID numbering to start at *last* /vmlinux/ *ID*
+   - Allows module to reference vmlinux type IDs (for compression)
+
+/Userspace/ BPF-prog ELF-object files also contains *BTF sections*
+ - This is known as /local/ BTF and numbering starts at one
+ - BPF-prog can query own local BTF id via: *=bpf_core_type_id_local()=*
+
+
 * Slide: End: /Questions?/                                         :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
