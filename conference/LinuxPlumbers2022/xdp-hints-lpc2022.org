@@ -212,8 +212,10 @@ Consider defining Endianess: Big vs Little endian
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-*Design not fully done* yet
+/Design/ *not set in stone* yet
  - Upstream interaction will likely change solution anyhow
+
+Explaining /current/ [[https://lore.kernel.org/bpf/166256538687.1434226.15760041133601409770.stgit@firesoul/T/#t][approach]]
 
 ** Slide: Step#1: /Decouple/ with *btf_id* /in metadata/            :export:
 
@@ -232,7 +234,7 @@ This achieves *decoupling* /via btf_id/ as it becomes *struct's "version"* numbe
 
 Create /=xdp_hints_common=/ struct with netstack known hints
  - Still place *"btf_full_id" value* /inside metadata/ area, *as last member*
- - Extend /=xdp_buff=/ with *flag*: "compat with common hints"
+ - Extend /=xdp_buff=/ with *flag*: 'compat with common hints'
  - Helps *XDP to SKB* use-case
 
 Userspace /MUST/ *not consider this common struct* */UAPI/*
@@ -303,6 +305,44 @@ struct xdp_hints_i40e {
 Driver devel must make sure =btf_full_id= is last member
  - Watch out for C-compiler padding
  - And comply with metadata 4 byte alignment rules
+
+
+* Slide: What BTF layout does a driver provide?                      :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+How to solve "exporting" /available/ *BTF-layouts*
+ - per NIC driver
+
+Is a new really UAPI needed?!?
+ - Just use BTF ???
+
+** Slide: What BTF layout does this driver provide?                 :export:
+
+How does userspace (and libbpf) know:
+ - What BTF layout does this driver provide?
+
+*/Proposal/*: Struct /naming-convention/ for *=struct xdp_hints_*=*
+ - Could be way for drivers to "export" available BTF-layouts?
+
+New *UAPI* is *not* really needed:
+ - Remember: /BTF info/ avail via *=/sys/kernel/btf/=*
+   - both for /vmlinux/ and /modules/
+ - libbpf parses and resolves relocations via these
+ - AF_XDP userspace can also [[https://github.com/xdp-project/bpf-examples/tree/master/AF_XDP-interaction][decode BTF]]
+
+** Slide: *Proposal*: Encapsulating C-code union?                   :export:
+
+/Each/ *NIC driver* could have a /=union=/ named *xdp_hints_union*
+ - Structs added to union, means driver *may* use this BTF layout
+ - Notice: Union "sub" structs automatically gets own BTF IDs
+ - Essentially: Way to describe/support NIC using *layouts per packet*
+
+Complications: /metadata grows/ *backwards*
+ - *Padding* needed if union should /match memory layout/
+   - Cons: Union padding quickly gets "ugly" in C-code
+   - Pros: Easier for driver C-code with one type for metadata area
 
 * Slide: End: /Questions?/                                         :noexport:
 :PROPERTIES:
