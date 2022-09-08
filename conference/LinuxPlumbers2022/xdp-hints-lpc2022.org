@@ -28,7 +28,7 @@ Colors are choosen via org-mode italic/bold high-lighting:
 * Slide: What are XDP-hints                                          :export:
 
 /XDP-hints/ dates back to NetDevConf [[https://www.youtube.com/watch?v=uD1_oAHpUmU][Nov 2017]] (by [[https://legacy.netdevconf.info/2.2/papers/waskiewicz-xdpacceleration-talk.pdf][PJ Waskiewicz]])
- - Purpose: /Let XDP access HW offload hints/
+ - Purpose: Let /XDP/ *access* /HW offload hints/
 
 Basic idea:
  - Provide or extract (from descriptor) NIC hardware offload hints
@@ -84,7 +84,7 @@ BPF-prog (binary ELF object) /loader/ *libbpf* /combines pieces/
  - Looks at *BPF-prog recorded BTF* type and relocation information
    - /matches/ them to BTF information provided by *running kernel*
    - /updates necessary offsets/ and other relocatable data
- - Kernel struct can change layout, iff member name+size stays same
+ - *Kernel struct can* */change layout/*, iff member /name+size stays/ same
 
 ** Slide: [[https://github.com/xdp-project/bpf-examples/blob/master/ktrace-CO-RE/ktrace01_kern.c][Code-Example]]: Partial struct + runtime BTF-id             :export:
 
@@ -102,7 +102,7 @@ int BPF_KPROBE(udp_send_skb, struct sk_buff___local *skb)
 {
 	__u32 h; __u32 btf_id;
 	BPF_CORE_READ_INTO(&h, skb, hash); /* skb->hash */
-	btf_id = bpf_core_type_id_kernel(struct sk_buff___local);
+	btf_id = bpf_core_type_id_kernel(struct sk_buff___local); /* libbpf load-time lookup */
 	bpf_printk("skb->hash=0x%x btf_id(skb)=%d", h, btf_id);
 }
 #+end_src
