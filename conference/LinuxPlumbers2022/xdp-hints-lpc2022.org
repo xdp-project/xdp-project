@@ -349,6 +349,12 @@ Complications: /metadata grows/ *backwards*
 :reveal_extra_attr: class="mid-slide"
 :END:
 
+Resources:
+ - XDP-project - [[https://github.com/xdp-project/][GitHub.com/xdp-project]]
+   - Get an easy start with [[https://github.com/xdp-project/bpf-examples][xdp-project/bpf-examples]]
+ - XDP-hints mailing list: *xdp-hints* /@/ *xdp-project.net*
+   - https://lists.xdp-project.net/
+
 * Emacs end-tricks                                                 :noexport:
 
 This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
