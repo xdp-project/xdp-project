@@ -58,6 +58,9 @@ NIC *hardware* provides offload hints in RX (and TX) *descriptors*
 
 * Slide: Introducing BTF - BPF Type Format                           :export:
 
+*/Assume LPC crowd knows what BTF is/*
+ - Slides are here primarily for people downloading these later
+
 [[https://www.kernel.org/doc/html/latest/bpf/btf.html][BTF]] compact Type Format (based on compiler's DWARF debug type info)
  - Great [[https://facebookmicrosites.github.io/bpf/blog/2018/11/14/btf-enhancement.html][blogpost]] by Andrii Nakryiko
    - 124MB of DWARF data compressed to 1.5MB compact BTF type data
