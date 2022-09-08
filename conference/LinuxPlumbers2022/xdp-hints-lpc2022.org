@@ -118,14 +118,27 @@ BTF system has *type IDs* to refer to each-other (in compressed format)
 /Kernel's BTF/ data files are located in *=/sys/kernel/btf/=* (modules since [[https://git.kernel.org/torvalds/c/36e68442d1af][v5.11]])
  - Main file *vmlinux* contains every type /compiled into kernel/
  - All *module files* /offset/ ID numbering to start at *last* /vmlinux/ *ID*
-   - Allows module to reference vmlinux type IDs (for compression)
+   - Allows modules to reference vmlinux type IDs (for compression)
 
 /Userspace/ BPF-prog ELF-object files also contains *BTF sections*
  - This is known as /local/ BTF and numbering starts at one
  - BPF-prog can query own local BTF id via: *=bpf_core_type_id_local()=*
 
+* Slide: Q: Can we *identify* /BTF layout/ via the BTF ID?           :export:
 
-* Slide: End: /Questions?/                                         :export:
+Issue: BTF *type* /IDs/ are */not unique/* (32-bit)
+ - But they are /unique within/ one *BTF object*
+
+/BTF/ (objects) loaded into *kernel* also have an (BTF) *ID* (32-bit)
+ - "vmlinux" gets ID 1
+ - modules gets IDs assigned on loading
+ - same for user loaded BTF objects
+
+Construct /unique/: *Full* /BTF ID/ (64-bit)
+ - via combining: BTF *object* and *type* ID
+
+
+* Slide: End: /Questions?/                                         :noexport:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
