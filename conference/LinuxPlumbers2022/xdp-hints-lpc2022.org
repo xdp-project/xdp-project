@@ -290,7 +290,21 @@ enum xdp_hints_flags {
 };
 #+end_src
 
-** Slide: Driver specific struct
+** Slide: BTF type enum xdp_hints_csum_type                         :export:
+
+The HINT_FLAG_CSUM_TYPE's are mapped to SKB usage
+ - via BTF defined enum - not UAPI
+
+#+begin_src C
+enum xdp_hints_csum_type {
+	HINT_CHECKSUM_NONE        = CHECKSUM_NONE,
+	HINT_CHECKSUM_UNNECESSARY = CHECKSUM_UNNECESSARY,
+	HINT_CHECKSUM_COMPLETE    = CHECKSUM_COMPLETE,
+	HINT_CHECKSUM_PARTIAL     = CHECKSUM_PARTIAL,
+};
+#+end_src
+
+** Slide: Driver specific struct                                    :export:
 
 Example: Driver specific struct
  - Simply include common struct as last member
