@@ -1,9 +1,9 @@
-#+Title: Linux Plumbers Conf (LLC) 2022
+* Linux Plumbers Conf (LPC) 2022
 
-Presentation source for talks given at Linux Plumbers Conf (LLC) 2022
+Presentation source for talks given at Linux Plumbers Conf (LPC) 2022
 under the [[https://lpc.events/event/16/sessions/131/#all][eBPF & Networking]] track.
 
-* Talks
+** Talks
 
 XDP-queuing (XDQ) related:
  - [[https://lpc.events/event/16/contributions/1351/][Bringing packet queueing to XDP]]
