@@ -1,5 +1,5 @@
 # -*- fill-column: 79; -*-
-#+TITLE: XDP hints via BPF Type Format (BTF) system
+#+TITLE: XDP gaining access to NIC hardware hints via BTF
 #+AUTHOR: Jesper Dangaard Brouer <hawk@kernel.org>
 #+EMAIL: brouer@redhat.com
 #+REVEAL_THEME: redhat
@@ -39,7 +39,7 @@ XDP /metadata area/ avail since [[https://www.spinics.net/lists/netdev/msg456525
 
 Main reason XDP-hints work *stalled*
  - */No consensus/* on *layout* of XDP metadata
- - /BTF/ was *not ready* at that time
+ - /BTF/ was *not ready* at that time (BPF Type Format)
 
 * Slide: What are *traditional* hardware offload hints?              :export:
 
