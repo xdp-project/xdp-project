@@ -127,7 +127,7 @@ int BPF_KPROBE(udp_send_skb, struct sk_buff___local *skb)
 }
 #+end_src
 
-Notice: Can get *btf_id* for /sk_buff/ used by *running* /kernel/
+Notice: Can get /BTF/ *type* /id/ for /sk_buff/ used by *running* /kernel/
 
 ** Slide: BTF type IDs and their usage                              :export:
 
@@ -367,7 +367,7 @@ Help userspace developers decode BTF
  - Code more [[https://github.com/xdp-project/bpf-examples/tree/master/AF_XDP-interaction][examples]] and perhaps make lib
  - Listing of avail xdp_hints_* (via btftool?)
 
-* Slide: End: /Questions?/                                         :noexport:
+* Slide: End: /Questions?/                                           :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
@@ -386,7 +386,7 @@ in the compiled version.
 # Local Variables:
 # org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
 # <h2 class=\"author\">Jesper Dangaard Brouer<br/>
-# <span style=\"font-size:75%%\">Sr. Principal Kernel Engineer, Red Hat</span></h2>
+# <span style=\"font-size:75%%\">Sr. Principal Kernel Engineer</br>Red Hat Inc.</span></h2>
 # <h3>Linux Plumbers Conference</br>September 2022</h3>"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: ?" "" contents)))
 # End:
