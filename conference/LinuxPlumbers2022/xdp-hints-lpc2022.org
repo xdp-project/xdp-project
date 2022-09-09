@@ -224,11 +224,11 @@ Place /full/ *"btf_id" value* /inside metadata/ area, *as last member*
  - Extend /=xdp_buff=/ + /=xdp_frame=/ (+AF_XDP) with flags that BTF is "enabled"
    - */Notice/*: Full BTF ID identify which module via BTF object ID
 
-This achieves *decoupling* /via btf_id/ as it becomes *struct's "version"* number
+This achieves *decoupling* /via btf_full_id/ - no locked/fixed XDP struct
  - /Pros/: Easy to handle different /layout per pkt/
    - as BPF-prog (or AF_XDP) can /multiplex on btf_id's/ known to "them"
- - */Cons/*: *XDP to SKB* conversion */harder/* as kernel cannot trust btf_id
-   - Given BPF-prog can overwrite ID in metadata area
+ - */Cons/*: *XDP to SKB* conversion */harder/*
+   - Would need table lookup for each compat layouts
 
 ** Slide: Step#2: Extend with common struct                         :export:
 
@@ -239,7 +239,7 @@ Create /=xdp_hints_common=/ struct with netstack known hints
 
 Userspace /MUST/ *not consider this common struct* */UAPI/*
  - Kernel can change this anytime
- - Userspace MUST use BTF info to decode layout
+ - Userspace */MUST/* use BTF info to decode layout
 
 This is proposal in RFC v2 patchset
  - [[https://lore.kernel.org/bpf/166256538687.1434226.15760041133601409770.stgit@firesoul/T/#t][[RFCv2] XDP-hints: XDP gaining access to HW offload hints via BTF]]
