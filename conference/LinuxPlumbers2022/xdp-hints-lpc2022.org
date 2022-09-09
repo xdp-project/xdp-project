@@ -11,10 +11,30 @@
 #+OPTIONS: reveal_width:1600 reveal_height:900
 #+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
 
-* For conference: Linux Plumbers Conference 2022
+* For conference: Linux Plumbers Conference 2022                   :noexport:
 
 [[https://lpc.events/event/16/contributions/1362/][This presentation]] will be given at
 [[https://lpc.events/event/16/][LPC 2022]] the Linux Plumbers Conference (LPC).
+
+** Abstract                                                       :noexport:
+
+The idea for XDP-hints, which is XDP gaining access HW offload hints, dates
+back to Nov 2017. We believe the main reason XDP-hints work have stalled are
+that upstream we couldn't get consensus on the layout of the XDP metadata. BTF
+was not ready at that time.
+
+We believe the flexibility of BTF can resolve the layout issues, especially
+since BTF have evolved to include support for kernel modules.
+
+This talk is for hashing out upstream XDP-hints discussions and listening to
+users/consumers of this facility.
+
+There are multiple users of this facility that all needs to be satisfied:
+
+ - BPF-progs first obvious consumer (either XDP or TC hooks)
+ - XDP to SKB conversion (in veth and cpumap) for traditional HW offloads
+ - AF_XDP can consume BTF info in userspace to decode metadata area
+ - Chained BPF-progs can communicate state via metadata
 
 * Slides below                                                     :noexport:
 
