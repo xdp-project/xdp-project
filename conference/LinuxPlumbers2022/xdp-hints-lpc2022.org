@@ -385,7 +385,8 @@ The actual C-code doesn't look that ugly, right?
 * Slide: Future work                                                 :export:
 
 Mostly covered RX-side:
- - *Future* work /TX-side/: ask hardware to perform actions
+ - *Future* work /TX-side/: 'ask hardware to perform actions'
+ - Also /TX-completion/ *event* can return HW hints, e.g. wire TX-time
 
 Help userspace developers decode BTF
  - Code more [[https://github.com/xdp-project/bpf-examples/tree/master/AF_XDP-interaction][examples]] and perhaps make lib
