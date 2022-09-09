@@ -358,6 +358,30 @@ Complications: /metadata grows/ *backwards*
    - Cons: Union padding quickly gets "ugly" in C-code
    - Pros: Easier for driver C-code with one type for metadata area
 
+** Slide: Example xdp_hints_union for /driver i40e/                 :export:
+
+#+begin_src C
+/* xdp_hints_union defines xdp_hints_* structs available in this driver.
+ * As metadata grows backwards structure are padded to align.
+ */
+union xdp_hints_union {
+	struct xdp_hints_i40e_timestamp i40e_ts;
+	struct {
+		u64 pad1_ts;
+		struct xdp_hints_i40e i40e;
+	};
+	struct {
+		u64 pad2_ts;
+		u32 pad3_i40e;
+		struct xdp_hints_common common;
+	};
+} __aligned(4) __attribute__((packed));
+#+end_src
+
+The actual C-code doesn't look that ugly, right?
+ - and fits a single slide with room to spare
+
+
 * Slide: Future work                                                 :export:
 
 Mostly covered RX-side:
