@@ -30,7 +30,7 @@ Colors are choosen via org-mode italic/bold high-lighting:
 :reveal_extra_attr: class="img-slide"
 :END:
 
-#+ATTR_html: :height 720
+#+ATTR_html: :height 720 :style position:relative;top:-2em;
 [[file:talk-about-queueing.jpg]]
 
 * Review: How does XDP_REDIRECT work?                              :noexport:
@@ -54,13 +54,19 @@ Adding new redirect types requires /*no driver changes*/.
 [[file:xdp-redirect-flow.svg]]
 
 * Why does XDP need queueing?                                        :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
 
-#+ATTR_html: :height 500
+#+ATTR_html: :height 580
 #+CAPTION: 100->10 Gbps rate transition, 10ms base RTT
 [[file:tcp_1up_-_Linux_vs_XDP_forwarding.png]]
 
 
-* The ingredients of queueing
+* The ingredients of queueing                                        :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
 - Somewhere to store packets
 - A way to pull the packets back out
 
@@ -78,11 +84,19 @@ time-based scheduling (sch_fq, etc)
 
 So we need a priority queue
 
-* Slide:                                                             :export:
+* Slide: Performance overhead of map types                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
 #+ATTR_html: :height 720
 [[file:pifo-performance.svg]]
 
-* Slide:                                                             :export:
+* Slide: Performance overhead of bpf_timer                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
 #+ATTR_html: :height 720
 [[file:pifo-performance-timer.svg]]
 * A way to get the packets out: TX scheduling
