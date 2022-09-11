@@ -25,14 +25,14 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="0.92818648"
-     inkscape:cx="701.36768"
-     inkscape:cy="307.58905"
+     inkscape:cx="678.74292"
+     inkscape:cy="308.66642"
      inkscape:window-width="1920"
      inkscape:window-height="1164"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="g4114" />
   <defs
      id="defs2">
     <marker
@@ -537,14 +537,14 @@
       <text
          xml:space="preserve"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5.64444px;line-height:125%;font-family:'Gentium Book Basic';-inkscape-font-specification:'Gentium Book Basic';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         x="258.05444"
+         x="247.1776"
          y="135.41522"
          id="text3977"><tspan
            sodipodi:role="line"
            id="tspan3975"
            style="stroke-width:0.264583px"
-           x="258.05444"
-           y="135.41522">Bulk queue</tspan></text>
+           x="247.1776"
+           y="135.41522">Bulk queue (16 pkts)</tspan></text>
     </g>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.999998;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow2)"

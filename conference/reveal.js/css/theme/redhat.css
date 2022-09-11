@@ -446,6 +446,18 @@ body {
   box-sizing: border-box;
 }
 
+.reveal .two-column pre {
+  width: 48%;
+  margin-left: 1em;
+  float: left;
+}
+
+.reveal .three-column pre {
+  width: 30%;
+  margin-left: 1em;
+  float: left;
+}
+
 .reveal .figure-bg {
   background-color: white;
   padding: .3em;

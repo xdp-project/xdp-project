@@ -9,7 +9,7 @@
 #+REVEAL_ROOT: ../reveal.js
 #+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
 #+OPTIONS: reveal_width:1600 reveal_height:900
-#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+#+OPTIONS: ^:{} tags:nil toc:nil num:nil ':t
 
 * For conference: Linux Plumbers Conference 2022
 
@@ -33,6 +33,16 @@ Colors are choosen via org-mode italic/bold high-lighting:
 #+ATTR_html: :height 720 :style position:relative;top:-2em;
 [[file:talk-about-queueing.jpg]]
 
+* Why does XDP need queueing?                                        :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_html: :height 580
+#+CAPTION: 100->10 Gbps rate transition, 10ms base RTT
+[[file:tcp_1up_-_Linux_vs_XDP_forwarding.png]]
+
+
 * Review: How does XDP_REDIRECT work?                              :noexport:
 
 1. /Program/ calls =bpf_redirect_map()=, returning =XDP_REDIRECT=
@@ -53,56 +63,6 @@ Adding new redirect types requires /*no driver changes*/.
 #+ATTR_HTML: :class figure figure-bg
 [[file:xdp-redirect-flow.svg]]
 
-* Why does XDP need queueing?                                        :export:
-:PROPERTIES:
-:reveal_extra_attr: class="img-slide"
-:END:
-
-#+ATTR_html: :height 580
-#+CAPTION: 100->10 Gbps rate transition, 10ms base RTT
-[[file:tcp_1up_-_Linux_vs_XDP_forwarding.png]]
-
-
-* The ingredients of queueing                                        :export:
-:PROPERTIES:
-:reveal_extra_attr: class="mid-slide"
-:END:
-- Somewhere to store packets
-- A way to pull the packets back out
-
-* A way to store packets: A new BPF map                              :export:
-#+begin_quote
-"Bad programmers worry about the code. Good programmers worry about data
-structures and their relationships."
-
-Linus Torvalds in https://lwn.net/Articles/193245/
-#+end_quote
-
-* Detour: EDT packet scheduling
-Turns out we can represent lots of packet scheduling algorithms using
-time-based scheduling (sch_fq, etc)
-
-So we need a priority queue
-
-* Slide: Performance overhead of map types                           :export:
-:PROPERTIES:
-:reveal_extra_attr: class="img-slide"
-:END:
-
-#+ATTR_html: :height 720
-[[file:pifo-performance.svg]]
-
-* Slide: Performance overhead of bpf_timer                           :export:
-:PROPERTIES:
-:reveal_extra_attr: class="img-slide"
-:END:
-
-#+ATTR_html: :height 720
-[[file:pifo-performance-timer.svg]]
-* A way to get the packets out: TX scheduling
-
-Idea: re-use ndo_xdp_xmit()
-
 * Review: Netstack forwarding flow (simplified)                      :export:
 :PROPERTIES:
 :reveal_extra_attr: class="img-slide"
@@ -111,10 +71,428 @@ Idea: re-use ndo_xdp_xmit()
 #+ATTR_HTML: :class figure figure-bg
 [[file:netstack-forwarding-flow.svg]]
 
-* Attempt 1: TX hook
+* The ingredients we need                                            :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+- Somewhere to store packets
+- A way to schedule dequeue and transmission
 
-* Attempt 2: Send helper
+* Somewhere to store the packets                                     :export:
+#+begin_quote
+"Bad programmers worry about the code. Good programmers worry about data
+structures and their relationships."
 
+Linus Torvalds in https://lwn.net/Articles/193245/
+#+end_quote
+
+We don't want to be bad programmers, so let's worry about data structures!
+
+** Data structures for packet queues - prior art                    :export:
+#+begin_src sh
+$ ls net/sched/sch_*.c | wc -l
+38
+#+end_src
+
+How many different data structures do these 38 qdiscs use?
+
+#+ATTR_REVEAL: :frag t
+#+begin_src C
+struct sk_buff {
+	union {
+		struct {
+			struct sk_buff		*next;
+			struct sk_buff		*prev;
+
+			union {
+				struct net_device	*dev;
+				unsigned long		dev_scratch;
+			};
+		};
+		struct rb_node		rbnode; /* used in netem, ip4 defrag, and tcp stack */
+		struct list_head	list;
+		struct llist_node	ll_node;
+	};
+	/* [...] */
+};
+#+end_src
+
+** PIFO queues                                                      :export:
+
+In the literature, the /Push-In, First-Out (PIFO)/ queue appeared in 2016^{=[0]=}.
+- It's a /*limited*/ priority queue (only dequeue at head)
+  - Can be implemented in silicon
+- We don't need to limit ourselves to the PIFO, *however*:
+  - We can use an /optimised implementation/ for software by Saeed et al^{=[1]=}
+
+
+
+#+HTML: <small style="padding-top: 3em;">
+=[0]= Sivaraman et al, 2016: "Programmable Packet Scheduling at Line Rate"
+
+=[1]= Saeed et al, 2019: "Eiffel: Eifficient and Flexible Packet Scheduling"
+#+HTML: </small>
+
+
+** The Eiffel PIFO implementation                                   :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_HTML: :class figure figure-bg :style height:600px;
+#+CAPTION: Figure 3 from Saeed et al (2019)
+[[file:eiffel-one-queue.svg]]
+
+** The Eiffel PIFO: rotating queues                                 :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_HTML: :class figure figure-bg :style height:600px;
+#+CAPTION: Figure 4 from Saeed et al (2019)
+[[file:eiffel-two-queues.svg]]
+
+** Slide: Performance overhead of map types                         :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_html: :height 720
+[[file:pifo-performance.svg]]
+
+** Where is the RB-tree overhead coming from?                       :export:
+
+#+html: <div style="font-size: 33%;" class="three-column">
+#+begin_src C
+static __always_inline void
+____rb_erase_color(struct rb_node *parent, struct rb_root *root,
+	void (*augment_rotate)(struct rb_node *old, struct rb_node *new))
+{
+	struct rb_node *node = NULL, *sibling, *tmp1, *tmp2;
+
+	while (true) {
+		/*
+		 ,* Loop invariants:
+		 ,* - node is black (or NULL on first iteration)
+		 ,* - node is not the root (parent is not NULL)
+		 ,* - All leaf paths going through parent and node have a
+		 ,*   black node count that is 1 lower than other leaf paths.
+		 ,*/
+		sibling = parent->rb_right;
+		if (node != sibling) {	/* node == parent->rb_left */
+			if (rb_is_red(sibling)) {
+				/*
+				 ,* Case 1 - left rotate at parent
+				 ,*
+				 ,*     P               S
+				 ,*    / \             / \
+				 ,*   N   s    -->    p   Sr
+				 ,*      / \         / \
+				 ,*     Sl  Sr      N   Sl
+				 ,*/
+				tmp1 = sibling->rb_left;
+				WRITE_ONCE(parent->rb_right, tmp1);
+				WRITE_ONCE(sibling->rb_left, parent);
+				rb_set_parent_color(tmp1, parent, RB_BLACK);
+				__rb_rotate_set_parents(parent, sibling, root,
+							RB_RED);
+				augment_rotate(parent, sibling);
+				sibling = tmp1;
+			}
+			tmp1 = sibling->rb_right;
+			if (!tmp1 || rb_is_black(tmp1)) {
+				tmp2 = sibling->rb_left;
+				if (!tmp2 || rb_is_black(tmp2)) {
+					/*
+					 ,* Case 2 - sibling color flip
+					 ,* (p could be either color here)
+					 ,*
+					 ,*    (p)           (p)
+					 ,*    / \           / \
+					 ,*   N   S    -->  N   s
+					 ,*      / \           / \
+					 ,*     Sl  Sr        Sl  Sr
+					 ,*
+					 ,* This leaves us violating 5) which
+					 ,* can be fixed by flipping p to black
+					 ,* if it was red, or by recursing at p.
+					 ,* p is red when coming from Case 1.
+					 ,*/
+					rb_set_parent_color(sibling, parent,
+							    RB_RED);
+					if (rb_is_red(parent))
+						rb_set_black(parent);
+					else {
+						node = parent;
+						parent = rb_parent(node);
+						if (parent)
+							continue;
+					}
+					break;
+				}
+#+end_src
+
+#+begin_src C
+				/*
+				 ,* Case 3 - right rotate at sibling
+				 ,* (p could be either color here)
+				 ,*
+				 ,*   (p)           (p)
+				 ,*   / \           / \
+				 ,*  N   S    -->  N   sl
+				 ,*     / \             \
+				 ,*    sl  Sr            S
+				 ,*                       \
+				 ,*                        Sr
+				 ,*
+				 ,* Note: p might be red, and then both
+				 ,* p and sl are red after rotation(which
+				 ,* breaks property 4). This is fixed in
+				 ,* Case 4 (in __rb_rotate_set_parents()
+				 ,*         which set sl the color of p
+				 ,*         and set p RB_BLACK)
+				 ,*
+				 ,*   (p)            (sl)
+				 ,*   / \            /  \
+				 ,*  N   sl   -->   P    S
+				 ,*       \        /      \
+				 ,*        S      N        Sr
+				 ,*         \
+				 ,*          Sr
+				 ,*/
+				tmp1 = tmp2->rb_right;
+				WRITE_ONCE(sibling->rb_left, tmp1);
+				WRITE_ONCE(tmp2->rb_right, sibling);
+				WRITE_ONCE(parent->rb_right, tmp2);
+				if (tmp1)
+					rb_set_parent_color(tmp1, sibling,
+							    RB_BLACK);
+				augment_rotate(sibling, tmp2);
+				tmp1 = sibling;
+				sibling = tmp2;
+			}
+			/*
+			 ,* Case 4 - left rotate at parent + color flips
+			 ,* (p and sl could be either color here.
+			 ,*  After rotation, p becomes black, s acquires
+			 ,*  p's color, and sl keeps its color)
+			 ,*
+			 ,*      (p)             (s)
+			 ,*      / \             / \
+			 ,*     N   S     -->   P   Sr
+			 ,*        / \         / \
+			 ,*      (sl) sr      N  (sl)
+			 ,*/
+			tmp2 = sibling->rb_left;
+			WRITE_ONCE(parent->rb_right, tmp2);
+			WRITE_ONCE(sibling->rb_left, parent);
+			rb_set_parent_color(tmp1, sibling, RB_BLACK);
+			if (tmp2)
+				rb_set_parent(tmp2, parent);
+			__rb_rotate_set_parents(parent, sibling, root,
+						RB_BLACK);
+			augment_rotate(parent, sibling);
+			break;
+#+end_src
+
+#+begin_src C
+		} else {
+			sibling = parent->rb_left;
+			if (rb_is_red(sibling)) {
+				/* Case 1 - right rotate at parent */
+				tmp1 = sibling->rb_right;
+				WRITE_ONCE(parent->rb_left, tmp1);
+				WRITE_ONCE(sibling->rb_right, parent);
+				rb_set_parent_color(tmp1, parent, RB_BLACK);
+				__rb_rotate_set_parents(parent, sibling, root,
+							RB_RED);
+				augment_rotate(parent, sibling);
+				sibling = tmp1;
+			}
+			tmp1 = sibling->rb_left;
+			if (!tmp1 || rb_is_black(tmp1)) {
+				tmp2 = sibling->rb_right;
+				if (!tmp2 || rb_is_black(tmp2)) {
+					/* Case 2 - sibling color flip */
+					rb_set_parent_color(sibling, parent,
+							    RB_RED);
+					if (rb_is_red(parent))
+						rb_set_black(parent);
+					else {
+						node = parent;
+						parent = rb_parent(node);
+						if (parent)
+							continue;
+					}
+					break;
+				}
+				/* Case 3 - left rotate at sibling */
+				tmp1 = tmp2->rb_left;
+				WRITE_ONCE(sibling->rb_right, tmp1);
+				WRITE_ONCE(tmp2->rb_left, sibling);
+				WRITE_ONCE(parent->rb_left, tmp2);
+				if (tmp1)
+					rb_set_parent_color(tmp1, sibling,
+							    RB_BLACK);
+				augment_rotate(sibling, tmp2);
+				tmp1 = sibling;
+				sibling = tmp2;
+			}
+			/* Case 4 - right rotate at parent + color flips */
+			tmp2 = sibling->rb_right;
+			WRITE_ONCE(parent->rb_left, tmp2);
+			WRITE_ONCE(sibling->rb_right, parent);
+			rb_set_parent_color(tmp1, sibling, RB_BLACK);
+			if (tmp2)
+				rb_set_parent(tmp2, parent);
+			__rb_rotate_set_parents(parent, sibling, root,
+						RB_BLACK);
+			augment_rotate(parent, sibling);
+			break;
+		}
+	}
+}
+#+end_src
+#+html: </div>
+
+** Data structures (summary)                                        :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+- We need at /data structure/ (BPF map) to store packets
+  - Current qdiscs *only use two* data structures: FIFO and priority queue
+  - A priority queue can be used as a FIFO, so *really only one*
+- The Eiffel PIFO implementation /performs well/
+  - Is the *API limitation* (fixed/growing range only) acceptable?
+
+* A way to get the packets out: TX scheduling
+
+Idea: re-use ndo_xdp_xmit()
+
+* Attempt 1: TX hook                                                 :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+HTML: <div class="two-column">
+#+begin_src C
+struct pifo_map {
+	__uint(type, BPF_MAP_TYPE_PIFO_XDP);
+	__uint(key_size, sizeof(__u32));
+	__uint(value_size, sizeof(__u32));
+	__uint(max_entries, 10240);
+	__uint(map_extra, 8192); /* range */
+} pifo SEC(".maps");
+
+SEC("xdp")
+int xdp_redirect_map_queue(struct xdp_md *ctx)
+{
+	int ret;
+	ret = xdp_redirect_map(ctx, &pifo);
+
+	if (ret == XDP_REDIRECT)
+		bpf_schedule_iface_dequeue(ctx,
+					   tgt_ifindex,
+					   0);
+
+	return ret;
+}
+#+end_src
+
+#+begin_src C
+SEC("xdp_dequeue")
+void *xdp_redirect_deq_func(struct dequeue_ctx *ctx)
+{
+	struct xdp_md *pkt;
+	__u64 prio = 0;
+
+	pkt = (void *)bpf_packet_dequeue(ctx, &pifo,
+					 0, &prio);
+	if (!pkt)
+		return NULL;
+
+	return pkt;
+}
+#+end_src
+#+HTML: </div>
+
+* Attempt 2: Send helper                                             :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+HTML: <div class="two-column" style="font-size: 88%">
+#+begin_src C
+__u64 num_queued = 0;
+
+SEC("xdp")
+int xdp_redirect_map_timer(struct xdp_md *ctx)
+{
+	struct bpf_timer *timer;
+	int ret, array_key = 0;
+
+	timer = bpf_map_lookup_elem(&timermap,
+				    &array_key);
+	if (!timer)
+		return XDP_ABORTED;
+
+	if (!timer_init) {
+		bpf_timer_init(timer, &timermap,
+			       CLOCK_MONOTONIC);
+		bpf_timer_set_callback(timer,
+				       xdp_timer_cb);
+		timer_init = 1;
+	}
+
+	ret = xdp_redirect_map(ctx, &pifo);
+	if (ret == XDP_REDIRECT) {
+		num_queued++;
+		bpf_timer_start(timer,
+				0 /* call asap */, 0);
+	}
+	return ret;
+}
+#+end_src
+
+#+begin_src C
+#define BATCH_SIZE 128
+
+static int xdp_timer_cb(void *map, int *key,
+			struct bpf_timer *timer)
+{
+	struct xdp_md *pkt;
+	__u64 prio = 0;
+	int i;
+
+	for (i = 0; i < BATCH_SIZE; i++) {
+		pkt = (void *)bpf_packet_dequeue_xdp(&pifo,
+						     0,
+						     &prio);
+		if (!pkt)
+			break;
+
+		num_queued--;
+		bpf_packet_send(pkt, tgt_ifindex, 0);
+	}
+
+	bpf_packet_flush();
+	if (num_queued)
+		bpf_timer_start(timer,
+				0 /* call asap */, 0);
+
+	return 0;
+}
+#+end_src
+#+HTML: </div>
+
+* Slide: Problem: Overhead of bpf_timer                              :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_html: :height 720
+[[file:pifo-performance-timer.svg]]
 * Fixing performance?
 - New callback scheduling?
 
@@ -126,7 +504,7 @@ Idea: re-use ndo_xdp_xmit()
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-[[https://git.kernel.org/pub/scm/linux/kernel/git/toke/linux.git/log/?h=xdp-queueing-07][https://git.kernel.org/pub/scm/linux/kernel/git/toke/linux.git/log/?h=xdp-queueing-07]]
+[[https://git.kernel.org/toke/l/xdp-queueing-07][https://git.kernel.org/toke/l/xdp-queueing-07]]
 
 * Emacs end-tricks                                                 :noexport:
 
