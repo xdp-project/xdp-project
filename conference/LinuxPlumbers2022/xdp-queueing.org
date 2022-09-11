@@ -78,7 +78,7 @@ Adding new redirect types requires /*no driver changes*/.
 - Somewhere to store packets
 - A way to schedule dequeue and transmission
 
-* Somewhere to store the packets                                     :export:
+* Somewhere to store the packets
 #+begin_quote
 "Bad programmers worry about the code. Good programmers worry about data
 structures and their relationships."
@@ -88,7 +88,7 @@ Linus Torvalds in https://lwn.net/Articles/193245/
 
 We don't want to be bad programmers, so let's worry about data structures!
 
-** Data structures for packet queues - prior art                    :export:
+* Data structures for packet queues                                  :export:
 #+begin_src sh
 $ ls net/sched/sch_*.c | wc -l
 38
@@ -123,7 +123,7 @@ In the literature, the /Push-In, First-Out (PIFO)/ queue appeared in 2016^{=[0]=
 - It's a /*limited*/ priority queue (only dequeue at head)
   - Can be implemented in silicon
 - We don't need to limit ourselves to the PIFO, *however*:
-  - We can use an /optimised implementation/ for software by Saeed et al^{=[1]=}
+  - We can use an /optimised algorithm/ for software by Saeed et al^{=[1]=}
 
 
 
@@ -134,7 +134,7 @@ In the literature, the /Push-In, First-Out (PIFO)/ queue appeared in 2016^{=[0]=
 #+HTML: </small>
 
 
-** The Eiffel PIFO implementation                                   :export:
+** The Eiffel PIFO algorithm                                        :export:
 :PROPERTIES:
 :reveal_extra_attr: class="img-slide"
 :END:
@@ -355,22 +355,37 @@ ____rb_erase_color(struct rb_node *parent, struct rb_root *root,
 #+end_src
 #+html: </div>
 
-** Data structures (summary)                                        :export:
-:PROPERTIES:
-:reveal_extra_attr: class="mid-slide"
-:END:
+** Data structures: Summary                                         :export:
 
 - We need at /data structure/ (BPF map) to store packets
   - Current qdiscs *only use two* data structures: FIFO and priority queue
   - A priority queue can be used as a FIFO, so *really only one*
-- The Eiffel PIFO implementation /performs well/
+- The Eiffel PIFO algorithm /performs well/
   - Is the *API limitation* (fixed/growing range only) acceptable?
 
-* A way to get the packets out: TX scheduling
+* Recall: The ingredients we need                                    :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+- Somewhere to store packets
+- A way to schedule dequeue and transmission
 
-Idea: re-use ndo_xdp_xmit()
+* TX hook attempt 1: dequeue hook                                    :export:
 
-* Attempt 1: TX hook                                                 :export:
+New /xdp dequeue/ program type
+- Can be attached to an interface (like XDP program)
+- *Returns* a packet to transmit
+- Stack calls =ndo_xdp_xmit()= with batch of packets
+
+** TX scheduling attempt 1 - replicate netstack                     :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_HTML: :class figure figure-bg
+[[file:netstack-forwarding-flow-annotated.svg]]
+
+** TX hook attempt 1: example code                                  :export:
 :PROPERTIES:
 :reveal_extra_attr: class="img-slide"
 :END:
@@ -417,7 +432,28 @@ void *xdp_redirect_deq_func(struct dequeue_ctx *ctx)
 #+end_src
 #+HTML: </div>
 
-* Attempt 2: Send helper                                             :export:
+** TX hook attempt 1: Problems                                      :export:
+
+Problem: /*The maintainers didn't like it*/
+
+#+begin_quote
+This feature can be done similar to hid-bpf without cast-in-stone uapi
+and hooks. Such patches would be much easier to land and iterate on top.
+The amount of bike shedding will be 10 times less.
+No need for new program type, no new hooks, no new FDs and attach uapi-s.
+
+Alexei in https://lore.kernel.org/r/20220715011228.tujkugafv6eixbyz@MacBook-Pro-3.local
+#+end_quote
+
+* TX hook attempt 2: Use bpf_timers                                  :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_HTML: :class figure figure-bg
+[[file:netstack-forwarding-flow-annotated-2.svg]]
+
+** TX hook attempt 2: Example code                                  :export:
 :PROPERTIES:
 :reveal_extra_attr: class="img-slide"
 :END:
@@ -486,18 +522,26 @@ static int xdp_timer_cb(void *map, int *key,
 #+end_src
 #+HTML: </div>
 
-* Slide: Problem: Overhead of bpf_timer                              :export:
+** Slide: Problem: Overhead of bpf_timer                            :export:
 :PROPERTIES:
 :reveal_extra_attr: class="img-slide"
 :END:
 
 #+ATTR_html: :height 720
 [[file:pifo-performance-timer.svg]]
-* Fixing performance?
-- New callback scheduling?
 
-* Unsolved problem: Pushback from driver
-- How to get this
+** TX hook attempt 2: Problems                                      :export:
+The callback approach /seems promising/, but has a few problems:
+- Reliance on =bpf_timer=
+  - *Overhead* (previous slide)
+  - Risk of /*blocking other timer work*/ (?)
+  - Replace by generic callback feature as discussed in
+    https://lore.kernel.org/r/cover.1657576063.git.delyank@fb.com?
+- No pushback from driver
+  - How does the BPF program /know that the interface is busy/ ?
+  - With TX hook stack can keep packets around, *what does BPF do?*
+
+
 
 * Slide: End: /Questions?/                                         :export:
 :PROPERTIES:
