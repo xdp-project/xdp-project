@@ -152,6 +152,18 @@ In the literature, the /Push-In, First-Out (PIFO)/ queue appeared in 2016^{=[0]=
 #+CAPTION: Figure 4 from Saeed et al (2019)
 [[file:eiffel-two-queues.svg]]
 
+** Proposed BPF API                                                 :export:
+
+For BPF the natural interface for storing packets is /in a map/.
+
+- Implement =map_redirect()= so XDP programs can queue packets with
+  =bpf_redirect_map(queue, priority)=
+- Create a new =bpf_packet_dequeue()= helper to *pull packets out*
+  - Returns =PTR_TO_BPF_ID= of =struct xdp_md= which can be used /*like the XDP
+    context*/
+
+See example code on later slide.
+
 ** Slide: Performance overhead of map types                         :export:
 :PROPERTIES:
 :reveal_extra_attr: class="img-slide"
@@ -377,6 +389,7 @@ New /xdp dequeue/ program type
 - *Returns* a packet to transmit
 - Stack calls =ndo_xdp_xmit()= with batch of packets
 
+Submitted as RFC series: https://lore.kernel.org/r/20220713111430.134810-1-toke@redhat.com
 ** TX scheduling attempt 1 - replicate netstack                     :export:
 :PROPERTIES:
 :reveal_extra_attr: class="img-slide"
@@ -444,6 +457,8 @@ No need for new program type, no new hooks, no new FDs and attach uapi-s.
 
 Alexei in https://lore.kernel.org/r/20220715011228.tujkugafv6eixbyz@MacBook-Pro-3.local
 #+end_quote
+
+Turns out he /was (almost) right!/ As seen by attempt 2...
 
 * TX hook attempt 2: Use bpf_timers                                  :export:
 :PROPERTIES:
@@ -532,7 +547,7 @@ static int xdp_timer_cb(void *map, int *key,
 
 ** TX hook attempt 2: Problems                                      :export:
 The callback approach /seems promising/, but has a few problems:
-- Reliance on =bpf_timer=
+- Performance of =bpf_timer=
   - *Overhead* (previous slide)
   - Risk of /*blocking other timer work*/ (?)
   - Replace by generic callback feature as discussed in
@@ -541,14 +556,54 @@ The callback approach /seems promising/, but has a few problems:
   - How does the BPF program /know that the interface is busy/ ?
   - With TX hook stack can keep packets around, *what does BPF do?*
 
+* Summary: XDP queueing design                                       :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
 
+#+ATTR_HTML: :class figure figure-bg
+[[file:xdp-queueing-flow.svg]]
 
 * Slide: End: /Questions?/                                         :export:
 :PROPERTIES:
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-[[https://git.kernel.org/toke/l/xdp-queueing-07][https://git.kernel.org/toke/l/xdp-queueing-07]]
+WiP code:
+
+- Kernel patches (implementing both TX hook approaches):
+  [[https://git.kernel.org/toke/l/xdp-queueing-07][https://git.kernel.org/toke/l/xdp-queueing-07]]
+
+- Test framework for queueing algorithms:
+  https://github.com/xdp-project/bpf-examples/pull/40 (by my PhD student
+  Freysteinn Alfredsson)
+
+Many thanks to Kumar Kartikeya Dwivedi, Jesper Brouer, Anna Brunstrom and
+Per Hurtig, as well as everyone who reviewed the RFC patchset.
+
+* Bonus slide: BPF qdisc                                             :export:
+
+There's a separate /BPF qdisc/ proposal being worked on by Cong Wang.
+
+Latest RFC:
+https://lore.kernel.org/r/20220602041028.95124-1-xiyou.wangcong@gmail.com
+
+This is /complementary/ to queueing in XDP - *not* in competition.
+- BPF qdisc for *packets going through the stack*, XDP queueing is for
+  /*bypassing the stack when forwarding*/
+- Can hopefully share *BPF map type* and helpers
+- BPF code reuse will likely be similar to TC-BPF/XDP (i.e., some effort
+  required)
+
+* Bonus slide: CPU steering                                          :export:
+For good forwarding performance, *splitting work among CPUs* is essential.
+
+- For XDP, /this is up to the BPF program/.
+  - All callbacks will be *on the same CPU*
+  - Steering can be done today /*using cpumap*/, see:
+    https://github.com/xdp-project/xdp-cpumap-tc
+- Possible optimisation: Bind map to particular CPU to elide locking
+
 
 * Emacs end-tricks                                                 :noexport:
 
@@ -560,5 +615,6 @@ in the compiled version.
 # <h2 class=\"author\">Toke Høiland-Jørgensen<br/><span style=\"font-size: 75%%\">Principal Kernel Engineer,
 # Red Hat</span></h2>
 # <h3>Linux Plumbers Conference</br>September 2022</h3>"
-# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: ?" "" contents)))
+# org-export-filter-headline-functions: ((lambda (contents backend info) (let
+# ((case-fold-search nil)) (replace-regexp-in-string "Slide: ?" "" contents))))
 # End:
