@@ -33,7 +33,7 @@ Colors are choosen via org-mode italic/bold high-lighting:
 #+ATTR_html: :height 720
 [[file:talk-about-queueing.jpg]]
 
-* Review: How does XDP_REDIRECT work?                                :export:
+* Review: How does XDP_REDIRECT work?                              :noexport:
 
 1. /Program/ calls =bpf_redirect_map()=, returning =XDP_REDIRECT=
   - Helper sets per-cpu fields in =struct bpf_redirect_info=
@@ -44,6 +44,14 @@ Colors are choosen via org-mode italic/bold high-lighting:
   - Flushes buffered packets
 
 Adding new redirect types requires /*no driver changes*/.
+
+* Review: How does XDP_REDIRECT work?                                :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_HTML: :class figure figure-bg
+[[file:xdp-redirect-flow.svg]]
 
 * Why does XDP need queueing?                                        :export:
 
