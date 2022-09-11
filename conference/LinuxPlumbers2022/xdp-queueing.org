@@ -64,10 +64,6 @@ Adding new redirect types requires /*no driver changes*/.
 - Somewhere to store packets
 - A way to pull the packets back out
 
-* Review: How does the networking stack do this?
-- Qdiscs
-- Watchdog wakeup (TX scheduling)
-
 * A way to store packets: A new BPF map                              :export:
 #+begin_quote
 "Bad programmers worry about the code. Good programmers worry about data
@@ -92,6 +88,14 @@ So we need a priority queue
 * A way to get the packets out: TX scheduling
 
 Idea: re-use ndo_xdp_xmit()
+
+* Review: Netstack forwarding flow (simplified)                      :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_HTML: :class figure figure-bg
+[[file:netstack-forwarding-flow.svg]]
 
 * Attempt 1: TX hook
 
