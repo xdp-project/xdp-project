@@ -42,6 +42,13 @@ Colors are choosen via org-mode italic/bold high-lighting:
 #+CAPTION: 100->10 Gbps rate transition, 10ms base RTT
 [[file:tcp_1up_-_Linux_vs_XDP_forwarding.png]]
 
+* Why does XDP need queueing? (cont)                                 :export:
+Other use cases enabled by queueing:
+
+- Different /packet scheduling/ policies (FQ, QoS, etc)
+- Bandwidth *shaping*
+- Network emulation (reordering, delaying packets)
+- Custom /*buffering schemes*/ (e.g., hold on to packets while spawning container)
 
 * Review: How does XDP_REDIRECT work?                              :noexport:
 
@@ -121,48 +128,13 @@ struct sk_buff {
 
 For BPF the natural interface for storing packets is /in a map/.
 
-- Implement =map_redirect()= so XDP programs can queue packets with
-  =bpf_redirect_map(queue, priority)=
+- Implement a *priority queue* map type for packets (can also be used as FIFO)
+- Allow XDP programs to queue packets with =bpf_redirect_map(queue, priority)=
 - Create a new =bpf_packet_dequeue()= helper to *pull packets out*
   - Returns =PTR_TO_BPF_ID= of =struct xdp_md= which can be used /*like the XDP
     context*/
 
 See example code on later slide.
-
-** Sidetrack: PIFO queues                                           :export:
-
-In the literature, the /Push-In, First-Out (PIFO)/ queue appeared in 2016^{=[0]=}.
-- It's a /*limited*/ priority queue (only dequeue at head)
-  - Can be implemented in silicon
-- We don't need to limit ourselves to the PIFO, *however*:
-  - We can use an /optimised algorithm/ for software by Saeed et al^{=[1]=}
-
-
-
-#+HTML: <small style="padding-top: 3em;">
-=[0]= Sivaraman et al, 2016: "Programmable Packet Scheduling at Line Rate"
-
-=[1]= Saeed et al, 2019: "Eiffel: Eifficient and Flexible Packet Scheduling"
-#+HTML: </small>
-
-
-** The Eiffel PIFO algorithm                                        :export:
-:PROPERTIES:
-:reveal_extra_attr: class="img-slide"
-:END:
-
-#+ATTR_HTML: :class figure figure-bg :style height:600px;
-#+CAPTION: Figure 3 from Saeed et al (2019)
-[[file:eiffel-one-queue.svg]]
-
-** The Eiffel PIFO: rotating queues                                 :export:
-:PROPERTIES:
-:reveal_extra_attr: class="img-slide"
-:END:
-
-#+ATTR_HTML: :class figure figure-bg :style height:600px;
-#+CAPTION: Figure 4 from Saeed et al (2019)
-[[file:eiffel-two-queues.svg]]
 
 ** Slide: Performance overhead of map types                         :export:
 :PROPERTIES:
@@ -367,13 +339,57 @@ ____rb_erase_color(struct rb_node *parent, struct rb_root *root,
 #+end_src
 #+html: </div>
 
+** Sidetrack: PIFO queues                                           :export:
+
+In the literature, the /Push-In, First-Out (PIFO)/ queue appeared in 2016^{=[0]=}.
+- It's a /*limited*/ priority queue (only dequeue at head)
+  - Can be implemented in silicon
+- We don't need to limit ourselves to the PIFO, *however*:
+  - We can use an /optimised algorithm/ for software by Saeed et al^{=[1]=}
+
+
+#+HTML: <small style="padding-top: 3em;">
+=[0]= Sivaraman et al, 2016: "Programmable Packet Scheduling at Line Rate"
+
+=[1]= Saeed et al, 2019: "Eiffel: Eifficient and Flexible Packet Scheduling"
+#+HTML: </small>
+
+
+** The Eiffel PIFO algorithm                                        :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_HTML: :class figure figure-bg :style height:600px;
+#+CAPTION: Figure 3 from Saeed et al (2019)
+[[file:eiffel-one-queue.svg]]
+
+** The Eiffel PIFO: rotating queues                                 :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_HTML: :class figure figure-bg :style height:600px;
+#+CAPTION: Figure 4 from Saeed et al (2019)
+[[file:eiffel-two-queues.svg]]
+
+
+** Slide: Performance overhead of map types (again)                 :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_html: :height 720
+[[file:pifo-performance.svg]]
+
 ** Data structures: Summary                                         :export:
 
 - We need at /data structure/ (BPF map) to store packets
   - Current qdiscs *only use two* data structures: FIFO and priority queue
   - A priority queue can be used as a FIFO, so *really only one*
 - The Eiffel PIFO algorithm /performs well/
-  - Is the *API limitation* (fixed/growing range only) acceptable?
+  - Drawback: *Priority range* is fixed / only growing
+  - Is this /*API limitation*/ acceptable?
 
 * Recall: The ingredients we need                                    :export:
 :PROPERTIES:
