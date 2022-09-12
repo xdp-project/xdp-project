@@ -103,7 +103,14 @@ $ ls net/sched/sch_*.c | wc -l
 
 How many different data structures do these 38 qdiscs use?
 
-#+ATTR_REVEAL: :frag t
+* Data structures for packet queues                                  :export:
+#+begin_src sh
+$ ls net/sched/sch_*.c | wc -l
+38
+#+end_src
+
+How many different data structures do these 38 qdiscs use?
+
 #+begin_src C
 struct sk_buff {
 	union {
