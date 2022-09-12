@@ -117,7 +117,19 @@ struct sk_buff {
 };
 #+end_src
 
-** PIFO queues                                                      :export:
+** Proposed BPF API                                                 :export:
+
+For BPF the natural interface for storing packets is /in a map/.
+
+- Implement =map_redirect()= so XDP programs can queue packets with
+  =bpf_redirect_map(queue, priority)=
+- Create a new =bpf_packet_dequeue()= helper to *pull packets out*
+  - Returns =PTR_TO_BPF_ID= of =struct xdp_md= which can be used /*like the XDP
+    context*/
+
+See example code on later slide.
+
+** Sidetrack: PIFO queues                                           :export:
 
 In the literature, the /Push-In, First-Out (PIFO)/ queue appeared in 2016^{=[0]=}.
 - It's a /*limited*/ priority queue (only dequeue at head)
@@ -151,18 +163,6 @@ In the literature, the /Push-In, First-Out (PIFO)/ queue appeared in 2016^{=[0]=
 #+ATTR_HTML: :class figure figure-bg :style height:600px;
 #+CAPTION: Figure 4 from Saeed et al (2019)
 [[file:eiffel-two-queues.svg]]
-
-** Proposed BPF API                                                 :export:
-
-For BPF the natural interface for storing packets is /in a map/.
-
-- Implement =map_redirect()= so XDP programs can queue packets with
-  =bpf_redirect_map(queue, priority)=
-- Create a new =bpf_packet_dequeue()= helper to *pull packets out*
-  - Returns =PTR_TO_BPF_ID= of =struct xdp_md= which can be used /*like the XDP
-    context*/
-
-See example code on later slide.
 
 ** Slide: Performance overhead of map types                         :export:
 :PROPERTIES:
