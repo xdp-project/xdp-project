@@ -138,7 +138,7 @@ For BPF the natural interface for storing packets is /in a map/.
 - Implement a *priority queue* map type for packets (can also be used as FIFO)
 - Allow XDP programs to queue packets with =bpf_redirect_map(queue, priority)=
 - Create a new =bpf_packet_dequeue()= helper to *pull packets out*
-  - Returns =PTR_TO_BPF_ID= of =struct xdp_md= which can be used /*like the XDP
+  - Returns =PTR_TO_BTF_ID= of =struct xdp_md= which can be used /*like the XDP
     context*/
 
 See example code on later slide.
