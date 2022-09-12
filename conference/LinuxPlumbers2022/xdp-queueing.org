@@ -384,9 +384,10 @@ In the literature, the /Push-In, First-Out (PIFO)/ queue appeared in 2016^{=[0]=
 
 ** Data structures: Summary                                         :export:
 
-- We need at /data structure/ (BPF map) to store packets
+- We need a /data structure/ (BPF map) to store packets
   - Current qdiscs *only use two* data structures: FIFO and priority queue
   - A priority queue can be used as a FIFO, so *really only one*
+- API: =bpf_redirect_map()= to enqueue, add =bpf_packet_dequeue()=
 - The Eiffel PIFO algorithm /performs well/
   - Drawback: *Priority range* is fixed / only growing
   - Is this /*API limitation*/ acceptable?
@@ -396,7 +397,7 @@ In the literature, the /Push-In, First-Out (PIFO)/ queue appeared in 2016^{=[0]=
 :reveal_extra_attr: class="mid-slide"
 :END:
 - Somewhere to store packets
-- A way to schedule dequeue and transmission
+- A way to *schedule dequeue and transmission*
 
 * TX hook attempt 1: dequeue hook                                    :export:
 
@@ -433,7 +434,7 @@ SEC("xdp")
 int xdp_redirect_map_queue(struct xdp_md *ctx)
 {
 	int ret;
-	ret = xdp_redirect_map(ctx, &pifo);
+	ret = bpf_redirect_map(&pifo, 0, 0);
 
 	if (ret == XDP_REDIRECT)
 		bpf_schedule_iface_dequeue(ctx,
@@ -512,7 +513,7 @@ int xdp_redirect_map_timer(struct xdp_md *ctx)
 		timer_init = 1;
 	}
 
-	ret = xdp_redirect_map(ctx, &pifo);
+	ret = bpf_redirect_map(&pifo, 0, 0);
 	if (ret == XDP_REDIRECT) {
 		num_queued++;
 		bpf_timer_start(timer,
