@@ -385,6 +385,13 @@ body {
 .reveal .figure-number {
   display: none; }
 
+.reveal .center-text {
+  text-align: center;
+}
+.reveal .big {
+  font-size: 200%;
+}
+
 /*********************************************
  * NAVIGATION CONTROLS
  *********************************************/
