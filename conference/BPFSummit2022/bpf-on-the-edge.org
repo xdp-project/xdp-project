@@ -31,30 +31,30 @@ Colors are choosen via org-mode italic/bold high-lighting:
 
 [[file:rh-heart-bpf.svg]]
 
-* BPF and Red Hat
+* eBPF and Red Hat
 
-We /support BPF/ on RHEL:
+We /support eBPF/ on RHEL:
 - Full kernel feature backports (RHEL 8.7: kernel 5.14, RHEL 9.1: kernel 5.16)
-- Support for BPF kernel features, bcc-tools and bpftrace
+- Support for eBPF kernel features, bcc-tools and bpftrace
 
 #+HTML: <div style="font-size: 60%">
 https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/9.0_release_notes/new-features#BZ-2070506
 #+HTML: </div>
 
 
-We *develop BPF*:
+We *develop eBPF*:
 - Upstream kernel contributions (networking, tracing, HID)
 - Userspace libraries and tools (libxdp, Aya)
 - Code examples and docs (xdp-tutorial, bpf-examples)
 
-We are a /*platinum member of the BPF foundation*/.
+We are a /*platinum member of the eBPF foundation*/.
 
 * Slide:
 
 #+HTML: <div class="center-text" style="margin-top: 3em;">
 #+HTML: <div class="big" style="margin-bottom: 2em;">
 
-Please /*don't*/ rely on the *kernel version* number for detecting BPF features!
+Please /*don't*/ rely on the *kernel version* number for detecting eBPF features!
 
 #+HTML: </div>
 
@@ -72,7 +72,7 @@ Use /feature probing/ instead! See =bpftool feature= output
 [[file:edge-figure.jpg]]
 #+HTML: </div>
 
-* What can BPF bring to the edge?
+* What can eBPF bring to the edge?
 :PROPERTIES:
 :reveal_extra_attr: class="img-slide"
 :END:
@@ -80,9 +80,9 @@ Use /feature probing/ instead! See =bpftool feature= output
 #+ATTR_html: :class figure-bg
 [[file:bpf-venn.png]]
 
-* BPF for the edge
+* eBPF for the edge
 - /Networking/
-  - Lower overhead container networking
+  - Lower overhead container networking and NFV
   - XDP acceleration: network features on every node
     - Firewalling, load balancing, forwarding
 
@@ -95,23 +95,30 @@ Use /feature probing/ instead! See =bpftool feature= output
   - Application isolation
   - Custom security monitoring and enforcement
 
-* BPF co-existence
+* eBPF hook co-existence
 With more users, /co-existence/ becomes important!
 
 - Assume other programs will access your hooks!
   - Not *every hook* supports this
   - In particular, use [[https://github.com/xdp-project/xdp-tools/][libxdp]] for XDP hook (/*mandatory*/ on RHEL)
 
-- /More work needed/, also on security models
+- /More work needed/ on this:
+  - Security model definition
+  - Admin override tools
 
 See [[https://lpc.events/event/16/contributions/1353/][Daniel Borkmann's talk at LPC]] for an example of how this can break!
 
-* Summary
+* End
 :PROPERTIES:
-:reveal_extra_attr: class="mid-slide"
+:reveal_extra_attr: class="img-slide"
 :END:
 
-Edge networking brings many challenges. BPF can be part of the solution!
+#+HTML: <div class="center-text" style="font-size: 120%; margin-bottom: 3em;">
+How will you leverage eBPF in *your* edge solution?
+#+HTML: </div>
+
+#+ATTR_html: :style height: 400px;
+[[file:rh-heart-bpf.svg]]
 
 * Emacs end-tricks                                                 :noexport:
 
