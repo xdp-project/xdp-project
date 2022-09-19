@@ -44,8 +44,8 @@ https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/9.
 
 We *develop eBPF*:
 - Upstream kernel contributions (networking, tracing, HID)
-- Userspace libraries and tools (libxdp, Aya)
-- Code examples and docs (xdp-tutorial, bpf-examples)
+- Userspace libraries and tools ([[https://github.com/xdp-project/xdp-tools/tree/master/lib/libxdp][libxdp]], [[https://aya-rs.dev/][Aya]])
+- Code examples and docs ([[https://github.com/xdp-project/xdp-tutorial][xdp-tutorial]], [[https://github.com/xdp-project/bpf-examples][bpf-examples]])
 
 We are a /*platinum member of the eBPF foundation*/.
 
@@ -83,15 +83,15 @@ Use /feature probing/ instead! See =bpftool feature= output
 * eBPF for the edge
 - /Networking/
   - Lower overhead container networking and NFV
-  - XDP acceleration: network features on every node
-    - Firewalling, load balancing, forwarding
+  - Smaller CPUs: With XDP acceleration we can keep up
+    - Accelerate firewall, load balancing, forwarding
 
 - *Monitoring*
   - Low-overhead performance monitoring
   - Application resource usage reporting
 
 - /*Security*/
-  - Firewalling and DDOS protection
+  - Firewalling and DDoS protection
   - Application isolation
   - Custom security monitoring and enforcement
 
