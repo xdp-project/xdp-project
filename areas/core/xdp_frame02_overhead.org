@@ -1,0 +1,168 @@
+# -*- fill-column: 76; -*-
+#+Title: Eval overhead of xdp_frame creation
+#+Author: Jesper Dangaard Brouer
+#+Options: ^:nil
+
+* XDP-benchmark overhead of xdp_convert_buff_to_frame
+
+** i40e trick
+
+The i40e driver XDP_TX action will call xdp_convert_buff_to_frame before
+sending the packet. This step is in-principle overkill as the driver
+already knows this is a locally generated buffer and could handle this a
+TX-DMA completion.  It's obviously done to simplify driver and re-use code.
+
+This allow us to micro-benchmark overhead of xdp_convert_buff_to_frame
+as it happens to get inlined in i40e_xmit_xdp_tx_ring, and
+i40e_xmit_xdp_tx_ring isn't inlined itself.
+
+** benchmark
+
+Use "xdp_rxq_info" for XDP_TX (which also does a swapmac).
+#+begin_example
+sudo ./xdp_rxq_info --dev i40e2 --act XDP_TX
+[...]
+Running XDP on dev:i40e2 (ifindex:9) action:XDP_TX options:swapmac
+XDP stats       CPU     pps         issue-pps
+XDP-RX CPU      4       12,781,668  0
+XDP-RX CPU      total   12,781,668
+
+RXQ stats       RXQ:CPU pps         issue-pps
+rx_queue_index    4:4   12,781,656  0
+rx_queue_index    4:sum 12,781,656
+#+end_example
+
+Thus, per packet overhead is: 78.24 ns
+ - (1/12781656)*10^9
+
+** perf observe percentage
+
+Using perf observe percentage usage:
+#+begin_example
+Samples: 40K of event 'cycles', Event count (approx.): 37583430206
+  Overhead  CPU  Shared Object                           Symbol
++   14,64%  004  bpf_prog_94xxx_xdp_prognum0  [k] bpf_prog_943df0a1ce7ea5c2_xdp_prognum0
++   14,13%  004  [i40e]                       [k] i40e_clean_rx_irq
++   10,88%  004  [i40e]                       [k] i40e_xmit_xdp_tx_ring
++   10,54%  004  [i40e]                       [k] i40e_xmit_xdp_ring
++    8,67%  004  [kernel.vmlinux]             [k] dma_unmap_page_attrs
++    6,99%  004  [i40e]                       [k] i40e_clean_tx_irq
++    5,46%  004  [i40e]                       [k] i40e_run_xdp
++    4,32%  004  [kernel.vmlinux]             [k] dma_direct_map_page
++    3,76%  004  [kernel.vmlinux]             [k] xdp_return_frame
++    3,02%  004  [kernel.vmlinux]             [k] page_frag_free
++    2,82%  004  [kernel.vmlinux]             [k] dma_sync_single_for_cpu
+#+end_example
+
+Percentage 10,88% for i40e_xmit_xdp_tx_ring
+ - 78.24/100*10.88 = 8.5 ns
+
+Output from: perf_report_pps_stats.pl --pps 12781668 --cpu 4
+#+begin_example
+Report: ALL functions ::
+ 14.64 % ~= 11.5 ns <= bpf_prog_943df0a1ce7ea5c2_xdp_prognum0
+ 14.13 % ~= 11.1 ns <= i40e_clean_rx_irq
+ 10.88 % ~=  8.5 ns <= i40e_xmit_xdp_tx_ring
+ 10.54 % ~=  8.2 ns <= i40e_xmit_xdp_ring
+  8.67 % ~=  6.8 ns <= dma_unmap_page_attrs
+  6.99 % ~=  5.5 ns <= i40e_clean_tx_irq
+  5.46 % ~=  4.3 ns <= i40e_run_xdp
+  4.32 % ~=  3.4 ns <= dma_direct_map_page
+  3.76 % ~=  2.9 ns <= xdp_return_frame
+  3.02 % ~=  2.4 ns <= page_frag_free
+  2.82 % ~=  2.2 ns <= dma_sync_single_for_cpu
+
+Group-report: DMA functions ::
+  8.67 % ~=  6.8 ns <= dma_unmap_page_attrs
+  4.32 % ~=  3.4 ns <= dma_direct_map_page
+  2.82 % ~=  2.2 ns <= dma_sync_single_for_cpu
+  2.48 % ~=  1.9 ns <= dma_sync_single_for_device
+  0.63 % ~=  0.5 ns <= dma_map_page_attrs
+ Sum: 18.92 % => calc: 14.8 ns (sum: 14.8 ns) => Total: 78.2 ns
+#+end_example
+
+** Current struct layout
+
+pahole -C xdp_frame vmlinux
+#+begin_src C
+struct xdp_frame {
+	void *                     data;                 /*     0     8 */
+	u16                        len;                  /*     8     2 */
+	u16                        headroom;             /*    10     2 */
+	u32                        metasize:8;           /*    12: 0  4 */
+	u32                        frame_sz:24;          /*    12: 8  4 */
+	struct xdp_mem_info        mem;                  /*    16     8 */
+	struct net_device *        dev_rx;               /*    24     8 */
+	u32                        flags;                /*    32     4 */
+
+	/* size: 40, cachelines: 1, members: 8 */
+	/* padding: 4 */
+	/* last cacheline: 40 bytes */
+};
+#+end_src
+
+** perf annotate
+
+Perf annotate:
+#+begin_src asm
+Samples: 40K of event 'cycles', 4000 Hz, Event count (approx.): 37583430206
+
+  2,32 │    → call   i40e_xmit_xdp_tx_ring
+  3,12 │      sub    $0x8,%rsp
+  2,71 │      mov    0x20(%rdi),%rax
+  2,07 │      cmpl   $0x3,0x10(%rax)
+  0,39 │    ↓ je     aa
+  1,42 │      mov    (%rdi),%r8
+  2,73 │      xor    %r9d,%r9d
+  1,84 │      mov    0x18(%rdi),%rax
+  0,39 │      mov    %r8,%rcx
+  3,26 │      sub    0x10(%rdi),%rcx
+  3,70 │      mov    %r8,%rdx
+  2,57 │      sub    %rax,%rdx
+  0,48 │      test   %ecx,%ecx
+  3,19 │      cmovs  %r9d,%ecx
+  3,67 │      mov    %edx,%r9d
+  2,18 │      sub    %ecx,%r9d
+  0,28 │      cmp    $0x27,%r9d
+       │    ↓ jbe    d1
+  3,24 │      mov    0x30(%rdi),%r9d
+  3,05 │      lea    -0x140(%rax,%r9,1),%r9
+  2,14 │      cmp    0x8(%rdi),%r9
+       │    ↓ jb     b9
+  0,78 │      mov    %r8,(%rax)
+  4,50 │      mov    0x8(%rdi),%r10
+  4,25 │      xor    %r9d,%r9d
+  2,48 │      sub    $0x28,%edx
+  0,73 │      shl    $0x10,%edx
+  3,51 │      mov    %cl,0xc(%rax)
+  4,09 │      mov    %r10w,%r9w
+  2,34 │      sub    %r8w,%r9w
+  0,67 │      or     %edx,%r9d
+  2,50 │      movzbl 0xc(%rax),%edx
+  2,53 │      mov    %r9d,0x8(%rax
+  1,86 │      mov    0x30(%rdi),%ecx
+  0,46 │      shl    $0x8,%ecx
+  2,94 │      or     %ecx,%edx
+  2,73 │      mov    %edx,0xc(%rax)    // metasize + frame_sz
+  2,11 │      mov    0x34(%rdi),%edx
+  0,41 │      mov    %edx,0x20(%rax)
+  2,69 │      mov    0x20(%rdi),%rdx
+  3,49 │      mov    0x10(%rdx),%rdx
+  1,31 │      mov    %rdx,0x10(%rax)
+  0,41 │99:   test   %rax,%rax
+       │    ↓ je     d1
+  2,87 │      mov    %rax,%rdi
+  3,15 │      add    $0x8,%rsp
+  2,41 │    → jmp    26880 <i40e_xmit_xdp_ring
+       │aa:   mov    %rsi,(%rsp)
+       │    → call   i40e_xmit_xdp_tx_ring
+       │      mov    (%rsp),%rsi
+       │    ↑ jmp    99
+       │b9:   mov    $0x20e,%edx
+       │      mov    $0x0,%rsi
+       │      mov    $0x0,%rdi
+       │    → call   i40e_xmit_xdp_tx_ring
+       │d1:   mov    $0x1,%eax
+       │      add    $0x8,%rsp
+       │    ← ret
+#+end_src
