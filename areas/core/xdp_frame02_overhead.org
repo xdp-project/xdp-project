@@ -268,3 +268,72 @@ objdump -rS drivers/net/ethernet/intel/i40e/i40e.ko
 
 #+end_src
 
+* Idea: Reorg struct xdp_frame
+
+Restructure struct xdp_frame layout to generate better ASM code.
+
+** Current struct layout
+
+pahole -C xdp_frame vmlinux
+#+begin_src C
+struct xdp_frame {
+	void *                     data;                 /*     0     8 */
+	u16                        len;                  /*     8     2 */
+	u16                        headroom;             /*    10     2 */
+	u32                        metasize:8;           /*    12: 0  4 */
+	u32                        frame_sz:24;          /*    12: 8  4 */
+	struct xdp_mem_info        mem;                  /*    16     8 */
+	struct net_device *        dev_rx;               /*    24     8 */
+	u32                        flags;                /*    32     4 */
+
+	/* size: 40, cachelines: 1, members: 8 */
+	/* padding: 4 */
+#+end_src
+
+** New layout
+
+pahole -C xdp_frame drivers/net/ethernet/intel/i40e/i40e.ko
+#+begin_src C
+$ pahole -C xdp_frame drivers/net/ethernet/intel/i40e/i40e.o
+struct xdp_frame {
+	void *                     data;                 /*     0     8 */
+	u16                        len;                  /*     8     2 */
+	u16                        headroom;             /*    10     2 */
+	u16                        padding;              /*    12     2 */
+	u16                        metasize;             /*    14     2 */
+	struct xdp_mem_info        mem;                  /*    16     8 */
+	struct net_device *        dev_rx;               /*    24     8 */
+	u32                        flags;                /*    32     4 */
+	u32                        frame_sz;             /*    36     4 */
+
+	/* size: 40, cachelines: 1, members: 9 */
+	/* last cacheline: 40 bytes */
+};
+#+end_src
+
+** diff
+
+#+begin_src diff
+git diff
+diff --git a/include/net/xdp.h b/include/net/xdp.h
+index bdb497c7b296..0b0f0d291cbf 100644
+--- a/include/net/xdp.h
++++ b/include/net/xdp.h
+@@ -406,13 +406,14 @@ struct xdp_frame {
+        void *data;
+        u16 len;
+        u16 headroom;
+-       u32 metasize:8;
+-       u32 frame_sz:24;
++       u16 padding;
++       u16 metasize;
+        /* Lifetime of xdp_rxq_info is limited to NAPI/enqueue time,
+         * while mem info is valid on remote CPU.
+         */
+        struct xdp_mem_info mem;
+        struct net_device *dev_rx; /* used by cpumap */
++       u32 frame_sz;
+        u32 flags; /* supported values defined in xdp_buff_flags */
+ };
+#+end_src
+
