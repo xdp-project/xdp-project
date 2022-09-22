@@ -448,3 +448,19 @@ i40e_xmit_xdp_tx_ring                        219     196     -23
 Total: Before=285471, After=285445, chg -0.01%
 #+end_src
 
+** benchmark with new layout
+
+#+begin_example
+Running XDP on dev:i40e2 (ifindex:9) action:XDP_TX options:swapmac
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      3       13,159,400  0          
+XDP-RX CPU      total   13,159,400 
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    3:3   13,159,398  0          
+rx_queue_index    3:sum 13,159,398 
+#+end_example
+
+Improvement (1/12781656-1/13159398)*10^9
+ - 2.2458054 nanosec
+
