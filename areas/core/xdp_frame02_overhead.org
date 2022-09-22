@@ -434,3 +434,17 @@ objdump -rS drivers/net/ethernet/intel/i40e/i40e.ko
    2815f:       90                      nop
 
 #+end_src
+
+
+** Code length reduced
+
+#+begin_src sh
+$ ./scripts/bloat-o-meter drivers/net/ethernet/intel/i40e/i40e.ko-new-layout_xdp_frame-old drivers/net/ethernet/intel/i40e/i40e.ko-new-layout_xdp_frame2 
+add/remove: 0/0 grow/shrink: 1/2 up/down: 1/-27 (-26)
+Function                                     old     new   delta
+__UNIQUE_ID_vermagic153                       75      76      +1
+i40e_xmit_xdp_ring                           806     802      -4
+i40e_xmit_xdp_tx_ring                        219     196     -23
+Total: Before=285471, After=285445, chg -0.01%
+#+end_src
+
