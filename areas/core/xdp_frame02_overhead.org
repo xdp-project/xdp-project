@@ -337,7 +337,7 @@ index bdb497c7b296..0b0f0d291cbf 100644
  };
 #+end_src
 
-** objdump asm + C code (OLD)
+** objdump asm + C code with new layout
 
 objdump -rS drivers/net/ethernet/intel/i40e/i40e.ko
 #+begin_src asm
@@ -345,95 +345,92 @@ objdump -rS drivers/net/ethernet/intel/i40e/i40e.ko
 {
    28090:       e8 00 00 00 00          call   28095 <i40e_xmit_xdp_tx_ring+0x5>
                         28091: R_X86_64_PLT32   __fentry__-0x4
-   28095:       48 83 ec 08             sub    $0x8,%rsp
+   28095:       53                      push   %rbx
         if (xdp->rxq->mem.type == MEM_TYPE_XSK_BUFF_POOL)
-   28099:       48 8b 47 20             mov    0x20(%rdi),%rax
+   28096:       48 8b 47 20             mov    0x20(%rdi),%rax
+   2809a:       48 89 f3                mov    %rsi,%rbx
    2809d:       83 78 10 03             cmpl   $0x3,0x10(%rax)
-   280a1:       0f 84 93 00 00 00       je     2813a <i40e_xmit_xdp_tx_ring+0xaa>
+   280a1:       0f 84 87 00 00 00       je     2812e <i40e_xmit_xdp_tx_ring+0x9e>
         headroom = xdp->data - xdp->data_hard_start;
-   280a7:       4c 8b 07                mov    (%rdi),%r8
+   280a7:       48 8b 37                mov    (%rdi),%rsi
         metasize = metasize > 0 ? metasize : 0;
-   280aa:       45 31 c9                xor    %r9d,%r9d
+   280aa:       45 31 c0                xor    %r8d,%r8d
         xdp_frame = xdp->data_hard_start;
    280ad:       48 8b 47 18             mov    0x18(%rdi),%rax
         metasize = xdp->data - xdp->data_meta;
-   280b1:       4c 89 c1                mov    %r8,%rcx
+   280b1:       48 89 f1                mov    %rsi,%rcx
    280b4:       48 2b 4f 10             sub    0x10(%rdi),%rcx
         headroom = xdp->data - xdp->data_hard_start;
-   280b8:       4c 89 c2                mov    %r8,%rdx
+   280b8:       48 89 f2                mov    %rsi,%rdx
    280bb:       48 29 c2                sub    %rax,%rdx
         metasize = metasize > 0 ? metasize : 0;
    280be:       85 c9                   test   %ecx,%ecx
-   280c0:       41 0f 48 c9             cmovs  %r9d,%ecx
+   280c0:       41 0f 48 c8             cmovs  %r8d,%ecx
         if (unlikely((headroom - metasize) < sizeof(*xdp_frame)))
-   280c4:       41 89 d1                mov    %edx,%r9d
-   280c7:       41 29 c9                sub    %ecx,%r9d
-   280ca:       41 83 f9 27             cmp    $0x27,%r9d
-   280ce:       0f 86 8d 00 00 00       jbe    28161 <i40e_xmit_xdp_tx_ring+0xd1>
+   280c4:       41 89 d0                mov    %edx,%r8d
+   280c7:       41 29 c8                sub    %ecx,%r8d
+   280ca:       41 83 f8 27             cmp    $0x27,%r8d
+   280ce:       76 7d                   jbe    2814d <i40e_xmit_xdp_tx_ring+0xbd>
         if (unlikely(xdp->data_end > xdp_data_hard_end(xdp))) {
-   280d4:       44 8b 4f 30             mov    0x30(%rdi),%r9d
-   280d8:       4e 8d 8c 08 c0 fe ff    lea    -0x140(%rax,%r9,1),%r9
-   280df:       ff 
-   280e0:       4c 3b 4f 08             cmp    0x8(%rdi),%r9
-   280e4:       72 63                   jb     28149 <i40e_xmit_xdp_tx_ring+0xb9>
+   280d0:       44 8b 47 30             mov    0x30(%rdi),%r8d
+   280d4:       4e 8d 84 00 c0 fe ff    lea    -0x140(%rax,%r8,1),%r8
+   280db:       ff 
+   280dc:       4c 3b 47 08             cmp    0x8(%rdi),%r8
+   280e0:       72 53                   jb     28135 <i40e_xmit_xdp_tx_ring+0xa5>
         xdp_frame->data = xdp->data;
-   280e6:       4c 89 00                mov    %r8,(%rax)
+   280e2:       48 89 30                mov    %rsi,(%rax)
         xdp_frame->len  = xdp->data_end - xdp->data;
-   280e9:       4c 8b 57 08             mov    0x8(%rdi),%r10
-   280ed:       45 31 c9                xor    %r9d,%r9d
+   280e5:       4c 8b 4f 08             mov    0x8(%rdi),%r9
+   280e9:       45 31 c0                xor    %r8d,%r8d
         xdp_frame->headroom = headroom - sizeof(*xdp_frame);
-   280f0:       83 ea 28                sub    $0x28,%edx
+   280ec:       83 ea 28                sub    $0x28,%edx
         xdp_frame->len  = xdp->data_end - xdp->data;
-   280f3:       c1 e2 10                shl    $0x10,%edx
+   280ef:       c1 e2 10                shl    $0x10,%edx
         xdp_frame->metasize = metasize;
-   280f6:       88 48 0c                mov    %cl,0xc(%rax)
+   280f2:       66 89 48 0e             mov    %cx,0xe(%rax)
         xdp_frame->len  = xdp->data_end - xdp->data;
-   280f9:       66 45 89 d1             mov    %r10w,%r9w
-   280fd:       66 45 29 c1             sub    %r8w,%r9w
-   28101:       41 09 d1                or     %edx,%r9d
+   280f6:       66 45 89 c8             mov    %r9w,%r8w
+   280fa:       66 41 29 f0             sub    %si,%r8w
+   280fe:       41 09 d0                or     %edx,%r8d
+   28101:       44 89 40 08             mov    %r8d,0x8(%rax)
         xdp_frame->frame_sz = xdp->frame_sz;
-   28104:       0f b6 50 0c             movzbl 0xc(%rax),%edx
-        xdp_frame->len  = xdp->data_end - xdp->data;
-   28108:       44 89 48 08             mov    %r9d,0x8(%rax)
-        xdp_frame->frame_sz = xdp->frame_sz;
-   2810c:       8b 4f 30                mov    0x30(%rdi),%ecx
-   2810f:       c1 e1 08                shl    $0x8,%ecx
-   28112:       09 ca                   or     %ecx,%edx
-   28114:       89 50 0c                mov    %edx,0xc(%rax)
+   28105:       8b 57 30                mov    0x30(%rdi),%edx
+   28108:       89 50 20                mov    %edx,0x20(%rax)
         xdp_frame->flags = xdp->flags;
-   28117:       8b 57 34                mov    0x34(%rdi),%edx
-   2811a:       89 50 20                mov    %edx,0x20(%rax)
+   2810b:       8b 57 34                mov    0x34(%rdi),%edx
+   2810e:       89 50 24                mov    %edx,0x24(%rax)
         xdp_frame->mem = xdp->rxq->mem;
-   2811d:       48 8b 57 20             mov    0x20(%rdi),%rdx
-   28121:       48 8b 52 10             mov    0x10(%rdx),%rdx
-   28125:       48 89 50 10             mov    %rdx,0x10(%rax)
+   28111:       48 8b 57 20             mov    0x20(%rdi),%rdx
+   28115:       48 8b 52 10             mov    0x10(%rdx),%rdx
+   28119:       48 89 50 10             mov    %rdx,0x10(%rax)
         if (unlikely(!xdpf))
-   28129:       48 85 c0                test   %rax,%rax
-   2812c:       74 33                   je     28161 <i40e_xmit_xdp_tx_ring+0xd1>
+   2811d:       48 85 c0                test   %rax,%rax
+   28120:       74 2b                   je     2814d <i40e_xmit_xdp_tx_ring+0xbd>
         return i40e_xmit_xdp_ring(xdpf, xdp_ring);
-   2812e:       48 89 c7                mov    %rax,%rdi
+   28122:       48 89 de                mov    %rbx,%rsi
 }
-   28131:       48 83 c4 08             add    $0x8,%rsp
+   28125:       5b                      pop    %rbx
         return i40e_xmit_xdp_ring(xdpf, xdp_ring);
-   28135:       e9 46 e7 ff ff          jmp    26880 <i40e_xmit_xdp_ring>
-   2813a:       48 89 34 24             mov    %rsi,(%rsp)
+   28126:       48 89 c7                mov    %rax,%rdi
+   28129:       e9 52 e7 ff ff          jmp    26880 <i40e_xmit_xdp_ring>
                 return xdp_convert_zc_to_xdp_frame(xdp);
-   2813e:       e8 00 00 00 00          call   28143 <i40e_xmit_xdp_tx_ring+0xb3>
-                        2813f: R_X86_64_PLT32   xdp_convert_zc_to_xdp_frame-0x4
-   28143:       48 8b 34 24             mov    (%rsp),%rsi
-   28147:       eb e0                   jmp    28129 <i40e_xmit_xdp_tx_ring+0x99>
+   2812e:       e8 00 00 00 00          call   28133 <i40e_xmit_xdp_tx_ring+0xa3>
+                        2812f: R_X86_64_PLT32   xdp_convert_zc_to_xdp_frame-0x4
+   28133:       eb e8                   jmp    2811d <i40e_xmit_xdp_tx_ring+0x8d>
                 XDP_WARN("Driver BUG: missing reserved tailroom");
-   28149:       ba 0e 02 00 00          mov    $0x20e,%edx
-   2814e:       48 c7 c6 00 00 00 00    mov    $0x0,%rsi
-                        28151: R_X86_64_32S     .rodata+0x3e00
-   28155:       48 c7 c7 00 00 00 00    mov    $0x0,%rdi
-                        28158: R_X86_64_32S     .rodata.str1.8+0x8e60
-   2815c:       e8 00 00 00 00          call   28161 <i40e_xmit_xdp_tx_ring+0xd1>
-                        2815d: R_X86_64_PLT32   xdp_warn-0x4
+   28135:       ba 0f 02 00 00          mov    $0x20f,%edx
+   2813a:       48 c7 c6 00 00 00 00    mov    $0x0,%rsi
+                        2813d: R_X86_64_32S     .rodata+0x3e00
+   28141:       48 c7 c7 00 00 00 00    mov    $0x0,%rdi
+                        28144: R_X86_64_32S     .rodata.str1.8+0x8e80
+   28148:       e8 00 00 00 00          call   2814d <i40e_xmit_xdp_tx_ring+0xbd>
+                        28149: R_X86_64_PLT32   xdp_warn-0x4
 }
-   28161:       b8 01 00 00 00          mov    $0x1,%eax
-   28166:       48 83 c4 08             add    $0x8,%rsp
-   2816a:       c3                      ret    
-   2816b:       0f 1f 44 00 00          nopl   0x0(%rax,%rax,1)
+   2814d:       b8 01 00 00 00          mov    $0x1,%eax
+   28152:       5b                      pop    %rbx
+   28153:       c3                      ret    
+   28154:       66 66 2e 0f 1f 84 00    data16 cs nopw 0x0(%rax,%rax,1)
+   2815b:       00 00 00 00 
+   2815f:       90                      nop
 
 #+end_src
