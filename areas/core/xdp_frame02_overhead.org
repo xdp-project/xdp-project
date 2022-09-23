@@ -298,6 +298,16 @@ The moved member @frame_sz doesn't change sizeof struct due to existing
 padding. Like xdp_buff member @frame_sz is placed next to @flags, which
 allows compiler to optimize assignment of these.
 
+*** stg mail
+
+#+begin_example
+stg mail --version "net-next" --cc meup  \
+ --cc jakub --cc john --cc davem --cc ast@kernel.org \
+ --cc hawk@kernel.org --cc daniel@iogearbox.net --cc edumazet@google.com \
+ --cc pabeni@redhat.com \
+ --cc bpf --to netdev --cc lore \
+  xdp_frame_layout
+#+end_example
 
 ** Current struct layout
 
