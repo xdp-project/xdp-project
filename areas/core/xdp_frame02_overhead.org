@@ -138,8 +138,8 @@ Samples: 40K of event 'cycles', 4000 Hz, Event count (approx.): 37583430206
   4,09 │      mov    %r10w,%r9w
   2,34 │      sub    %r8w,%r9w
   0,67 │      or     %edx,%r9d
-  2,50 │      movzbl 0xc(%rax),%edx
-  2,53 │      mov    %r9d,0x8(%rax
+  2,50 │      movzbl 0xc(%rax),%edx    // metasize + frame_sz
+  2,53 │      mov    %r9d,0x8(%rax)
   1,86 │      mov    0x30(%rdi),%ecx
   0,46 │      shl    $0x8,%ecx
   2,94 │      or     %ecx,%edx
@@ -290,7 +290,7 @@ struct xdp_frame {
 	/* padding: 4 */
 #+end_src
 
-** New layout
+** New layout#1
 
 pahole -C xdp_frame drivers/net/ethernet/intel/i40e/i40e.ko
 #+begin_src C
@@ -463,4 +463,7 @@ rx_queue_index    3:sum 13,159,398
 
 Improvement (1/12781656-1/13159398)*10^9
  - 2.2458054 nanosec
+
+The perf percentage numbers: only show 0.3 ns (from 8.5 to 8.2 ns)
+ - 10.54 % ~=  8.2 ns <= i40e_xmit_xdp_tx_ring
 
