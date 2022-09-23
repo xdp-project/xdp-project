@@ -467,3 +467,23 @@ Improvement (1/12781656-1/13159398)*10^9
 The perf percentage numbers: only show 0.3 ns (from 8.5 to 8.2 ns)
  - 10.54 % ~=  8.2 ns <= i40e_xmit_xdp_tx_ring
 
+** Layout#2
+
+Also benchmarked this layout with same results.
+
+$ pahole -C xdp_frame drivers/net/ethernet/intel/i40e/i40e.o
+#+begin_src C
+struct xdp_frame {
+	void *                     data;                 /*     0     8 */
+	u16                        len;                  /*     8     2 */
+	u16                        headroom;             /*    10     2 */
+	u32                        metasize;             /*    12     4 */
+	struct xdp_mem_info        mem;                  /*    16     8 */
+	struct net_device *        dev_rx;               /*    24     8 */
+	u32                        frame_sz;             /*    32     4 */
+	u32                        flags;                /*    36     4 */
+
+	/* size: 40, cachelines: 1, members: 8 */
+	/* last cacheline: 40 bytes */
+};
+#+end_src
