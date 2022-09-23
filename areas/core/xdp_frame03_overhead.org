@@ -1,0 +1,17 @@
+# -*- fill-column: 76; -*-
+#+Title: Eval overhead of veth xdp_frame redirect
+#+Author: Jesper Dangaard Brouer
+#+Options: ^:nil
+
+
+* veth: xdp buff to frame conversion bouncing
+
+When XDP_REDRECT'ing into veth driver, the peer device can run another XDP
+program. Before doing so, the incoming xdp_frame must be converted back to
+the xdp_buff layout.
+
+The strangeness is that on XDP_REDRECT action, the veth driver chooses to
+call xdp_do_redirect() which will convert the xdp_buff to xdp_frame again.
+This isn't necessary because today we have xdp_do_redirect_frame().
+
+
