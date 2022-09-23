@@ -268,9 +268,36 @@ objdump -rS drivers/net/ethernet/intel/i40e/i40e.ko
 
 #+end_src
 
+
 * Idea: Reorg struct xdp_frame
 
 Restructure struct xdp_frame layout to generate better ASM code.
+
+
+** patch desc
+
+xdp: Adjust xdp_frame layout to avoid using bitfields
+
+Practical experience (and advice from Alexei) tell us that bitfields in
+structs lead to un-optimized assemply code. I've verified this change
+does lead to better x86_64 assemply, both via objdump and playing with
+code snippets in godbolt.org.
+
+Using scripts/bloat-o-meter shows the code size is reduced with 24
+bytes for xdp_convert_buff_to_frame() that gets inlined e.g. in
+i40e_xmit_xdp_tx_ring() which were used for microbenchmarking.
+
+Microbenchmarking results do show improvements, but very small and
+varying between 0.5 to 2 nanosec improvement per packet.
+
+The member @metasize is changed from u8 to u32. Future users of this
+area could split this into two u16 fields. I've also benchmarked with
+two u16 fields showing equal performance gains and code size reduction.
+
+The moved member @frame_sz doesn't change sizeof struct due to existing
+padding. Like xdp_buff member @frame_sz is placed next to @flags, which
+allows compiler to optimize assignment of these.
+
 
 ** Current struct layout
 
@@ -487,3 +514,5 @@ struct xdp_frame {
 	/* last cacheline: 40 bytes */
 };
 #+end_src
+
+https://godbolt.org/z/8MGjjdccK
