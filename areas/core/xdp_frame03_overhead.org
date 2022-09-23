@@ -14,4 +14,50 @@ The strangeness is that on XDP_REDRECT action, the veth driver chooses to
 call xdp_do_redirect() which will convert the xdp_buff to xdp_frame again.
 This isn't necessary because today we have xdp_do_redirect_frame().
 
+* Baseline benchmarking
 
+** setup
+
+#+begin_src sh
+echo " --- Config veth devices ---"
+ip link add veth1 type veth peer name veth2
+ip link set veth1 up
+ip link set veth2 up
+
+ip link add veth3 type veth peer name veth4
+ip link set veth3 up
+ip link set veth4 up
+
+ethtool -K veth1 gso on
+ethtool -K veth2 gso on
+ethtool -K veth3 gso on
+ethtool -K veth4 gso on
+#+end_src
+
+** redirect setup
+
+#+begin_src sh
+sudo ./xdp_redirect_map mlx5p1 veth1
+sudo ./xdp_redirect_map veth2 veth3
+sudo ./xdp_rxq_info --dev veth4 --act XDP_DROP --read
+#+end_src
+
+** baseline#1 bench
+
+#+begin_example
+mlx5p1->veth1           5,793,635 rx/s    0 err,drop/s    5,793,635 xmit/s
+mlx5p1->veth1           5,793,465 rx/s    0 err,drop/s    5,793,465 xmit/s
+[...]
+veth2->veth3            5,793,503 rx/s     0 err,drop/s    5,793,490 xmit/s
+#+end_example
+
+#+begin_example
+Running XDP on dev:veth4 (ifindex:16) action:XDP_DROP options:read
+XDP stats       CPU     pps         issue-pps  
+XDP-RX CPU      2       5,792,677   0          
+XDP-RX CPU      total   5,792,677  
+
+RXQ stats       RXQ:CPU pps         issue-pps  
+rx_queue_index    0:2   5,792,684   0          
+rx_queue_index    0:sum 5,792,684  
+#+end_example
