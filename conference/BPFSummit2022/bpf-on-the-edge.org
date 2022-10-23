@@ -34,7 +34,7 @@ Colors are choosen via org-mode italic/bold high-lighting:
 * eBPF and Red Hat
 
 We /support eBPF/ on RHEL:
-- Full kernel feature backports (RHEL 8.7: kernel 5.14, RHEL 9.1: kernel 5.16)
+- Full kernel backports (RHEL 8.7: kernel 5.14, RHEL 9.1: kernel 5.16)
 - Support for eBPF kernel features, bcc-tools and bpftrace
 
 #+HTML: <div style="font-size: 60%">
@@ -51,7 +51,7 @@ We are a /*platinum member of the eBPF foundation*/.
 
 * Slide:
 
-#+HTML: <div class="center-text" style="margin-top: 3em;">
+#+HTML: <div class="center-text" style="margin-top: 5em;">
 #+HTML: <div class="big" style="margin-bottom: 2em;">
 
 Please /*don't*/ rely on the *kernel version* number for detecting eBPF features!
@@ -114,7 +114,9 @@ See [[https://lpc.events/event/16/contributions/1353/][Daniel Borkmann's talk at
 :END:
 
 #+HTML: <div class="center-text" style="font-size: 120%; margin-bottom: 3em;">
-How will you leverage eBPF in *your* edge solution?
+How will you leverage eBPF
+
+in *your* edge solution?
 #+HTML: </div>
 
 #+ATTR_html: :style height: 400px;
@@ -126,10 +128,7 @@ This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
 in the compiled version.
 
 # Local Variables:
-# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
-# <h2 class=\"author\">Toke Høiland-Jørgensen<br/><span style=\"font-size: 75%%\">Principal Kernel Engineer,
-# Red Hat</span></h2>
-# <h3>eBPF Summit</br>September 2022</h3>"
+# org-re-reveal-title-slide: "<img id=\"title-img\" src=\"title-slide.svg\"/>"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (let
 # ((case-fold-search nil)) (replace-regexp-in-string "Slide: ?" "" contents))))
 # End:
