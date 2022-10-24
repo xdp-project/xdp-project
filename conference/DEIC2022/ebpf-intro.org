@@ -122,10 +122,29 @@ XDP (eXpress Data Path) is a Linux *in-kernel* fast path
 :reveal_extra_attr: class="mid-slide"
 :END:
 
+- DDOS filtering
 - Custom software RSS steering
 - Passive latency monitoring
 - NAT64 gateway
-- SLB bonding using Linux bridging
+
+** DDOS filtering
+
+*Use case*: Filtering DDoS attack traffic at line rate on servers instead of on
+a dedicated firewall.
+
+#+HTML: <br />
+
+/*Problem*/: The kernel firewall (iptables/netfilter) doesn't scale to high
+line rates (10-100Gbps)
+
+#+HTML: <br />
+
+/Solution/: Implement the filtering in XDP, allowing it to scale to line rate
+with low overhead.
+
+#+HTML: <br />
+
+https://blog.cloudflare.com/l4drop-xdp-ebpf-based-ddos-mitigations/
 
 ** Custom software RSS steering                                     :export:
 
@@ -138,10 +157,11 @@ kernel queueing infrastructure)
 
 #+HTML: <br />
 
-/Solution/: Implement custom CPU steering with XDP; subset of customers on each
-CPU, means CPUs can run independently (avoiding the lock contention)
+/Solution/: XDP can choose which CPU to start the Linux networking stack on -
+steer a subset of customers to each CPU, so CPUs can run independently
+(avoiding the lock contention)
 
- - Take-away: XDP can choose which CPU to start Linux netstack on
+#+HTML: <br />
 
 https://github.com/xdp-project/xdp-cpumap-tc
 
@@ -152,13 +172,15 @@ to passively monitor traffic flowing through a middlebox.
 
 #+HTML: <br />
 
-/*Problem*/: [[https://github.com/pollere/pping][Existing implementation]] in software doesn't scale to high
+/*Problem*/: The existing solution in software ([[https://github.com/pollere/pping][pping]]) doesn't scale to high
 bandwidths
 
 #+HTML: <br />
 
-/Solution/: Implement monitoring in the kernel with eBPF, export metrics to
-userspace
+/Solution/: eBPF can inspect every packet with very low overhead - implement
+the monitoring in the kernel with eBPF, only export metrics to userspace
+
+#+HTML: <br />
 
 https://github.com/xdp-project/bpf-examples/tree/master/pping
 
@@ -173,27 +195,12 @@ user space, causing bad performance and bufferbloat.
 
 #+HTML: <br />
 
-/Solution/: Implement the translation inband in the kernel path using eBPF
+/Solution/: Implement the translation inband in the kernel path using eBPF -
+adding a new feature to the networking stack without changing kernel code
+
+#+HTML: <br />
 
 https://github.com/xdp-project/bpf-examples/tree/master/nat64-bpf
-
-** SLB bonding
-
-*Use case*: Open vSwitch [[https://docs.openvswitch.org/en/latest/topics/bonding/#slb-bonding][SLB bonding]] allows bonding of two interfaces without
-cooperation of the remote switch, by filtering replies based on local state.
-
-#+HTML: <br />
-
-/*Problem*/: The filtering is not implemented in the native Linux bridging
-driver, only in open vSwitch
-
-#+HTML: <br />
-
-/Solution/: Install TC-BPF programs on the component interfaces of the bond and
-apply the same filtering logic that open vSwitch does - without modifying the
-kernel.
-
-https://github.com/xdp-project/bpf-examples/tree/master/pkt-loop-filter
 
 * eBPF and Red Hat                                                   :export:
 
@@ -219,7 +226,7 @@ eBPF allows /unprecedented visibility/ into the OS, and *safe, dynamic
 extensibility* of core OS features.
 
 #+HTML: <center><div style="font-size: 130%">
-/eBPF/ *unlocks* /kernels potential/ for *innovation*
+/eBPF/ *unlocks* the /kernel's potential/ for *innovation*
 #+HTML: </div></center>
 
 #+HTML: <br />
@@ -229,6 +236,10 @@ extensibility* of core OS features.
 - The eBPF Foundation (working on standardisation): https://ebpf.foundation/
 
 - More examples of applications using eBPF: https://ebpf.io/applications
+
+- Code examples: https://github.com/xdp-project/bpf-examples
+
+- XDP tutorial: https://github.com/xdp-project/xdp-tutorial
 
 * Slide: End: /Questions?/                                           :export:
 
