@@ -141,6 +141,8 @@ kernel queueing infrastructure)
 /Solution/: Implement custom CPU steering with XDP; subset of customers on each
 CPU, means CPUs can run independently (avoiding the lock contention)
 
+ - Take-away: XDP can choose which CPU to start Linux netstack on
+
 https://github.com/xdp-project/xdp-cpumap-tc
 
 ** Passive latency monitoring                                       :export:
@@ -196,7 +198,7 @@ https://github.com/xdp-project/bpf-examples/tree/master/pkt-loop-filter
 * eBPF and Red Hat                                                   :export:
 
 We /support eBPF/ on RHEL:
-- Full kernel backports (RHEL 8.7: kernel 5.14, RHEL 9.1: kernel 5.16)
+- Full kernel eBPF backports (RHEL 8.7: kernel 5.14, RHEL 9.1: kernel 5.16)
 - Support for eBPF kernel features, bcc-tools and bpftrace
 
 #+HTML: <div style="font-size: 60%">
