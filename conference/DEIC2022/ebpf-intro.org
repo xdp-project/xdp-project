@@ -141,6 +141,8 @@ kernel queueing infrastructure)
 /Solution/: Implement custom CPU steering with XDP; subset of customers on each
 CPU, means CPUs can run independently (avoiding the lock contention)
 
+ - Take-away: XDP can choose which CPU to start Linux netstack on
+
 https://github.com/xdp-project/xdp-cpumap-tc
 
 ** Passive latency monitoring                                       :export:
