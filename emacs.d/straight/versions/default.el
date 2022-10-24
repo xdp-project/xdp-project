@@ -13,6 +13,6 @@
  ("org-re-reveal" . "14df7542f2a675f65501962e344e03d798cf0d39")
  ("packed" . "c41c3dfda86ae33832ffc146923e2a4675cbacfa")
  ("s.el" . "03410e6a7a2b11e47e1fea3b7d9899c7df26435e")
- ("straight.el" . "1e27b0590df77a5d478970ca58fd6606971692f5")
+ ("straight.el" . "f21103d97d180fba0b6e2e86ebb0b6269219ef2c")
  ("use-package" . "a7422fb8ab1baee19adb2717b5b47b9c3812a84c"))
-:beta
+:gamma
