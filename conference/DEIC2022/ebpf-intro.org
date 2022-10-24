@@ -198,7 +198,7 @@ https://github.com/xdp-project/bpf-examples/tree/master/pkt-loop-filter
 * eBPF and Red Hat                                                   :export:
 
 We /support eBPF/ on RHEL:
-- Full kernel backports (RHEL 8.7: kernel 5.14, RHEL 9.1: kernel 5.16)
+- Full kernel eBPF backports (RHEL 8.7: kernel 5.14, RHEL 9.1: kernel 5.16)
 - Support for eBPF kernel features, bcc-tools and bpftrace
 
 #+HTML: <div style="font-size: 60%">
