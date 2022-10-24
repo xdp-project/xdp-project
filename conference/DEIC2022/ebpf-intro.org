@@ -11,7 +11,7 @@
 #+OPTIONS: reveal_width:1600 reveal_height:900
 #+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
 
-* For conference: Internal NS team tech talk
+* For conference: DEIC 2022                                        :noexport:
 
 This presentation is for the DEIC conference 2022 in Kolding, Denmark:
 https://deic.dk/konference/2022/program-dag-1
@@ -63,8 +63,6 @@ Closer look at the eBPF components:
  - /*Sandboxed*/ by the eBPF /verifier/
    * Limits and verifies memory access and instructions limit
 
-
-
 * eBPF application areas                                             :export:
 :PROPERTIES:
 :reveal_extra_attr: class="img-slide"
@@ -87,7 +85,6 @@ Closer look at the eBPF components:
   - Firewalling and DDoS protection
   - Application isolation
   - Custom security monitoring and enforcement
-
 
 * Slide: eBPF networking                                             :export:
 :PROPERTIES:
@@ -214,8 +211,6 @@ We *develop eBPF*:
 
 We are a /*platinum member of the eBPF foundation*/.
 
-
-
 * Closing remarks                                                    :export:
 
 eBPF allows /unprecedented visibility/ into the OS, and *safe, dynamic
@@ -229,7 +224,7 @@ extensibility* of core OS features.
 
 - More examples of applications using eBPF: https://ebpf.io/applications
 
-* Slide: End: /Questions?/                                         :export:
+* Slide: End: /Questions?/                                           :export:
 
 
 #+ATTR_html: :style height: 400px;
