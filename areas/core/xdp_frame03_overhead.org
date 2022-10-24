@@ -6,7 +6,7 @@
 
 * veth: xdp buff to frame conversion bouncing
 
-When XDP_REDRECT'ing into veth driver, the peer device can run another XDP
+When XDP_REDIRECT'ing into veth driver, the peer device can run another XDP
 program. Before doing so, the incoming xdp_frame must be converted back to
 the xdp_buff layout.
 
