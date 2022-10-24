@@ -27,11 +27,20 @@ ip link set veth2 up
 ip link add veth3 type veth peer name veth4
 ip link set veth3 up
 ip link set veth4 up
+#+end_src
 
-ethtool -K veth1 gso on
-ethtool -K veth2 gso on
-ethtool -K veth3 gso on
-ethtool -K veth4 gso on
+XDP-redirecting packets into an =veth= net_device, requires loading a dummy
+XDP-prog on the veth-peer device, else the kernel will *silently drop* the
+frames.
+
+*Work-around*: Enabling GRO on veth-peer device indirectly *enable XDP*
+support, by enabling NAPI mode for the veth net_device.
+
+#+begin_src sh
+ethtool -K veth1 gro on
+ethtool -K veth2 gro on
+ethtool -K veth3 gro on
+ethtool -K veth4 gro on
 #+end_src
 
 ** redirect setup
