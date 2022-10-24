@@ -1,4 +1,5 @@
-(setq user-emacs-directory (file-name-directory
+(setq make-backup-files nil
+      user-emacs-directory (file-name-directory
                             (file-truename (or load-file-name buffer-file-name)))
       comp-eln-load-path `(,(concat user-emacs-directory "/eln-cache")))
 
