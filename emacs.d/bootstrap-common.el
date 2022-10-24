@@ -25,6 +25,12 @@
     (apply orig-fun r)))
 (advice-add 'sh-set-shell :around #'silence-messages)
 
+(defun silent-straight-print (orig-fun &rest r)
+  "straight--output that obeys inhibit-message"
+  (unless inhibit-message
+    (apply orig-fun r)))
+(advice-add 'straight--output :around #'silent-straight-print)
+
 (defun straight-do-thaw ()
   "Make sure we use the straight package versions specified in versions/default.el."
   (let ((inhibit-message t))
