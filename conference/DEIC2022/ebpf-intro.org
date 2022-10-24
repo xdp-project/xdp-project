@@ -218,6 +218,10 @@ We are a /*platinum member of the eBPF foundation*/.
 eBPF allows /unprecedented visibility/ into the OS, and *safe, dynamic
 extensibility* of core OS features.
 
+#+HTML: <center><div style="font-size: 130%">
+/eBPF/ *unlocks* /kernels potential/ for *innovation*
+#+HTML: </div></center>
+
 #+HTML: <br />
 
 - Pioneered on Linux, but exists in Windows too: https://github.com/microsoft/ebpf-for-windows
