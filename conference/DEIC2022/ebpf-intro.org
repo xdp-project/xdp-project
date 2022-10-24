@@ -11,7 +11,7 @@
 #+OPTIONS: reveal_width:1600 reveal_height:900
 #+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
 
-* For conference: Internal NS team tech talk
+* For conference: DEIC 2022                                        :noexport:
 
 This presentation is for the DEIC conference 2022 in Kolding, Denmark:
 https://deic.dk/konference/2022/program-dag-1
