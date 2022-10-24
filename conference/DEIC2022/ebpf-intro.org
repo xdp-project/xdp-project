@@ -63,8 +63,6 @@ Closer look at the eBPF components:
  - /*Sandboxed*/ by the eBPF /verifier/
    * Limits and verifies memory access and instructions limit
 
-
-
 * eBPF application areas                                             :export:
 :PROPERTIES:
 :reveal_extra_attr: class="img-slide"
@@ -87,7 +85,6 @@ Closer look at the eBPF components:
   - Firewalling and DDoS protection
   - Application isolation
   - Custom security monitoring and enforcement
-
 
 * Slide: eBPF networking                                             :export:
 :PROPERTIES:
@@ -214,8 +211,6 @@ We *develop eBPF*:
 
 We are a /*platinum member of the eBPF foundation*/.
 
-
-
 * Closing remarks                                                    :export:
 
 eBPF allows /unprecedented visibility/ into the OS, and *safe, dynamic
@@ -229,7 +224,7 @@ extensibility* of core OS features.
 
 - More examples of applications using eBPF: https://ebpf.io/applications
 
-* Slide: End: /Questions?/                                         :export:
+* Slide: End: /Questions?/                                           :export:
 
 
 #+ATTR_html: :style height: 400px;
