@@ -1,0 +1,264 @@
+# -*- fill-column: 79; -*-
+#+TITLE: eBPF: Unlocking the potential of the Linux kernel
+#+AUTHOR: Jesper Dangaard Brouer <hawk@kernel.org>
+#+EMAIL: brouer@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: Driving IT 2022                                  :noexport:
+
+This presentation is for the Driving IT 2022 conference in Copenhagen, Denmark:
+https://driving-it.ida.dk/
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation.
+
+Colors are choosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Slide: What is eBPF ?                                              :export:
+
+#+ATTR_html: :style height: 100px; float: right; width: auto; position: relative; top: -100px;
+[[file:ebpf-logo.svg]]
+
+From: https://ebpf.io/what-is-ebpf
+#+begin_quote
+eBPF is a revolutionary technology that can run sandboxed programs in the Linux
+kernel without changing kernel source code or loading a kernel module
+#+end_quote
+
+
+*Rate of innovation* at the operating system level: */Traditionally slow/*
+ - eBPF enables things at the OS level that were not possible before
+ - eBPF can /radically increase/ rate of innovation
+
+** Slide: *Traditional* Kernel development process                  :export:
+
+[[file:../TechSummit-2021/images/bpf_comic01_scale.png]]
+
+** Slide: *eBPF* development process                                :export:
+
+[[file:../TechSummit-2021/images/bpf_comic02_scale.png]]
+
+* Slide: eBPF components                                             :export:
+
+Closer look at the eBPF components:
+
+ - /Bytecode/ - Architecture independent *Instruction Set*
+   * /JIT/ to native machine instructions (after loading into kernel)
+
+ - /Runtime environment/ - Linux kernel
+   * *Event based* BPF hooks all over the kernel
+   * Per hook limited access to kernel functions via *BPF helpers*
+
+ - /*Sandboxed*/ by the eBPF /verifier/
+   * Limits and verifies memory access and instructions limit
+
+* eBPF use cases                                                     :export:
+- /Networking/
+  - Use eBPF to amend the data path with new features
+  - CPU efficiency: Use XDP to keep up with high packet rates
+    - Accelerate firewall, load balancing, forwarding
+
+- *Monitoring*
+  - Low overhead performance monitoring
+  - Application resource usage reporting
+
+- /*Security*/
+  - Firewalling and DDoS protection
+  - Application isolation
+  - Custom security monitoring and enforcement
+
+* eBPF application areas                                             :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_html: :class figure-bg
+[[file:../BPFSummit2022/bpf-venn.png]]
+
+* Slide: eBPF networking                                             :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+Focus on eBPF for networking
+
+ - /XDP/ (eXpress Data Path) for fast processing at ingress
+ - /TC-BPF/ hooks inside the regular stack
+ - eBPF hooks for cgroups can also be useful for containers
+
+* Slide: What is XDP?                                                :export:
+
+XDP (eXpress Data Path) is a Linux *in-kernel* fast path
+ - /Programmable layer in front/ of traditional network stack
+   - Read, modify, drop, redirect or pass
+   - For L2-L3 use cases: seeing /x10 performance/ improvements!
+ - *Avoiding* /memory allocations/
+   - No SKB allocations and no init (SKB zeroes 4 cache-lines per pkt)
+ - Adaptive *bulk* processing of frames
+ - Very /early access/ to frame (in driver code *after DMA sync*)
+ - Ability to */skip/ (large parts) of kernel /code/*
+   - Evolve XDP via /BPF helpers/
+
+** Slide: XDP performance                                           :export:
+#+ATTR_HTML: :class img-no-border
+[[file:../TechSummit-2021/images/xdp_vs_iptables_drop.svg]]
+
+*XDP_DROP*: 100Gbit/s mlx5 max out at /108 Mpps/ (CPU E5-1650v4 @3.60GHz)
+ - */PCIe tuning needed/* - NIC compress RX-descriptors (=rx_cqe_compress on=)
+
+* eBPF networking use cases                                          :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+- DDOS filtering
+- Custom software RSS steering
+- Passive latency monitoring
+- NAT64 gateway
+
+** DDOS filtering
+
+*Use case*: Filtering DDoS attack traffic at line rate on servers instead of on
+a dedicated firewall.
+
+#+HTML: <br />
+
+/*Problem*/: The kernel firewall (iptables/netfilter) doesn't scale to high
+line rates (10-100Gbps)
+
+#+HTML: <br />
+
+/Solution/: Implement the filtering in XDP, allowing it to scale to line rate
+with low overhead.
+
+#+HTML: <br />
+
+https://blog.cloudflare.com/l4drop-xdp-ebpf-based-ddos-mitigations/
+
+** Custom software RSS steering                                     :export:
+
+*Use case*: ISP middlebox providing per-customer bandwidth enforcement (using
+kernel queueing infrastructure)
+
+#+HTML: <br />
+
+/*Problem*/: Software shaping doesn't scale because of *global qdisc lock*
+
+#+HTML: <br />
+
+/Solution/: XDP can choose which CPU to start the Linux networking stack on -
+steer a subset of customers to each CPU, so CPUs can run independently
+(avoiding the lock contention)
+
+#+HTML: <br />
+
+https://github.com/xdp-project/xdp-cpumap-tc
+
+** Passive latency monitoring                                       :export:
+
+*Use case*: Monitor TCP traffic and extract flow latency (using TCP timestamps)
+to passively monitor traffic flowing through a middlebox.
+
+#+HTML: <br />
+
+/*Problem*/: The existing solution in software ([[https://github.com/pollere/pping][pping]]) doesn't scale to high
+bandwidths
+
+#+HTML: <br />
+
+/Solution/: eBPF can inspect every packet with very low overhead - implement
+the monitoring in the kernel with eBPF, only export metrics to userspace
+
+#+HTML: <br />
+
+https://github.com/xdp-project/bpf-examples/tree/master/pping
+
+** NAT64 gateway
+
+*Use case*: NAT64 gateway for IPv4-IPv6 transition
+
+#+HTML: <br />
+
+/*Problem*/: Existing open source implementation ([[http://www.litech.org/tayga/][Tayga]]) routes packets through
+user space, causing bad performance and bufferbloat.
+
+#+HTML: <br />
+
+/Solution/: Implement the translation inband in the kernel path using eBPF -
+adding a new feature to the networking stack without changing kernel code
+
+#+HTML: <br />
+
+https://github.com/xdp-project/bpf-examples/tree/master/nat64-bpf
+
+* eBPF and Red Hat                                                   :export:
+
+We /support eBPF/ on RHEL:
+- Full kernel eBPF backports (RHEL 8.7: kernel 5.14, RHEL 9.1: kernel 5.16)
+- Support for eBPF kernel features, bcc-tools and bpftrace
+
+#+HTML: <div style="font-size: 60%">
+https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/9.0_release_notes/new-features#BZ-2070506
+#+HTML: </div>
+
+
+We *develop eBPF*:
+- Upstream kernel contributions (networking, tracing, HID)
+- Userspace libraries and tools ([[https://github.com/xdp-project/xdp-tools/tree/master/lib/libxdp][libxdp]], [[https://aya-rs.dev/][Aya]])
+- Code examples and docs ([[https://github.com/xdp-project/xdp-tutorial][xdp-tutorial]], [[https://github.com/xdp-project/bpf-examples][bpf-examples]])
+
+We are a /*platinum member of the eBPF foundation*/.
+
+* Closing remarks                                                    :export:
+
+eBPF allows /unprecedented visibility/ into the OS, and *safe, dynamic
+extensibility* of core OS features.
+
+#+HTML: <center><div style="font-size: 130%">
+/eBPF/ *unlocks* the /kernel's potential/ for *innovation*
+#+HTML: </div></center>
+
+#+HTML: <br />
+
+- Pioneered on Linux, but exists in Windows too: https://github.com/microsoft/ebpf-for-windows
+
+- The eBPF Foundation (working on standardisation): https://ebpf.foundation/
+
+- More examples of applications using eBPF: https://ebpf.io/applications
+
+- Code examples: https://github.com/xdp-project/bpf-examples
+
+- XDP tutorial: https://github.com/xdp-project/xdp-tutorial
+
+* Slide: End: /Questions?/                                           :export:
+
+
+#+ATTR_html: :style height: 400px;
+[[file:../BPFSummit2022/rh-heart-bpf.svg]]
+
+Or come find me in the Red Hat booth during the conference!
+
+* Emacs end-tricks                                                 :noexport:
+
+This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
+in the compiled version.
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# <h2 class=\"author\">Jesper Dangaard Brouer<br/><span style=\"font-size:
+# 75%%\">Sr. Principal Kernel Engineer,
+# Red Hat</span></h2>
+# <h3>Driving IT</br>November 4th, 2022</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
