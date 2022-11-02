@@ -1,0 +1,198 @@
+# -*- fill-column: 79; -*-
+#+TITLE: It's the latency, stupid!
+#+AUTHOR: Toke Høiland-Jørgensen <toke@redhat.com>
+#+EMAIL: toke@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: Driving IT 2022                                  :noexport:
+
+This presentation is for the Driving IT 2022 conference in Copenhagen, Denmark:
+https://driving-it.ida.dk/
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation.
+
+Colors are choosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Slide:                                              :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_html: :style height: 580px;
+#+CAPTION: http://www.stuartcheshire.org/rants/Latency.html
+[[file:its-the-latency-screenshot.png]]
+
+* Slide:                                              :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_html: :style height: 580px;
+#+CAPTION: https://www.youtube.com/watch?v=_fNp37zFn9Q
+[[file:living-with-lag.png]]
+
+
+* Which of these is /faster/?                                        :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+HTML: <div class="two-column">
+
+#+ATTR_html: :style width: 80%;
+[[file:bus.jpg]]
+
+[[file:race-car.jpg]]
+
+#+HTML: </div>
+
+** Which of these is /faster/?                                      :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+HTML: <div class="two-column">
+
+#+ATTR_html: :style width: 80%;
+#+CAPTION: High *throughput*
+[[file:bus.jpg]]
+
+#+CAPTION: Low /latency/
+[[file:race-car.jpg]]
+
+#+HTML: </div>
+
+* Why is this important?                                             :export:
+
+#+begin_quote
+“My theory here is when an interface is faster, you feel good, and ultimately
+what that comes down to is you feel in control. The [application] isn’t
+controlling me, I’m controlling it. Ultimately that feeling of control
+translates to happiness in everyone. In order to increase the happiness in the
+world, we all have to keep working on this.”
+
+Matt Mullenweg, WordPress
+#+end_quote
+
+* The web: Page load time                                            :export:
+
+#+HTML: <div class="two-column">
+
+#+ATTR_html: :style width: 100%;
+[[file:plt-bandwidth.png]]
+
+#+ATTR_html: :style width: 100%;
+[[file:plt-latency.png]]
+
+#+HTML: </div><div style="clear: both; text-align: center;">
+
+Source: https://youtu.be/TNBkxA313kk (from 2011)
+#+HTML: </div>
+
+* So why are we still doing this?                                    :export:
+
+#+ATTR_html: :style height: 570px;
+[[file:bredbaand.png]]
+
+* How to add bandwidth to a low-capacity link                        :export:
+
+- Link bonding
+- Compression
+- Caching
+- Scaling down content size
+- Avoiding unneeded transfers
+
+** How to remove delay from a high-latency link
+
+- Time travel
+
+** How to remove delay from a high-latency link
+- Time travel
+
+#+HTML: <div class="center-text" style="margin-top: 200px; font-size: 125%;">
+Latency /*cannot be removed*/ it can only be /prevented/!
+#+HTML: </div>
+
+* Sources of network latency                                         :export:
+
+- Session setup delay
+  - *DNS lookups*, TCP handshakes, TLS negotiation
+- Propagation delay
+  - Media acquisition, physical distance, (bad) routing, /*queueing delay*/
+- Processing delay
+  - OS scheduling, head-of-line blocking, /bulk processing/, RPC latency
+
+#+HTML: <div class="center-text" style="margin-top: 100px">
+All of these need to be minimised!
+#+HTML: </div>
+
+** Queueing delay
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_html: :style height: 600px;
+[[file:truckerstop.jpg]]
+
+** Bufferbloat: Latency *under load*
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_html: :style height: 600px;
+[[file:bloated.png]]
+
+* We build what we measure                                           :export:
+
+#+CAPTION: It took *a decade* to get those two numbers added!
+[[file:speedtest.png]]
+
+* Summary                                                            :export:
+
+- /Faster/ really means "low latency", not "high throughput"
+- It's possible to *add* bandwidth, delay can only be /*prevented*/
+- We build what we measure, so /start measuring latency/
+  - Idle and under-load latency can be very different!
+
+#+HTML: <div class="center-text" style="margin-top: 100px">
+Faster systems make us feel in control.
+
+#+HTML: <div style="font-size: 125%;">
+/Decrease latency - increase happiness!/
+#+HTML: </div></div>
+
+* Slide: End: /Questions?/                                           :export:
+More reading:
+
+#+HTML: <div style="font-size: 80%;">
+- https://www.internetsociety.org/resources/doc/2013/reducing-internet-latency-2013-workshop-report/
+- https://www.bufferbloat.net/projects/bloat/wiki/What_can_I_do_about_Bufferbloat/
+- https://sci-hub.se/https://ieeexplore.ieee.org/document/6967689
+- https://bufferbloat-and-beyond.net/
+- https://www.waveform.com/tools/bufferbloat
+#+HTML: </div>
+
+* Emacs end-tricks                                                 :noexport:
+
+This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
+in the compiled version.
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\" style=\"margin-bottom: 3em;\">%t</h1>
+# <h2 class=\"author\">Toke Høiland-Jørgensen<br/><span style=\"font-size: 75%%\">Principal Kernel Engineer,
+# Red Hat</span></h2>
+# <h3>Driving IT</br>November 4th, 2022</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: ?" "" contents)))
+# End:
