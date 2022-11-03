@@ -247,8 +247,6 @@ extensibility* of core OS features.
 #+ATTR_html: :style height: 400px;
 [[file:../BPFSummit2022/rh-heart-bpf.svg]]
 
-Or come find me in the Red Hat booth during the conference!
-
 * Emacs end-tricks                                                 :noexport:
 
 This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
