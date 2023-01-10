@@ -99,3 +99,48 @@ Ethtool(ixgbe1  ) stat:       256912 (        256,912) <= tx_queue_0_packets /se
 Ethtool(ixgbe1  ) stat:         1043 (          1,043) <= tx_restart_queue /sec
 #+end_example
 
+The pktgen script is still generating around 2Mpps, but now most of these
+are getting dropped due to "rx_flow_control_xoff".
+
+** Results#1 unpatched
+
+Default pktgen script count is 10 million packets increase this to 100
+million for a longer test.
+
+#+begin_example
+[jbrouer@broadwell pktgen]$ ./pktgen_bench_xmit_mode_queue_xmit.sh -i ixgbe1 \
+ -d 192.168.10.1 -m 00:1b:21:bb:9a:80 -t 1 -n $((100*1000000))
+Running... ctrl^C to stop
+Done
+Device: ixgbe1@0
+Result: OK: 41725871(c41679853+d46018) usec, 100000000 (60byte,0frags)
+  2396594pps 1150Mb/sec (1150365120bps) errors: 1417469
+#+end_example
+
+** Results#2 patched kernel
+
+Default pktgen script count is 10 million packets increase this to 100
+million for a longer test.
+
+#+begin_example
+[jbrouer@broadwell pktgen]$ ./pktgen_bench_xmit_mode_queue_xmit.sh -i ixgbe1 \
+ -d 192.168.10.1 -m 00:1b:21:bb:9a:80 -t 1 -n $((100*1000000))
+Running... ctrl^C to stop
+Done
+Device: ixgbe1@0
+Result: OK: 40323062(c40276577+d46485) usec, 100000000 (60byte,0frags)
+  2479970pps 1190Mb/sec (1190385600bps) errors: 1422753
+#+end_example
+
+** Results summary:
+
+Result line from pktgen script: count 100000000 (60byte,0frags)
+ - Unpatched kernel: 2396594pps 1150Mb/sec (1150365120bps) errors: 1417469
+ - Patched kernel  : 2479970pps 1190Mb/sec (1190385600bps) errors: 1422753
+
+Difference:
+ * +83376 pps faster (2479970-2396594)
+ * -14 nanosec faster (1/2479970-1/2396594)*10^9
+
+The patched kernel is faster. Around the expected gain from using the
+kmem_cache bulking API.
