@@ -144,3 +144,7 @@ Difference:
 
 The patched kernel is faster. Around the expected gain from using the
 kmem_cache bulking API.
+
+These results are from a fairly freshly booted kernel, which make it more
+likely that the kmem_cache isn't fragmented yet, thus the bulking is more
+likely find objects from the same slab.
