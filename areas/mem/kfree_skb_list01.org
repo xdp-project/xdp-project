@@ -11,6 +11,15 @@ Patchset V1:
  - Message-ID: <167293333469.249536.14941306539034136264.stgit@firesoul>
  - https://lore.kernel.org/all/167293333469.249536.14941306539034136264.stgit@firesoul/
 
+* Auto-generated document table of contents                             :toc:
+- [[#intro][Intro]]
+- [[#cover-letter][Cover letter]]
+- [[#expected-gain][Expected gain]]
+- [[#qdisc-pktgen-synthetic-benchmark][Qdisc pktgen synthetic benchmark]]
+  - [[#results1-unpatched][Results#1 unpatched]]
+  - [[#results2-patched-kernel][Results#2 patched kernel]]
+  - [[#results-summary][Results summary:]]
+
 * Cover letter
 
 #+begin_quote
