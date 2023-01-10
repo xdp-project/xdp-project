@@ -36,4 +36,17 @@ packets from fattest elephant flow, default capped at 64 packets (but
 adjustable via tc argument drop_batch).
 #+end_quote
 
+* Expected gain
 
+The expected gain from using kmem_cache bulk alloc and free API can be
+assessed via the microbencmark kernel modules in [[https://github.com/netoptimizer/prototype-kernel/tree/master/kernel/mm][prototype kernel]] git repo.
+
+The module 'slab_bulk_test01' results at bulk 16 element:
+#+begin_example
+kmem-in-loop Per elem: 109 cycles(tsc) 30.532 ns (step:16) - (measurement period time:0.305327778 sec time_interval:305327778) - (invoke count:10000000 tsc_interval:1099193748)
+kmem-bulk    Per elem: 64 cycles(tsc) 17.905 ns (step:16) - (measurement period time:0.179053491 sec time_interval:179053491) - (invoke count:10000000 tsc_interval:644598225)
+#+end_example
+
+Thus, best-case expected gain is: 45 cycles(tsc) 12.627 ns.
+ - With usual microbenchmarks caveats
+ - Notice this is both bulk alloc and free
