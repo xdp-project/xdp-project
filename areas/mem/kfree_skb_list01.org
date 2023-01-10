@@ -50,3 +50,52 @@ kmem-bulk    Per elem: 64 cycles(tsc) 17.905 ns (step:16) - (measurement period 
 Thus, best-case expected gain is: 45 cycles(tsc) 12.627 ns.
  - With usual microbenchmarks caveats
  - Notice this is both bulk alloc and free
+
+* Qdisc pktgen synthetic benchmark
+
+I have been using pktgen script [[https://github.com/torvalds/linux/blob/master/samples/pktgen/pktgen_bench_xmit_mode_queue_xmit.sh][pktgen_bench_xmit_mode_queue_xmit.sh]]
+which can inject packets at the qdisc layer (invoking __dev_queue_xmit).
+
+I'm testing this on a 10Gbit/s interface (driver ixgbe). The challenge is
+that I need to overload the qdisc enqueue layer as that is triggering the
+call to kfree_skb_list().
+
+Linux with SKBs and qdisc injecting with pktgen is limited to producing
+packets at (measured) 2,205,588 pps with a single TX-queue (and scaling up
+1,951,771 pps per queue or 512 ns per pkt). Reminder 10Gbit/s at 64 bytes
+packets is 14.8 Mpps (or 67.2 ns per pkt).
+
+The trick to trigger the qdisc push-back way earlier is Ethernet
+flow-control (which is on by default).
+
+Commands for disable and enable of Ethernet flow-control:
+#+begin_src sh
+ ethtool -A ixgbe1 rx off tx off
+ ethtool -A ixgbe1 rx on tx on
+#+end_src
+
+I was a bit surprised to see, but using pktgen_bench_xmit_mode_queue_xmit.sh
+on my testlab the remote host was pushing back a lot, resulting in only
+256Kpps being actually sent on wire. Monitored with ethtool stats [[https://github.com/netoptimizer/network-testing/blob/master/bin/ethtool_stats.pl][script]].
+
+#+begin_example
+ethtool_stats.pl --dev ixgbe1 --sec 3
+Show adapter(s) (ixgbe1) statistics (ONLY that changed!)
+Ethtool(ixgbe1  ) stat:            1 (              1) <= fdir_miss /sec
+Ethtool(ixgbe1  ) stat:           88 (             88) <= rx_bytes /sec
+Ethtool(ixgbe1  ) stat:           92 (             92) <= rx_bytes_nic /sec
+Ethtool(ixgbe1  ) stat:          601 (            601) <= rx_flow_control_xoff /sec
+Ethtool(ixgbe1  ) stat:           55 (             55) <= rx_flow_control_xon /sec
+Ethtool(ixgbe1  ) stat:            1 (              1) <= rx_packets /sec
+Ethtool(ixgbe1  ) stat:            1 (              1) <= rx_pkts_nic /sec
+Ethtool(ixgbe1  ) stat:           88 (             88) <= rx_queue_5_bytes /sec
+Ethtool(ixgbe1  ) stat:            1 (              1) <= rx_queue_5_packets /sec
+Ethtool(ixgbe1  ) stat:     15414708 (     15,414,708) <= tx_bytes /sec
+Ethtool(ixgbe1  ) stat:     16442355 (     16,442,355) <= tx_bytes_nic /sec
+Ethtool(ixgbe1  ) stat:       256912 (        256,912) <= tx_packets /sec
+Ethtool(ixgbe1  ) stat:       256912 (        256,912) <= tx_pkts_nic /sec
+Ethtool(ixgbe1  ) stat:     15414708 (     15,414,708) <= tx_queue_0_bytes /sec
+Ethtool(ixgbe1  ) stat:       256912 (        256,912) <= tx_queue_0_packets /sec
+Ethtool(ixgbe1  ) stat:         1043 (          1,043) <= tx_restart_queue /sec
+#+end_example
+
