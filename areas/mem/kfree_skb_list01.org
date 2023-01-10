@@ -1,0 +1,39 @@
+# -*- fill-column: 76; -*-
+#+Title: Use kmem_cache_free_bulk in kfree_skb_list
+#+Options: ^:nil
+
+* Intro
+
+Upstream proposal for using kmem_cache_free_bulk in kfree_skb_list.
+
+Patchset V1:
+ - Subject: [PATCH net-next 0/2] [[https://lore.kernel.org/all/167293333469.249536.14941306539034136264.stgit@firesoul/#r][net: use kmem_cache_free_bulk in kfree_skb_list]]
+ - Message-ID: <167293333469.249536.14941306539034136264.stgit@firesoul>
+ - https://lore.kernel.org/all/167293333469.249536.14941306539034136264.stgit@firesoul/
+
+* Cover letter
+
+#+begin_quote
+net: use kmem_cache_free_bulk in kfree_skb_list
+
+The kfree_skb_list function walks SKB (via skb->next) and frees them
+individually to the SLUB/SLAB allocator (kmem_cache). It is more
+efficient to bulk free them via the kmem_cache_free_bulk API.
+
+Netstack NAPI fastpath already uses kmem_cache bulk alloc and free
+APIs for SKBs.
+
+The kfree_skb_list call got an interesting optimization in commit
+520ac30f4551 ("net_sched: drop packets after root qdisc lock is
+released") that can create a list of SKBs "to_free" e.g. when qdisc
+enqueue fails or deliberately chooses to drop . It isn't a normal data
+fastpath, but the situation will likely occur when system/qdisc are
+under heavy workloads, thus it makes sense to use a faster API for
+freeing the SKBs.
+
+E.g. the (often distro default) qdisc fq_codel will drop batches of
+packets from fattest elephant flow, default capped at 64 packets (but
+adjustable via tc argument drop_batch).
+#+end_quote
+
+
