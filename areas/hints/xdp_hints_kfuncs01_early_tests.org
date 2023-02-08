@@ -1,0 +1,42 @@
+#+Title: XDP-hints via kfuncs: Early testing
+
+* Driver: igc
+
+I implemented metadata XDP hints kfuncs in driver igc.
+As this hardware support timestamping.
+
+** Driver igc: Initial test#1 with igc
+
+Selftest tool "xdp_hw_metadata" have HW timestamp enable features, but it
+doesn't seem to work in igc hardware.
+
+#+begin_example
+sudo ./xdp_hw_metadata igc1
+[...]
+poll: 1 (0)
+xsk_ring_cons__peek: 1
+0xad6880: rx_desc[0]->addr=100000000008000 addr=8100 comp_addr=8000
+rx_hash: 0
+rx_timestamp:  0 (sec:0.0000)
+0xad6880: complete idx=8 addr=8000
+poll: 0 (0)
+#+end_example
+
+Using tcpdump to enable HW timestamp on NIC:
+ - tcpdump -ni igc1 -j adapter_unsynced
+
+Now we have timestamps:
+#+begin_example
+poll: 1 (0)
+xsk_ring_cons__peek: 1
+0xad6880: rx_desc[2]->addr=10000000000a000 addr=a100 comp_addr=a000
+rx_hash: 0
+rx_timestamp:  4521993656936783 (sec:4521993.6569)
+XDP RX-time:   1675856767910401209 (sec:1675856767.9104) delta sec:1671334774.2535
+AF_XDP time:   1675856767910497901 (sec:1675856767.9105) delta sec:0.0001 (96.692 usec)
+0xad6880: complete idx=10 addr=a000
+#+end_example
+
+The rx_timestamp: 4521993656936783 (sec:4521993.6569) looks like
+CLOCK_MONOTONIC, e.g. not at wall-clock timestamp.
+
