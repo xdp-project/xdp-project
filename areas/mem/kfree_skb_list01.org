@@ -16,6 +16,17 @@ Patchset V2:
  - Message-ID: <167361788585.531803.686364041841425360.stgit@firesoul>
  - https://lore.kernel.org/all/167361788585.531803.686364041841425360.stgit@firesoul
 
+Patches that got applied:
+ - [[https://git.kernel.org/netdev/net-next/c/05cb8b39ca59][05cb8b39ca59]] ("Merge branch 'net-use-kmem_cache_free_bulk-in-kfree_skb_list'")
+ - [[https://git.kernel.org/netdev/net-next/c/a4650da2a2d6][a4650da2a2d6]] ("net: fix call location in kfree_skb_list_reason")
+ - [[https://git.kernel.org/netdev/net-next/c/eedade12f4cb][eedade12f4cb]] ("net: kfree_skb_list use kmem_cache_free_bulk")
+
+Fixes for patches that got applied
+ - [[https://git.kernel.org/netdev/net-next/c/f72ff8b81ebc][f72ff8b81ebc]] ("net: fix kfree_skb_list use of skb_mark_not_on_list")
+
+Avoid future bugs in this area
+ - [[https://git.kernel.org/netdev/net-next/c/9dde0cd3b10f][9dde0cd3b10f]] ("net: introduce skb_poison_list and use in kfree_skb_list")
+
 * Auto-generated document table of contents                             :toc:
 - [[#intro][Intro]]
 - [[#cover-letter][Cover letter]]
