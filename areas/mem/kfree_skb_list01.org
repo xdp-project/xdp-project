@@ -11,9 +11,15 @@ Patchset V1:
  - Message-ID: <167293333469.249536.14941306539034136264.stgit@firesoul>
  - https://lore.kernel.org/all/167293333469.249536.14941306539034136264.stgit@firesoul/
 
+Patchset V2:
+ - Subject: [PATCH net-next V2 0/2] net: use kmem_cache_free_bulk in kfree_skb_list
+ - Message-ID: <167361788585.531803.686364041841425360.stgit@firesoul>
+ - https://lore.kernel.org/all/167361788585.531803.686364041841425360.stgit@firesoul
+
 * Auto-generated document table of contents                             :toc:
 - [[#intro][Intro]]
 - [[#cover-letter][Cover letter]]
+  - [[#stacked-git-mail][stacked git mail]]
 - [[#expected-gain][Expected gain]]
 - [[#qdisc-pktgen-synthetic-benchmark][Qdisc pktgen synthetic benchmark]]
   - [[#results1-unpatched][Results#1 unpatched]]
@@ -43,7 +49,19 @@ freeing the SKBs.
 E.g. the (often distro default) qdisc fq_codel will drop batches of
 packets from fattest elephant flow, default capped at 64 packets (but
 adjustable via tc argument drop_batch).
+
+Performance measurements done in [1]:
+ [1] https://github.com/xdp-project/xdp-project/blob/master/areas/mem/kfree_skb_list01.org
 #+end_quote
+
+** stacked git mail
+
+#+begin_src sh
+stg mail --version "net-next V2" --edit-cover --cc meup \
+  --cc jakub --cc davem --cc edumazet@google.com --cc pabeni@redhat.com \
+  --to netdev \
+  refactor..kfree_skb_list-bulk
+#+end_src
 
 * Expected gain
 
