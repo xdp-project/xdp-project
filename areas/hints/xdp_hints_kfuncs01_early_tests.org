@@ -5,6 +5,17 @@
 I implemented metadata XDP hints kfuncs in driver igc.
 As this hardware support timestamping.
 
+** Driver igc: list timestamp types
+
+The tcpdump tool can be used for listing the NICs timestamp types:
+
+#+begin_src sh
+$ tcpdump -i igc1 --list-time-stamp-types
+Time stamp types for igc1 (use option -j to set):
+  host (Host)
+  adapter_unsynced (Adapter, not synced with system time)
+#+end_src
+
 ** Driver igc: Initial test#1 with igc
 
 Selftest tool "xdp_hw_metadata" have HW timestamp enable features, but it
