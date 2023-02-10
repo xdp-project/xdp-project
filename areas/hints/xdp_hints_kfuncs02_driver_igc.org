@@ -1,9 +1,9 @@
-#+Title: XDP-hints via kfuncs: Early testing
+#+Title: XDP-hints via kfuncs: For driver igc
 
 * Driver: igc
 
 I implemented metadata XDP hints kfuncs in driver igc.
-As this hardware support timestamping.
+As this hardware supports timestamping.
 
 ** Driver igc: list timestamp types
 
