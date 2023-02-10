@@ -1,0 +1,37 @@
+#!/usr/bin/bpftrace
+/* SPDX-License-Identifier: GPL-2.0+
+ *
+ * Script to monitor the SKB hash values on a given net_device.
+ * Including info on whether hash type is L4 and/or software based.
+ *
+ * This is practical for debugging issues with driver hash functions.
+ *
+ * 10-Feb-2023	Jesper Dangaard Brouer	Created this
+ */
+#include <linux/skbuff.h>
+#include <linux/netdevice.h>
+
+BEGIN
+{
+	$devname = str($1);
+	if ($devname == "") {
+		printf("EXIT - Give net_device to monitor as arg1\n");
+		exit();
+	}
+	printf("Monitor net_device: %s\n", str($1));
+	printf("Hit Ctrl-C to end.\n");
+	printf("%-16s %-8s  %-15s %-15s\n", "IFNAME", "HASH", "Hash-type:L4", "Software-hash");
+}
+
+//tracepoint:net:napi_gro_receive_entry,
+tracepoint:net:netif_receive_skb
+{
+	$skb = (struct sk_buff *)args->skbaddr;
+	$dev = $skb->dev;
+	$hash = $skb->hash;
+	$name = $dev->name;
+	if($name == str($1)){
+		printf("%-16s %08X  %-15d %-15d\n",
+		       $name, $hash, $skb->l4_hash, $skb->sw_hash);
+        }
+}
