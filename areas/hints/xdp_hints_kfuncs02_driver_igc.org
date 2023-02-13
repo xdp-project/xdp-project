@@ -51,6 +51,69 @@ offset of 37 seconds to wall-clock time. Given the delta is below 37 sec
 (sec:36.9970) it seems XDP RX-time happened *before* the packet was received by
 hardware, which obviously isn't possible (without a time machine).
 
+** Driver igc: Clock-drift observations
+
+The chip 225 clock seems to be loosing time, compared to the software system
+time. If unloading the igc driver kernel module and reloading it, the NIC clock
+is reset.
+
+Output from shortly after loading igc driver:
+#+begin_example
+poll: 1 (0)
+xsk_ring_cons__peek: 1
+0x11fc958: rx_desc[7]->addr=10000000000f000 addr=f100 comp_addr=f000
+rx_hash: 0x00000000
+rx_timestamp:  1676297171760293047 (sec:1676297171.7603)
+XDP RX-time:   1676297208760355863 (sec:1676297208.7604) delta sec:37.0001
+AF_XDP time:   1676297208760416292 (sec:1676297208.7604) delta sec:0.0001 (60.429 usec)
+0x11fc958: complete idx=15 addr=f000
+#+end_example
+
+Diff between HW and XDP timestamps:
+ - 1676297171760293047-1676297208760355863 = -37000062816 nanosec
+ - Minus 37 seconds: 62816 nanosec = 62.8 usec
+
+Next output after 58 seconds:
+#+begin_example
+poll: 1 (0)
+xsk_ring_cons__peek: 1
+0xf31958: rx_desc[5]->addr=10000000000d000 addr=d100 comp_addr=d000
+rx_hash: 0x00000000
+rx_timestamp:  1676297229970688731 (sec:1676297229.9707)
+XDP RX-time:   1676297266970731938 (sec:1676297266.9707) delta sec:37.0000
+AF_XDP time:   1676297266970824714 (sec:1676297266.9708) delta sec:0.0001 (92.776 usec)
+0xf31958: complete idx=13 addr=d000
+#+end_example
+
+After 58 seconds the diff between HW and XDP timestamps:
+ - 1676297229970688731-1676297266970731938 = -37000043207
+ - Minus 37 seconds: 43207 nanosec = 43.2 usec
+
+Thus, HW clock seem to be loosing 19609 nanosec (62816-43207) over a period of
+58 seconds. Thus, loosing 338 nanosec (0.338 usec) per sec.
+
+Next sample after above with 273 sec:
+#+begin_example
+poll: 1 (0)
+xsk_ring_cons__peek: 1
+0xf31958: rx_desc[7]->addr=10000000000f000 addr=f100 comp_addr=f000
+rx_hash: 0x00000000
+rx_timestamp:  1676297502994406379 (sec:1676297502.9944)
+XDP RX-time:   1676297539994351686 (sec:1676297539.9944) delta sec:36.9999
+AF_XDP time:   1676297539994404062 (sec:1676297539.9944) delta sec:0.0001 (52.376 usec)
+0xf31958: complete idx=15 addr=f000
+#+end_example
+
+After additional 273 seconds the diff between HW and XDP timestamps:
+ - 1676297502994406379-1676297539994351686 = -36999945307
+ - Minus 37 sec (37000000000 nanosec): -54693 nanosec
+
+The hardware clock have now lost so much time that it runs behind SW time (when
+taking 37 sec CLOCK_TAI offset into account).
+
+Now clock have lost (43207+54693) 97900 nanosec (97.9 usec) over a period of 273
+seconds, which is (97900/273) 358.6 nanosec per sec.
+
 ** Driver igc: RX-hash broken for netstack
 
 The driver contains code for RX-hash extract, but the net_device NETIF_F_RXHASH
