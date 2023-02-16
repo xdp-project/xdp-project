@@ -1,0 +1,7 @@
+#+Title: Compiler Explorer at Godbolt.org
+
+Exploring different C-code implementations and resulting ASM code.
+
+Using the Compiler Explorer at https://godbolt.org/.
+
+Remember to add "Compiler options ..." =-O2= to get kernel style optimization level.
