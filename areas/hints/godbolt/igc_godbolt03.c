@@ -21,7 +21,7 @@
         jne     .L4
         ret
 .L4:
-        movzx   eax, WORD PTR [rsi]
+        mov     eax, DWORD PTR [rsi]
         mov     esi, DWORD PTR [rsi+4]
         and     eax, 15
         mov     edx, DWORD PTR igc_rss_type_table[0+rax*4]
@@ -225,8 +225,11 @@ enum igc_rss_type_num {
 /* igc_rss_type - Rx descriptor RSS type field */
 static inline u32 igc_rss_type(union igc_adv_rx_desc *rx_desc)
 {
-	/* RSS Type 4-bit number: 0-9 (above 9 is reserved) */
-	return rx_desc->wb.lower.lo_dword.hs_rss.pkt_info & IGC_RSS_TYPE_MASK;
+	/* RSS Type 4-bit number: 0-9 (above 9 is reserved)
+	 * Accessing the same bits via u16 (wb.lower.lo_dword.hs_rss.pkt_info)
+	 * is slightly slower than via u32 (wb.lower.lo_dword.data)
+	 */
+	return le32_to_cpu(rx_desc->wb.lower.lo_dword.data) & IGC_RSS_TYPE_MASK;
 }
 
 /* Mapping HW RSS Type to enum pkt_hash_types */
