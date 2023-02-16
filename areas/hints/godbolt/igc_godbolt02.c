@@ -24,30 +24,29 @@
         movzx   eax, WORD PTR [rsi]
         mov     esi, DWORD PTR [rsi+4]
         and     eax, 15
-        movzx   edx, BYTE PTR igc_rss_type_table[rax]
+        mov     edx, DWORD PTR igc_rss_type_table[0+rax*4]
         jmp     skb_set_hash
 igc_rss_type_table:
-        .byte   1
-        .byte   3
-        .byte   2
-        .byte   3
-        .byte   2
-        .byte   2
-        .byte   3
-        .byte   3
-        .byte   3
-        .byte   3
-        .byte   1
-        .byte   1
-        .byte   1
-        .byte   1
-        .byte   1
-        .byte   1
+        .long   1
+        .long   3
+        .long   2
+        .long   3
+        .long   2
+        .long   2
+        .long   3
+        .long   3
+        .long   3
+        .long   3
+        .long   1
+        .long   1
+        .long   1
+        .long   1
+        .long   1
+        .long   1
 
-*/
+ */
 
 #include <asm/types.h>
-
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 typedef __u64 netdev_features_t;
@@ -224,7 +223,7 @@ enum igc_rss_type_num {
 #define IGC_RSS_TYPE_MASK		0xF
 
 /* igc_rss_type - Rx descriptor RSS type field */
-static inline u8 igc_rss_type(union igc_adv_rx_desc *rx_desc)
+static inline u32 igc_rss_type(union igc_adv_rx_desc *rx_desc)
 {
 	/* RSS Type 4-bit number: 0-9 (above 9 is reserved) */
 	return rx_desc->wb.lower.lo_dword.hs_rss.pkt_info & IGC_RSS_TYPE_MASK;
@@ -232,7 +231,7 @@ static inline u8 igc_rss_type(union igc_adv_rx_desc *rx_desc)
 
 /* Mapping HW RSS Type to enum pkt_hash_types */
 struct igc_rss_type {
-	u8 hash_type; /* can contain enum pkt_hash_types */
+	u32 hash_type; /* can contain enum pkt_hash_types */
 } igc_rss_type_table[IGC_RSS_TYPE_MAX_TABLE] = {
 	[IGC_RSS_TYPE_NO_HASH].hash_type	  = PKT_HASH_TYPE_L2,
 	[IGC_RSS_TYPE_HASH_TCP_IPV4].hash_type	  = PKT_HASH_TYPE_L4,
@@ -259,7 +258,7 @@ void igc_rx_hash(struct igc_ring *ring,
 {
 	if (ring->netdev->features & NETIF_F_RXHASH) {
 		u32 rss_hash = le32_to_cpu(rx_desc->wb.lower.hi_dword.rss);
-		u8  rss_type = igc_rss_type(rx_desc);
+		u32 rss_type = igc_rss_type(rx_desc);
 		enum pkt_hash_types hash_type;
 
 		hash_type = igc_rss_type_table[rss_type].hash_type;
