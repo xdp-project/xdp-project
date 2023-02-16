@@ -144,13 +144,13 @@ forgot to set the NETIF_F_RXHASH feature bit.
 The original implementation of igc_rx_hash() didn't extract the associated
 pkt_hash_type, but statically set PKT_HASH_TYPE_L3. The largest portions of
 this patch are about extracting the RSS Type from the hardware and mapping
-this to enum pkt_hash_types. This were based on Foxville i225 software user
+this to enum pkt_hash_types. This was based on Foxville i225 software user
 manual rev-1.3.1 and tested on Intel Ethernet Controller I225-LM (rev 03).
 
 For UDP it's worth noting that RSS (type) hashing have been disabled both for
 IPv4 and IPv6 (see IGC_MRQC_RSS_FIELD_IPV4_UDP + IGC_MRQC_RSS_FIELD_IPV6_UDP)
 because hardware RSS doesn't handle fragmented pkts well when enabled (can
-cause out-of-order). This result in PKT_HASH_TYPE_L3 for UDP packets, and
+cause out-of-order). This results in PKT_HASH_TYPE_L3 for UDP packets, and
 hash value doesn't include UDP port numbers. Not being PKT_HASH_TYPE_L4, have
 the effect that netstack will do a software based hash calc calling into
 flow_dissect, but only when code calls skb_get_hash(), which doesn't
