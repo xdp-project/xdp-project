@@ -159,3 +159,25 @@ necessary happen for local delivery.
 Fixes: 2121c2712f82 ("igc: Add multiple receive queues control supporting")
 #+end_quote
 
+** XDP hints hash value
+
+The XDP-hints kfunc for RX-hash only returns the u32 hash value and not the
+RSS-type associated with this hash.
+
+This implementation for igc is straight forward
+
+#+begin_quote
+This implements XDP hints kfunc for RX-hash (xmo_rx_hash) straightforward
+by returning the u32 hash value.
+
+The associated RSS-type for the hash value isn't available to the BPF-prog
+caller. This is problematic if BPF-prog tries to do L4 load-balancing with
+the hardware hash, but the RSS hash type is L3 based.
+
+For this driver this issue occurs for UDP packets, as driver (default
+config) does L3 hashing for UDP packets (excludes UDP src/dest ports in
+hash calc). Tested that the igc_rss_type_num for UDP is either
+IGC_RSS_TYPE_HASH_IPV4 or IGC_RSS_TYPE_HASH_IPV6.
+#+end_quote
+
+
