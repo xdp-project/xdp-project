@@ -1,0 +1,204 @@
+# -*- fill-column: 79; -*-
+#+TITLE: Achieving lower latency with eBPF and XDP
+#+AUTHOR: Toke Høiland-Jørgensen <toke@redhat.com>
+#+EMAIL: toke@redhat.com
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: Understanding Latency 2023                       :noexport:
+
+This presentation is for the Understanding Latency webinar in March 2023:
+https://www.understandinglatency.com/
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation.
+
+Colors are choosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Slide: What is eBPF ?                                              :export:
+
+#+ATTR_html: :style height: 100px; float: right; width: auto; position: relative; top: -100px;
+[[file:ebpf-logo.svg]]
+
+From: https://ebpf.io/what-is-ebpf
+#+begin_quote
+eBPF is a revolutionary technology that can run sandboxed programs in the Linux
+kernel without changing kernel source code or loading a kernel module
+#+end_quote
+
+
+*Rate of innovation* at the operating system level: */Traditionally slow/*
+ - eBPF enables things at the OS level that were not possible before
+ - eBPF can /radically increase/ rate of innovation
+
+** Slide: *Traditional* Kernel development process                :noexport:
+
+[[file:../TechSummit-2021/images/bpf_comic01_scale.png]]
+
+** Slide: *eBPF* development process                              :noexport:
+
+[[file:../TechSummit-2021/images/bpf_comic02_scale.png]]
+
+* Slide: eBPF components                                             :export:
+
+Closer look at the eBPF components:
+
+ - /Bytecode/ - Architecture independent *Instruction Set*
+   * /JIT/ to native machine instructions (after loading into kernel)
+
+ - /Runtime environment/ - Linux kernel
+   * *Event based* BPF hooks all over the kernel
+   * Per hook limited access to kernel functions via *helpers and kfuncs*
+
+ - /*Sandboxed*/ by the eBPF /verifier/
+   * Limits and verifies memory access and instructions limit
+
+* Slide: What is XDP?                                                :export:
+
+XDP (eXpress Data Path) is a Linux *in-kernel* fast path
+ - /Programmable layer in front/ of the kernel networking stack
+   - Read, modify, drop, redirect or pass
+   - For L2-L3 use cases: seeing /x10 performance/ improvements!
+ - *Avoiding* /memory allocations/
+ - Adaptive *bulk* processing of frames
+ - Very /early access/ to frame (in driver code *after DMA sync*)
+ - Ability to */skip/ (large parts) of kernel /code/*
+
+** Slide: XDP performance                                           :export:
+#+ATTR_HTML: :class img-no-border
+[[file:../TechSummit-2021/images/xdp_vs_iptables_drop.svg]]
+
+*XDP_DROP*: 100Gbit/s mlx5 max out at /108 Mpps/ (CPU E5-1650v4 @3.60GHz)
+
+* Lower latency with eBPF                                            :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+eBPF can help improve latency in a number of ways
+
+- Lower latency by increasing PPS performance
+- Custom software RSS steering
+- Passive latency monitoring
+- Future: Queueing for XDP
+
+** Scaling a latency-reducing traffic shaper                        :export:
+
+*Use case*: ISP middlebox providing per-customer bandwidth enforcement and
+bufferbloat mitigation (using kernel queueing infrastructure)
+
+#+HTML: <br />
+
+/*Problem*/: Software shaping doesn't scale because of *global qdisc lock*
+
+#+HTML: <br />
+
+/Solution/: XDP can choose which CPU to start the Linux networking stack on -
+steer a subset of customers to each CPU, so CPUs can run independently
+(avoiding the lock contention)
+
+https://github.com/xdp-project/xdp-cpumap-tc
+https://github.com/LibreQoE/LibreQoS
+
+** Passive latency monitoring                                       :export:
+
+*Use case*: Monitor TCP traffic and extract flow latency (using TCP timestamps)
+to passively monitor traffic flowing through a middlebox.
+
+#+HTML: <br />
+
+/*Problem*/: The existing solution in software ([[https://github.com/pollere/pping][pping]]) doesn't scale to high
+bandwidths
+
+#+HTML: <br />
+
+/Solution/: eBPF can inspect every packet with very low overhead - implement
+the monitoring in the kernel with eBPF, only export metrics to userspace
+
+#+HTML: <br />
+
+https://github.com/xdp-project/bpf-examples/tree/master/pping
+
+** Lower latency by increasing PPS performance
+
+*Use case*: Linux-based servers exposed to the internet with high-speed NICs.
+
+#+HTML: <br />
+
+/*Problem*/: Head-of-Line (HOL) blocking in NIC RX rings causes latency and
+packet drops if kernel can't keep up with flow rate.
+
+#+HTML: <br />
+
+/Solution/: Implement filtering and redirection in XDP, allowing the kernel to
+keep up with the incoming packet rate.
+
+#+HTML: <br />
+
+Ex: https://blog.cloudflare.com/l4drop-xdp-ebpf-based-ddos-mitigations/
+
+** Future: Queueing for XDP
+*Use case*: High-performance forwarding path with XDP "software offload"
+
+#+HTML: <br />
+
+/*Problem*/: XDP currently has no support for packet queueing and scheduling
+
+#+HTML: <br />
+
+/Solution/: We're working on adding programmable queueing support to XDP
+
+#+HTML: <br />
+
+https://lpc.events/event/16/contributions/1351/
+
+* Closing remarks                                                    :export:
+
+eBPF allows /unprecedented visibility/ into the OS, and *safe, dynamic
+extensibility* of core OS features, networking in particular.
+
+#+HTML: <center><div style="font-size: 130%">
+/eBPF/ *unlocks* the /kernel's potential/ for *innovation*
+#+HTML: </div></center>
+
+#+HTML: <br />
+
+- Pioneered on Linux, but exists in Windows too: https://github.com/microsoft/ebpf-for-windows
+
+- The eBPF Foundation (working on standardisation): https://ebpf.foundation/
+
+- More examples of applications using eBPF: https://ebpf.io/applications
+
+- Code examples: https://github.com/xdp-project/bpf-examples
+
+- XDP tutorial: https://github.com/xdp-project/xdp-tutorial
+
+* Slide: End: /Questions?/                                           :export:
+
+
+#+ATTR_html: :style height: 400px;
+[[file:../BPFSummit2022/rh-heart-bpf.svg]]
+
+* Emacs end-tricks                                                 :noexport:
+
+This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
+in the compiled version.
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# <h2 class=\"author\">Toke Høiland-Jørgensen<br/><span style=\"font-size:
+# 75%%\">Principal Kernel Engineer,
+# Red Hat</span></h2>
+# <h3>Understanding Latency webinar</br>March 7th, 2023</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
