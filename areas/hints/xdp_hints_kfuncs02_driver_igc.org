@@ -114,6 +114,69 @@ taking 37 sec CLOCK_TAI offset into account).
 Now clock have lost (43207+54693) 97900 nanosec (97.9 usec) over a period of 273
 seconds, which is (97900/273) 358.6 nanosec per sec.
 
+** Wakeup latency: From XDP to AF_XDP
+
+Notice the fairly high latency between XDP to AF_XDP userspace processing:
+
+#+begin_example
+[...]
+rx_hash: 0x3B0E5A29
+rx_timestamp:  1678364132497613666 (sec:1678364132.4976)
+XDP RX-time:   1678364168468618340 (sec:1678364168.4686) delta sec:35.9710
+AF_XDP time:   1678364168468717588 (sec:1678364168.4687) delta sec:0.0001 (99.248 usec)
+[...]
+#+end_example
+
+The approx 99 usec (microsec) difference between XDP vs AF_XDP userspace is the
+userspace wakeup time. On this hardware it was caused by CPU idle sleep states,
+which can be reduced by tuning /dev/cpu_dma_latency.
+
+View current requested/allowed latency bound via:
+#+begin_src sh
+  hexdump --format '"%d\n"' /dev/cpu_dma_latency
+#+end_src
+
+Tuning =/dev/cpu_dma_latency= affect what sleep states the CPU is allowed to
+enter. This is related to the latency values for each cpuidle/sleep state, which
+can we viewed via files =/sys/devices/system/cpu/cpu0/cpuidle/*/latency= :
+
+#+begin_example
+$ grep -H . /sys/devices/system/cpu/cpu0/cpuidle/*/{latency,name}
+/sys/devices/system/cpu/cpu0/cpuidle/state0/latency:0
+/sys/devices/system/cpu/cpu0/cpuidle/state1/latency:2
+/sys/devices/system/cpu/cpu0/cpuidle/state2/latency:10
+/sys/devices/system/cpu/cpu0/cpuidle/state3/latency:40
+/sys/devices/system/cpu/cpu0/cpuidle/state4/latency:133
+/sys/devices/system/cpu/cpu0/cpuidle/state0/name:POLL
+/sys/devices/system/cpu/cpu0/cpuidle/state1/name:C1
+/sys/devices/system/cpu/cpu0/cpuidle/state2/name:C1E
+/sys/devices/system/cpu/cpu0/cpuidle/state3/name:C3
+/sys/devices/system/cpu/cpu0/cpuidle/state4/name:C6
+#+end_example
+
+Using tool "tuned" for tuning latency setting which include
+setting =/dev/cpu_dma_latency= to 2 usec.
+
+#+begin_example
+$ sudo hexdump --format '"%d\n"' /dev/cpu_dma_latency
+2
+#+end_example
+
+New results below:
+#+begin_example
+[...]
+rx_hash: 0x3B0E5A29
+rx_timestamp:  1678364191993816015 (sec:1678364191.9938)
+XDP RX-time:   1678364227964693983 (sec:1678364227.9647) delta sec:35.9709
+AF_XDP time:   1678364227964709004 (sec:1678364227.9647) delta sec:0.0000 (15.021 usec)
+[...]
+#+end_example
+
+This caused the latency to be reduced to 15 usec (microsec) difference between
+XDP to AF_XDP userspace processing. The overhead of CPU sleep state got removed,
+but there are still some wakeup latency left. AF_XDP support a busy-polling mode
+that should address this.
+
 ** Driver igc: RX-hash broken for netstack
 
 The driver contains code for RX-hash extract, but the net_device NETIF_F_RXHASH
@@ -158,4 +221,26 @@ necessary happen for local delivery.
 
 Fixes: 2121c2712f82 ("igc: Add multiple receive queues control supporting")
 #+end_quote
+
+** XDP hints hash value
+
+The XDP-hints kfunc for RX-hash only returns the u32 hash value and not the
+RSS-type associated with this hash.
+
+This implementation for igc is straight forward
+
+#+begin_quote
+This implements XDP hints kfunc for RX-hash (xmo_rx_hash) straightforward
+by returning the u32 hash value.
+
+The associated RSS-type for the hash value isn't available to the BPF-prog
+caller. This is problematic if BPF-prog tries to do L4 load-balancing with
+the hardware hash, but the RSS hash type is L3 based.
+
+For this driver this issue occurs for UDP packets, as driver (default
+config) does L3 hashing for UDP packets (excludes UDP src/dest ports in
+hash calc). Tested that the igc_rss_type_num for UDP is either
+IGC_RSS_TYPE_HASH_IPV4 or IGC_RSS_TYPE_HASH_IPV6.
+#+end_quote
+
 
