@@ -114,6 +114,46 @@ taking 37 sec CLOCK_TAI offset into account).
 Now clock have lost (43207+54693) 97900 nanosec (97.9 usec) over a period of 273
 seconds, which is (97900/273) 358.6 nanosec per sec.
 
+** Wakeup latency: From XDP to AF_XDP
+
+Notice the fairly high latency between XDP to AF_XDP userspace processing:
+
+#+begin_example
+[...]
+rx_hash: 0x3B0E5A29
+rx_timestamp:  1678364132497613666 (sec:1678364132.4976)
+XDP RX-time:   1678364168468618340 (sec:1678364168.4686) delta sec:35.9710
+AF_XDP time:   1678364168468717588 (sec:1678364168.4687) delta sec:0.0001 (99.248 usec)
+[...]
+#+end_example
+
+The approx 99 usec (microsec) difference between XDP vs AF_XDP userspace is the
+userspace wakeup time. On this hardware it was caused by CPU idle sleep states,
+which can be reduced by tuning /dev/cpu_dma_latency.
+
+View current requested/allowed latency bound via:
+#+begin_src sh
+  hexdump --format '"%d\n"' /dev/cpu_dma_latency
+#+end_src
+
+Tuning =/dev/cpu_dma_latency= affect what sleep states the CPU is allowed to
+enter. This is related to the latency values for each cpuidle/sleep state, which
+can we viewed via files =/sys/devices/system/cpu/cpu0/cpuidle/*/latency= :
+
+#+begin_example
+$ grep -H . /sys/devices/system/cpu/cpu0/cpuidle/*/{latency,name}
+/sys/devices/system/cpu/cpu0/cpuidle/state0/latency:0
+/sys/devices/system/cpu/cpu0/cpuidle/state1/latency:2
+/sys/devices/system/cpu/cpu0/cpuidle/state2/latency:10
+/sys/devices/system/cpu/cpu0/cpuidle/state3/latency:40
+/sys/devices/system/cpu/cpu0/cpuidle/state4/latency:133
+/sys/devices/system/cpu/cpu0/cpuidle/state0/name:POLL
+/sys/devices/system/cpu/cpu0/cpuidle/state1/name:C1
+/sys/devices/system/cpu/cpu0/cpuidle/state2/name:C1E
+/sys/devices/system/cpu/cpu0/cpuidle/state3/name:C3
+/sys/devices/system/cpu/cpu0/cpuidle/state4/name:C6
+#+end_example
+
 ** Driver igc: RX-hash broken for netstack
 
 The driver contains code for RX-hash extract, but the net_device NETIF_F_RXHASH
