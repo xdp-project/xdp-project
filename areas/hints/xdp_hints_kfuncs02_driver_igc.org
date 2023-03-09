@@ -57,6 +57,9 @@ The chip 225 clock seems to be loosing time, compared to the software system
 time. If unloading the igc driver kernel module and reloading it, the NIC clock
 is reset.
 
+*UPDATE*: It is likely the CPU host system time that is drifting and not the NIC
+time (based on talking with PTP/time expert Pasi Vaananen).
+
 Output from shortly after loading igc driver:
 #+begin_example
 poll: 1 (0)
