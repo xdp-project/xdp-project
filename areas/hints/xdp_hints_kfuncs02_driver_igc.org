@@ -154,6 +154,29 @@ $ grep -H . /sys/devices/system/cpu/cpu0/cpuidle/*/{latency,name}
 /sys/devices/system/cpu/cpu0/cpuidle/state4/name:C6
 #+end_example
 
+Using tool "tuned" for tuning latency setting which include
+setting =/dev/cpu_dma_latency= to 2 usec.
+
+#+begin_example
+$ sudo hexdump --format '"%d\n"' /dev/cpu_dma_latency
+2
+#+end_example
+
+New results below:
+#+begin_example
+[...]
+rx_hash: 0x3B0E5A29
+rx_timestamp:  1678364191993816015 (sec:1678364191.9938)
+XDP RX-time:   1678364227964693983 (sec:1678364227.9647) delta sec:35.9709
+AF_XDP time:   1678364227964709004 (sec:1678364227.9647) delta sec:0.0000 (15.021 usec)
+[...]
+#+end_example
+
+This caused the latency to be reduced to 15 usec (microsec) difference between
+XDP to AF_XDP userspace processing. The overhead of CPU sleep state got removed,
+but there are still some wakeup latency left. AF_XDP support a busy-polling mode
+that should address this.
+
 ** Driver igc: RX-hash broken for netstack
 
 The driver contains code for RX-hash extract, but the net_device NETIF_F_RXHASH
