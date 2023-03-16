@@ -246,4 +246,31 @@ hash calc). Tested that the igc_rss_type_num for UDP is either
 IGC_RSS_TYPE_HASH_IPV4 or IGC_RSS_TYPE_HASH_IPV6.
 #+end_quote
 
+* Quick: Time sync setup
 
+Install package: linuxptp
+
+Docs for PTP setup:
+ - [[https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-configuring_ptp_using_ptp4l#sec-Synchronizing_the_Clocks][RedHat]]
+ - [[https://documentation.suse.com/sles/15-SP1/html/SLES-all/cha-tuning-ptp.html][SUSE]]
+
+Trick simply manually: Use phc2sys to synchronize the system clock to the PTP
+hardware clock (PHC) on the network card.
+
+Adjust for the 37 sec offset to TAI, such that our BPF-prog using TAI will align.
+#+begin_src sh
+ sudo phc2sys -s igc1 -O -37
+#+end_src
+
+Result on igc with =xdp_hw_metadata=:
+
+#+begin_example
+poll: 1 (0)
+xsk_ring_cons__peek: 1
+0x1de27a8: rx_desc[38]->addr=10000000000e000 addr=e100 comp_addr=e000
+rx_hash: 990796329
+rx_timestamp:  1678482359587243636 (sec:1678482359.5872)
+XDP RX-time:   1678482359587256019 (sec:1678482359.5873) delta sec:0.0000 (12.383 usec)
+AF_XDP time:   1678482359587271378 (sec:1678482359.5873) delta sec:0.0000 (15.359 usec)
+0x1de27a8: complete idx=46 addr=e000
+#+end_example
