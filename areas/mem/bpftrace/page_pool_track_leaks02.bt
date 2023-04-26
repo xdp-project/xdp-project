@@ -64,7 +64,11 @@ tracepoint:page_pool:page_pool_state_release {
 			printf("%s: BUG pfn:0x%lX owned by wrong page pool\n",
 			       probe, $pfn);
 		}
+	} else {
+		printf("%s: ERROR got unknown page?!?\n", probe);
 	}
+	/* Lookup can fail, and then miss the delete. Thus always delete */
+	delete(@pages_hold[$pfn]);
 
 	/* Calculate inflight via data from other tracepoint */
 	@pp_release_cnt[$pp] = $rele_cnt;
@@ -102,11 +106,23 @@ tracepoint:kmem:mm_page_alloc
 
 	/* Bug if a page is still owned by a page_pool */
 	if ($pp_owner) {
-		delete(@pages_hold[$pfn]); /* Delete to avoid filling up map */
-		printf("%s: BUG pfn:0x%lX still owned by page_pool 0x%lX\n%s\n",
-		       probe, $pfn, $pp_owner, kstack);
-		@bugs[$pp_owner] = count();
-		@bug_on_page_release[$pfn] = kstack;
+		/* Seeing some false-positives here: Could be a data-race, where
+		 * hlist_nulls_del_rcu() update is not seen by concurrent _rcu
+		 * list-traversal primitives (eg hlist_nulls_for_each_entry_rcu)
+		 *
+		 * Do lookup again.
+		 */
+		$pp_owner2 = @pages_hold[$pfn];
+		if ($pp_owner2 != $pp_owner) {
+			printf("%s: False-positive\n", probe);
+		} else {
+			/* Delete to avoid filling up map */
+			delete(@pages_hold[$pfn]);
+			printf("%s: BUG pfn:0x%lX still owned by pp 0x%lX\n%s\n",
+			       probe, $pfn, $pp_owner, kstack);
+			@bugs[$pp_owner] = count();
+			@bug_on_page_release[$pfn] = kstack;
+		}
 	}
 
 	if (@debug) {
