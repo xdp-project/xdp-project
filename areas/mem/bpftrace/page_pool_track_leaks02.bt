@@ -170,7 +170,7 @@ tracepoint:page_pool:page_pool_release {
 	$attempts = args->cnt;
 
 	if ($inflight == 0) {
-		/* Use page_pool_inflight as "destroy" event */
+		/* Use page_pool_release as "destroy" event */
 		$max = @pp_inflight_max[$pp];
 		printf("Delete page_pool:0x%lX cnt hold:%u release:%u inflight:%d MAX\n",
 		       $pp, $hold, $release, $max);
