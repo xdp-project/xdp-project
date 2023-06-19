@@ -1,0 +1,248 @@
+# -*- fill-column: 79; -*-
+#+TITLE: The Benefits of Open
+#+AUTHOR: Toke Høiland-Jørgensen <toke@redhat.com>
+#+EMAIL: toke@redhat.com
+#+REVEAL_THEME: white
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:t reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: SNCNW 2023                                       :noexport:
+
+This presentation is for the SNCNW conference in June 2023:
+http://www.sncnw.se/2023/program.html
+
+* Outline / ideas                                                  :noexport:
+Message: researchers and open source community should cooperate more
+
+
+** Motivation, commons
+
+Why are you here?
+
+Get participants to talk about their motivation (for research, work), steer
+towards contributing, building etc
+
+*** Tragedy of the commons
+
+Wasn't actually a thing, historically
+
+What is a commons - digital commons.
+
+Contributing to the body of human knowledge.
+
+*** Openness
+
+Benefits of openness:
+- Reproducibility
+- Diversity of ideas (by public comments)
+- Derivative works - more innovation
+- Efficiency - no reinventing of the wheel
+- Honesty, accountability (have to argue on the merits)
+
+** Research and software
+
+Similarities between research and open source, the ideal:
+- Openly available for anyone to use
+- Peer review
+- Anyone can participate
+- Results disseminated into society
+
+Similarities - failure modes:
+- Need to be part of close-knit community
+- Lack of funding
+- Unused
+- Not reproducible / not really open
+
+What can research gain from FOSS:
+- Software widely used / results disseminated
+- Code quality
+- Review and feedback from experts outside research community
+
+What can FOSS gain from research community:
+- New and original ideas, exploratory work
+- Sound theoretical foundations
+- Funding (manpower)
+
+** Examples
+
+WiFi
+pping
+
+** How to contribute
+
+- Identify relevant projects
+- Engage early
+
+  https://docs.kernel.org/process/submitting-patches.html
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation.
+
+Colors are choosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Why are you here?                                                  :export:
+:PROPERTIES:
+:reveal_extra_attr: class="title-only-slide"
+:END:
+
+
+* Tragedy of the Commons                                             :export:
+
+#+ATTR_html: :style width: 70%; margin: auto;
+[[file:cow-glob-bite.svg]]
+
+** Triumph of the Commons                                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="no-title-slide"
+:END:
+
+#+ATTR_html: :style box-shadow: none; display: inline-block; width: auto; font-size: 130%;
+#+begin_example
+ _______________________________________ 
+/ The tragedy of the commons is a gross \
+| misrepresentation of historical land  |
+\ management practices                  /
+ --------------------------------------- 
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+#+end_example
+
+** The information-based commons
+
+#+ATTR_html: :style width: 40%; margin: auto;
+[[file:digital.svg]]
+
+** Benefits of openness
+#+HTML: <style>td object { width: 5em; }</style>
+
+#+ATTR_html: :rules none :frame none :border 0 :class three-col
+ |            <c>              |          <c>            |        <c>          |
+ | [[file:scales-of-justice.svg]]  | [[file:system-update.svg]]  | [[file:diversity.svg]]  |
+ |       Accountability        |       Efficiency        |     Diversity       |
+
+* Research and open source                                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="no-title-slide"
+:END:
+
+#+ATTR_html: :rules none :frame none :border 0 :class two-col
+ |         <c>          |       <c>        |
+ |      *Research*      |  *Open Source*   |
+ |      Knowledge       |     Software     |
+ |        Papers        |       Code       |
+ |     Peer review      |   Code review    |
+ |     Researchers      | Developers/users |
+ | Journals/conferences |   Code forges    |
+
+** Similarities (ideal)
+
+- Openly available for anyone to use
+- Peer review
+- Anyone can participate
+- Results disseminated into society
+
+** Failure modes
+
+- Hard to become part of community
+- Funding woes
+- Obscurity
+- Not reproducible / not really open
+
+** Benefits for researchers
+
+- Feedback from experts outside research community
+- Software widely used / results disseminated
+- Code quality, production focus (varies)
+
+** Benefits for open source community
+
+- New and original ideas, exploratory work
+- Sound theoretical foundations
+- More contributors
+
+* Examples                                                           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="title-only-slide"
+:END:
+
+** WiFi
+:PROPERTIES:
+:reveal_extra_attr: class="no-title-slide"
+:END:
+
+[[file:wifi-paper.png]]
+
+*** Ending the Anomaly
+
+#+ATTR_html: :rules none :frame none :border 0
+| What               | Fixing WiFi performance anomaly and bufferbloat |
+| Paper contribution | Design and implementation of solution           |
+| Type of code       | Patches to Linux WiFi stack                     |
+| Main challenge     | Getting the low-level WiFi details to work      |
+
+** Pping
+:PROPERTIES:
+:reveal_extra_attr: class="no-title-slide"
+:END:
+
+#+ATTR_html: :style width: 55%; margin: auto;
+[[file:pping-paper.png]]
+
+*** Efficient Continuous Latency Monitoring with eBPF
+
+#+ATTR_html: :rules none :frame none :border 0
+| What               | Passive latency monitoring with eBPF                |
+| Paper contribution | Show feasibility of eBPF technology for application |
+| Type of code       | Standalone open source implementation               |
+| Main challenge     | Getting code past the eBPF verifier                 |
+
+** XDP
+:PROPERTIES:
+:reveal_extra_attr: class="no-title-slide"
+:END:
+
+[[file:xdp-paper.png]]
+
+*** The eXpress Data Path
+
+#+ATTR_html: :rules none :frame none :border 0
+| What               | High-performance programmable networking in the Linux kernel |
+| Paper contribution | Describe XDP system design and show performance numbers      |
+| Type of code       | Existing Linux subsystem                                     |
+| Main challenge     | Coherently describing the existing subsystem                 |
+
+* Tips for working with the open source community                    :export:
+
+- Clearly explain context: goals, assumptions, limitations
+- Engage early and be ready to make adjustments
+- Remember, it's just code!
+
+https://docs.kernel.org/process/development-process.html
+
+* Slide: Questions?                                                  :export:
+:PROPERTIES:
+:reveal_extra_attr: class="title-only-slide"
+:END:
+
+
+* Emacs end-tricks                                                 :noexport:
+
+This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
+in the compiled version.
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1> <h2>For Research and Open
+# Source</h2> Toke Høiland-Jørgensen<br/>Principal Kernel Engineer, Red Hat"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
