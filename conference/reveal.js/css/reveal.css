@@ -1262,6 +1262,9 @@ body {
   padding-top: 20px;
   padding-bottom: 20px; }
 
+.reveal .three-col td { width: 33%; }
+.reveal .two-col td { width: 50%; }
+
 /*********************************************
  * PLAYBACK COMPONENT
  *********************************************/
@@ -1389,4 +1392,19 @@ body {
 #sec-title-slide img.linaro-logo,
 .mid-slide img.linaro-logo {
   filter: grayscale(100%) brightness(200%);
+}
+
+.reveal .title-only-slide h2,
+.reveal .title-only-slide h3 {
+  font-size: 3em;
+}
+
+.reveal .no-title-slide h2,
+.reveal .no-title-slide h3 {
+  display: none;
+}
+
+
+.org-left {
+  text-align: left;
 }
