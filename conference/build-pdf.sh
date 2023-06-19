@@ -19,4 +19,4 @@ if [ -z "$width" ] || [ -z "$height" ]; then
     exit 1
 fi
 
-$DECKTAPE -s "${width}x${height}" -p 100 "$FILE" "${FILE/.html/.pdf}"
+$DECKTAPE -s "${width}x${height}" -p 300 "$FILE" "${FILE/.html/.pdf}"
