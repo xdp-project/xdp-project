@@ -15,6 +15,7 @@ equation.
 - [[#setting-xdp-progs-on-the-host-side-veths][Setting xdp progs on the host side veths]]
 - [[#run-the-applications-in-the-containers][Run the applications in the containers]]
   - [[#cndp-1-txgen][cndp-1: TXGen]]
+  - [[#cndp-2-cnet-graph][cndp-2: cnet-graph]]
 
 * GitHub
 
@@ -155,5 +156,27 @@ TXGen:/> start 0
 To stop traffic use:
 #+begin_src sh
 TXGen:/> stp
+#+end_src
+
+** cndp-2: cnet-graph
+
+Start container (cndp-2) that runs a
+  - lightweight /AF_XDP based networking stack/.
+
+#+begin_src sh
+docker exec -ti cndp-2 ./run_cnet.sh
+#+end_src
+
+I needed to change the CPUs used by *cnet-graph* in file =cnetfwd-graph.jsonc=.
+ - https://github.com/maryamtahhan/veth-benchmark/blob/main/containerization/cnetfwd-graph.jsonc#L112
+
+I changed it to run on CPU core 5 and timer on core 1.
+#+begin_src json
+    "lcore-groups": {
+        "initial": [0],
+        "timer": [1],
+        "group0": [5],
+        "default": ["0"]
+    },
 #+end_src
 
