@@ -1,0 +1,21 @@
+#+Title: Using veth benchmark (03)
+
+Finding =veth= driver kernel bottlenecks using
+Maryam's [[https://github.com/maryamtahhan/veth-benchmark/][veth-benchmark]].
+
+That benchmark exercise =AF_XDP= in containers (thus veth) using [[https://cndp.io/][CNDP]] to have a
+practical use-case, to assess the overhead this consumer also brings to the
+equation.
+
+* GitHub
+
+https://github.com/maryamtahhan/veth-benchmark/
+
+Forked:
+https://github.com/netoptimizer/veth-benchmark
+
+* Setup
+
+As instructed in README.md, run =./configure=
+
+
