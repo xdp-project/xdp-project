@@ -14,8 +14,30 @@ https://github.com/maryamtahhan/veth-benchmark/
 Forked:
 https://github.com/netoptimizer/veth-benchmark
 
-* Setup
+** Setup
 
 As instructed in README.md, run =./configure=
 
+** Compile
 
+(Worked)
+
+* Setting up the containers
+
+Setup the containers by running the ./container_setup.sh script.
+
+#+begin_src sh
+./container_setup.sh
+#+end_src
+
+The MAC-addresses for the =vethN= net devices are needed later, and are stored
+on the config file: =veth_mac_addrs.conf=.
+
+Two containers got created: cndp-1 and cndp-2
+
+#+begin_example
+$ docker ps
+CONTAINER ID   IMAGE             COMMAND       CREATED         STATUS         PORTS     NAMES
+2ced507df83c   cndp-veth-bench   "/bin/bash"   2 minutes ago   Up 2 minutes             cndp-2
+3440165755c2   cndp-veth-bench   "/bin/bash"   2 minutes ago   Up 2 minutes             cndp-1
+#+end_example
