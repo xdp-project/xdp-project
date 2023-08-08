@@ -16,6 +16,8 @@ equation.
 - [[#run-the-applications-in-the-containers][Run the applications in the containers]]
   - [[#cndp-1-txgen][cndp-1: TXGen]]
   - [[#cndp-2-cnet-graph][cndp-2: cnet-graph]]
+- [[#benchmarks][Benchmarks]]
+  - [[#with-xdp-redirect-loaded-on-host-veth][With XDP redirect loaded on host veth]]
 
 * GitHub
 
@@ -180,3 +182,93 @@ I changed it to run on CPU core 5 and timer on core 1.
     },
 #+end_src
 
+* Benchmarks
+
+** With XDP redirect loaded on host veth
+
+#+begin_example
+Average:        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil
+Average:           lo      9.33      9.33      0.55      0.55      0.00      0.00      0.00      0.00
+Average:        eth42     35.33     39.50      2.28      4.40      0.00      0.00      0.08      0.00
+Average:         igb1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:         igc1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:       ixgbe1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:        i40e1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:        i40e2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:       mlx5p1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:       ixgbe2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:       mlx5p2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:      docker0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:    veth11cd348      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:    veth2e23a97      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:        veth1 828730.42      0.00 403034.91      0.00      0.00      0.00      0.00     33.02
+Average:        veth3      0.00 828731.83      0.00 411128.68      0.00      0.00      0.00     33.68
+Average:          br0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:        veth5 828733.92      0.00 399799.37      0.00      0.00      0.00      0.00     32.75
+Average:        veth7      0.00 828732.25      0.00 414366.12      0.00      0.00      0.00     33.94
+#+end_example
+
+cnet-graph:
+#+begin_example
+CNDP-cli:/> graph stats 5
++------------------+---------------+---------------+--------+--------+----------+------------+
+|Node              |          Calls|        Objects| Realloc|  Objs/c|   KObjs/c|    Cycles/c|
++------------------+---------------+---------------+--------+--------+----------+------------+
+|ip4_input         |       13717358|      237270835|       2|    25.0|     829.0|      1457.0|
+|ip4_output        |              0|              0|       1|     0.0|       0.0|         0.0|
+|ip4_forward       |       13717360|      237270886|       2|    25.0|     828.9|      2969.0|
+|ip4_proto         |              0|              0|       1|     0.0|       0.0|         0.0|
+|udp_input         |              0|              0|       1|     0.0|       0.0|         0.0|
+|udp_output        |              0|              0|       1|     0.0|       0.0|         0.0|
+|pkt_drop          |              0|              0|       2|     0.0|       0.0|         0.0|
+|chnl_callback     |              0|              0|       1|     0.0|       0.0|         0.0|
+|chnl_recv         |              0|              0|       1|     0.0|       0.0|         0.0|
+|kernel_recv       |       29631266|              0|       2|     0.0|       0.0|      2200.0|
+|eth_rx-0          |       29631266|       18732584|       2|     0.0|       0.0|        47.0|
+|eth_rx-1          |       29631267|      218538431|       2|    25.0|     828.9|      4931.0|
+|arp_request       |              0|              0|       1|     0.0|       0.0|         0.0|
+|eth_tx-0          |       13717365|      237271015|       2|    25.0|     828.9|     97949.0|
+|eth_tx-1          |              0|              0|       1|     0.0|       0.0|         0.0|
+|punt_kernel       |              0|              0|       1|     0.0|       0.0|         0.0|
+|ptype             |       13717367|      237271067|       2|    25.0|     828.9|       271.0|
+|gtpu_input        |              0|              0|       1|     0.0|       0.0|         0.0|
++------------------+---------------+---------------+--------+--------+----------+------------+
+#+end_example
+
+TXGen output:
+#+begin_example
+- Port Count 2     <Main Page>  Copyright (c) 2020-2023 Intel Corporation, Powered by CNDP
+  Flags:Port        :
+Link State          :         <UP-10000-FD>         <UP-10000-FD>      ---Total Rate---
+Pkts/s Max/Rx       :              301684/0         832394/830181         853653/830181
+       Max/Tx       :         832448/830208             1678144/0        1949632/830208
+MBits/s Rx/Tx       :                0/3559                3533/0             3533/3559
+Broadcast           :                     0                     0
+Multicast           :                     0                     0
+Sizes 64            :                     0                     0
+      65-127        :                     0                     0
+      128-255       :                     2                     2
+      256-511       :                     0                     0
+      512-1023      :              28444155             369743560
+      1024-1518     :                     0                     0
+Runts/Jumbos        :                   0/0                   0/0
+ARP/ICMP Pkts       :                   0/0                   0/0
+Errors Rx/Tx        :                   0/0                   0/0
+Dropped Tx          :                     0                     0
+Invalid Rx/Tx       :                   0/0                   0/0
+Total Rx Pkts       :              28444157             369452322
+      Tx Pkts       :             314152896             112855616
+      Rx MBs        :                121058               1573653
+      Tx MBs        :               1347087                 79450
+Pattern Type        :               abcd...               abcd...
+Tx Count/% Rate     :         Forever /100%         Forever /100%
+Pkt Size/Tx Burst   :            512 /   64             64 /   64
+TTL/Port Src/Dest   :        64/ 1234/ 5678        64/ 1234/ 5678
+Pkt Type            :            IPv4 / UDP            IPv4 / UDP
+IP  Destination     :        192.168.100.20        192.168.200.11
+    Source          :        192.168.200.10        192.168.100.21
+MAC Destination     :     1a:bf:be:c1:a9:ea     1e:e4:9e:d4:07:6f
+    Source          :     1e:b3:14:dc:21:cf     1e:e4:9e:d4:07:6f
+
+-- TX-Gen 23.06.0  Powered by CNDP  PID:23 -----------------------------------
+#+end_example
