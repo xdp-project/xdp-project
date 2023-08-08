@@ -14,6 +14,7 @@ equation.
 - [[#setting-up-the-containers][Setting up the containers]]
 - [[#setting-xdp-progs-on-the-host-side-veths][Setting xdp progs on the host side veths]]
 - [[#run-the-applications-in-the-containers][Run the applications in the containers]]
+  - [[#cndp-1-txgen][cndp-1: TXGen]]
 
 * GitHub
 
@@ -109,4 +110,50 @@ veth7                  xdp_dispatcher    native   130  90f686eb86991928
 #+end_example
 
 * Run the applications in the containers
+
+Two containers: cndp-1 and cndp-2
+ - *cndp-1* - runs: *TXGen*
+   - Function: an /af_xdp based traffic generator/
+ - *cndp-2* - runs: *cnet-graph*
+   - Function: lightweight /AF_XDP based networking stack/.
+
+** cndp-1: TXGen
+
+Starting Traffic generator in cndp-1:
+
+#+begin_src sh
+# docker exec -ti cndp-1 /cndp/builddir/usrtools/txgen/app/txgen \
+    -c /cndp/builddir/usrtools/txgen/app/txgen.jsonc
+#+end_src
+
+For perf profiling needs:
+ - txgen is configured to use CPU cores 2 and 4.
+
+We need to configure the traffic generator via the command line interface that
+shows the prompt =TXGen:/>= :
+
+#+begin_src sh
+# dst mac veth8
+set 0 dst mac 1a:bf:be:c1:a9:ea
+set 0 dst ip 192.168.100.20
+set 0 src ip 192.168.200.10/32
+set 0 size 512
+enable 0 chksum
+
+# dst mac veth4
+set 1 dst mac 1e:e4:9e:d4:07:6f
+set 1 dst ip 192.168.200.11
+set 1 src ip 192.168.100.21/32
+enable 1 chksum
+#+end_src
+
+To start traffic use:
+#+begin_src sh
+TXGen:/> start 0
+#+end_src
+
+To stop traffic use:
+#+begin_src sh
+TXGen:/> stp
+#+end_src
 
