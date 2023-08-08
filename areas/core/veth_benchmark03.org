@@ -7,6 +7,14 @@ That benchmark exercise =AF_XDP= in containers (thus veth) using [[https://cndp.
 practical use-case, to assess the overhead this consumer also brings to the
 equation.
 
+* Table of Contents                                                     :toc:
+- [[#github][GitHub]]
+  - [[#setup][Setup]]
+  - [[#compile][Compile]]
+- [[#setting-up-the-containers][Setting up the containers]]
+- [[#setting-xdp-progs-on-the-host-side-veths][Setting xdp progs on the host side veths]]
+- [[#run-the-applications-in-the-containers][Run the applications in the containers]]
+
 * GitHub
 
 https://github.com/maryamtahhan/veth-benchmark/
@@ -99,4 +107,6 @@ veth5                  xdp_dispatcher    native   149  90f686eb86991928
 veth7                  xdp_dispatcher    native   130  90f686eb86991928 
  =>              50     xdp_pass_func             139  3b185187f1855c4c  XDP_PASS
 #+end_example
+
+* Run the applications in the containers
 
