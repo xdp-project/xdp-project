@@ -41,3 +41,62 @@ CONTAINER ID   IMAGE             COMMAND       CREATED         STATUS         PO
 2ced507df83c   cndp-veth-bench   "/bin/bash"   2 minutes ago   Up 2 minutes             cndp-2
 3440165755c2   cndp-veth-bench   "/bin/bash"   2 minutes ago   Up 2 minutes             cndp-1
 #+end_example
+
+* Setting xdp progs on the host side veths
+
+(Still following [[https://github.com/maryamtahhan/veth-benchmark#readme][README]] from veth-benchmark)
+
+The =veth_setup.sh= script will load XDP redirect programs on the veth devices
+on the "host" (meaning outside the containers), using xdp-tools program
+=xdp-loader= (notice this dependency).
+
+Creating this XDP redirect setup (also pictured in [[https://github.com/maryamtahhan/veth-benchmark#readme][README]]):
+#+begin_example
+#    +-------------------+                         +------------------+
+#    |      cndp-1       |                         |      cndp-2      |
+#    | +--------------+  |                         | +--------------+ |
+#    | |              |  |                         | |              | |
+#    | |    TXGEN     |  |                         | |    CNET      | |
+#    | |              |  |                         | |              | |
+#    | +=====+--+=====+  |                         | +=====+--+=====+ |
+#    | |veth2|  |veth4|  |                         | |veth6|  |veth8| |
+#    | +==|==+  +==|==+  |                         | +==|==+  +==|==+ |
+#    +----|--------|-----+                         +----|--------|----+
+#      +==|==+  +==|==+                              +==|==+  +==|==+
+#      |veth1|  |veth3|                              |veth5|  |veth7|
+#      +==|==+  +==^==+                              +==|==+  +==^==+
+#         |        |______redirect veth 5 to veth3______|        |
+#         |______________redirect veth 1 to veth7________________|
+#+end_example
+
+Program list with bpftool:
+#+begin_example
+# bpftool net
+xdp:
+veth1(17) driver id 111
+veth3(19) driver id 168
+veth5(22) driver id 149
+veth7(24) driver id 130
+[...]
+#+end_example
+
+Program list with xdp-loader:
+#+begin_example
+$ sudo xdp-loader status
+CURRENT XDP PROGRAM STATUS:
+
+Interface        Prio  Program name      Mode     ID   Tag               Chain actions
+--------------------------------------------------------------------------------------
+lo                     <No XDP program loaded!>
+[...]
+veth1                  xdp_dispatcher    native   111  90f686eb86991928 
+ =>              50     xdp_prog_redirect          120  9da7c6f214b4de60  XDP_PASS
+veth3                  xdp_dispatcher    native   168  90f686eb86991928 
+ =>              50     xdp_pass_func             177  3b185187f1855c4c  XDP_PASS
+br0                    <No XDP program loaded!>
+veth5                  xdp_dispatcher    native   149  90f686eb86991928 
+ =>              50     xdp_prog_redirect          158  9da7c6f214b4de60  XDP_PASS
+veth7                  xdp_dispatcher    native   130  90f686eb86991928 
+ =>              50     xdp_pass_func             139  3b185187f1855c4c  XDP_PASS
+#+end_example
+
