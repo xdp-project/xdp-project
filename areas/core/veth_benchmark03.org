@@ -16,8 +16,9 @@ equation.
 - [[#run-the-applications-in-the-containers][Run the applications in the containers]]
   - [[#cndp-1-txgen][cndp-1: TXGen]]
   - [[#cndp-2-cnet-graph][cndp-2: cnet-graph]]
-- [[#benchmarks][Benchmarks]]
-  - [[#with-xdp-redirect-loaded-on-host-veth][With XDP redirect loaded on host veth]]
+- [[#benchmark01--perf-report-eval][Benchmark01 + perf report eval]]
+  - [[#benchmark01-with-xdp-redirect-loaded-on-host-veth][benchmark01: With XDP redirect loaded on host veth]]
+  - [[#benchmark01-perf-report][benchmark01: perf report]]
 
 * GitHub
 
@@ -182,9 +183,20 @@ I changed it to run on CPU core 5 and timer on core 1.
     },
 #+end_src
 
-* Benchmarks
+* Benchmark01 + perf report eval
 
-** With XDP redirect loaded on host veth
+Initial benchmark01 and eval of perf report.
+
+Kernel v6.5 git-tree net-next at commit:
+ - b98a5aa7e4c2 ("Merge branch 'net-remove-redundant-initialization-owner'")
+
+#+begin_example
+$ uname -a
+Linux broadwell 6.5.0-rc4-net-next-veth-base+ #97 SMP PREEMPT_DYNAMIC Tue Aug  8 15:05:06 CEST 2023 x86_64 GNU/Linux
+#+end_example
+
+
+** benchmark01: With XDP redirect loaded on host veth
 
 #+begin_example
 Average:        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil
@@ -272,3 +284,64 @@ MAC Destination     :     1a:bf:be:c1:a9:ea     1e:e4:9e:d4:07:6f
 
 -- TX-Gen 23.06.0  Powered by CNDP  PID:23 -----------------------------------
 #+end_example
+
+** benchmark01: perf report
+
+Zooming in on CPU core 5, because it is running the cnet-graph program.
+ - Perf command: =perf report --no-children -C5=
+
+The perf report (core 5) reveals too many callers to "memcpy_orig":
+
+#+begin_example
+Samples: 40K of event 'cycles:P', Event count (approx.): 37338410939
+  Overhead  Command  Shared Object            Symbol
+-   10.76%  graph:0  [kernel.vmlinux]         [k] memcpy_orig
+   - 10.73% memcpy_orig
+      + 5.50% skb_store_bits
+          xsk_build_skb
+           __xsk_generic_xmit
+           __xsk_sendmsg.constprop.0.isra.0
+           [...]
+      + 3.51% __xsk_rcv
+           __xsk_map_redirect
+           xdp_do_redirect
+           veth_xdp_rcv_one
+           veth_xdp_rcv.constprop.0
+           veth_poll
+           [...]
+      + 1.72% skb_copy_bits
+           veth_convert_skb_to_xdp_buff
+           veth_xdp_rcv_skb
+           veth_xdp_rcv.constprop.0
+           veth_poll
+           [...]
+-    2.64%  graph:0  [kernel.vmlinux]         [k] kmem_cache_free
+   - 2.63% kmem_cache_free
+      + 1.36% veth_convert_skb_to_xdp_buff
+      + 1.27% veth_xdp_rcv_skb
++    2.50%  graph:0  [kernel.vmlinux]         [k] net_rx_action
++    2.47%  graph:0  [veth]                   [k] veth_xdp_rcv.constprop.0
++    2.21%  graph:0  [kernel.vmlinux]         [k] __napi_schedule
++    2.14%  graph:0  [kernel.vmlinux]         [k] page_frag_free
++    2.07%  graph:0  libcne_stack.so          [.] ip4_forward_node_process
++    1.97%  graph:0  [veth]                   [k] veth_poll
++    1.93%  graph:0  [veth]                   [k] veth_xdp_xmit
++    1.85%  graph:0  [kernel.vmlinux]         [k] __xsk_rcv_zc
++    1.72%  graph:0  [kernel.vmlinux]         [k] sock_def_readable
++    1.65%  graph:0  [kernel.vmlinux]         [k] napi_complete_done
++    1.60%  graph:0  [kernel.vmlinux]         [k] free_unref_page_prepare
++    1.55%  graph:0  [veth]                   [k] veth_xmit
++    1.36%  graph:0  [veth]                   [k] veth_convert_skb_to_xdp_buff
++    1.35%  graph:0  [kernel.vmlinux]         [k] xdp_do_redirect
++    1.26%  graph:0  [kernel.vmlinux]         [k] xp_alloc
++    1.21%  graph:0  [kernel.vmlinux]         [k] syscall_exit_to_user_mode
++    1.15%  graph:0  [kernel.vmlinux]         [k] sock_wfree
++    1.11%  graph:0  [veth]                   [k] veth_xdp_rcv_skb
++    1.10%  graph:0  [kernel.vmlinux]         [k] __xsk_generic_xmit
+#+end_example
+
+Looking at code for =xsk_build_skb= the problem is quite obvious. The headroom
+for is smaller than =XDP_PACKET_HEADROOM=. Thus, when received by
+=veth_xdp_rcv_skb= it cause =veth_convert_skb_to_xdp_buff= to realloc and copy
+into a new SKB.
+
