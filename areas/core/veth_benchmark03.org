@@ -425,6 +425,14 @@ index 47796a5a79b3..a834079112a0 100644
  				goto free_err;
 #+end_src
 
+Output from pr_info:
+#+begin_example
+[ 4733.963999] SKB:ffff888178068a00 shared:0 head_locked:1 cloned:0 headroom:256 nr_frags:0
+[ 4733.972209] SKB:ffff888178068a00 shared:0 head_locked:1 cloned:0 headroom:256 nr_frags:0
+[ 4733.972229] SKB:ffff88810c66af00 shared:0 head_locked:1 cloned:0 headroom:256 nr_frags:0
+[ 4733.980291] SKB:ffff888178068a00 shared:0 head_locked:1 cloned:0 headroom:256 nr_frags:0
+#+end_example
+
 ** benchmark02: kernel hack that avoid realloc in veth
 
 The performance increased to: 1,023,594 pps.
