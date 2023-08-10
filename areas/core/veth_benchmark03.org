@@ -20,8 +20,9 @@ equation.
   - [[#benchmark01-with-xdp-redirect-loaded-on-host-veth][benchmark01: With XDP redirect loaded on host veth]]
   - [[#benchmark01-perf-report][benchmark01: perf report]]
 - [[#benchmark02---kernel-hack][Benchmark02 - kernel-hack]]
+  - [[#issue][Issue]]
   - [[#benchmark02-kernel-hack-change][benchmark02: kernel hack change]]
-  - [[#benchmark02-kernel-hack][benchmark02: kernel hack]]
+  - [[#benchmark02-kernel-hack-that-avoid-realloc-in-veth][benchmark02: kernel hack that avoid realloc in veth]]
   - [[#benchmark02-perf-report][benchmark02: perf report]]
 
 * GitHub
@@ -351,6 +352,10 @@ into a new SKB.
 
 * Benchmark02 - kernel-hack
 
+Testing kernel "hack" patch that workaround issue.
+
+** Issue
+
 Issue: From above perf-report we realised that AF_XDP TX combined with veth
 results in an unfortunate reallocation of both SKB and data plus a memcopy.
 
@@ -420,7 +425,13 @@ index 47796a5a79b3..a834079112a0 100644
  				goto free_err;
 #+end_src
 
-** benchmark02: kernel hack
+** benchmark02: kernel hack that avoid realloc in veth
+
+The performance increased to: 1,023,594 pps.
+ - Previous: 828,730 pps
+ - Improvement: around 23.5% (1023594/828730 = 1.235)
+ - Saving approx 230 nanosec ((1/1023594-1/828730)*10^9 = -229.7)
+   - on CPU E5-1650 v4 @ 3.60GHz
 
 Host-machine:
 #+begin_example
