@@ -21,6 +21,7 @@ equation.
   - [[#benchmark01-perf-report][benchmark01: perf report]]
 - [[#benchmark02---kernel-hack][Benchmark02 - kernel-hack]]
   - [[#benchmark02-kernel-hack][benchmark02: kernel hack]]
+  - [[#benchmark02-perf-report][benchmark02: perf report]]
 
 * GitHub
 
@@ -442,6 +443,63 @@ MAC Destination     :     1a:bf:be:c1:a9:ea     1e:e4:9e:d4:07:6f
 -- TX-Gen 23.06.0  Powered by CNDP  PID:23 -----------------------------------
 #+end_example
 
+** benchmark02: perf report
 
+Notice how =skb_copy_bits= disappeared (that was initiated by
+=veth_convert_skb_to_xdp_buff=) compared to [[#benchmark01-perf-report][above perf-report]].
 
+#+begin_example
+Samples: 40K of event 'cycles:P', Event count (approx.): 37369159319
+  Overhead  Command     Shared Object       Symbol
+-   10.37%  graph:0     [kernel.vmlinux]    [k] memcpy_orig
+  - 10.37% memcpy_orig
+      - 6.56% skb_store_bits
+           xsk_build_skb
+           __xsk_generic_xmit
+           __xsk_sendmsg.constprop.0.isra.0
+           xsk_sendmsg
+           sock_sendmsg
+           [...]
+      - 3.81% __xsk_rcv
+           __xsk_map_redirect
+           xdp_do_redirect
+           veth_xdp_rcv_one
+           veth_xdp_rcv.constprop.0
+           veth_poll
+           __napi_poll
+           net_rx_action
+           __do_softirq
+           do_softirq
+           __local_bh_enable_ip
+           __dev_direct_xmit
+           __xsk_generic_xmit
+           __xsk_sendmsg.constprop.0.isra.0
+           xsk_sendmsg
+           sock_sendmsg
+           [...]
++    3.61%  graph:0     [veth]              [k] veth_xdp_rcv.constprop.0
++    3.05%  graph:0     [kernel.vmlinux]    [k] net_rx_action
++    2.73%  graph:0     [kernel.vmlinux]    [k] page_frag_free
++    2.57%  graph:0     [veth]              [k] veth_xdp_xmit
++    2.53%  graph:0     [kernel.vmlinux]    [k] __napi_schedule
++    2.43%  graph:0     [kernel.vmlinux]    [k] sock_def_readable
++    2.39%  graph:0     [veth]              [k] veth_convert_skb_to_xdp_buff
++    2.17%  graph:0     [kernel.vmlinux]    [k] napi_complete_done
++    1.96%  graph:0     [veth]              [k] veth_poll
++    1.79%  graph:0     [kernel.vmlinux]    [k] __xsk_rcv_zc
++    1.70%  graph:0     [veth]              [k] veth_xmit
++    1.64%  graph:0     libcne_stack.so     [.] ip4_forward_node_process
++    1.54%  graph:0     [veth]              [k] veth_xdp_rcv_skb
++    1.49%  graph:0     [kernel.vmlinux]    [k] xdp_do_redirect
++    1.46%  graph:0     [kernel.vmlinux]    [k] xp_alloc
++    1.44%  graph:0     [veth]              [k] veth_xdp_rcv_one
++    1.43%  graph:0     [kernel.vmlinux]    [k] __xsk_generic_xmit
++    1.32%  graph:0     [kernel.vmlinux]    [k] sock_wfree
++    1.20%  graph:0     [kernel.vmlinux]    [k] __do_softirq
++    1.17%  graph:0     [kernel.vmlinux]    [k] napi_schedule_prep
++    1.07%  graph:0     [kernel.vmlinux]    [k] kmem_cache_alloc_node
++    1.06%  graph:0     [kernel.vmlinux]    [k] xsk_build_skb
++    1.03%  graph:0     [kernel.vmlinux]    [k] __dev_direct_xmit
++    0.98%  graph:0     [kernel.vmlinux]    [k] __kmem_cache_alloc_node
+#+end_example
 
