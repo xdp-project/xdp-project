@@ -20,6 +20,7 @@ equation.
   - [[#benchmark01-with-xdp-redirect-loaded-on-host-veth][benchmark01: With XDP redirect loaded on host veth]]
   - [[#benchmark01-perf-report][benchmark01: perf report]]
 - [[#benchmark02---kernel-hack][Benchmark02 - kernel-hack]]
+  - [[#benchmark02-kernel-hack-change][benchmark02: kernel hack change]]
   - [[#benchmark02-kernel-hack][benchmark02: kernel hack]]
   - [[#benchmark02-perf-report][benchmark02: perf report]]
 
@@ -350,7 +351,74 @@ into a new SKB.
 
 * Benchmark02 - kernel-hack
 
-Issue: 
+Issue: From above perf-report we realised that AF_XDP TX combined with veth
+results in an unfortunate reallocation of both SKB and data plus a memcopy.
+
+When AF_XDP (non-zc) TX gets combined with veth (or other layered software
+devices), the problem uccurs, because:
+
+1) the SKB that gets allocated by =xsk_build_skb()= doesn't have enough headroom
+   to satisfy XDP requirement =XDP_PACKET_HEADROOM=.
+2) and, the backing memory type from =sock_alloc_send_skb()= is not compatible
+   with generic/veth XDP.
+
+Also described in upstream [[https://lore.kernel.org/all/68f73855-f206-80a2-a546-3d40864ee176@kernel.org/][email]].
+
+** benchmark02: kernel hack change
+
+To quickly test the performance effect of avoiding the realloc of the SKB in
+veth (=veth_xdp_rcv_skb= -> =veth_convert_skb_to_xdp_buff=) I changed the kernel
+in this way. The patch is *WRONG* as memory backing sock-SKB shouldn't be
+compatible with XDP.
+
+#+begin_src diff
+Hack: Force xsk AF_XDP SKB to avoid realloc in veth
+
+This patch is wrong, as memory backing sock SKB is not compatible
+---
+ drivers/net/veth.c |   10 +++++++++-
+ net/xdp/xsk.c      |    4 ++++
+ 2 files changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/veth.c b/drivers/net/veth.c
+index 953f6d8f8db0..67230252a905 100644
+--- a/drivers/net/veth.c
++++ b/drivers/net/veth.c
+@@ -732,8 +732,16 @@ static int veth_convert_skb_to_xdp_buff(struct veth_rq *rq,
+ {
+ 	struct sk_buff *skb = *pskb;
+ 	u32 frame_sz;
++	static unsigned int cnt = 0;
+ 
+-	if (skb_shared(skb) || skb_head_is_locked(skb) ||
++	if (++cnt < 5) {
++		pr_info("SKB:%px shared:%d head_locked:%d cloned:%d headroom:%d nr_frags:%d\n",
++			skb,
++			skb_shared(skb), skb_head_is_locked(skb), skb_cloned(skb),
++			skb_headroom(skb), skb_shinfo(skb)->nr_frags);
++	}
++
++	if (skb_shared(skb) || // skb_head_is_locked(skb) ||
+ 	    skb_shinfo(skb)->nr_frags ||
+ 	    skb_headroom(skb) < XDP_PACKET_HEADROOM) {
+ 		u32 size, len, max_head_size, off;
+diff --git a/net/xdp/xsk.c b/net/xdp/xsk.c
+index 47796a5a79b3..a834079112a0 100644
+--- a/net/xdp/xsk.c
++++ b/net/xdp/xsk.c
+@@ -646,7 +646,11 @@ static struct sk_buff *xsk_build_skb(struct xdp_sock *xs,
+ 
+ 		if (!skb) {
+ 			hr = max(NET_SKB_PAD, L1_CACHE_ALIGN(dev->needed_headroom));
++			hr = XDP_PACKET_HEADROOM;
+ 			tr = dev->needed_tailroom;
++			// Is the skb_shared_info tailroom added elsewhere?
++			tr += SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
++
+ 			skb = sock_alloc_send_skb(&xs->sk, hr + len + tr, 1, &err);
+ 			if (unlikely(!skb))
+ 				goto free_err;
+#+end_src
 
 ** benchmark02: kernel hack
 
@@ -445,8 +513,8 @@ MAC Destination     :     1a:bf:be:c1:a9:ea     1e:e4:9e:d4:07:6f
 
 ** benchmark02: perf report
 
-Notice how =skb_copy_bits= disappeared (that was initiated by
-=veth_convert_skb_to_xdp_buff=) compared to [[#benchmark01-perf-report][above perf-report]].
+Notice how "memcpy_orig" caller =skb_copy_bits= disappeared (that was initiated
+by =veth_convert_skb_to_xdp_buff=) compared to [[#benchmark01-perf-report][above perf-report]].
 
 #+begin_example
 Samples: 40K of event 'cycles:P', Event count (approx.): 37369159319
