@@ -30,6 +30,7 @@ Also described in upstream [[https://lore.kernel.org/all/68f73855-f206-80a2-a546
 - [[#potential-issue-in-veth-skb-redirect][Potential issue in veth "skb" redirect]]
   - [[#trick-__skb2xdp_steal_data][Trick __skb2xdp_steal_data]]
   - [[#uncertain-approach][Uncertain approach]]
+- [[#wrong-veth-xdp-approach-for-skbs][Wrong veth XDP approach for SKBs?]]
 
 * Code notes
 
@@ -263,4 +264,16 @@ index a70670fe9a2d..8d7e7ebd426f 100644
                 /* Not possible, checked in xdp_rxq_info_reg_mem_model() */
                 WARN(1, "Incorrect XDP memory type (%d) usage", mem->type);
 #+end_src
+
+* Wrong veth XDP approach for SKBs?
+
+Deep into this rabbit hole, I start to question above approach.
+
+[[https://lore.kernel.org/all/05eec0a4-f8f8-ef68-3cf2-66b9109843b9@redhat.com/][Question ourselves]]:
+ - Perhaps the veth XDP approach for SKBs is wrong?
+
+The root-cause of this issue is that =veth_xdp_rcv_skb= code path (that handle
+SKBs) is calling XDP-native function "xdp_do_redirect()". I question, why isn't
+it using "xdp_do_generic_redirect()"?
+
 
