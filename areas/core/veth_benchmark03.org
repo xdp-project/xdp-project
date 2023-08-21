@@ -1,0 +1,592 @@
+#+Title: Using veth benchmark (03)
+
+Finding =veth= driver kernel bottlenecks using
+Maryam's [[https://github.com/maryamtahhan/veth-benchmark/][veth-benchmark]].
+
+That benchmark exercise =AF_XDP= in containers (thus veth) using [[https://cndp.io/][CNDP]] to have a
+practical use-case, to assess the overhead this consumer also brings to the
+equation.
+
+* Table of Contents                                                     :toc:
+- [[#github][GitHub]]
+  - [[#setup][Setup]]
+  - [[#compile][Compile]]
+- [[#setting-up-the-containers][Setting up the containers]]
+- [[#setting-xdp-progs-on-the-host-side-veths][Setting xdp progs on the host side veths]]
+- [[#run-the-applications-in-the-containers][Run the applications in the containers]]
+  - [[#cndp-1-txgen][cndp-1: TXGen]]
+  - [[#cndp-2-cnet-graph][cndp-2: cnet-graph]]
+- [[#benchmark01--perf-report-eval][Benchmark01 + perf report eval]]
+  - [[#benchmark01-with-xdp-redirect-loaded-on-host-veth][benchmark01: With XDP redirect loaded on host veth]]
+  - [[#benchmark01-perf-report][benchmark01: perf report]]
+- [[#benchmark02---kernel-hack][Benchmark02 - kernel-hack]]
+  - [[#issue][Issue]]
+  - [[#benchmark02-kernel-hack-change][benchmark02: kernel hack change]]
+  - [[#benchmark02-kernel-hack-that-avoid-realloc-in-veth][benchmark02: kernel hack that avoid realloc in veth]]
+  - [[#benchmark02-perf-report][benchmark02: perf report]]
+
+* GitHub
+
+https://github.com/maryamtahhan/veth-benchmark/
+
+Forked:
+https://github.com/netoptimizer/veth-benchmark
+
+** Setup
+
+As instructed in README.md, run =./configure=
+
+** Compile
+
+(Worked)
+
+* Setting up the containers
+
+Setup the containers by running the ./container_setup.sh script.
+
+#+begin_src sh
+./container_setup.sh
+#+end_src
+
+The MAC-addresses for the =vethN= net devices are needed later, and are stored
+on the config file: =veth_mac_addrs.conf=.
+
+Two containers got created: cndp-1 and cndp-2
+
+#+begin_example
+$ docker ps
+CONTAINER ID   IMAGE             COMMAND       CREATED         STATUS         PORTS     NAMES
+2ced507df83c   cndp-veth-bench   "/bin/bash"   2 minutes ago   Up 2 minutes             cndp-2
+3440165755c2   cndp-veth-bench   "/bin/bash"   2 minutes ago   Up 2 minutes             cndp-1
+#+end_example
+
+* Setting xdp progs on the host side veths
+
+(Still following [[https://github.com/maryamtahhan/veth-benchmark#readme][README]] from veth-benchmark)
+
+The =veth_setup.sh= script will load XDP redirect programs on the veth devices
+on the "host" (meaning outside the containers), using xdp-tools program
+=xdp-loader= (notice this dependency).
+
+Creating this XDP redirect setup (also pictured in [[https://github.com/maryamtahhan/veth-benchmark#readme][README]]):
+#+begin_example
+#    +-------------------+                         +------------------+
+#    |      cndp-1       |                         |      cndp-2      |
+#    | +--------------+  |                         | +--------------+ |
+#    | |              |  |                         | |              | |
+#    | |    TXGEN     |  |                         | |    CNET      | |
+#    | |              |  |                         | |              | |
+#    | +=====+--+=====+  |                         | +=====+--+=====+ |
+#    | |veth2|  |veth4|  |                         | |veth6|  |veth8| |
+#    | +==|==+  +==|==+  |                         | +==|==+  +==|==+ |
+#    +----|--------|-----+                         +----|--------|----+
+#      +==|==+  +==|==+                              +==|==+  +==|==+
+#      |veth1|  |veth3|                              |veth5|  |veth7|
+#      +==|==+  +==^==+                              +==|==+  +==^==+
+#         |        |______redirect veth 5 to veth3______|        |
+#         |______________redirect veth 1 to veth7________________|
+#+end_example
+
+Program list with bpftool:
+#+begin_example
+# bpftool net
+xdp:
+veth1(17) driver id 111
+veth3(19) driver id 168
+veth5(22) driver id 149
+veth7(24) driver id 130
+[...]
+#+end_example
+
+Program list with xdp-loader:
+#+begin_example
+$ sudo xdp-loader status
+CURRENT XDP PROGRAM STATUS:
+
+Interface        Prio  Program name      Mode     ID   Tag               Chain actions
+--------------------------------------------------------------------------------------
+lo                     <No XDP program loaded!>
+[...]
+veth1                  xdp_dispatcher    native   111  90f686eb86991928 
+ =>              50     xdp_prog_redirect          120  9da7c6f214b4de60  XDP_PASS
+veth3                  xdp_dispatcher    native   168  90f686eb86991928 
+ =>              50     xdp_pass_func             177  3b185187f1855c4c  XDP_PASS
+br0                    <No XDP program loaded!>
+veth5                  xdp_dispatcher    native   149  90f686eb86991928 
+ =>              50     xdp_prog_redirect          158  9da7c6f214b4de60  XDP_PASS
+veth7                  xdp_dispatcher    native   130  90f686eb86991928 
+ =>              50     xdp_pass_func             139  3b185187f1855c4c  XDP_PASS
+#+end_example
+
+* Run the applications in the containers
+
+Two containers: cndp-1 and cndp-2
+ - *cndp-1* - runs: *TXGen*
+   - Function: an /af_xdp based traffic generator/
+ - *cndp-2* - runs: *cnet-graph*
+   - Function: lightweight /AF_XDP based networking stack/.
+
+** cndp-1: TXGen
+
+Starting Traffic generator in cndp-1:
+
+#+begin_src sh
+# docker exec -ti cndp-1 /cndp/builddir/usrtools/txgen/app/txgen \
+    -c /cndp/builddir/usrtools/txgen/app/txgen.jsonc
+#+end_src
+
+For perf profiling needs:
+ - txgen is configured to use CPU cores 2 and 4.
+
+We need to configure the traffic generator via the command line interface that
+shows the prompt =TXGen:/>= :
+
+#+begin_src sh
+# dst mac veth8
+set 0 dst mac 1a:bf:be:c1:a9:ea
+set 0 dst ip 192.168.100.20
+set 0 src ip 192.168.200.10/32
+set 0 size 512
+enable 0 chksum
+
+# dst mac veth4
+set 1 dst mac 1e:e4:9e:d4:07:6f
+set 1 dst ip 192.168.200.11
+set 1 src ip 192.168.100.21/32
+enable 1 chksum
+#+end_src
+
+To start traffic use:
+#+begin_src sh
+TXGen:/> start 0
+#+end_src
+
+To stop traffic use:
+#+begin_src sh
+TXGen:/> stp
+#+end_src
+
+** cndp-2: cnet-graph
+
+Start container (cndp-2) that runs a
+  - lightweight /AF_XDP based networking stack/.
+
+#+begin_src sh
+docker exec -ti cndp-2 ./run_cnet.sh
+#+end_src
+
+I needed to change the CPUs used by *cnet-graph* in file =cnetfwd-graph.jsonc=.
+ - https://github.com/maryamtahhan/veth-benchmark/blob/main/containerization/cnetfwd-graph.jsonc#L112
+
+I changed it to run on CPU core 5 and timer on core 1.
+#+begin_src json
+    "lcore-groups": {
+        "initial": [0],
+        "timer": [1],
+        "group0": [5],
+        "default": ["0"]
+    },
+#+end_src
+
+* Benchmark01 + perf report eval
+
+Initial benchmark01 and eval of perf report.
+
+Kernel v6.5 git-tree net-next at commit:
+ - b98a5aa7e4c2 ("Merge branch 'net-remove-redundant-initialization-owner'")
+
+#+begin_example
+$ uname -a
+Linux broadwell 6.5.0-rc4-net-next-veth-base+ #97 SMP PREEMPT_DYNAMIC Tue Aug  8 15:05:06 CEST 2023 x86_64 GNU/Linux
+#+end_example
+
+
+** benchmark01: With XDP redirect loaded on host veth
+
+#+begin_example
+Average:        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil
+Average:           lo      9.33      9.33      0.55      0.55      0.00      0.00      0.00      0.00
+Average:        eth42     35.33     39.50      2.28      4.40      0.00      0.00      0.08      0.00
+Average:         igb1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:         igc1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:       ixgbe1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:        i40e1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:        i40e2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:       mlx5p1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:       ixgbe2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:       mlx5p2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:      docker0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:    veth11cd348      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:    veth2e23a97      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:        veth1 828730.42      0.00 403034.91      0.00      0.00      0.00      0.00     33.02
+Average:        veth3      0.00 828731.83      0.00 411128.68      0.00      0.00      0.00     33.68
+Average:          br0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:        veth5 828733.92      0.00 399799.37      0.00      0.00      0.00      0.00     32.75
+Average:        veth7      0.00 828732.25      0.00 414366.12      0.00      0.00      0.00     33.94
+#+end_example
+
+cnet-graph:
+#+begin_example
+CNDP-cli:/> graph stats 5
++------------------+---------------+---------------+--------+--------+----------+------------+
+|Node              |          Calls|        Objects| Realloc|  Objs/c|   KObjs/c|    Cycles/c|
++------------------+---------------+---------------+--------+--------+----------+------------+
+|ip4_input         |       13717358|      237270835|       2|    25.0|     829.0|      1457.0|
+|ip4_output        |              0|              0|       1|     0.0|       0.0|         0.0|
+|ip4_forward       |       13717360|      237270886|       2|    25.0|     828.9|      2969.0|
+|ip4_proto         |              0|              0|       1|     0.0|       0.0|         0.0|
+|udp_input         |              0|              0|       1|     0.0|       0.0|         0.0|
+|udp_output        |              0|              0|       1|     0.0|       0.0|         0.0|
+|pkt_drop          |              0|              0|       2|     0.0|       0.0|         0.0|
+|chnl_callback     |              0|              0|       1|     0.0|       0.0|         0.0|
+|chnl_recv         |              0|              0|       1|     0.0|       0.0|         0.0|
+|kernel_recv       |       29631266|              0|       2|     0.0|       0.0|      2200.0|
+|eth_rx-0          |       29631266|       18732584|       2|     0.0|       0.0|        47.0|
+|eth_rx-1          |       29631267|      218538431|       2|    25.0|     828.9|      4931.0|
+|arp_request       |              0|              0|       1|     0.0|       0.0|         0.0|
+|eth_tx-0          |       13717365|      237271015|       2|    25.0|     828.9|     97949.0|
+|eth_tx-1          |              0|              0|       1|     0.0|       0.0|         0.0|
+|punt_kernel       |              0|              0|       1|     0.0|       0.0|         0.0|
+|ptype             |       13717367|      237271067|       2|    25.0|     828.9|       271.0|
+|gtpu_input        |              0|              0|       1|     0.0|       0.0|         0.0|
++------------------+---------------+---------------+--------+--------+----------+------------+
+#+end_example
+
+TXGen output:
+#+begin_example
+- Port Count 2     <Main Page>  Copyright (c) 2020-2023 Intel Corporation, Powered by CNDP
+  Flags:Port        :
+Link State          :         <UP-10000-FD>         <UP-10000-FD>      ---Total Rate---
+Pkts/s Max/Rx       :              301684/0         832394/830181         853653/830181
+       Max/Tx       :         832448/830208             1678144/0        1949632/830208
+MBits/s Rx/Tx       :                0/3559                3533/0             3533/3559
+Broadcast           :                     0                     0
+Multicast           :                     0                     0
+Sizes 64            :                     0                     0
+      65-127        :                     0                     0
+      128-255       :                     2                     2
+      256-511       :                     0                     0
+      512-1023      :              28444155             369743560
+      1024-1518     :                     0                     0
+Runts/Jumbos        :                   0/0                   0/0
+ARP/ICMP Pkts       :                   0/0                   0/0
+Errors Rx/Tx        :                   0/0                   0/0
+Dropped Tx          :                     0                     0
+Invalid Rx/Tx       :                   0/0                   0/0
+Total Rx Pkts       :              28444157             369452322
+      Tx Pkts       :             314152896             112855616
+      Rx MBs        :                121058               1573653
+      Tx MBs        :               1347087                 79450
+Pattern Type        :               abcd...               abcd...
+Tx Count/% Rate     :         Forever /100%         Forever /100%
+Pkt Size/Tx Burst   :            512 /   64             64 /   64
+TTL/Port Src/Dest   :        64/ 1234/ 5678        64/ 1234/ 5678
+Pkt Type            :            IPv4 / UDP            IPv4 / UDP
+IP  Destination     :        192.168.100.20        192.168.200.11
+    Source          :        192.168.200.10        192.168.100.21
+MAC Destination     :     1a:bf:be:c1:a9:ea     1e:e4:9e:d4:07:6f
+    Source          :     1e:b3:14:dc:21:cf     1e:e4:9e:d4:07:6f
+
+-- TX-Gen 23.06.0  Powered by CNDP  PID:23 -----------------------------------
+#+end_example
+
+** benchmark01: perf report
+
+Zooming in on CPU core 5, because it is running the cnet-graph program.
+ - Perf command: =perf report --no-children -C5=
+
+The perf report (core 5) reveals too many callers to "memcpy_orig":
+
+#+begin_example
+Samples: 40K of event 'cycles:P', Event count (approx.): 37338410939
+  Overhead  Command  Shared Object            Symbol
+-   10.76%  graph:0  [kernel.vmlinux]         [k] memcpy_orig
+   - 10.73% memcpy_orig
+      + 5.50% skb_store_bits
+          xsk_build_skb
+           __xsk_generic_xmit
+           __xsk_sendmsg.constprop.0.isra.0
+           [...]
+      + 3.51% __xsk_rcv
+           __xsk_map_redirect
+           xdp_do_redirect
+           veth_xdp_rcv_one
+           veth_xdp_rcv.constprop.0
+           veth_poll
+           [...]
+      + 1.72% skb_copy_bits
+           veth_convert_skb_to_xdp_buff
+           veth_xdp_rcv_skb
+           veth_xdp_rcv.constprop.0
+           veth_poll
+           [...]
+-    2.64%  graph:0  [kernel.vmlinux]         [k] kmem_cache_free
+   - 2.63% kmem_cache_free
+      + 1.36% veth_convert_skb_to_xdp_buff
+      + 1.27% veth_xdp_rcv_skb
++    2.50%  graph:0  [kernel.vmlinux]         [k] net_rx_action
++    2.47%  graph:0  [veth]                   [k] veth_xdp_rcv.constprop.0
++    2.21%  graph:0  [kernel.vmlinux]         [k] __napi_schedule
++    2.14%  graph:0  [kernel.vmlinux]         [k] page_frag_free
++    2.07%  graph:0  libcne_stack.so          [.] ip4_forward_node_process
++    1.97%  graph:0  [veth]                   [k] veth_poll
++    1.93%  graph:0  [veth]                   [k] veth_xdp_xmit
++    1.85%  graph:0  [kernel.vmlinux]         [k] __xsk_rcv_zc
++    1.72%  graph:0  [kernel.vmlinux]         [k] sock_def_readable
++    1.65%  graph:0  [kernel.vmlinux]         [k] napi_complete_done
++    1.60%  graph:0  [kernel.vmlinux]         [k] free_unref_page_prepare
++    1.55%  graph:0  [veth]                   [k] veth_xmit
++    1.36%  graph:0  [veth]                   [k] veth_convert_skb_to_xdp_buff
++    1.35%  graph:0  [kernel.vmlinux]         [k] xdp_do_redirect
++    1.26%  graph:0  [kernel.vmlinux]         [k] xp_alloc
++    1.21%  graph:0  [kernel.vmlinux]         [k] syscall_exit_to_user_mode
++    1.15%  graph:0  [kernel.vmlinux]         [k] sock_wfree
++    1.11%  graph:0  [veth]                   [k] veth_xdp_rcv_skb
++    1.10%  graph:0  [kernel.vmlinux]         [k] __xsk_generic_xmit
+#+end_example
+
+Looking at code for =xsk_build_skb= the problem is quite obvious. The headroom
+for is smaller than =XDP_PACKET_HEADROOM=. Thus, when received by
+=veth_xdp_rcv_skb= it cause =veth_convert_skb_to_xdp_buff= to realloc and copy
+into a new SKB.
+
+* Benchmark02 - kernel-hack
+
+Testing kernel "hack" patch that workaround issue.
+
+** Issue
+
+Issue: From above perf-report we realised that AF_XDP TX combined with veth
+results in an unfortunate reallocation of both SKB and data plus a memcopy.
+
+When AF_XDP (non-zc) TX gets combined with veth (or other layered software
+devices), the problem uccurs, because:
+
+1) the SKB that gets allocated by =xsk_build_skb()= doesn't have enough headroom
+   to satisfy XDP requirement =XDP_PACKET_HEADROOM=.
+2) and, the backing memory type from =sock_alloc_send_skb()= is not compatible
+   with generic/veth XDP.
+
+Also described in upstream [[https://lore.kernel.org/all/68f73855-f206-80a2-a546-3d40864ee176@kernel.org/][email]].
+
+** benchmark02: kernel hack change
+
+To quickly test the performance effect of avoiding the realloc of the SKB in
+veth (=veth_xdp_rcv_skb= -> =veth_convert_skb_to_xdp_buff=) I changed the kernel
+in this way. The patch is *WRONG* as memory backing sock-SKB shouldn't be
+compatible with XDP.
+
+#+begin_src diff
+Hack: Force xsk AF_XDP SKB to avoid realloc in veth
+
+This patch is wrong, as memory backing sock SKB is not compatible
+---
+ drivers/net/veth.c |   10 +++++++++-
+ net/xdp/xsk.c      |    4 ++++
+ 2 files changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/veth.c b/drivers/net/veth.c
+index 953f6d8f8db0..67230252a905 100644
+--- a/drivers/net/veth.c
++++ b/drivers/net/veth.c
+@@ -732,8 +732,16 @@ static int veth_convert_skb_to_xdp_buff(struct veth_rq *rq,
+ {
+ 	struct sk_buff *skb = *pskb;
+ 	u32 frame_sz;
++	static unsigned int cnt = 0;
+ 
+-	if (skb_shared(skb) || skb_head_is_locked(skb) ||
++	if (++cnt < 5) {
++		pr_info("SKB:%px shared:%d head_locked:%d cloned:%d headroom:%d nr_frags:%d\n",
++			skb,
++			skb_shared(skb), skb_head_is_locked(skb), skb_cloned(skb),
++			skb_headroom(skb), skb_shinfo(skb)->nr_frags);
++	}
++
++	if (skb_shared(skb) || // skb_head_is_locked(skb) ||
+ 	    skb_shinfo(skb)->nr_frags ||
+ 	    skb_headroom(skb) < XDP_PACKET_HEADROOM) {
+ 		u32 size, len, max_head_size, off;
+diff --git a/net/xdp/xsk.c b/net/xdp/xsk.c
+index 47796a5a79b3..a834079112a0 100644
+--- a/net/xdp/xsk.c
++++ b/net/xdp/xsk.c
+@@ -646,7 +646,11 @@ static struct sk_buff *xsk_build_skb(struct xdp_sock *xs,
+ 
+ 		if (!skb) {
+ 			hr = max(NET_SKB_PAD, L1_CACHE_ALIGN(dev->needed_headroom));
++			hr = XDP_PACKET_HEADROOM;
+ 			tr = dev->needed_tailroom;
++			// Is the skb_shared_info tailroom added elsewhere?
++			tr += SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
++
+ 			skb = sock_alloc_send_skb(&xs->sk, hr + len + tr, 1, &err);
+ 			if (unlikely(!skb))
+ 				goto free_err;
+#+end_src
+
+Output from pr_info:
+#+begin_example
+[ 4733.963999] SKB:ffff888178068a00 shared:0 head_locked:1 cloned:0 headroom:256 nr_frags:0
+[ 4733.972209] SKB:ffff888178068a00 shared:0 head_locked:1 cloned:0 headroom:256 nr_frags:0
+[ 4733.972229] SKB:ffff88810c66af00 shared:0 head_locked:1 cloned:0 headroom:256 nr_frags:0
+[ 4733.980291] SKB:ffff888178068a00 shared:0 head_locked:1 cloned:0 headroom:256 nr_frags:0
+#+end_example
+
+** benchmark02: kernel hack that avoid realloc in veth
+
+The performance increased to: 1,023,594 pps.
+ - Previous: 828,730 pps
+ - Improvement: around 23.5% (1023594/828730 = 1.235)
+ - Saving approx 230 nanosec ((1/1023594-1/828730)*10^9 = -229.7)
+   - on CPU E5-1650 v4 @ 3.60GHz
+
+Host-machine:
+#+begin_example
+Average:        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil
+Average:           lo      0.40      0.40      0.02      0.02      0.00      0.00      0.00      0.00
+Average:        eth42      6.20      6.40      0.41      0.77      0.00      0.00      0.00      0.00
+Average:       ixgbe1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:         igc1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:         igb1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:        i40e1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:        i40e2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:       mlx5p1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:       ixgbe2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:       mlx5p2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:      docker0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:    vethe9b84f1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:    veth94e3db3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:        veth1 1023594.60      0.00 497802.84      0.00      0.00      0.00      0.00     40.78
+Average:        veth3      0.00 1023593.90      0.00 507798.54      0.00      0.00      0.00     41.60
+Average:          br0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:        veth5 1023596.20      0.00 493805.20      0.00      0.00      0.00      0.00     40.45
+Average:        veth7      0.00 1023597.40      0.00 511798.70      0.00      0.00      0.00     41.93
+[jbrouer@broadwell ~]$ sar -n DEV 2 5
+#+end_example
+
+cnet-graph:
+#+begin_example
+CNDP-cli:/> graph stats 5
++------------------+---------------+---------------+--------+--------+----------+------------+
+|Node              |          Calls|        Objects| Realloc|  Objs/c|   KObjs/c|    Cycles/c|
++------------------+---------------+---------------+--------+--------+----------+------------+
+|ip4_input         |        2558984|      208109703|       2|    59.0|    1007.5|      2942.0|
+|ip4_output        |              0|              0|       1|     0.0|       0.0|         0.0|
+|ip4_forward       |        2558985|      208109764|       1|    59.0|    1007.5|      6300.0|
+|ip4_proto         |              0|              0|       1|     0.0|       0.0|         0.0|
+|udp_input         |              0|              0|       1|     0.0|       0.0|         0.0|
+|udp_output        |              0|              0|       1|     0.0|       0.0|         0.0|
+|pkt_drop          |              0|              0|       1|     0.0|       0.0|         0.0|
+|chnl_callback     |              0|              0|       1|     0.0|       0.0|         0.0|
+|chnl_recv         |              0|              0|       1|     0.0|       0.0|         0.0|
+|kernel_recv       |       79875292|              0|       2|     0.0|       0.0|      2181.0|
+|eth_rx-0          |       79875292|              0|       2|     0.0|       0.0|        48.0|
+|eth_rx-1          |       79875292|      208109938|       2|    59.0|    1007.5|     10629.0|
+|arp_request       |              0|              0|       1|     0.0|       0.0|         0.0|
+|eth_tx-0          |        2558988|      208109938|       2|    59.0|    1007.5|    191278.0|
+|eth_tx-1          |              0|              0|       1|     0.0|       0.0|         0.0|
+|punt_kernel       |              0|              0|       1|     0.0|       0.0|         0.0|
+|ptype             |        2558990|      208110044|       1|    59.0|    1007.6|       565.0|
+|gtpu_input        |              0|              0|       1|     0.0|       0.0|         0.0|
++------------------+---------------+---------------+--------+--------+----------+------------+
+#+end_example
+
+TXGen:
+#+begin_example
+\ Port Count 2     <Main Page>  Copyright (c) 2020-2023 Intel Corporation, Powered by CNDP
+  Flags:Port        : 
+Link State          :         <UP-10000-FD>         <UP-10000-FD>      ---Total Rate---
+Pkts/s Max/Rx       :                   0/0       1049875/1008896       1049875/1008896
+       Max/Tx       :       1049856/1008896                   0/0       1049856/1008896
+MBits/s Rx/Tx       :                0/4326                4293/0             4293/4326
+Broadcast           :                     0                     0
+Multicast           :                     0                     0
+Sizes 64            :                     0                     0
+      65-127        :                     0                     0
+      128-255       :                     0                     0
+      256-511       :                     0                     0
+      512-1023      :                     0             259504871
+      1024-1518     :                     0                     0
+Runts/Jumbos        :                   0/0                   0/0
+ARP/ICMP Pkts       :                   0/0                   0/0
+Errors Rx/Tx        :                   0/0                   0/0
+Dropped Tx          :                     0                     0
+Invalid Rx/Tx       :                   0/0                   0/0
+Total Rx Pkts       :                     0             259448997
+      Tx Pkts       :             260388992                     0
+      Rx MBs        :                     0               1104214
+      Tx MBs        :               1116547                     0
+Pattern Type        :               abcd...               abcd...
+Tx Count/% Rate     :         Forever /100%         Forever /100%
+Pkt Size/Tx Burst   :            512 /   64             64 /   64
+TTL/Port Src/Dest   :        64/ 1234/ 5678        64/ 1234/ 5678
+Pkt Type            :            IPv4 / UDP            IPv4 / UDP
+IP  Destination     :        192.168.100.20        192.168.200.11
+    Source          :        192.168.200.10        192.168.100.21
+MAC Destination     :     1a:bf:be:c1:a9:ea     1e:e4:9e:d4:07:6f
+    Source          :     1e:b3:14:dc:21:cf     1e:e4:9e:d4:07:6f
+
+-- TX-Gen 23.06.0  Powered by CNDP  PID:23 -----------------------------------
+#+end_example
+
+** benchmark02: perf report
+
+Notice how "memcpy_orig" caller =skb_copy_bits= disappeared (that was initiated
+by =veth_convert_skb_to_xdp_buff=) compared to [[#benchmark01-perf-report][above perf-report]].
+
+#+begin_example
+Samples: 40K of event 'cycles:P', Event count (approx.): 37369159319
+  Overhead  Command     Shared Object       Symbol
+-   10.37%  graph:0     [kernel.vmlinux]    [k] memcpy_orig
+  - 10.37% memcpy_orig
+      - 6.56% skb_store_bits
+           xsk_build_skb
+           __xsk_generic_xmit
+           __xsk_sendmsg.constprop.0.isra.0
+           xsk_sendmsg
+           sock_sendmsg
+           [...]
+      - 3.81% __xsk_rcv
+           __xsk_map_redirect
+           xdp_do_redirect
+           veth_xdp_rcv_one
+           veth_xdp_rcv.constprop.0
+           veth_poll
+           __napi_poll
+           net_rx_action
+           __do_softirq
+           do_softirq
+           __local_bh_enable_ip
+           __dev_direct_xmit
+           __xsk_generic_xmit
+           __xsk_sendmsg.constprop.0.isra.0
+           xsk_sendmsg
+           sock_sendmsg
+           [...]
++    3.61%  graph:0     [veth]              [k] veth_xdp_rcv.constprop.0
++    3.05%  graph:0     [kernel.vmlinux]    [k] net_rx_action
++    2.73%  graph:0     [kernel.vmlinux]    [k] page_frag_free
++    2.57%  graph:0     [veth]              [k] veth_xdp_xmit
++    2.53%  graph:0     [kernel.vmlinux]    [k] __napi_schedule
++    2.43%  graph:0     [kernel.vmlinux]    [k] sock_def_readable
++    2.39%  graph:0     [veth]              [k] veth_convert_skb_to_xdp_buff
++    2.17%  graph:0     [kernel.vmlinux]    [k] napi_complete_done
++    1.96%  graph:0     [veth]              [k] veth_poll
++    1.79%  graph:0     [kernel.vmlinux]    [k] __xsk_rcv_zc
++    1.70%  graph:0     [veth]              [k] veth_xmit
++    1.64%  graph:0     libcne_stack.so     [.] ip4_forward_node_process
++    1.54%  graph:0     [veth]              [k] veth_xdp_rcv_skb
++    1.49%  graph:0     [kernel.vmlinux]    [k] xdp_do_redirect
++    1.46%  graph:0     [kernel.vmlinux]    [k] xp_alloc
++    1.44%  graph:0     [veth]              [k] veth_xdp_rcv_one
++    1.43%  graph:0     [kernel.vmlinux]    [k] __xsk_generic_xmit
++    1.32%  graph:0     [kernel.vmlinux]    [k] sock_wfree
++    1.20%  graph:0     [kernel.vmlinux]    [k] __do_softirq
++    1.17%  graph:0     [kernel.vmlinux]    [k] napi_schedule_prep
++    1.07%  graph:0     [kernel.vmlinux]    [k] kmem_cache_alloc_node
++    1.06%  graph:0     [kernel.vmlinux]    [k] xsk_build_skb
++    1.03%  graph:0     [kernel.vmlinux]    [k] __dev_direct_xmit
++    0.98%  graph:0     [kernel.vmlinux]    [k] __kmem_cache_alloc_node
+#+end_example
+
