@@ -18,6 +18,17 @@ devices), the problem uccurs, because:
 
 Also described in upstream [[https://lore.kernel.org/all/68f73855-f206-80a2-a546-3d40864ee176@kernel.org/][email]].
 
+
+* Table of contents                                                     :toc:
+- [[#issue-summary][Issue summary]]
+- [[#code-notes][Code notes]]
+  - [[#both-headroom-and-mem-type][Both headroom and mem-type]]
+  - [[#navigation-hints][Navigation hints]]
+  - [[#follow-sock_alloc_send_skb][Follow: sock_alloc_send_skb]]
+  - [[#complications-due-to-skb_small_head_headroom][Complications due to SKB_SMALL_HEAD_HEADROOM]]
+  - [[#bpf_prog_run_generic_xdp][bpf_prog_run_generic_xdp]]
+  - [[#potential-issue-in-veth-skb-redirect][Potential issue in veth "skb" redirect]]
+
 * Code notes
 
 ** Both headroom and mem-type
@@ -150,8 +161,6 @@ but bypass qdisc layer by e.g. calling =netdev_start_xmit= directly.
 E.g. do_xdp_generic() calls:
  - XDP_REDIRECT: xdp_do_generic_redirect
  - XDP_TX: generic_xdp_tx
-
-
 
 ** Potential issue in veth "skb" redirect
 
