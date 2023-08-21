@@ -167,3 +167,53 @@ E.g. do_xdp_generic() calls:
 The =veth_xdp_rcv_skb= code path calls =xdp_do_redirect=, which is somewhat
 problematic, because is what cause the inability to handle SKBs with
 (skb->head_frag=0).
+
+*** Trick __skb2xdp_steal_data
+
+Liang Chen [[https://lore.kernel.org/all/20230816123029.20339-2-liangchen.linux@gmail.com/][patchset V3]] implement stealing data ("skb->head") from SKBs, see
+[[https://lore.kernel.org/all/20230816123029.20339-2-liangchen.linux@gmail.com/#Z31drivers:net:veth.c][__skb2xdp_steal_data]].
+
+Using =kfree_skb_partial()= to steal in those cases where it is possible and
+followup using [[https://lore.kernel.org/all/20230816123029.20339-3-liangchen.linux@gmail.com/#iZ31drivers:net:veth.c][napi_skb_free_stolen_head]] as further optimization.
+
+Add code diff:
+#+begin_src C
+diff --git a/drivers/net/veth.c b/drivers/net/veth.c
+index 509e901da41d..7234eb0297dd 100644
+--- a/drivers/net/veth.c
++++ b/drivers/net/veth.c
+@@ -827,6 +830,37 @@ static int veth_convert_skb_to_xdp_buff(struct veth_rq *rq,
+ 	return -ENOMEM;
+ }
+ 
++static void __skb2xdp_steal_data(struct sk_buff *skb,
++				 struct xdp_buff *xdp,
++				 struct veth_rq *rq,
++				 bool local_pp_alloc)
++{
++	if (local_pp_alloc) {
++		/* This is the most common case where the skb was reallocated locally in
++		 * veth_convert_skb_to_xdp_buff, and it's safe to use the xdp_mem_pp model.
++		 */
++		xdp->rxq->mem = rq->xdp_mem_pp;
++		kfree_skb_partial(skb, true);
++	} else if (!skb->pp_recycle) {
++		/* We can safely use kfree_skb_partial here because this cannot be an fclone
++		 * skb. Fclone skbs are allocated via __alloc_skb, with their head buffer
++		 * allocated by kmalloc_reserve (i.e. skb->head_frag = 0), satisfying the
++		 * skb_head_is_locked condition in veth_convert_skb_to_xdp_buff, and are
++		 * thus reallocated.
++		 */
++		xdp->rxq->mem = rq->xdp_mem;
++		kfree_skb_partial(skb, true);
++	} else {
++		/* skbs in this case may include page_pool pages from peer. We cannot use
++		 * rq->xdp_mem_pp as for the local_pp_alloc case, because they might already
++		 * be associated with different xdp_mem_info.
++		 */
++		veth_xdp_get(xdp);
++		consume_skb(skb);
++		xdp->rxq->mem = rq->xdp_mem;
++	}
++}
+#+end_src
