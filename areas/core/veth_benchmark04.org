@@ -44,6 +44,12 @@ static inline bool skb_head_is_locked(const struct sk_buff *skb)
 }
 #+end_src
 
+When is 'skb->head_frag' being setup?
+
+build_skb_around() will set =skb->head_frag=1=.
+ - But notice that =__build_skb_around(skb, data, frag_size)=  does not.
+ - Thus, direct users of  =__build_skb_around)= have =skb->head_frag=0=.
+
 ** Navigation hints
 
 Notes when navigating kernel code:
@@ -58,6 +64,97 @@ claims is this socket mem accounting isn't needed as AF_XDP is already bounded
 via its ring-queues and preallocated memory (done at setup time).
 
 
+Call path for: sock_alloc_send_skb
+#+begin_src C
+sock_alloc_send_skb()
+ - sock_alloc_send_skb(sk, size, ...)
+   - sock_alloc_send_pskb(sk, size, data_len=0, noblock, errcode, order=0)
+     - skb = alloc_skb_with_frags(header_len=size, data_len=0, max_page_order=0, errcode, sk->sk_allocation);
+        - socket mem check (sk_wmem_alloc_get(sk) < READ_ONCE(sk->sk_sndbuf))
+        - alloc_skb_with_frags(header_len, data_len=0, max_page_order=0, errcode, sk->sk_allocation);
+          - skb = alloc_skb(header_len, gfp_mask=sk->sk_allocation);
+            - __alloc_skb(size, priority=gfp_mask, 0, NUMA_NO_NODE)
+              - skb = kmem_cache_alloc_node
+              - Finally allocate data area:
+                - Calls kmalloc_reserve(&size, gfp_mask, node, &pfmemalloc);
+                - (Notice &size increase with SKB-shared-info room)
+              - __build_skb_around(skb, data, size);
+#+end_src
+
+Because "__build_skb_around()" is called and not "build_skb_around()", then
+=skb->head_frag= becomes zero.
+
+** Complications due to SKB_SMALL_HEAD_HEADROOM
+
+In =kmalloc_reserve= packet sizes under (and equal) to 256 bytes (check include
+SKB-shared-info 320 bytes + 256 = 576), get allocated *data* obj from a
+kmem_cache named "skb_small_head_cache".
+
+Above this size, the normal kmalloc code is used (which needs to be paired with
+=kfree()=).
+
+The SKB end_offset (=skb_end_offset(skb)=) are used to identify this case, e.g
+in =skb_kfree_head=:
+#+begin_src C
+static void skb_kfree_head(void *head, unsigned int end_offset)
+{
+	if (end_offset == SKB_SMALL_HEAD_HEADROOM)
+		kmem_cache_free(skb_small_head_cache, head);
+	else
+		kfree(head);
+}
+#+end_src
+
+#+begin_src C
+#ifdef NET_SKBUFF_DATA_USES_OFFSET
+static inline unsigned int skb_end_offset(const struct sk_buff *skb)
+{
+	return skb->end;
+}
+#else
+static inline unsigned int skb_end_offset(const struct sk_buff *skb)
+{
+	return skb->end - skb->head;
+}
+#endif
+#+end_src
+
+I considered extending XDP =enum xdp_mem_type= with a type that can call
+"kfree()", but this "end_offset" trick makes this difficult.
+
+This implicitly also makes is harder to use an "skb_small_head_cache" frame for
+XDP generic (or veth-skb) code path, because XDP BPF-prog can potentially adjust
+tailroom (and headroom).
+
+** bpf_prog_run_generic_xdp
+
+The XDP-SKB-generic code paths, e.g:
+ - netif_receive_generic_xdp
+ - bpf_prog_run_generic_xdp
+ - do_xdp_generic
+   - xdp_do_generic_redirect
+   - generic_xdp_tx
+
+Do *NOT* have the limitation on (=!skb->head_frag=) working with kmalloc-frames,
+as it doesn't use =skb_head_is_locked()=, but only =skb_cloned()= check (part of
+that call). Is this a bug?
+
+Trying to follow code, and I cannot see "skb->end" or "skb->head" getting
+adjusted in =bpf_prog_run_generic_xdp=. Thus, it looks like XDP-SKB-generic code
+path can handle this.
+
+This is because "XDP_REDIRECT" + "XDP_TX" action in XDP-SKB-generic code doesn't
+call the "XDP-native" =xdp_do_redirect=. Instead it uses SKB transmit functions,
+but bypass qdisc layer by e.g. calling =netdev_start_xmit= directly.
+
+E.g. do_xdp_generic() calls:
+ - XDP_REDIRECT: xdp_do_generic_redirect
+ - XDP_TX: generic_xdp_tx
 
 
 
+** Potential issue in veth "skb" redirect
+
+The =veth_xdp_rcv_skb= code path calls =xdp_do_redirect=, which is somewhat
+problematic, because is what cause the inability to handle SKBs with
+(skb->head_frag=0).
