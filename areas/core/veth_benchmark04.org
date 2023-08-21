@@ -286,7 +286,7 @@ check in =veth_convert_skb_to_xdp_buff()=, plus =xsk_build_skb= alloc enough
 headroom.
 
 Quick test of the veth-benchmark now shows: 1,045,248 pps (1045248)
- - Before: 828,730 pps (828730 see file:veth_benchmark03.org)
+ - Before: 828,730 pps (828730 see [[file:veth_benchmark03.org]])
  - Improvement: approx 26% faster
    - +216518 pps
    - -250 nanosec
