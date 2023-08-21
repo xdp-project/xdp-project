@@ -31,6 +31,8 @@ Also described in upstream [[https://lore.kernel.org/all/68f73855-f206-80a2-a546
   - [[#trick-__skb2xdp_steal_data][Trick __skb2xdp_steal_data]]
   - [[#uncertain-approach][Uncertain approach]]
 - [[#wrong-veth-xdp-approach-for-skbs][Wrong veth XDP approach for SKBs?]]
+- [[#identified-cleanups][Identified cleanups]]
+  - [[#veth-bpf_xdp_adjust_head-check][veth: bpf_xdp_adjust_head check]]
 
 * Code notes
 
@@ -276,4 +278,61 @@ The root-cause of this issue is that =veth_xdp_rcv_skb= code path (that handle
 SKBs) is calling XDP-native function "xdp_do_redirect()". I question, why isn't
 it using "xdp_do_generic_redirect()"?
 
+* Identified cleanups
+
+** veth: bpf_xdp_adjust_head check
+
+#+begin_quote
+veth: use same bpf_xdp_adjust_head check as generic-XDP
+
+Both veth_xdp_rcv_skb() and bpf_prog_run_generic_xdp() checks if XDP bpf_prog
+adjusted packet head via BPF-helper bpf_xdp_adjust_head(). The order of
+subtracting orig_data and xdp->data are opposite between the two functions. This
+is confusing when following the code.
+
+This patch choose to follow generic-XDP and adjust veth_xdp_rcv_skb().
+
+Fixes: 718a18a0c8a6 ("veth: Rework veth_xdp_rcv_skb in order to accept non-linear skb")
+#+end_quote
+
+The end-goal is see if it is possible to pull these SKB adjustments into a
+helper function.
+
+One problem is that 065af3554705 ("net: fix bpf_xdp_adjust_head regression for
+generic-XDP") added a skb_reset_network_header(skb) call, which I don't know if
+it is applicable to veth.
+
+Work in-progress diff:
+#+begin_src diff
+diff --git a/drivers/net/veth.c b/drivers/net/veth.c
+index 953f6d8f8db0..9533e51b2ebf 100644
+--- a/drivers/net/veth.c
++++ b/drivers/net/veth.c
+@@ -897,11 +897,19 @@ static struct sk_buff *veth_xdp_rcv_skb(struct veth_rq *rq,
+        rcu_read_unlock();
+ 
+        /* check if bpf_xdp_adjust_head was used */
+-       off = orig_data - xdp->data;
+-       if (off > 0)
+-               __skb_push(skb, off);
+-       else if (off < 0)
+-               __skb_pull(skb, -off);
++       off = xdp->data - orig_data;
++       if (off) {
++               if (off > 0)
++                       __skb_pull(skb, off);
++               else if (off < 0)
++                       __skb_push(skb, -off);
++
++               skb->mac_header += off;
++               // 065af3554705 ("net: fix bpf_xdp_adjust_head regression for generic-XDP")
++               // adds:
++               // skb_reset_network_header(skb);
++               // is this needed for veth ?!?!
++       }
+ 
+        skb_reset_mac_header(skb);
+#+end_src
+
+The next problem is "skb_reset_mac_header" that undo =skb->mac_header+=off;=.
 
