@@ -18,5 +18,46 @@ devices), the problem uccurs, because:
 
 Also described in upstream [[https://lore.kernel.org/all/68f73855-f206-80a2-a546-3d40864ee176@kernel.org/][email]].
 
+* Code notes
+
+** Both headroom and mem-type
+
+The insufficient headroom is trivial to fix, but the incompatible memory type is
+more tricky.
+
+It is the check =skb_head_is_locked()= in =veth_convert_skb_to_xdp_buff=.
+Let include the code here:
+
+#+begin_src C
+/**
+ * skb_head_is_locked - Determine if the skb->head is locked down
+ * @skb: skb to check
+ *
+ * The head on skbs build around a head frag can be removed if they are
+ * not cloned.  This function returns true if the skb head is locked down
+ * due to either being allocated via kmalloc, or by being a clone with
+ * multiple references to the head.
+ */
+static inline bool skb_head_is_locked(const struct sk_buff *skb)
+{
+	return !skb->head_frag || skb_cloned(skb);
+}
+#+end_src
+
+** Navigation hints
+
+Notes when navigating kernel code:
+ - The call =kmalloc_reserve= is increasing data-size for SKB-shared-info
+   See macro =SKB_HEAD_ALIGN()=.
+
+** Follow: sock_alloc_send_skb
+
+The function =sock_alloc_send_skb()= call also does socket memory accounting,
+which is something that we also want to avoid due to performance overhead. The
+claims is this socket mem accounting isn't needed as AF_XDP is already bounded
+via its ring-queues and preallocated memory (done at setup time).
+
+
+
 
 
