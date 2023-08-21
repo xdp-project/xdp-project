@@ -1,0 +1,22 @@
+#+Title: Using veth benchmark (04)
+
+This document contains notes on how to solve the performance problem discovered
+in file:veth_benchmark03.org .
+
+* Issue summary
+
+AF_XDP TX combined with veth results in an unfortunate reallocation of both SKB
+and data plus a memcopy.
+
+When AF_XDP (non-zc) TX gets combined with veth (or other layered software
+devices), the problem uccurs, because:
+
+1) the SKB that gets allocated by =xsk_build_skb()= doesn't have enough headroom
+   to satisfy XDP requirement =XDP_PACKET_HEADROOM=.
+2) and, the backing memory type from =sock_alloc_send_skb()= is not compatible
+   with generic/veth XDP.
+
+Also described in upstream [[https://lore.kernel.org/all/68f73855-f206-80a2-a546-3d40864ee176@kernel.org/][email]].
+
+
+
