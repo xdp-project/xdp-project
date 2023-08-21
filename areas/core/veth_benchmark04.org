@@ -217,3 +217,48 @@ index 509e901da41d..7234eb0297dd 100644
 +	}
 +}
 #+end_src
+
+*** Uncertain approach
+
+Idea: Could we extend =xdp_do_redirect= to also handle the kmalloc (and
+"skb_small_head_cache") frames.
+
+Started coding support in =__xdp_return()= code:
+
+#+begin_src diff
+diff --git a/include/net/xdp.h b/include/net/xdp.h
+index de08c8e0d134..14f50bfe0bb6 100644
+--- a/include/net/xdp.h
++++ b/include/net/xdp.h
+@@ -43,6 +43,8 @@ enum xdp_mem_type {
+        MEM_TYPE_PAGE_ORDER0,     /* Orig XDP full page model */
+        MEM_TYPE_PAGE_POOL,
+        MEM_TYPE_XSK_BUFF_POOL,
++       MEM_TYPE_KMALLOC_SKB,
++       MEM_TYPE_SKB_SMALL_HEAD_CACHE,
+        MEM_TYPE_MAX,
+ };
+ 
+diff --git a/net/core/xdp.c b/net/core/xdp.c
+index a70670fe9a2d..8d7e7ebd426f 100644
+--- a/net/core/xdp.c
++++ b/net/core/xdp.c
+@@ -400,6 +400,16 @@ void __xdp_return(void *data, struct xdp_mem_info *mem, bool napi_direct,
+                /* NB! Only valid from an xdp_buff! */
+                xsk_buff_free(xdp);
+                break;
++       case MEM_TYPE_KMALLOC_SKB:
++               /* SKB data stolen that used kmalloc for skb->head */
++               void *head = xdp->data_hard_start;
++               kfree(head);
++               break;
++       case MEM_TYPE_SKB_SMALL_HEAD_CACHE:
++               /* SKB data stolen used skb_small_head_cache for skb->head */
++               void *head = xdp->data_hard_start;
++               kmem_cache_free(skb_small_head_cache, head);
++               break;
+        default:
+                /* Not possible, checked in xdp_rxq_info_reg_mem_model() */
+                WARN(1, "Incorrect XDP memory type (%d) usage", mem->type);
+#+end_src
+
