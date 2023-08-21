@@ -31,6 +31,7 @@ Also described in upstream [[https://lore.kernel.org/all/68f73855-f206-80a2-a546
   - [[#trick-__skb2xdp_steal_data][Trick __skb2xdp_steal_data]]
   - [[#uncertain-approach][Uncertain approach]]
 - [[#wrong-veth-xdp-approach-for-skbs][Wrong veth XDP approach for SKBs?]]
+  - [[#implemented-use-generic-xdp-redirect][Implemented use generic-XDP redirect]]
 - [[#identified-cleanups][Identified cleanups]]
   - [[#veth-bpf_xdp_adjust_head-check][veth: bpf_xdp_adjust_head check]]
 
@@ -277,6 +278,18 @@ Deep into this rabbit hole, I start to question above approach.
 The root-cause of this issue is that =veth_xdp_rcv_skb= code path (that handle
 SKBs) is calling XDP-native function "xdp_do_redirect()". I question, why isn't
 it using "xdp_do_generic_redirect()"?
+
+** Implemented use generic-XDP redirect
+
+Implemented using "xdp_do_generic_redirect()" and lifted =skb_head_is_locked=
+check in =veth_convert_skb_to_xdp_buff()=, plus =xsk_build_skb= alloc enough
+headroom.
+
+Quick test of the veth-benchmark now shows: 1,045,248 pps (1045248)
+ - Before: 828,730 pps (828730 see file:veth_benchmark03.org)
+ - Improvement: approx 26% faster
+   - +216518 pps
+   - -250 nanosec
 
 * Identified cleanups
 
