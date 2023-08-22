@@ -34,6 +34,8 @@ Also described in upstream [[https://lore.kernel.org/all/68f73855-f206-80a2-a546
   - [[#implemented-use-generic-xdp-redirect][Implemented use generic-XDP redirect]]
 - [[#identified-cleanups][Identified cleanups]]
   - [[#veth-bpf_xdp_adjust_head-check][veth: bpf_xdp_adjust_head check]]
+- [[#prepare-upstream-patchset][Prepare upstream patchset]]
+  - [[#cover-letter][cover letter]]
 
 * Code notes
 
@@ -349,3 +351,18 @@ index 953f6d8f8db0..9533e51b2ebf 100644
 
 The next problem is "skb_reset_mac_header" that undo =skb->mac_header+=off;=.
 
+
+* Prepare upstream patchset
+
+** cover letter
+
+#+begin_quote
+veth: reduce reallocations of SKBs when XDP bpf-prog is loaded
+
+Loading an XDP bpf-prog on veth device driver results in a significant
+performance degradation due to veth_convert_skb_to_xdp_buff() in most cases
+fully reallocates an SKB and copy data over.
+
+This patchset reduce the cases that cause reallocation.
+
+#+end_quote
