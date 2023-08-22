@@ -420,12 +420,13 @@ People that have shown interest earlier:
  - huangjie.albert@bytedance.com
 
 #+begin_example
-stg mail
-
 stg mail --version "net-next RFC v1" --edit-cover --cc meup  \
   --to netdev --cc pabeni@redhat.com --cc kuba@kernel.org --to edumazet@google.com \
   --cc davem@davemloft.net \
   --cc lorenzo@kernel.org --cc ilias \
-  --cc mtahhan@redhat.com --cc bytedance1 --c lin --cc chen \
+  --cc mtahhan@redhat.com --cc bytedance1 --cc lin --cc chen \
  veth-bpf_xdp_adjust_head-check..veth_set_rx_headroom
 #+end_example
+
+Message-ID: <169272709850.1975370.16698220879817216294.stgit@firesoul>
+ - [[https://lore.kernel.org/all/169272709850.1975370.16698220879817216294.stgit@firesoul][link]]
