@@ -37,6 +37,7 @@ Also described in upstream [[https://lore.kernel.org/all/68f73855-f206-80a2-a546
   - [[#veth-bpf_xdp_adjust_head-check][veth: bpf_xdp_adjust_head check]]
 - [[#prepare-upstream-patchset][Prepare upstream patchset]]
   - [[#cover-letter][cover letter]]
+  - [[#rfc-v1][RFC v1]]
 
 * Code notes
 
@@ -380,9 +381,31 @@ The next problem is "skb_reset_mac_header" that undo =skb->mac_header+=off;=.
 veth: reduce reallocations of SKBs when XDP bpf-prog is loaded
 
 Loading an XDP bpf-prog on veth device driver results in a significant
-performance degradation due to veth_convert_skb_to_xdp_buff() in most cases
-fully reallocates an SKB and copy data over.
+performance degradation (for normal unrelated traffic) due to
+veth_convert_skb_to_xdp_buff() in most cases fully reallocates an SKB and copy
+data over, even when XDP prog does nothing (e.g. XDP_PASS).
 
 This patchset reduce the cases that cause reallocation.
+After patchset UDP and AF_XDP sending avoids reallocations.
 
+Future work will investigate TCP.
 #+end_quote
+
+** RFC v1
+
+People that have shown interest earlier:
+ - Maryam Tahhan <mtahhan@redhat.com>
+ - Yunsheng Lin <linyunsheng@huawei.com>
+ - Liang Chen <liangchen.linux@gmail.com>
+ - huangjie.albert@bytedance.com
+
+#+begin_example
+stg mail
+
+stg mail --version "net-next RFC v1" --edit-cover --cc meup  \
+  --to netdev --cc pabeni@redhat.com --cc kuba@kernel.org --to edumazet@google.com \
+  --cc davem@davemloft.net \
+  --cc lorenzo@kernel.org --cc ilias \
+  --cc mtahhan@redhat.com --cc bytedance1 --c lin --cc chen \
+ veth-bpf_xdp_adjust_head-check..veth_set_rx_headroom
+#+end_example
