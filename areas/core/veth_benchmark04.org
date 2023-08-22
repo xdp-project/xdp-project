@@ -33,6 +33,7 @@ Also described in upstream [[https://lore.kernel.org/all/68f73855-f206-80a2-a546
 - [[#wrong-veth-xdp-approach-for-skbs][Wrong veth XDP approach for SKBs?]]
   - [[#implemented-use-generic-xdp-redirect][Implemented use generic-XDP redirect]]
   - [[#adjust-needed_headroom-for-veth][Adjust needed_headroom for veth]]
+  - [[#patch-desc-veth-use-generic-xdp-functions-when-dealing-with-skbs][patch desc: veth: use generic-XDP functions when dealing with SKBs]]
 - [[#identified-cleanups][Identified cleanups]]
   - [[#veth-bpf_xdp_adjust_head-check][veth: bpf_xdp_adjust_head check]]
 - [[#prepare-upstream-patchset][Prepare upstream patchset]]
@@ -311,6 +312,25 @@ adjust headroom according to dev->needed_headroom. Other parts of the kernel
 also take this into account (see macro LL_RESERVED_SPACE).
 
 This solves the XDP_PACKET_HEADROOM check in debug-veth_convert_skb_to_xdp_buff().
+#+end_quote
+
+** patch desc: veth: use generic-XDP functions when dealing with SKBs
+
+#+begin_quote
+veth: use generic-XDP functions when dealing with SKBs
+
+The root-cause the realloc issue is that veth_xdp_rcv_skb() code path (that
+handles SKBs like generic-XDP) is calling a native-XDP function
+xdp_do_redirect(), instead of simply using xdp_do_generic_redirect() that can
+handle SKBs.
+
+The existing code tries to steal the packet-data from the SKB (and frees the SKB
+itself). This cause issues as SKBs can have different memory models that are
+incompatible with native-XDP call xdp_do_redirect(). For this reason the checks
+in veth_convert_skb_to_xdp_buff() becomes more strict. This in turn makes this a
+bad approach. Simply leveraging generic-XDP helpers e.g. generic_xdp_tx() and
+xdp_do_generic_redirect() as this resolves the issue given netstack can handle
+these different SKB memory models.
 #+end_quote
 
 
