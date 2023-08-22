@@ -32,6 +32,7 @@ Also described in upstream [[https://lore.kernel.org/all/68f73855-f206-80a2-a546
   - [[#uncertain-approach][Uncertain approach]]
 - [[#wrong-veth-xdp-approach-for-skbs][Wrong veth XDP approach for SKBs?]]
   - [[#implemented-use-generic-xdp-redirect][Implemented use generic-XDP redirect]]
+  - [[#adjust-needed_headroom-for-veth][Adjust needed_headroom for veth]]
 - [[#identified-cleanups][Identified cleanups]]
   - [[#veth-bpf_xdp_adjust_head-check][veth: bpf_xdp_adjust_head check]]
 - [[#prepare-upstream-patchset][Prepare upstream patchset]]
@@ -292,6 +293,25 @@ Quick test of the veth-benchmark now shows: 1,045,248 pps (1045248)
  - Improvement: approx 26% faster
    - +216518 pps
    - -250 nanosec
+
+** Adjust needed_headroom for veth
+
+It is a better solution to adjust dev->needed_headroom for veth (+peer) device,
+than just hacking xsk_build_skb().
+
+#+begin_quote
+veth: when XDP is loaded increase needed_headroom
+
+When sending (sendmsg) SKBs out an veth device, the SKB headroom is too small,
+to satisfy XDP on the receiving veth peer device.
+
+For AF_XDP (normal non-zero-copy) it is worth noticing that xsk_build_skb()
+adjust headroom according to dev->needed_headroom. Other parts of the kernel
+also take this into account (see macro LL_RESERVED_SPACE).
+
+This solves the XDP_PACKET_HEADROOM check in debug-veth_convert_skb_to_xdp_buff().
+#+end_quote
+
 
 * Identified cleanups
 
