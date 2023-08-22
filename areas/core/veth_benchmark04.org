@@ -1,0 +1,432 @@
+#+Title: Using veth benchmark (04)
+
+This document contains notes on how to solve the performance problem discovered
+in file:veth_benchmark03.org .
+
+* Issue summary
+
+AF_XDP TX combined with veth results in an unfortunate reallocation of both SKB
+and data plus a memcopy.
+
+When AF_XDP (non-zc) TX gets combined with veth (or other layered software
+devices), the problem uccurs, because:
+
+1) the SKB that gets allocated by =xsk_build_skb()= doesn't have enough headroom
+   to satisfy XDP requirement =XDP_PACKET_HEADROOM=.
+2) and, the backing memory type from =sock_alloc_send_skb()= is not compatible
+   with generic/veth XDP.
+
+Also described in upstream [[https://lore.kernel.org/all/68f73855-f206-80a2-a546-3d40864ee176@kernel.org/][email]].
+
+
+* Table of contents                                                     :toc:
+- [[#issue-summary][Issue summary]]
+- [[#code-notes][Code notes]]
+  - [[#both-headroom-and-mem-type][Both headroom and mem-type]]
+  - [[#navigation-hints][Navigation hints]]
+  - [[#follow-sock_alloc_send_skb][Follow: sock_alloc_send_skb]]
+  - [[#complications-due-to-skb_small_head_headroom][Complications due to SKB_SMALL_HEAD_HEADROOM]]
+  - [[#bpf_prog_run_generic_xdp][bpf_prog_run_generic_xdp]]
+- [[#potential-issue-in-veth-skb-redirect][Potential issue in veth "skb" redirect]]
+  - [[#trick-__skb2xdp_steal_data][Trick __skb2xdp_steal_data]]
+  - [[#uncertain-approach][Uncertain approach]]
+- [[#wrong-veth-xdp-approach-for-skbs][Wrong veth XDP approach for SKBs?]]
+  - [[#implemented-use-generic-xdp-redirect][Implemented use generic-XDP redirect]]
+  - [[#adjust-needed_headroom-for-veth][Adjust needed_headroom for veth]]
+  - [[#patch-desc-veth-use-generic-xdp-functions-when-dealing-with-skbs][patch desc: veth: use generic-XDP functions when dealing with SKBs]]
+- [[#identified-cleanups][Identified cleanups]]
+  - [[#veth-bpf_xdp_adjust_head-check][veth: bpf_xdp_adjust_head check]]
+- [[#prepare-upstream-patchset][Prepare upstream patchset]]
+  - [[#cover-letter][cover letter]]
+  - [[#rfc-v1][RFC v1]]
+
+* Code notes
+
+** Both headroom and mem-type
+
+The insufficient headroom is trivial to fix, but the incompatible memory type is
+more tricky.
+
+It is the check =skb_head_is_locked()= in =veth_convert_skb_to_xdp_buff=.
+Let include the code here:
+
+#+begin_src C
+/**
+ * skb_head_is_locked - Determine if the skb->head is locked down
+ * @skb: skb to check
+ *
+ * The head on skbs build around a head frag can be removed if they are
+ * not cloned.  This function returns true if the skb head is locked down
+ * due to either being allocated via kmalloc, or by being a clone with
+ * multiple references to the head.
+ */
+static inline bool skb_head_is_locked(const struct sk_buff *skb)
+{
+	return !skb->head_frag || skb_cloned(skb);
+}
+#+end_src
+
+When is 'skb->head_frag' being setup?
+
+build_skb_around() will set =skb->head_frag=1=.
+ - But notice that =__build_skb_around(skb, data, frag_size)=  does not.
+ - Thus, direct users of  =__build_skb_around)= have =skb->head_frag=0=.
+
+** Navigation hints
+
+Notes when navigating kernel code:
+ - The call =kmalloc_reserve= is increasing data-size for SKB-shared-info
+   See macro =SKB_HEAD_ALIGN()=.
+
+** Follow: sock_alloc_send_skb
+
+The function =sock_alloc_send_skb()= call also does socket memory accounting,
+which is something that we also want to avoid due to performance overhead. The
+claims is this socket mem accounting isn't needed as AF_XDP is already bounded
+via its ring-queues and preallocated memory (done at setup time).
+
+
+Call path for: sock_alloc_send_skb
+#+begin_src C
+sock_alloc_send_skb()
+ - sock_alloc_send_skb(sk, size, ...)
+   - sock_alloc_send_pskb(sk, size, data_len=0, noblock, errcode, order=0)
+     - skb = alloc_skb_with_frags(header_len=size, data_len=0, max_page_order=0, errcode, sk->sk_allocation);
+        - socket mem check (sk_wmem_alloc_get(sk) < READ_ONCE(sk->sk_sndbuf))
+        - alloc_skb_with_frags(header_len, data_len=0, max_page_order=0, errcode, sk->sk_allocation);
+          - skb = alloc_skb(header_len, gfp_mask=sk->sk_allocation);
+            - __alloc_skb(size, priority=gfp_mask, 0, NUMA_NO_NODE)
+              - skb = kmem_cache_alloc_node
+              - Finally allocate data area:
+                - Calls kmalloc_reserve(&size, gfp_mask, node, &pfmemalloc);
+                - (Notice &size increase with SKB-shared-info room)
+              - __build_skb_around(skb, data, size);
+#+end_src
+
+Because "__build_skb_around()" is called and not "build_skb_around()", then
+=skb->head_frag= becomes zero.
+
+** Complications due to SKB_SMALL_HEAD_HEADROOM
+
+In =kmalloc_reserve= packet sizes under (and equal) to 256 bytes (check include
+SKB-shared-info 320 bytes + 256 = 576), get allocated *data* obj from a
+kmem_cache named "skb_small_head_cache".
+
+Above this size, the normal kmalloc code is used (which needs to be paired with
+=kfree()=).
+
+The SKB end_offset (=skb_end_offset(skb)=) are used to identify this case, e.g
+in =skb_kfree_head=:
+#+begin_src C
+static void skb_kfree_head(void *head, unsigned int end_offset)
+{
+	if (end_offset == SKB_SMALL_HEAD_HEADROOM)
+		kmem_cache_free(skb_small_head_cache, head);
+	else
+		kfree(head);
+}
+#+end_src
+
+#+begin_src C
+#ifdef NET_SKBUFF_DATA_USES_OFFSET
+static inline unsigned int skb_end_offset(const struct sk_buff *skb)
+{
+	return skb->end;
+}
+#else
+static inline unsigned int skb_end_offset(const struct sk_buff *skb)
+{
+	return skb->end - skb->head;
+}
+#endif
+#+end_src
+
+I considered extending XDP =enum xdp_mem_type= with a type that can call
+"kfree()", but this "end_offset" trick makes this difficult.
+
+This implicitly also makes is harder to use an "skb_small_head_cache" frame for
+XDP generic (or veth-skb) code path, because XDP BPF-prog can potentially adjust
+tailroom (and headroom).
+
+** bpf_prog_run_generic_xdp
+
+The XDP-SKB-generic code paths, e.g:
+ - netif_receive_generic_xdp
+ - bpf_prog_run_generic_xdp
+ - do_xdp_generic
+   - xdp_do_generic_redirect
+   - generic_xdp_tx
+
+Do *NOT* have the limitation on (=!skb->head_frag=) working with kmalloc-frames,
+as it doesn't use =skb_head_is_locked()=, but only =skb_cloned()= check (part of
+that call). Is this a bug?
+
+Trying to follow code, and I cannot see "skb->end" or "skb->head" getting
+adjusted in =bpf_prog_run_generic_xdp=. Thus, it looks like XDP-SKB-generic code
+path can handle this.
+
+This is because "XDP_REDIRECT" + "XDP_TX" action in XDP-SKB-generic code doesn't
+call the "XDP-native" =xdp_do_redirect=. Instead it uses SKB transmit functions,
+but bypass qdisc layer by e.g. calling =netdev_start_xmit= directly.
+
+E.g. do_xdp_generic() calls:
+ - XDP_REDIRECT: xdp_do_generic_redirect
+ - XDP_TX: generic_xdp_tx
+
+* Potential issue in veth "skb" redirect
+
+The =veth_xdp_rcv_skb= code path calls =xdp_do_redirect=, which is somewhat
+problematic, because is what cause the inability to handle SKBs with
+(skb->head_frag=0).
+
+** Trick __skb2xdp_steal_data
+
+Liang Chen [[https://lore.kernel.org/all/20230816123029.20339-2-liangchen.linux@gmail.com/][patchset V3]] implement stealing data ("skb->head") from SKBs, see
+[[https://lore.kernel.org/all/20230816123029.20339-2-liangchen.linux@gmail.com/#Z31drivers:net:veth.c][__skb2xdp_steal_data]].
+
+Using =kfree_skb_partial()= to steal in those cases where it is possible and
+followup using [[https://lore.kernel.org/all/20230816123029.20339-3-liangchen.linux@gmail.com/#iZ31drivers:net:veth.c][napi_skb_free_stolen_head]] as further optimization.
+
+Add code diff:
+#+begin_src C
+diff --git a/drivers/net/veth.c b/drivers/net/veth.c
+index 509e901da41d..7234eb0297dd 100644
+--- a/drivers/net/veth.c
++++ b/drivers/net/veth.c
+@@ -827,6 +830,37 @@ static int veth_convert_skb_to_xdp_buff(struct veth_rq *rq,
+ 	return -ENOMEM;
+ }
+ 
++static void __skb2xdp_steal_data(struct sk_buff *skb,
++				 struct xdp_buff *xdp,
++				 struct veth_rq *rq,
++				 bool local_pp_alloc)
++{
++	if (local_pp_alloc) {
++		/* This is the most common case where the skb was reallocated locally in
++		 * veth_convert_skb_to_xdp_buff, and it's safe to use the xdp_mem_pp model.
++		 */
++		xdp->rxq->mem = rq->xdp_mem_pp;
++		kfree_skb_partial(skb, true);
++	} else if (!skb->pp_recycle) {
++		/* We can safely use kfree_skb_partial here because this cannot be an fclone
++		 * skb. Fclone skbs are allocated via __alloc_skb, with their head buffer
++		 * allocated by kmalloc_reserve (i.e. skb->head_frag = 0), satisfying the
++		 * skb_head_is_locked condition in veth_convert_skb_to_xdp_buff, and are
++		 * thus reallocated.
++		 */
++		xdp->rxq->mem = rq->xdp_mem;
++		kfree_skb_partial(skb, true);
++	} else {
++		/* skbs in this case may include page_pool pages from peer. We cannot use
++		 * rq->xdp_mem_pp as for the local_pp_alloc case, because they might already
++		 * be associated with different xdp_mem_info.
++		 */
++		veth_xdp_get(xdp);
++		consume_skb(skb);
++		xdp->rxq->mem = rq->xdp_mem;
++	}
++}
+#+end_src
+
+** Uncertain approach
+
+Idea: Could we extend =xdp_do_redirect= to also handle the kmalloc (and
+"skb_small_head_cache") frames.
+
+Started coding support in =__xdp_return()= code:
+
+#+begin_src diff
+diff --git a/include/net/xdp.h b/include/net/xdp.h
+index de08c8e0d134..14f50bfe0bb6 100644
+--- a/include/net/xdp.h
++++ b/include/net/xdp.h
+@@ -43,6 +43,8 @@ enum xdp_mem_type {
+        MEM_TYPE_PAGE_ORDER0,     /* Orig XDP full page model */
+        MEM_TYPE_PAGE_POOL,
+        MEM_TYPE_XSK_BUFF_POOL,
++       MEM_TYPE_KMALLOC_SKB,
++       MEM_TYPE_SKB_SMALL_HEAD_CACHE,
+        MEM_TYPE_MAX,
+ };
+ 
+diff --git a/net/core/xdp.c b/net/core/xdp.c
+index a70670fe9a2d..8d7e7ebd426f 100644
+--- a/net/core/xdp.c
++++ b/net/core/xdp.c
+@@ -400,6 +400,16 @@ void __xdp_return(void *data, struct xdp_mem_info *mem, bool napi_direct,
+                /* NB! Only valid from an xdp_buff! */
+                xsk_buff_free(xdp);
+                break;
++       case MEM_TYPE_KMALLOC_SKB:
++               /* SKB data stolen that used kmalloc for skb->head */
++               void *head = xdp->data_hard_start;
++               kfree(head);
++               break;
++       case MEM_TYPE_SKB_SMALL_HEAD_CACHE:
++               /* SKB data stolen used skb_small_head_cache for skb->head */
++               void *head = xdp->data_hard_start;
++               kmem_cache_free(skb_small_head_cache, head);
++               break;
+        default:
+                /* Not possible, checked in xdp_rxq_info_reg_mem_model() */
+                WARN(1, "Incorrect XDP memory type (%d) usage", mem->type);
+#+end_src
+
+* Wrong veth XDP approach for SKBs?
+
+Deep into this rabbit hole, I start to question above approach.
+
+[[https://lore.kernel.org/all/05eec0a4-f8f8-ef68-3cf2-66b9109843b9@redhat.com/][Question ourselves]]:
+ - Perhaps the veth XDP approach for SKBs is wrong?
+
+The root-cause of this issue is that =veth_xdp_rcv_skb= code path (that handle
+SKBs) is calling XDP-native function "xdp_do_redirect()". I question, why isn't
+it using "xdp_do_generic_redirect()"?
+
+** Implemented use generic-XDP redirect
+
+Implemented using "xdp_do_generic_redirect()" and lifted =skb_head_is_locked=
+check in =veth_convert_skb_to_xdp_buff()=, plus =xsk_build_skb= alloc enough
+headroom.
+
+Quick test of the veth-benchmark now shows: 1,045,248 pps (1045248)
+ - Before: 828,730 pps (828730 see [[file:veth_benchmark03.org]])
+ - Improvement: approx 26% faster
+   - +216518 pps
+   - -250 nanosec
+
+** Adjust needed_headroom for veth
+
+It is a better solution to adjust dev->needed_headroom for veth (+peer) device,
+than just hacking xsk_build_skb().
+
+#+begin_quote
+veth: when XDP is loaded increase needed_headroom
+
+When sending (sendmsg) SKBs out an veth device, the SKB headroom is too small,
+to satisfy XDP on the receiving veth peer device.
+
+For AF_XDP (normal non-zero-copy) it is worth noticing that xsk_build_skb()
+adjust headroom according to dev->needed_headroom. Other parts of the kernel
+also take this into account (see macro LL_RESERVED_SPACE).
+
+This solves the XDP_PACKET_HEADROOM check in debug-veth_convert_skb_to_xdp_buff().
+#+end_quote
+
+** patch desc: veth: use generic-XDP functions when dealing with SKBs
+
+#+begin_quote
+veth: use generic-XDP functions when dealing with SKBs
+
+The root-cause the realloc issue is that veth_xdp_rcv_skb() code path (that
+handles SKBs like generic-XDP) is calling a native-XDP function
+xdp_do_redirect(), instead of simply using xdp_do_generic_redirect() that can
+handle SKBs.
+
+The existing code tries to steal the packet-data from the SKB (and frees the SKB
+itself). This cause issues as SKBs can have different memory models that are
+incompatible with native-XDP call xdp_do_redirect(). For this reason the checks
+in veth_convert_skb_to_xdp_buff() becomes more strict. This in turn makes this a
+bad approach. Simply leveraging generic-XDP helpers e.g. generic_xdp_tx() and
+xdp_do_generic_redirect() as this resolves the issue given netstack can handle
+these different SKB memory models.
+#+end_quote
+
+
+* Identified cleanups
+
+** veth: bpf_xdp_adjust_head check
+
+#+begin_quote
+veth: use same bpf_xdp_adjust_head check as generic-XDP
+
+Both veth_xdp_rcv_skb() and bpf_prog_run_generic_xdp() checks if XDP bpf_prog
+adjusted packet head via BPF-helper bpf_xdp_adjust_head(). The order of
+subtracting orig_data and xdp->data are opposite between the two functions. This
+is confusing when following the code.
+
+This patch choose to follow generic-XDP and adjust veth_xdp_rcv_skb().
+
+Fixes: 718a18a0c8a6 ("veth: Rework veth_xdp_rcv_skb in order to accept non-linear skb")
+#+end_quote
+
+The end-goal is see if it is possible to pull these SKB adjustments into a
+helper function.
+
+One problem is that 065af3554705 ("net: fix bpf_xdp_adjust_head regression for
+generic-XDP") added a skb_reset_network_header(skb) call, which I don't know if
+it is applicable to veth.
+
+Work in-progress diff:
+#+begin_src diff
+diff --git a/drivers/net/veth.c b/drivers/net/veth.c
+index 953f6d8f8db0..9533e51b2ebf 100644
+--- a/drivers/net/veth.c
++++ b/drivers/net/veth.c
+@@ -897,11 +897,19 @@ static struct sk_buff *veth_xdp_rcv_skb(struct veth_rq *rq,
+        rcu_read_unlock();
+ 
+        /* check if bpf_xdp_adjust_head was used */
+-       off = orig_data - xdp->data;
+-       if (off > 0)
+-               __skb_push(skb, off);
+-       else if (off < 0)
+-               __skb_pull(skb, -off);
++       off = xdp->data - orig_data;
++       if (off) {
++               if (off > 0)
++                       __skb_pull(skb, off);
++               else if (off < 0)
++                       __skb_push(skb, -off);
++
++               skb->mac_header += off;
++               // 065af3554705 ("net: fix bpf_xdp_adjust_head regression for generic-XDP")
++               // adds:
++               // skb_reset_network_header(skb);
++               // is this needed for veth ?!?!
++       }
+ 
+        skb_reset_mac_header(skb);
+#+end_src
+
+The next problem is "skb_reset_mac_header" that undo =skb->mac_header+=off;=.
+
+
+* Prepare upstream patchset
+
+** cover letter
+
+#+begin_quote
+veth: reduce reallocations of SKBs when XDP bpf-prog is loaded
+
+Loading an XDP bpf-prog on veth device driver results in a significant
+performance degradation (for normal unrelated traffic) due to
+veth_convert_skb_to_xdp_buff() in most cases fully reallocates an SKB and copy
+data over, even when XDP prog does nothing (e.g. XDP_PASS).
+
+This patchset reduce the cases that cause reallocation.
+After patchset UDP and AF_XDP sending avoids reallocations.
+
+Future work will investigate TCP.
+#+end_quote
+
+** RFC v1
+
+People that have shown interest earlier:
+ - Maryam Tahhan <mtahhan@redhat.com>
+ - Yunsheng Lin <linyunsheng@huawei.com>
+ - Liang Chen <liangchen.linux@gmail.com>
+ - huangjie.albert@bytedance.com
+
+#+begin_example
+stg mail --version "net-next RFC v1" --edit-cover --cc meup  \
+  --to netdev --cc pabeni@redhat.com --cc kuba@kernel.org --to edumazet@google.com \
+  --cc davem@davemloft.net \
+  --cc lorenzo@kernel.org --cc ilias \
+  --cc mtahhan@redhat.com --cc bytedance1 --cc lin --cc chen \
+ veth-bpf_xdp_adjust_head-check..veth_set_rx_headroom
+#+end_example
+
+Message-ID: <169272709850.1975370.16698220879817216294.stgit@firesoul>
+ - [[https://lore.kernel.org/all/169272709850.1975370.16698220879817216294.stgit@firesoul][link]]
