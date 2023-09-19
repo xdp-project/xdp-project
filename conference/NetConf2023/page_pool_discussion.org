@@ -26,9 +26,12 @@ Page Pool started out as: memory optimization for XDP
 Summarise: how PP evolved
 
 Today Page Pool have full netstack recycling support
- - Recently removed non-recycle option (find commit)
+ - (See =skb_mark_for_recycle()=)
+ - Recently removed API for non-recycle option
+   - 535b9c61bdef ("net: page_pool: hide page_pool_release_page()")
 
-Change to struct page have point back to page_pool object
+
+Change to struct page have pointer back to page_pool object
  - c07aea3ef4d4 ("mm: add a signature in struct page")
 
 
@@ -57,6 +60,15 @@ Extending PP with API to hide frag_count handling
 
 * Page Pool evolving into *netstack memory layer*?                   :export:
 
+* Slide: Thanks                                                      :export:
+
+*/Thanks/* to recent Page Pool contributors
+ - *Huawei*: /Yunsheng Lin/ + /Jie Wang/
+ - *Meta*: /Jakub Kicinski/ + /Alexander Duyck/
+ - *Intel*: /Alexander Lobakin/
+ - *Red Hat*: /Lorenzo Bianconi/
+ - *Fastly*: /Joe Damato/
+ - *Linaro*: /Ilias Apalodimas/
 
 * Emacs tricks                                                     :noexport:
 
