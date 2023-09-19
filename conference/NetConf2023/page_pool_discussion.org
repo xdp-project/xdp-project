@@ -36,10 +36,6 @@ Memory providers (by Jakub)
  - e.g. allocate huge-page and split-up
    - to reduce IOTLB misses when using DMA IOMMU
 
-Fragmenting pages
- - Cutting page into smaller pieces
- - via page->frag_count
-
 Extending PP with API to hide frag_count handling
  - [PATCH net-next v8 0/6] introduce page_pool_alloc() related API
  - Yunsheng Lin <linyunsheng@huawei.com>
@@ -68,6 +64,17 @@ Today: Page Pool have /full netstack/ *recycling* /support/
 :reveal_extra_attr: class="mid-slide"
 :END:
 
+** Slide: Include files restructured
+
+Notice: page_pool include files moved into
+ - New directory: [[https://elixir.bootlin.com/linux/v6.6-rc2/source/include/net/page_pool][include/net/page_pool/]]
+ - Split into /helpers.h/ and /types.h/
+
+@@html:<br/><br/><small>@@
+*Work done by*: /Yunsheng Lin/ and /Alexander "Olek" Lobakin/
+ - Motivated by guidance from /Jakub Kicinski/
+@@html:</small>@@
+
 ** Slide: Fragmenting pages - */pp_frag_count/*
 
 Permit a driver to perform [[https://git.kernel.org/torvalds/c/52cc6ffc0ab2][fragmenting]] of the page *from within the driver*
@@ -90,7 +97,6 @@ Permit a driver to perform [[https://git.kernel.org/torvalds/c/52cc6ffc0ab2][fra
 @@html:<br/><small>@@
 *Work done by*: /Yunsheng Lin/ and /Alexander Duyck/
 @@html:</small>@@
-
 
 * Slide: Page Pool evolving into *netstack memory layer*?            :export:
 
