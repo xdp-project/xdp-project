@@ -22,11 +22,6 @@ Summarise: how PP evolved
 Change to struct page have pointer back to page_pool object
  - https://git.kernel.org/torvalds/c/c07aea3ef4d4 ("mm: add a signature in struct page")
 
-
-Include files restructured
- - (find commit)
-
-
 Page Pool evolving into netstack memory layer
 
 Future development
@@ -36,6 +31,10 @@ Memory providers (by Jakub)
  - e.g. allocate huge-page and split-up
    - to reduce IOTLB misses when using DMA IOMMU
 
+Google's devmem proposal
+ - Leveraging Memory providers
+ - BUT also rather invasive changes to PP APIs
+   - Mostly because it deals with memory pointer and not pages
 
 * Slide: History                                                     :export:
 
@@ -61,7 +60,7 @@ Today: Page Pool have /full netstack/ *recycling* /support/
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-** Slide: Include files restructured
+** Slide: Include files restructured                                :export:
 
 Notice: page_pool include files moved into
  - New directory: [[https://elixir.bootlin.com/linux/v6.6-rc2/source/include/net/page_pool][include/net/page_pool/]]
@@ -72,7 +71,7 @@ Notice: page_pool include files moved into
  - Motivated by guidance from /Jakub Kicinski/
 @@html:</small>@@
 
-** Slide: Fragmenting pages - */pp_frag_count/*
+** Slide: Fragmenting pages - */pp_frag_count/*                     :export:
 
 Permit a driver to perform [[https://git.kernel.org/torvalds/c/52cc6ffc0ab2][fragmenting]] of the page *from within the driver*
  - Use-case split up by the driver after DMA
@@ -95,12 +94,9 @@ Permit a driver to perform [[https://git.kernel.org/torvalds/c/52cc6ffc0ab2][fra
 *Work done by*: /Yunsheng Lin/ and /Alexander Duyck/
 @@html:</small>@@
 
-* Slide: Recent proposed changes upstream                            :export:
-:PROPERTIES:
-:reveal_extra_attr: class="mid-slide"
-:END:
+* Slide: Recent /proposed/ changes upstream                          :export:
 
-** Recent proposed: API to hide pp_frag_count
+** Recent proposed: API to hide pp_frag_count                       :export:
 
 Extending PP with API to hide pp_frag_count handling
  - [ *PATCH* net-next v8 0/6] [[https://lore.kernel.org/all/20230912083126.65484-1-linyunsheng@huawei.com/#r][introduce page_pool_alloc() related API]]
@@ -109,9 +105,13 @@ Extending PP with API to hide pp_frag_count handling
     - and values *size* and *offset* via pointers
   - Naming is weird as it no-longer deals with struct page
 
-* Slide: Page Pool evolving into *netstack memory layer*?            :export:
+* Slide: Page Pool evolving into *netstack memory layer*?           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
 
-* Slide: Thanks                                                      :export:
+
+* Slide: End and Thanks                                              :export:
 
 */Thanks/* to recent Page Pool contributors
  - *Huawei*: /Yunsheng Lin/ + /Jie Wang/
