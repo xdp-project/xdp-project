@@ -36,9 +36,6 @@ Memory providers (by Jakub)
  - e.g. allocate huge-page and split-up
    - to reduce IOTLB misses when using DMA IOMMU
 
-Extending PP with API to hide frag_count handling
- - [PATCH net-next v8 0/6] introduce page_pool_alloc() related API
- - Yunsheng Lin <linyunsheng@huawei.com>
 
 * Slide: History                                                     :export:
 
@@ -97,6 +94,20 @@ Permit a driver to perform [[https://git.kernel.org/torvalds/c/52cc6ffc0ab2][fra
 @@html:<br/><small>@@
 *Work done by*: /Yunsheng Lin/ and /Alexander Duyck/
 @@html:</small>@@
+
+* Slide: Recent proposed changes upstream                            :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Recent proposed: API to hide pp_frag_count
+
+Extending PP with API to hide pp_frag_count handling
+ - [ *PATCH* net-next v8 0/6] [[https://lore.kernel.org/all/20230912083126.65484-1-linyunsheng@huawei.com/#r][introduce page_pool_alloc() related API]]
+   - By /Yunsheng Lin/ <linyunsheng@huawei.com>
+  - API returns memory as (void) pointer to data
+    - and values *size* and *offset* via pointers
+  - Naming is weird as it no-longer deals with struct page
 
 * Slide: Page Pool evolving into *netstack memory layer*?            :export:
 
