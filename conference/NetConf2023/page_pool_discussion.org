@@ -1,7 +1,7 @@
 # -*- fill-column: 79; -*-
-#+TITLE: Discussing /page_pool/ development direction
+#+TITLE: Discussing /page_pool/ development directions
 #+AUTHOR: Jesper Dangaard Brouer <hawk@kernel.org>
-#+EMAIL: hawk@kernel.org>
+#+EMAIL: hawk@kernel.org
 #+REVEAL_THEME: redhat
 #+REVEAL_TRANS: linear
 #+REVEAL_MARGIN: 0
@@ -15,6 +15,47 @@
 
 This presentation will be given at [[http://vger.kernel.org/netconf2023.html][Netconf 2023]].
 
+* Brainstorm                                                       :noexport:
+
+Page Pool started out as: memory optimization for XDP
+ - PP alloc cache for XDP_DROP use-case
+ - And recycle XDP redirected frames (see =xdp_return_frame=)
+ - PP pages could not be recycled via netstack (/possible today/)
+ - Optimized for 1-page per packet (keeping page refcnt==1)
+
+Summarise: how PP evolved
+
+Today Page Pool have full netstack recycling support
+ - Recently removed non-recycle option (find commit)
+
+Change to struct page have point back to page_pool object
+ - c07aea3ef4d4 ("mm: add a signature in struct page")
+
+
+Include files restructured
+ - (find commit)
+
+
+
+Page Pool evolving into netstack memory layer
+
+Future development
+
+Memory providers (by Jakub)
+ - Making it possible replace "backend" e.g. page-allocator
+ - e.g. allocate huge-page and split-up
+   - to reduce IOTLB misses when using DMA IOMMU
+
+Fragmenting pages
+ - Cutting page into smaller pieces
+ - via page->frag_count
+
+Extending PP with API to hide frag_count handling
+ - [PATCH net-next v8 0/6] introduce page_pool_alloc() related API
+ - Yunsheng Lin <linyunsheng@huawei.com>
+
+
+* Page Pool evolving into *netstack memory layer*?                   :export:
 
 
 * Emacs tricks                                                     :noexport:
