@@ -1,0 +1,119 @@
+# -*- fill-column: 79; -*-
+#+TITLE: XDP: Past, Present and Future
+#+AUTHOR: Toke Høiland-Jørgensen <toke@redhat.com>
+#+EMAIL: toke@redhat.com
+#+REVEAL_THEME: white
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:t reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: Netconf 2023                                     :noexport:
+
+This presentation is for the Netconf meeting of kernel networking devs in
+September 2023.
+
+* Outline / ideas                                                  :noexport:
+
+** Outstanding XDP issues
+- Queueing
+- Multiprog attachment in kernel
+- Hints coverage
+  - More hints
+  - Metadata in xdp_frame
+  - Naming
+- veth perf
+- Multibuf coverage
+- Generic XDP
+  - Bulking
+  - GSO frames
+- AF_XDP xmit path
+  - Socket-allocated skbs
+  - Why skbs at all?
+- Netfilter acceleration
+
+
+
+* XDP: Recent developments                                           :export:
+
+- Multibuf
+- XDP hints (RX)
+- Feature flags
+- More stack helpers (conntrack, synproxy)
+
+** XDP: Driver support
+
+#+ATTR_html: :class compact-table :style font-size: 55%; width: 48%; float: left;
+|           |  <c>  |   <c>    |   <c>    |     <c>     |     <c>     |  <c>   |    <c>     |
+|           | Basic | Redirect | ndo_xmit | Multibuf RX | Multibuf TX | XSK ZC | HW offload |
+|-----------+-------+----------+----------+-------------+-------------+--------+------------|
+| atlantic  |   ✓   |    ✓     |    ✓     |      ✓      |      ✓      |        |            |
+| bnxt      |   ✓   |    ✓     |   (✓)    |      ✓      |     (✓)     |        |            |
+| cpsw      |   ✓   |    ✓     |    ✓     |             |             |        |            |
+| cpsw_new  |   ✓   |    ✓     |    ✓     |             |             |        |            |
+| dpaa      |   ✓   |    ✓     |    ✓     |             |             |        |            |
+| dpaa2     |   ✓   |    ✓     |    ✓     |             |             |   ✓    |            |
+| ena       |  (✓)  |   (✓)    |          |             |             |        |            |
+| enetc     |   ✓   |    ✓     |    ✓     |      ✓      |      ✓      |        |            |
+| fec       |  (✓)  |   (✓)    |          |             |             |        |            |
+| funeth    |   ✓   |    ✓     |   (✓)    |             |     (✓)     |        |            |
+| gve       |  (✓)  |   (✓)    |   (✓)    |             |     (✓)     |        |            |
+| hv_netvsc |   ✓   |    ✓     |    ✓     |             |             |        |            |
+| i40e      |   ✓   |    ✓     |   (✓)    |      ✓      |     (✓)     |   ✓    |            |
+| ice       |   ✓   |    ✓     |   (✓)    |      ✓      |     (✓)     |   ✓    |            |
+| igb       |   ✓   |    ✓     |   (✓)    |             |     (✓)     |        |            |
+| igc       |   ✓   |    ✓     |   (✓)    |             |     (✓)     |   ✓    |            |
+| ixgbe     |   ✓   |    ✓     |   (✓)    |             |     (✓)     |   ✓    |            |
+| ixgbevf   |   ✓   |          |          |             |             |        |            |
+| lan966x   |  (✓)  |   (✓)    |   (✓)    |             |             |        |            |
+| mana      |   ✓   |    ✓     |    ✓     |             |             |        |            |
+
+
+#+ATTR_html: :class compact-table :style font-size: 55%; width: 48%;
+|              |  <c>  |   <c>    |   <c>    |     <c>     |     <c>     |  <c>   |    <c>     |
+|              | Basic | Redirect | ndo_xmit | Multibuf RX | Multibuf TX | XSK ZC | HW offload |
+|--------------+-------+----------+----------+-------------+-------------+--------+------------|
+| mlx4         |   ✓   |    ✓     |          |             |             |        |            |
+| mlx5         |  (✓)  |   (✓)    |   (✓)    |     (✓)     |     (✓)     |  (✓)   |            |
+| mtk_eth      |  (✓)  |   (✓)    |   (✓)    |             |     (✓)     |        |            |
+| mvneta       |   ✓   |    ✓     |    ✓     |      ✓      |      ✓      |        |            |
+| mvpp2        |  (✓)  |   (✓)    |   (✓)    |             |             |        |            |
+| netsec       |   ✓   |    ✓     |    ✓     |             |             |        |            |
+| nfp          |   ✓   |          |          |             |             |  (✓)   |    (✓)     |
+| octeontx2    |   ✓   |    ✓     |   (✓)    |             |             |        |            |
+| qede         |   ✓   |    ✓     |    ✓     |             |             |        |            |
+| sfc          |   ✓   |    ✓     |    ✓     |             |             |        |            |
+| sfc-siena    |   ✓   |    ✓     |    ✓     |             |             |        |            |
+| stmmac       |   ✓   |    ✓     |   (✓)    |             |             |   ✓    |            |
+| thunder      |  (✓)  |          |          |             |             |        |            |
+| tsnep        |   ✓   |    ✓     |    ✓     |             |      ✓      |   ✓    |            |
+| tun          |  (✓)  |   (✓)    |   (✓)    |             |             |        |            |
+| veth         |  (✓)  |   (✓)    |   (✓)    |     (✓)     |     (✓)     |        |            |
+| virtio_net   |   ✓   |    ✓     |   (✓)    |     (✓)     |     (✓)     |        |            |
+| vmxnet3      |   ✓   |    ✓     |    ✓     |             |             |        |            |
+| xen-netfront |   ✓   |    ✓     |    ✓     |             |             |        |            |
+
+#+ATTR_html: :style font-size: 65%;
+✓: Always enabled. (✓): Configuration-dependent.
+
+* XDP: Ongoing work                                                  :export:
+- XDP hints (TX)
+- Veth optimisations
+
+* Slide: Questions?                                                  :export:
+:PROPERTIES:
+:reveal_extra_attr: class="title-only-slide"
+:END:
+
+
+* Emacs end-tricks                                                 :noexport:
+
+This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
+in the compiled version.
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1> Toke Høiland-Jørgensen<br/>Red Hat"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
