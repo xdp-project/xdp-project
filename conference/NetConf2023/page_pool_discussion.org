@@ -112,14 +112,23 @@ Extending PP with API to hide pp_frag_count handling
 
 ** Slide: Concerns: PP evol into netstack memory layer
 
-Jesper's concerns
-- Specialized use-case gave PP the performance edge
+Jesper's */concerns/*
+- *Specialized* use-case gave PP the /performance edge/
   - Notice: primary lockless RX-cache that gives XDP_DROP performance
-- Generalizing PP will naturally lead to reduced performance
-  - It will be harder to keep fast as use-cases are added
+- */Generalizing/* PP will naturally lead to *reduced* /performance/
+  - It will be */hard/* to *keep fast as use-cases are added*
     - ... dead by a 1000 paper cuts
 
+** Slide: Why not create more memory allocator types?
 
+/Alternative/ to page_pool *extending APIs* all the time
+ - Create *more* /allocators types/
+   - Each /specialized to gain performance/ in their use-case
+ - See how AF_XDP/xsk have it's own ZC allocator type
+   - [[https://elixir.bootlin.com/linux/v6.6-rc2/source/net/core/xdp.c#L399][MEM_TYPE_XSK_BUFF_POOL]]
+
+XDP layer [[https://elixir.bootlin.com/linux/v6.6-rc2/source/net/core/xdp.c#L377][xdp_return_frame()]]
+ - Already /handles/ *multiple memory types*
 
 
 * Slide: End and Thanks                                              :export:
