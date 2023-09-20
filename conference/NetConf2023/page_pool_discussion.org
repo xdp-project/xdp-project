@@ -110,6 +110,17 @@ Extending PP with API to hide pp_frag_count handling
 :reveal_extra_attr: class="mid-slide"
 :END:
 
+** Slide: Concerns: PP evol into netstack memory layer
+
+Jesper's concerns
+- Specialized use-case gave PP the performance edge
+  - Notice: primary lockless RX-cache that gives XDP_DROP performance
+- Generalizing PP will naturally lead to reduced performance
+  - It will be harder to keep fast as use-cases are added
+    - ... dead by a 1000 paper cuts
+
+
+
 
 * Slide: End and Thanks                                              :export:
 
