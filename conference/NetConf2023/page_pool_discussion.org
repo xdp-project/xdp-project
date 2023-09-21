@@ -90,10 +90,10 @@ Permit a driver to perform [[https://git.kernel.org/torvalds/c/52cc6ffc0ab2][fra
 
 Extending PP with API to hide pp_frag_count handling
  - [ *PATCH* net-next v8 0/6] [[https://lore.kernel.org/all/20230912083126.65484-1-linyunsheng@huawei.com/#r][introduce page_pool_alloc() related API]]
-   - By /Yunsheng Lin/ <linyunsheng@huawei.com>
-  - API returns memory as (void) pointer to data
-    - and values *size* and *offset* via pointers
-  - Naming is weird as it no-longer deals with struct page
+   - By /Yunsheng Lin/ <linyunsheng@huawei.com> [[https://lore.kernel.org/all/20230920115855.27631-1-linyunsheng@huawei.com/][V9]]
+ - API returns memory as (void) pointer to data
+   - and values *size* and *offset* via pointers
+ - Naming is weird as it no-longer deals with struct page
 
 * Slide: Page Pool evolving into *netstack memory layer*?           :export:
 :PROPERTIES:
