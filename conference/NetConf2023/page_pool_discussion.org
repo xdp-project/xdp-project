@@ -26,11 +26,6 @@ Page Pool evolving into netstack memory layer
 
 Future development
 
-Memory providers (by Jakub)
- - Making it possible replace "backend" e.g. page-allocator
- - e.g. allocate huge-page and split-up
-   - to reduce IOTLB misses when using DMA IOMMU
-
 Google's devmem proposal
  - Leveraging Memory providers
  - BUT also rather invasive changes to PP APIs
@@ -110,7 +105,7 @@ Extending PP with API to hide pp_frag_count handling
 :reveal_extra_attr: class="mid-slide"
 :END:
 
-** Slide: Concerns: PP evol into netstack memory layer
+** Slide: Concerns: PP evol into netstack memory layer              :export:
 
 Jesper's */concerns/*
 - *Specialized* use-case gave PP the /performance edge/
@@ -119,7 +114,7 @@ Jesper's */concerns/*
   - It will be */hard/* to *keep fast as use-cases are added*
     - ... dead by a 1000 paper cuts
 
-** Slide: Why not create more memory allocator types?
+** Slide: Why not create more memory allocator types?               :export:
 
 /Alternative/ to page_pool *extending APIs* all the time
  - Create *more* /allocators types/
@@ -129,6 +124,16 @@ Jesper's */concerns/*
 
 XDP layer [[https://elixir.bootlin.com/linux/v6.6-rc2/source/net/core/xdp.c#L377][xdp_return_frame()]]
  - Already /handles/ *multiple memory types*
+
+** Slide: Memory providers                                          :export:
+
+[[https://lore.kernel.org/netdev/eadebd58-d79a-30b6-87aa-1c77acb2ec17@redhat.com/][Memory]] [[https://github.com/torvalds/linux/commit/578ebda5607781c0abb26c1feae7ec8b83840768][providers]] (by /Jakub Kicinski/)
+ - Making it *possible* to /replace "backend"/ e.g. page-allocator
+ - e.g. allocate huge-page and split-up
+   - to reduce IOTLB misses when using DMA IOMMU
+
+Jakub's design does fit into Page Pool
+ - But it /can also/ be used by *other* /allocators types/
 
 
 * Slide: End and Thanks                                              :export:
