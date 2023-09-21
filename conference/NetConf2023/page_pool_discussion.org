@@ -141,7 +141,7 @@ Jakub's design does fit into Page Pool
 
 Jesper thinks: Should be new *devmem* /memory allocator type/
 
-* Slide: Open discussion
+* Slide: Open discussion                                             :export:
 
 Open Discussion
 
