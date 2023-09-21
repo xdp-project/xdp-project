@@ -22,14 +22,9 @@ Summarise: how PP evolved
 Change to struct page have pointer back to page_pool object
  - https://git.kernel.org/torvalds/c/c07aea3ef4d4 ("mm: add a signature in struct page")
 
-Page Pool evolving into netstack memory layer
-
 Future development
 
-Google's devmem proposal
- - Leveraging Memory providers
- - BUT also rather invasive changes to PP APIs
-   - Mostly because it deals with memory pointer and not pages
+Page Pool evolving into netstack memory layer
 
 * Slide: History                                                     :export:
 
@@ -135,6 +130,20 @@ XDP layer [[https://elixir.bootlin.com/linux/v6.6-rc2/source/net/core/xdp.c#L377
 Jakub's design does fit into Page Pool
  - But it /can also/ be used by *other* /allocators types/
 
+** Slide: */devmem/* - Device specific memory                       :export:
+
+[[https://lore.kernel.org/netdev/CAHS8izOySGEcXmMg3Gbb5DS-D9-B165gNpwf5a+ObJ7WigLmHg@mail.gmail.com/][Google]] (/Mina Almasry/) devmem proposal ([[https://lore.kernel.org/all/20230810015751.3297321-1-almasrymina@google.com/][RFC V2]])
+ - *Device specific memory* for TCP flows
+   - memory that CPU cannot read, likely belonging to GPU
+ - *Leveraging* /Memory providers/
+ - BUT also rather *invasive changes* to /Page Pool/ APIs
+   - Mostly because it deals with */memory pointers/* and *not pages*
+
+Jesper thinks: Should be new *devmem* /memory allocator type/
+
+* Slide: Open discussion
+
+Open Discussion
 
 * Slide: End and Thanks                                              :export:
 
