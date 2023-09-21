@@ -1,7 +1,7 @@
 # -*- fill-column: 79; -*-
-#+TITLE: Discussing /page_pool/ development direction
+#+TITLE: Discussing /page_pool/ development directions
 #+AUTHOR: Jesper Dangaard Brouer <hawk@kernel.org>
-#+EMAIL: hawk@kernel.org>
+#+EMAIL: hawk@kernel.org
 #+REVEAL_THEME: redhat
 #+REVEAL_TRANS: linear
 #+REVEAL_MARGIN: 0
@@ -15,7 +15,145 @@
 
 This presentation will be given at [[http://vger.kernel.org/netconf2023.html][Netconf 2023]].
 
+* Brainstorm                                                       :noexport:
 
+Summarise: how PP evolved
+
+Change to struct page have pointer back to page_pool object
+ - https://git.kernel.org/torvalds/c/c07aea3ef4d4 ("mm: add a signature in struct page")
+
+Future development
+
+Page Pool evolving into netstack memory layer
+
+* Slide: History                                                     :export:
+
+Page Pool (PP) started out as: /Memory optimization/ for *XDP*
+ - PP alloc cache for XDP_DROP use-case
+ - And recycle XDP redirected frames (see =xdp_return_frame=)
+ - PP pages could */not/* *be recycled via netstack* (/possible today/)
+ - Optimized for *1-page per packet* (keeping page refcnt==1)
+
+History
+ - Developed and proposed at [[https://people.netfilter.org/hawk/presentations/MM-summit2016/generic_page_pool_mm_summit2016.pdf][MM-summit 2016]]
+ - [[https://git.kernel.org/torvalds/c/684009d4fdaf40f][Merged]] with mlx5 NIC [[https://git.kernel.org/torvalds/c/60bbf7eeef10d][driver user]] in 2018
+
+* Slide: Today                                                       :export:
+
+Today: Page Pool have /full netstack/ *recycling* /support/
+ - Uses [[https://git.kernel.org/torvalds/c/c07aea3ef4d4][fields in struct page]] for pool return path
+ - Default /all SKBs/ using PP does *recycling* (=skb_mark_for_recycle()=)
+ - Recently [[https://git.kernel.org/torvalds/c/535b9c61bdef][removed API]] for non-recycle option (=page_pool_release_page=)
+
+* Slide: Recent PP developments                                      :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: Include files restructured                                :export:
+
+Notice: page_pool include files moved into
+ - New directory: [[https://elixir.bootlin.com/linux/v6.6-rc2/source/include/net/page_pool][include/net/page_pool/]]
+ - Split into /helpers.h/ and /types.h/
+
+@@html:<br/><br/><small>@@
+*Work done by*: /Yunsheng Lin/ and /Alexander "Olek" Lobakin/
+ - Motivated by guidance from /Jakub Kicinski/
+@@html:</small>@@
+
+** Slide: Fragmenting pages - */pp_frag_count/*                     :export:
+
+Permit a driver to perform [[https://git.kernel.org/torvalds/c/52cc6ffc0ab2][fragmenting]] of the page *from within the driver*
+ - Use-case split up by the driver after DMA
+ - Uses field [[https://git.kernel.org/torvalds/c/4ef3960ea19c][pp_frag_count]] in struct page
+
+#+begin_src C
+  struct page *page = page_pool_alloc_pages();
+  page_pool_fragment_page(page, DRIVER_PAGECNT_BIAS_MAX);
+  rx_buf->page = page;
+  rx_buf->pagecnt_bias = DRIVER_PAGECNT_BIAS_MAX;
+  /* process a received buffer */
+  rx_buf->pagecnt_bias--;
+  /* fully consumed then flush the remaining */
+  if (page_pool_defrag_page(page, rx_buf->pagecnt_bias))
+    continue;
+  page_pool_put_defragged_page(pool, page, -1, is_napi);
+#+end_src
+
+@@html:<br/><small>@@
+*Work done by*: /Yunsheng Lin/ and /Alexander Duyck/
+@@html:</small>@@
+
+* Slide: Recent /proposed/ changes upstream                          :export:
+
+** Recent proposed: API to hide pp_frag_count                       :export:
+
+Extending PP with API to hide pp_frag_count handling
+ - [ *PATCH* net-next v8 0/6] [[https://lore.kernel.org/all/20230912083126.65484-1-linyunsheng@huawei.com/#r][introduce page_pool_alloc() related API]]
+   - By /Yunsheng Lin/ <linyunsheng@huawei.com>
+  - API returns memory as (void) pointer to data
+    - and values *size* and *offset* via pointers
+  - Naming is weird as it no-longer deals with struct page
+
+* Slide: Page Pool evolving into *netstack memory layer*?           :export:
+:PROPERTIES:
+:reveal_extra_attr: class="mid-slide"
+:END:
+
+** Slide: Concerns: PP evol into netstack memory layer              :export:
+
+Jesper's */concerns/*
+- *Specialized* use-case gave PP the /performance edge/
+  - Notice: primary lockless RX-cache that gives XDP_DROP performance
+- */Generalizing/* PP will naturally lead to *reduced* /performance/
+  - It will be */hard/* to *keep fast as use-cases are added*
+    - ... dead by a 1000 paper cuts
+
+** Slide: Why not create more memory allocator types?               :export:
+
+/Alternative/ to page_pool *extending APIs* all the time
+ - Create *more* /allocators types/
+   - Each /specialized to gain performance/ in their use-case
+ - See how AF_XDP/xsk have it's own ZC allocator type
+   - [[https://elixir.bootlin.com/linux/v6.6-rc2/source/net/core/xdp.c#L399][MEM_TYPE_XSK_BUFF_POOL]]
+
+XDP layer [[https://elixir.bootlin.com/linux/v6.6-rc2/source/net/core/xdp.c#L377][xdp_return_frame()]]
+ - Already /handles/ *multiple memory types*
+
+** Slide: Memory providers                                          :export:
+
+[[https://lore.kernel.org/netdev/eadebd58-d79a-30b6-87aa-1c77acb2ec17@redhat.com/][Memory]] [[https://github.com/torvalds/linux/commit/578ebda5607781c0abb26c1feae7ec8b83840768][providers]] (by /Jakub Kicinski/)
+ - Making it *possible* to /replace "backend"/ e.g. page-allocator
+ - e.g. allocate huge-page and split-up
+   - to reduce IOTLB misses when using DMA IOMMU
+
+Jakub's design does fit into Page Pool
+ - But it /can also/ be used by *other* /allocators types/
+
+** Slide: */devmem/* - Device specific memory                       :export:
+
+[[https://lore.kernel.org/netdev/CAHS8izOySGEcXmMg3Gbb5DS-D9-B165gNpwf5a+ObJ7WigLmHg@mail.gmail.com/][Google]] (/Mina Almasry/) devmem proposal ([[https://lore.kernel.org/all/20230810015751.3297321-1-almasrymina@google.com/][RFC V2]])
+ - *Device specific memory* for TCP flows
+   - memory that CPU cannot read, likely belonging to GPU
+ - *Leveraging* /Memory providers/
+ - BUT also rather *invasive changes* to /Page Pool/ APIs
+   - Mostly because it deals with */memory pointers/* and *not pages*
+
+Jesper thinks: Should be new *devmem* /memory allocator type/
+
+* Slide: Open discussion
+
+Open Discussion
+
+* Slide: End and Thanks                                              :export:
+
+*/Thanks/* to recent Page Pool contributors
+ - *Huawei*: /Yunsheng Lin/ + /Jie Wang/
+ - *Meta*: /Jakub Kicinski/ + /Alexander Duyck/
+ - *Intel*: /Alexander Lobakin/
+ - *Red Hat*: /Lorenzo Bianconi/
+ - *Fastly*: /Joe Damato/
+ - *Linaro*: /Ilias Apalodimas/
 
 * Emacs tricks                                                     :noexport:
 
