@@ -9,7 +9,7 @@
 #+REVEAL_ROOT: ../reveal.js
 #+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
 #+OPTIONS: reveal_width:1600 reveal_height:900
-#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+#+OPTIONS: ^:nil tags:nil num:nil ':t
 
 
 * For conference: NetConf 2023                                     :noexport:
@@ -191,6 +191,62 @@ IpExtInOctets                   120633418          0.0
 IpExtOutOctets                  74382              0.0
 IpExtInNoECTPkts                2622465            0.0
 #+end_example
+
+Reduced perf output:
+#+begin_example
+Samples: 40K of event 'cycles:P', Event count (approx.): 38411756215
+  Overhead  CPU  Command      Shared Object     Symbol
++    6.92%  003  iouringf     [kernel.vmlinux]  [k] fib_table_lookup
+-    3.33%  003  iouringf     [kernel.vmlinux]  [k] kmem_cache_free
+   - 3.26% kmem_cache_free
+      - 3.25% udp_queue_rcv_one_skb
+           udp_unicast_rcv_skb
+           __udp4_lib_rcv
+           ip_protocol_deliver_rcu
+           ip_local_deliver_finish
+           ip_sublist_rcv_finish
+           ip_sublist_rcv
+           ip_list_rcv
+           __netif_receive_skb_list_core
+           netif_receive_skb_list_internal
+           napi_gro_receive
+           mlx5e_handle_rx_cqe_mpwrq
+           mlx5e_rx_cq_process_basic_cqe_comp
+           mlx5e_poll_rx_cq
+           mlx5e_napi_poll
+           __napi_poll
+           net_rx_action
+           __do_softirq
+           do_softirq
+         - __local_bh_enable_ip
+            - 1.38% __skb_recv_udp
+                 udp_recvmsg
+                 inet_recvmsg
+                 sock_recvmsg
+                 io_recvmsg
+                 io_issue_sqe
+                 io_submit_sqes
+                 __do_sys_io_uring_enter
+                 do_syscall_64
+                 entry_SYSCALL_64
+                 _io_uring_get_cqe
+                 0x7f3a1fffd040
+                 0
+            + 1.30% __dev_queue_xmit
+            + 0.57% page_pool_put_defragged_page
++    3.18%  003  iouringf     [kernel.vmlinux]  [k] __netif_receive_skb_core.constprop.0
+#+end_example
+
+Notice how the *Command* is: =iouringf= which gets to activate NAPI poll.
+
+The =__local_bh_enable_ip= basically start a NAPI poll loop. And the three
+callers that does this =__local_bh_enable_ip= activation are:
+ - =__skb_recv_udp=
+ - =__dev_queue_xmit=
+ - =page_pool_put_defragged_page=
+
+The =__skb_recv_udp= path is the io_uring entry point that wraps =recvmsg=.
+
 
 * Emacs tricks                                                     :noexport:
 
