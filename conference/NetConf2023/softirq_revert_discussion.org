@@ -16,7 +16,7 @@
 
 This presentation will be given at [[http://vger.kernel.org/netconf2023.html][Netconf 2023]].
 
-* Brainstorm
+* Brainstorm                                                       :noexport:
 
 Eric Dumazet's 2016 change to softirq
  - Reverted by Paolo
@@ -42,6 +42,155 @@ Hopefully get production data from Yan/Cloudflare
 Perhaps: Slide explaining the problem of
  - RX-NAPI enqueuing 64-packets, each timeUDP-app dequeue 1-packet
 
+* Attempt with io_uring application                                :noexport:
+
+Marek created this gist for me:
+ - https://gist.github.com/majek/d59e32654da32b2fb6f5fcd9548d6514
+
+#+begin_src sh
+sudo dnf install liburing-devel
+git clone git@gist.github.com:d59e32654da32b2fb6f5fcd9548d6514.git
+#+end_src
+
+Depend on local version of iouring:
+
+#+begin_src sh
+cd d59e32654da32b2fb6f5fcd9548d6514
+git clone https://github.com/axboe/liburing
+#+end_src
+
+** Generator machine
+
+#+begin_src sh
+./pktgen_sample03_burst_single_flow.sh -vi mlx5p1 -d 198.18.1.1 \
+       -m ec:0d:9a:db:11:c4 -t 12 -p 5201
+#+end_src
+
+mlx5p1 TX 45,892,511 pps.
+
+** Test run#1: Separate CPUs
+
+Separate CPUs for RX-NAPI and UDP listen application =iouringf=.
+
+#+begin_example
+$ taskset -c 1 ./iouringf
+[*] Listening on 0.0.0.0:5201 gso=0 buffer_num=1 poll=0 async=0
+loops:699960 oom:349980 buffers:349980 packets:349k bytes:6299k
+loops:706194 oom:353097 buffers:353097 packets:353k bytes:6355k
+loops:717044 oom:358522 buffers:358522 packets:358k bytes:6453k
+#+end_example
+
+Nstat result:
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    1586105            0.0
+IpInDelivers                    1586103            0.0
+IpOutRequests                   364477             0.0
+IcmpInMsgs                      1                  0.0
+IcmpInDestUnreachs              1                  0.0
+IcmpMsgInType3                  1                  0.0
+UdpInDatagrams                  364473             0.0
+UdpInErrors                     1221590            0.0
+UdpOutDatagrams                 364474             0.0
+UdpRcvbufErrors                 1221590            0.0
+IpExtInOctets                   72974842           0.0
+IpExtOutOctets                  16769116           0.0
+IpExtInNoECTPkts                1586409            0.0
+#+end_example
+
+This run have Netfilter loaded.
+ - perf top#4 cost: __nf_conntrack_find_get
+ - top #1 #2 #3 is the syscall
+
+** Test run#2: Same CPUs
+
+*Same* CPU for RX-NAPI and UDP listen application =iouringf=.
+
+#+begin_example
+$ taskset -c 0 ./iouringf
+[*] Listening on 0.0.0.0:5201 gso=0 buffer_num=1 poll=0 async=0
+loops:1499 oom:749 buffers:750 packets:750 bytes:13k
+loops:1493 oom:747 buffers:746 packets:746 bytes:13k
+loops:1479 oom:739 buffers:740 packets:740 bytes:13k
+#+end_example
+
+Nstat results:
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    1692889            0.0
+IpInDelivers                    1692893            0.0
+IpOutRequests                   754                0.0
+IcmpInMsgs                      1                  0.0
+IcmpInDestUnreachs              1                  0.0
+IcmpMsgInType3                  1                  0.0
+UdpInDatagrams                  755                0.0
+UdpInErrors                     1692150            0.0
+UdpOutDatagrams                 755                0.0
+UdpRcvbufErrors                 1692150            0.0
+IpExtInOctets                   77857834           0.0
+IpExtOutOctets                  34730              0.0
+IpExtInNoECTPkts                1692561            0.0
+#+end_example
+
+** Test run#3: Separate CPUs + no-netfilter
+
+Unload netfilter modules as this test they just clutter the perf report.
+
+#+begin_example
+loops:811270 oom:405635 buffers:405635 packets:405k bytes:7301k
+loops:803768 oom:401884 buffers:401884 packets:401k bytes:7233k
+loops:803881 oom:401940 buffers:401941 packets:401k bytes:7234k
+#+end_example
+
+Nstat:
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    2440649            0.0
+IpInDelivers                    2440645            0.0
+IpOutRequests                   411970             0.0
+IcmpInMsgs                      1                  0.0
+IcmpInDestUnreachs              1                  0.0
+IcmpMsgInType3                  1                  0.0
+UdpInDatagrams                  411969             0.0
+UdpInErrors                     2028648            0.0
+UdpOutDatagrams                 411970             0.0
+UdpRcvbufErrors                 2028648            0.0
+IpExtInOctets                   112276506          0.0
+IpExtOutOctets                  18951724           0.0
+IpExtInNoECTPkts                2440793            0.0
+#+end_example
+
+** Test run#4: Same CPUs + no-netfilter
+
+#+begin_example
+ taskset -c 3 ./iouringf
+[*] Listening on 0.0.0.0:5201 gso=0 buffer_num=1 poll=0 async=0
+loops:3254 oom:1627 buffers:1627 packets:1627 bytes:29k
+loops:3247 oom:1623 buffers:1624 packets:1624 bytes:29k
+loops:3276 oom:1638 buffers:1638 packets:1638 bytes:29k
+#+end_example
+
+Nstat:
+#+begin_example
+nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    2622721            0.0
+IpInDelivers                    2622721            0.0
+IpOutRequests                   1618               0.0
+IcmpInMsgs                      1                  0.0
+IcmpInDestUnreachs              1                  0.0
+IcmpMsgInType3                  1                  0.0
+UdpInDatagrams                  1618               0.0
+UdpInErrors                     2621124            0.0
+UdpOutDatagrams                 1618               0.0
+UdpRcvbufErrors                 2621124            0.0
+IpExtInOctets                   120633418          0.0
+IpExtOutOctets                  74382              0.0
+IpExtInNoECTPkts                2622465            0.0
+#+end_example
 
 * Emacs tricks                                                     :noexport:
 
