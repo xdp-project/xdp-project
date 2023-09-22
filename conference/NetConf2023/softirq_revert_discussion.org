@@ -46,7 +46,13 @@ Over the years: several cases /indicate/ approach have *caused issues*
  - Thus *likely* /right choice to revert/
  - The question is how to address (UDP) overload case in a /new/ *way* */?/*
 
- 
+* Slide: Production benefits?                                        :export:
+
+/Reduced/ CPU time spend in *softirq* (?)
+
+[[file:softirq-time02-crop.png]]
+
+
 * Attempt with io_uring application                                :noexport:
 
 Marek created this gist for me:
