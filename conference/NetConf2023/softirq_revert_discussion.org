@@ -28,7 +28,7 @@ Show data on UDP overload case
  - Explain: Kernel is now again open to this DoS overload case
 
 Perhaps: Slide explaining the problem of
- - RX-NAPI enqueuing 64-packets, each timeUDP-app dequeue 1-packet
+ - RX-NAPI enqueuing 64-packets, each time UDP-app dequeue 1-packet
 
 * Slide: Background: "Let ksoftirqd do its job"                      :export:
 
@@ -55,6 +55,42 @@ Over the years: several cases /indicate/ approach have *caused issues*
 CPU usage shifted: /Innocent threads/ are likely *running* */softirq/* (?)
 
 [[file:user-time02-crop.png]]
+
+
+* Benchmark showing issue                                          :noexport:
+
+** Bench: simple UDP overload test
+
+Case: Kernel with softirq-revert change.
+
+The problematic case is UDP overload situation: RX-NAPI and UDP-application
+runs on same CPU, which according to my tests result in less than 0.2% traffic
+getting through (UdpInDatagrams). Notice the UdpInErrors/UdpRcvbufErrors in
+below stats:
+
+#+begin_src sh
+ $ nstat -n && sleep 1 && nstat
+ #kernel
+ IpInReceives                    2831056            0.0
+ IpInDelivers                    2831053            0.0
+ UdpInDatagrams                  2948               0.0
+ UdpInErrors                     2828118            0.0
+ UdpRcvbufErrors                 2828118            0.0
+ IpExtInOctets                   130206496          0.0
+ IpExtInNoECTPkts                2830576            0.0
+#+end_src
+
+I guess, it would be obvious to look at UdpInErrors across fleet to see if this
+happens. Maybe the right stat is actually UdpRcvbufErrors, because that is the
+real problem, that the UDP socket queue limit is reached.
+
+My UDP test was performed via using my own [[https://github.com/netoptimizer/network-testing/blob/master/src/udp_sink.c][udp_sink]] program. But it doesn't
+really matter what UDP receiver you will use. And then pktgen as a UDP packet
+generator.
+
+As long as GRO is on, then a TCP socket test should "survive" the overload
+situation, when RX-NAPI and TCP-application runs on same CPU, it might even be
+a benefit to run on same CPU.
 
 
 * Attempt with io_uring application                                :noexport:
