@@ -18,12 +18,6 @@ This presentation will be given at [[http://vger.kernel.org/netconf2023.html][Ne
 
 * Brainstorm                                                       :noexport:
 
-The question is how to address UDP overload case in a new way
- - The solution could be to ask user to use other APIs
-   - Tried multi UDP message recv (=recvmmsg=) but does NOT work
-   - Tried UDP GRO but didn't manage to configure it correctly
-   - io_uring could be an option (no time to test)
-
 Show data on UDP overload case
  - Explain: Kernel is now again open to this DoS overload case
 
@@ -55,6 +49,16 @@ Over the years: several cases /indicate/ approach have *caused issues*
 CPU usage shifted: /Innocent threads/ are likely *running* */softirq/* (?)
 
 [[file:user-time02-crop.png]]
+
+
+* Slide: Solve via: Ask users to use other APIs?                     :export:
+
+The question is how to address UDP overload case in a new way?
+
+The *solutions* could be to /ask users to use other APIs/
+ - Tried *multi* UDP message /recv/ (=recvmmsg=) but does NOT work
+ - Tried /UDP/ *GRO* but didn't manage to configure it correctly
+ - Simple /io_uring/ UDP (echo) program didn't solve issue
 
 
 * Benchmark showing issue                                          :noexport:
