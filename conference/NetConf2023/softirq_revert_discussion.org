@@ -62,6 +62,11 @@ The *solutions* could be to /ask users to use other APIs/
  - Tried /UDP/ *GRO* but didn't manage to configure it correctly
  - Simple /io_uring/ UDP (echo) program didn't solve issue
 
+* Slide: End and Thanks                                              :export:
+
+*Thanks* to Cloudflare Engineers
+ - /Yan Zhai/ -  for providing production data and test
+ - /Marek Majkowski/ - for providing IO uring test program
 
 * Benchmark showing issue                                          :noexport:
 
