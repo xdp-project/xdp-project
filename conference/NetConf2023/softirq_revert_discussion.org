@@ -9,7 +9,7 @@
 #+REVEAL_ROOT: ../reveal.js
 #+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
 #+OPTIONS: reveal_width:1600 reveal_height:900
-#+OPTIONS: ^:nil tags:nil num:nil ':t
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
 
 
 * For conference: NetConf 2023                                     :noexport:
@@ -17,16 +17,6 @@
 This presentation will be given at [[http://vger.kernel.org/netconf2023.html][Netconf 2023]].
 
 * Brainstorm                                                       :noexport:
-
-Eric Dumazet's 2016 change to softirq
- - Reverted by Paolo
-
-Patch solved UDP overload case
- - that resulted in falling-of-edge when UDP-app and RX-NAPI share CPU
-
-Over the years there have been several cases
- - that indicate this approach have caused issues
- - it is likely right choice to revert
 
 The question is how to address UDP overload case in a new way
  - The solution could be to ask user to use other APIs
@@ -42,6 +32,21 @@ Hopefully get production data from Yan/Cloudflare
 Perhaps: Slide explaining the problem of
  - RX-NAPI enqueuing 64-packets, each timeUDP-app dequeue 1-packet
 
+* Slide: Background: "Let ksoftirqd do its job"                      :export:
+
+Eric's 2016 ([[https://lwn.net/Articles/687617/][LWN]]) change [[https://git.kernel.org/torvalds/c/4cd13c21b207]["softirq: Let ksoftirqd do its job"]] - [[https://git.kernel.org/torvalds/c/d15121be7485655][Reverted]] May 2023
+ - */Issue/*: Aggressive /softirqs/ often handled by *current process*
+   - /Innocent threads/ *cannot make progress*
+ - /Solution/: if ksoftirq is running, then /skip/ do_softirq_own_stack()
+
+Patch /solved/ */UDP/* *overload* case
+ - that resulted in */falling-of-edge/* when UDP-app and RX-NAPI *share* /CPU/
+
+Over the years: several cases /indicate/ approach have *caused issues*
+ - Thus *likely* /right choice to revert/
+ - The question is how to address (UDP) overload case in a /new/ *way* */?/*
+
+ 
 * Attempt with io_uring application                                :noexport:
 
 Marek created this gist for me:
