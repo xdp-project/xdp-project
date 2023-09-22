@@ -27,8 +27,6 @@ The question is how to address UDP overload case in a new way
 Show data on UDP overload case
  - Explain: Kernel is now again open to this DoS overload case
 
-Hopefully get production data from Yan/Cloudflare
-
 Perhaps: Slide explaining the problem of
  - RX-NAPI enqueuing 64-packets, each timeUDP-app dequeue 1-packet
 
@@ -46,11 +44,17 @@ Over the years: several cases /indicate/ approach have *caused issues*
  - Thus *likely* /right choice to revert/
  - The question is how to address (UDP) overload case in a /new/ *way* */?/*
 
-* Slide: Production benefits?                                        :export:
+* Slide: Production benefits? (1/2)                                  :export:
 
 /Reduced/ CPU time spend in *softirq* (?)
 
 [[file:softirq-time02-crop.png]]
+
+** Slide: Production benefits? (2/2)                                :export:
+
+CPU usage shifted: /Innocent threads/ are likely *running* */softirq/* (?)
+
+[[file:user-time02-crop.png]]
 
 
 * Attempt with io_uring application                                :noexport:
