@@ -41,6 +41,8 @@ Over the years: several cases /indicate/ approach have *caused issues*
 * Slide: Production benefits? (1/2)                                  :export:
 
 /Reduced/ CPU time spend in *softirq* (?)
+@@html:<small>@@(test == Kernel 6.1.53 with [[https://git.kernel.org/torvalds/c/d15121be7485655][reverted]] softirq change)@@html:</small>@@
+
 
 [[file:softirq-time02-crop.png]]
 
