@@ -34,16 +34,27 @@ September 2023.
   - Why skbs at all?
 - Netfilter acceleration
 
+* XDP: Features since last Netconf                                   :export:
 
+- Multibuf (Lozenzo, Maciej, Eelco)
+- XDP hints on RX (Jesper, Stanislav, Toke)
+- Feature flags (Lorenzo)
+- More stack helpers (conntrack, synproxy) (Kartikeya, Lorenzo, Maxim)
+- XDP_REDIRECT improvements
+  - Multicast (Hangbin)
+  - Map lookup, hashmap type, bpf_redirect() performance (Toke)
+  - Programs in devmap/cpumap (David Ahern, Lorenzo)
+- Eliminating indirect calls (Björn)
+- Live mode BPF_PROG_RUN (Toke)
+- AF_XDP need_wakeup mode (Magnus and Maxim)
+- Atomic replace and bpf_link attachment (Toke, Andrii)
 
-* XDP: Recent developments                                           :export:
+** XDP driver support - Quiz!
+How many drivers support XDP today?
 
-- Multibuf
-- XDP hints (RX)
-- Feature flags
-- More stack helpers (conntrack, synproxy)
+How many have all features enabled by default?
 
-** XDP: Driver support
+** XDP driver support
 
 #+ATTR_html: :class compact-table :style font-size: 55%; width: 48%; float: left;
 |           |  <c>  |   <c>    |   <c>    |     <c>     |     <c>     |  <c>   |    <c>     |
@@ -99,13 +110,41 @@ September 2023.
 ✓: Always enabled. (✓): Configuration-dependent.
 
 * XDP: Ongoing work                                                  :export:
-- XDP hints (TX)
-- Veth optimisations
+- XDP hints on TX (Stanislav)
+- Veth optimisations (Jesper)
+- Multiprog attachment (Daniel)
+- Queueing (Toke)
 
-* Slide: Questions?                                                  :export:
-:PROPERTIES:
-:reveal_extra_attr: class="title-only-slide"
-:END:
+* Generic XDP                                                        :export:
+- Bulking on redirect
+- GSO frames through multibuf API
+- Veth redirect conversion
+
+* AF_XDP xmit path                                                   :export:
+- Getting rid of socket-allocated SKBs?
+- Why allocate SKBs at all?
+- TX hints (ongoing, Stanislav)
+
+* XDP Hints                                                          :export:
+- More metadata fields
+- Saving for redirect and skb creation (in xdp_frame)
+- Naming: "XDP metadata" is not very googlable!
+
+* Datapath helpers                                                   :export:
+
+What do we need to build a transparent fast path using XDP?
+
+- Bridge lookup(?)
+- Netfilter / flowtables lookup (or acceleration?)
+
+* Queueing xmit side                                                 :export:
+
+Current idea: Transmit from bpf_timer callback
+
+Problem: Runs in =HRTIMER_SOFTIRQ=
+
+Idea: Flag to run timer callback in different context. NET_TX_SOFTIRQ or kthread?
+
 
 
 * Emacs end-tricks                                                 :noexport:
