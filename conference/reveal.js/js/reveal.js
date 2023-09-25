@@ -369,8 +369,8 @@
 		// Flags if we should use zoom instead of transform to scale
 		// up slides. Zoom produces crisper results but has a lot of
 		// xbrowser quirks so we only use it in whitelsited browsers.
-		features.zoom = 'zoom' in testElement.style && !isMobileDevice &&
-						( isChrome || /Version\/[\d\.]+.*Safari/.test( UA ) );
+		// Disabled because it messes with layout even on Chrome
+		features.zoom = false;
 
 	}
 
