@@ -52,7 +52,6 @@ CPU usage shifted: /Innocent threads/ are likely *running* */softirq/* (?)
 
 [[file:user-time02-crop.png]]
 
-
 * Slide: Solve via: Ask users to use other APIs?                     :export:
 
 The question is how to address UDP overload case in a new way?
@@ -67,6 +66,18 @@ The *solutions* could be to /ask users to use other APIs/
 *Thanks* to Cloudflare Engineers
  - /Yan Zhai/ -  for providing production data and test
  - /Marek Majkowski/ - for providing IO uring test program
+
+* Slide: Extra - UDP performance data
+
+TODO: Add table with UDP performance during overload
+
+| Kernel | UdpInDatagrams/sec | UdpRcvbufErrors/sec |
+|--------+--------------------+---------------------|
+|        |                    |                     |
+|        |                    |                     |
+|        |                    |                     |
+
+
 
 * Benchmark showing issue                                          :noexport:
 
