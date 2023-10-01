@@ -1,0 +1,332 @@
+# -*- fill-column: 79; -*-
+#+TITLE: Discussing /Softirq/ revert and side-effects
+#+AUTHOR: Jesper Dangaard Brouer <hawk@kernel.org>
+#+EMAIL: hawk@kernel.org
+#+REVEAL_THEME: redhat
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_EXTRA_JS: { src: '../reveal.js/js/redhat.js'}
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:nil reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+
+* For conference: NetConf 2023                                     :noexport:
+
+This presentation will be given at [[http://vger.kernel.org/netconf2023.html][Netconf 2023]].
+
+* Brainstorm                                                       :noexport:
+
+Show data on UDP overload case
+ - Explain: Kernel is now again open to this DoS overload case
+
+Perhaps: Slide explaining the problem of
+ - RX-NAPI enqueuing 64-packets, each time UDP-app dequeue 1-packet
+
+* Slide: Background: "Let ksoftirqd do its job"                      :export:
+
+Eric's 2016 ([[https://lwn.net/Articles/687617/][LWN]]) change [[https://git.kernel.org/torvalds/c/4cd13c21b207]["softirq: Let ksoftirqd do its job"]] - [[https://git.kernel.org/torvalds/c/d15121be7485655][Reverted]] May 2023
+ - */Issue/*: Aggressive /softirqs/ often handled by *current process*
+   - /Innocent threads/ *cannot make progress*
+ - /Solution/: if ksoftirq is running, then /skip/ do_softirq_own_stack()
+
+Patch /solved/ */UDP/* *overload* case
+ - that resulted in */falling-of-edge/* when UDP-app and RX-NAPI *share* /CPU/
+
+Over the years: several cases /indicate/ approach have *caused issues*
+ - Thus *likely* /right choice to revert/
+ - The question is how to address (UDP) overload case in a /new/ *way* */?/*
+
+* Slide: Production benefits? (1/2)                                  :export:
+
+/Reduced/ CPU time spend in *softirq* (?)
+@@html:<small>@@(test == Kernel 6.1.53 with [[https://git.kernel.org/torvalds/c/d15121be7485655][reverted]] softirq change)@@html:</small>@@
+
+
+[[file:softirq-time02-crop.png]]
+
+** Slide: Production benefits? (2/2)                                :export:
+
+CPU usage shifted: /Innocent threads/ are likely *running* */softirq/* (?)
+
+[[file:user-time02-crop.png]]
+
+* Slide: Solve via: Ask users to use other APIs?                     :export:
+
+The question is how to address UDP overload case in a new way?
+
+The *solutions* could be to /ask users to use other APIs/
+ - Tried *multi* UDP message /recv/ (=recvmmsg=) but does NOT work
+ - Tried /UDP/ *GRO* but didn't manage to configure it correctly
+ - Simple /io_uring/ UDP (echo) program didn't solve issue
+
+* Slide: End and Thanks                                              :export:
+
+*Thanks* to Cloudflare Engineers
+ - /Yan Zhai/ -  for providing production data and test
+ - /Marek Majkowski/ - for providing IO uring test program
+
+* Slide: Extra - UDP performance data
+
+TODO: Add table with UDP performance during overload
+
+| Kernel | UdpInDatagrams/sec | UdpRcvbufErrors/sec |
+|--------+--------------------+---------------------|
+|        |                    |                     |
+|        |                    |                     |
+|        |                    |                     |
+
+
+
+* Benchmark showing issue                                          :noexport:
+
+** Bench: simple UDP overload test
+
+Case: Kernel with softirq-revert change.
+
+The problematic case is UDP overload situation: RX-NAPI and UDP-application
+runs on same CPU, which according to my tests result in less than 0.2% traffic
+getting through (UdpInDatagrams). Notice the UdpInErrors/UdpRcvbufErrors in
+below stats:
+
+#+begin_src sh
+ $ nstat -n && sleep 1 && nstat
+ #kernel
+ IpInReceives                    2831056            0.0
+ IpInDelivers                    2831053            0.0
+ UdpInDatagrams                  2948               0.0
+ UdpInErrors                     2828118            0.0
+ UdpRcvbufErrors                 2828118            0.0
+ IpExtInOctets                   130206496          0.0
+ IpExtInNoECTPkts                2830576            0.0
+#+end_src
+
+I guess, it would be obvious to look at UdpInErrors across fleet to see if this
+happens. Maybe the right stat is actually UdpRcvbufErrors, because that is the
+real problem, that the UDP socket queue limit is reached.
+
+My UDP test was performed via using my own [[https://github.com/netoptimizer/network-testing/blob/master/src/udp_sink.c][udp_sink]] program. But it doesn't
+really matter what UDP receiver you will use. And then pktgen as a UDP packet
+generator.
+
+As long as GRO is on, then a TCP socket test should "survive" the overload
+situation, when RX-NAPI and TCP-application runs on same CPU, it might even be
+a benefit to run on same CPU.
+
+
+* Attempt with io_uring application                                :noexport:
+
+Marek created this gist for me:
+ - https://gist.github.com/majek/d59e32654da32b2fb6f5fcd9548d6514
+
+#+begin_src sh
+sudo dnf install liburing-devel
+git clone git@gist.github.com:d59e32654da32b2fb6f5fcd9548d6514.git
+#+end_src
+
+Depend on local version of iouring:
+
+#+begin_src sh
+cd d59e32654da32b2fb6f5fcd9548d6514
+git clone https://github.com/axboe/liburing
+#+end_src
+
+** Generator machine
+
+#+begin_src sh
+./pktgen_sample03_burst_single_flow.sh -vi mlx5p1 -d 198.18.1.1 \
+       -m ec:0d:9a:db:11:c4 -t 12 -p 5201
+#+end_src
+
+mlx5p1 TX 45,892,511 pps.
+
+** Test run#1: Separate CPUs
+
+Separate CPUs for RX-NAPI and UDP listen application =iouringf=.
+
+#+begin_example
+$ taskset -c 1 ./iouringf
+[*] Listening on 0.0.0.0:5201 gso=0 buffer_num=1 poll=0 async=0
+loops:699960 oom:349980 buffers:349980 packets:349k bytes:6299k
+loops:706194 oom:353097 buffers:353097 packets:353k bytes:6355k
+loops:717044 oom:358522 buffers:358522 packets:358k bytes:6453k
+#+end_example
+
+Nstat result:
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    1586105            0.0
+IpInDelivers                    1586103            0.0
+IpOutRequests                   364477             0.0
+IcmpInMsgs                      1                  0.0
+IcmpInDestUnreachs              1                  0.0
+IcmpMsgInType3                  1                  0.0
+UdpInDatagrams                  364473             0.0
+UdpInErrors                     1221590            0.0
+UdpOutDatagrams                 364474             0.0
+UdpRcvbufErrors                 1221590            0.0
+IpExtInOctets                   72974842           0.0
+IpExtOutOctets                  16769116           0.0
+IpExtInNoECTPkts                1586409            0.0
+#+end_example
+
+This run have Netfilter loaded.
+ - perf top#4 cost: __nf_conntrack_find_get
+ - top #1 #2 #3 is the syscall
+
+** Test run#2: Same CPUs
+
+*Same* CPU for RX-NAPI and UDP listen application =iouringf=.
+
+#+begin_example
+$ taskset -c 0 ./iouringf
+[*] Listening on 0.0.0.0:5201 gso=0 buffer_num=1 poll=0 async=0
+loops:1499 oom:749 buffers:750 packets:750 bytes:13k
+loops:1493 oom:747 buffers:746 packets:746 bytes:13k
+loops:1479 oom:739 buffers:740 packets:740 bytes:13k
+#+end_example
+
+Nstat results:
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    1692889            0.0
+IpInDelivers                    1692893            0.0
+IpOutRequests                   754                0.0
+IcmpInMsgs                      1                  0.0
+IcmpInDestUnreachs              1                  0.0
+IcmpMsgInType3                  1                  0.0
+UdpInDatagrams                  755                0.0
+UdpInErrors                     1692150            0.0
+UdpOutDatagrams                 755                0.0
+UdpRcvbufErrors                 1692150            0.0
+IpExtInOctets                   77857834           0.0
+IpExtOutOctets                  34730              0.0
+IpExtInNoECTPkts                1692561            0.0
+#+end_example
+
+** Test run#3: Separate CPUs + no-netfilter
+
+Unload netfilter modules as this test they just clutter the perf report.
+
+#+begin_example
+loops:811270 oom:405635 buffers:405635 packets:405k bytes:7301k
+loops:803768 oom:401884 buffers:401884 packets:401k bytes:7233k
+loops:803881 oom:401940 buffers:401941 packets:401k bytes:7234k
+#+end_example
+
+Nstat:
+#+begin_example
+$ nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    2440649            0.0
+IpInDelivers                    2440645            0.0
+IpOutRequests                   411970             0.0
+IcmpInMsgs                      1                  0.0
+IcmpInDestUnreachs              1                  0.0
+IcmpMsgInType3                  1                  0.0
+UdpInDatagrams                  411969             0.0
+UdpInErrors                     2028648            0.0
+UdpOutDatagrams                 411970             0.0
+UdpRcvbufErrors                 2028648            0.0
+IpExtInOctets                   112276506          0.0
+IpExtOutOctets                  18951724           0.0
+IpExtInNoECTPkts                2440793            0.0
+#+end_example
+
+** Test run#4: Same CPUs + no-netfilter
+
+#+begin_example
+ taskset -c 3 ./iouringf
+[*] Listening on 0.0.0.0:5201 gso=0 buffer_num=1 poll=0 async=0
+loops:3254 oom:1627 buffers:1627 packets:1627 bytes:29k
+loops:3247 oom:1623 buffers:1624 packets:1624 bytes:29k
+loops:3276 oom:1638 buffers:1638 packets:1638 bytes:29k
+#+end_example
+
+Nstat:
+#+begin_example
+nstat -n && sleep 1 && nstat
+#kernel
+IpInReceives                    2622721            0.0
+IpInDelivers                    2622721            0.0
+IpOutRequests                   1618               0.0
+IcmpInMsgs                      1                  0.0
+IcmpInDestUnreachs              1                  0.0
+IcmpMsgInType3                  1                  0.0
+UdpInDatagrams                  1618               0.0
+UdpInErrors                     2621124            0.0
+UdpOutDatagrams                 1618               0.0
+UdpRcvbufErrors                 2621124            0.0
+IpExtInOctets                   120633418          0.0
+IpExtOutOctets                  74382              0.0
+IpExtInNoECTPkts                2622465            0.0
+#+end_example
+
+Reduced perf output:
+#+begin_example
+Samples: 40K of event 'cycles:P', Event count (approx.): 38411756215
+  Overhead  CPU  Command      Shared Object     Symbol
++    6.92%  003  iouringf     [kernel.vmlinux]  [k] fib_table_lookup
+-    3.33%  003  iouringf     [kernel.vmlinux]  [k] kmem_cache_free
+   - 3.26% kmem_cache_free
+      - 3.25% udp_queue_rcv_one_skb
+           udp_unicast_rcv_skb
+           __udp4_lib_rcv
+           ip_protocol_deliver_rcu
+           ip_local_deliver_finish
+           ip_sublist_rcv_finish
+           ip_sublist_rcv
+           ip_list_rcv
+           __netif_receive_skb_list_core
+           netif_receive_skb_list_internal
+           napi_gro_receive
+           mlx5e_handle_rx_cqe_mpwrq
+           mlx5e_rx_cq_process_basic_cqe_comp
+           mlx5e_poll_rx_cq
+           mlx5e_napi_poll
+           __napi_poll
+           net_rx_action
+           __do_softirq
+           do_softirq
+         - __local_bh_enable_ip
+            - 1.38% __skb_recv_udp
+                 udp_recvmsg
+                 inet_recvmsg
+                 sock_recvmsg
+                 io_recvmsg
+                 io_issue_sqe
+                 io_submit_sqes
+                 __do_sys_io_uring_enter
+                 do_syscall_64
+                 entry_SYSCALL_64
+                 _io_uring_get_cqe
+                 0x7f3a1fffd040
+                 0
+            + 1.30% __dev_queue_xmit
+            + 0.57% page_pool_put_defragged_page
++    3.18%  003  iouringf     [kernel.vmlinux]  [k] __netif_receive_skb_core.constprop.0
+#+end_example
+
+Notice how the *Command* is: =iouringf= which gets to activate NAPI poll.
+
+The =__local_bh_enable_ip= basically start a NAPI poll loop. And the three
+callers that does this =__local_bh_enable_ip= activation are:
+ - =__skb_recv_udp=
+ - =__dev_queue_xmit=
+ - =page_pool_put_defragged_page=
+
+The =__skb_recv_udp= path is the io_uring entry point that wraps =recvmsg=.
+
+
+* Emacs tricks                                                     :noexport:
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1>
+# <h2 class=\"author\">
+# Jesper Dangaard Brouer<br/></h2>
+# <h3>Netconf<br/>Paris, Sep 2023</h3>"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
