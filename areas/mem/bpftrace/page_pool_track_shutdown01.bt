@@ -1,4 +1,4 @@
-#!/usr/local/bin/bpftrace
+#!/bin/bpftrace
 /*
  * page_pool_track_shutdown01 - Catch when page_pool_destroy see inflight pages
  *
@@ -26,7 +26,7 @@ kprobe:page_pool_destroy {
 	// @pp_last_kstack[$pp] = kstack;
 }
 
-tracepoint:page_pool:page_pool_inflight {
+tracepoint:page_pool:page_pool_release {
 	$page_pool = args->pool;
 	$inflight  = args->inflight;
 	$hold      = args->hold;

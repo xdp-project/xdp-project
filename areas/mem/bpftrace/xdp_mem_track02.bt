@@ -60,7 +60,7 @@ tracepoint:xdp:mem_disconnect {
 			@active_mem_ids[$id] = nsecs;
 		}
 
-		/* Tracepoint page_pool_inflight is triggered just before.
+		/* Tracepoint page_pool_release is triggered just before.
 		 * Transfer info via maps @pp_stat_* to this tracepoint.
 		 */
 		$pp = (uint64)$page_pool; /* type-case didn't make difference */
@@ -87,7 +87,7 @@ tracepoint:xdp:mem_disconnect {
 	       probe, $type_str, $id,  $page_pool, $safe_to_remove, $time_ms);
 }
 
-tracepoint:page_pool:page_pool_inflight {
+tracepoint:page_pool:page_pool_release {
 	$page_pool = args->pool;
 	$inflight  = args->inflight;
 	$hold      = args->hold;
