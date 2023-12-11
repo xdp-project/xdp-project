@@ -12,25 +12,26 @@
  *  https://bugzilla.redhat.com/show_bug.cgi?id=1795049#c8
  *
  * 26-Jan-2020	Jesper Dangaard Brouer	Created this
+ * 11-Dec-2023  Jesper Dangaard Brouer	Make safe for production usage
  */
 BEGIN
 {
 	/* Cmdline arg#1: latency threshold input in usec */
-	@threshold_usecs = $1 ? $1: 2000;
-	/* Cmdline arg#2: enable measuring runtime of softirq func */
-	@measure_runtime = $2;
-	printf("Tracing softirq latency ... Hit Ctrl-C to end.\n");
+	@threshold_usecs = $1 ? $1: 5000;
+	/* Cmdline arg#2: CPU to measure
+	 *  On prod systems (e.g with 128 cores) limit impact
+	 */
+	@my_cpu = $2 ? $2 : 0;
+	printf("Tracing softirq latency on CPU:%d ... Hit Ctrl-C to end.\n",
+	       @my_cpu);
 	printf(" - Will report on latency above %d usecs (= %d ms)\n",
 	       @threshold_usecs, @threshold_usecs / 1000);
-	if (@measure_runtime) {
-		printf(" - Also record runtime of softirq func call\n");
-	}
 }
 
 tracepoint:irq:softirq_raise
 /args->vec == 3/   /* NET_RX_SOFTIRQ = 3 */
 {
-	if (!@start[cpu]) {
+	if (@my_cpu == cpu && !@start[cpu]) {
 		/* Only catch first softirq_raise, to measure time
 		 * until softirq_entry happens.  Other raise events
 		 * could be triggered by other NICs.
@@ -42,7 +43,7 @@ tracepoint:irq:softirq_raise
 tracepoint:irq:softirq_entry
 /args->vec == 3/
 {
-	if (@start[cpu] > 0) {
+	if (@my_cpu == cpu && @start[cpu] > 0) {
 		$lat = (nsecs - @start[cpu]) / 1000; /* convert to usecs */
 		@latency_usecs[cpu] = hist($lat);
 
@@ -54,23 +55,9 @@ tracepoint:irq:softirq_entry
 		}
 	}
 	delete(@start[cpu]);
-	if (@measure_runtime) {
-		@runtime[cpu] = nsecs;
-	}
-}
-
-tracepoint:irq:softirq_exit
-/args->vec == 3/
-{
-	if (@measure_runtime && @runtime[cpu] > 0) {
-		$lat = (nsecs - @runtime[cpu]) / 1000;
-		@runtime_usecs[cpu] = hist($lat);
-	}
-	delete(@runtime[cpu]);
 }
 
 END
 {	/* Default bpftrace will print all remaining maps at END */
-	clear(@measure_runtime);
 	clear(@threshold_usecs);
 }
