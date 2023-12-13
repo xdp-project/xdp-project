@@ -1,0 +1,139 @@
+# -*- fill-column: 79; -*-
+#+TITLE: Always-on latency monitoring with eBPF
+#+AUTHOR: Toke Høiland-Jørgensen <toke@redhat.com>
+#+EMAIL: toke@redhat.com
+#+REVEAL_THEME: white
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:t reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: Understanding Latency 2023                       :noexport:
+
+This presentation is for the Understanding Latency v2 webinar in December 2023:
+https://www.understandinglatency.com/
+
+* Slides below                                                     :noexport:
+
+Only sections with tag ":export:" will end-up in the presentation.
+
+Colors are choosen via org-mode italic/bold high-lighting:
+ - /italic/ = /green/
+ - *bold*   = *yellow*
+ - */italic-bold/* = red
+
+* Acknowledgements                                                   :export:
+This is joint work with Simon Sundberg, Anna Brunstrom, Simone Ferlin-Reiter,
+Jesper Dangaard Brouer and Robert Chacón.
+
+* Slide: What is eBPF ?                                              :export:
+
+#+ATTR_html: :style height: 100px; float: right; width: auto; position: relative; top: -100px; right: 100px; box-shadow: none;
+[[file:ebpf-logo.svg]]
+
+ - /Bytecode/ - Architecture independent *Instruction Set*
+   * /JIT/ to native machine instructions (after loading into kernel)
+
+ - /Runtime environment/ - Linux kernel
+   * *Event based* BPF hooks all over the kernel
+   * Per hook limited access to kernel functions via *helpers and kfuncs*
+
+ - /*Sandboxed*/ by the eBPF /verifier/
+   * Limits and verifies memory access and instructions limit
+
+* Passive latency monitoring                                        :export:
+
+Kathie Nichols' [[https://github.com/pollere/pping][pping]] + eBPF = [[https://github.com/xdp-project/bpf-examples/tree/master/pping][ePPing]]
+
+
+[[file:epping-perf.png]]
+
+#+HTML: <small>
+Sundberg, S. et al.: [[https://doi.org/10.1007/978-3-031-28486-1_9][Efficient Continuous Latency Monitoring with eBPF]]. Passive
+and Active Measurement (PAM 2023).
+#+HTML: </small>
+
+
+** ePPing in action                                                 :export:
+
+#+begin_src
+$ sudo ./pping -i eth0
+Starting ePPing in standard mode tracking TCP on eth0
+15:02:47.835948282 TCP 198.49.23.145:443+45.145.92.2:58188 opening due to first observed packet from dest
+15:02:47.859153254 TCP 45.145.92.2:58188+198.49.23.145:443 opening due to first observed packet from dest
+15:02:47.885873388 21.2851 ms 21.2851 ms TCP 198.49.23.145:443+45.145.92.2:58188
+15:02:50.248235439 21.1454 ms 21.1454 ms TCP 198.49.23.145:443+45.145.92.2:58188
+^C
+#+end_src
+
+Cool! But doesn't really scale so well...
+
+* Enabling /always on/ monitoring                                    :export:
+
+#+begin_src
+$ sudo ./pping -i eth0 --aggregate 10
+Starting ePPing in standard mode tracking TCP on eth0
+Aggregating RTTs in histograms with 250 4 ms wide bins every 10 seconds
+15:10:45.084560144: 198.49.23.0/24 -> rxpkts=53, rxbytes=102917, txpkts=51, txbytes=5233, rtt-count=4,
+                                      min=21.1356 ms, mean=25 ms, median=24 ms, p95=29.4 ms, max=29.6763 ms
+15:10:45.084560144: 45.145.92.0/24 -> rxpkts=113, rxbytes=71232, txpkts=114, txbytes=116857
+15:10:45.084560144: 0.0.0.0/0 -> rxpkts=26, rxbytes=4456, txpkts=24, txbytes=4485
+15:10:45.084560144: ::/0 -> rxpkts=19, rxbytes=3215, txpkts=19, txbytes=3215
+15:10:45.118005597: TCP=(pkts=202, bytes=181238), UDP=(pkts=31, bytes=8720), ICMP=(pkts=22, bytes=2156),
+                    ECN=(Not-ECT=196, ECT1=49, ECT0=10)
+^C
+#+end_src
+
+Histogram aggregation happens inside the kernel!
+
+* So what can we show with this?                                     :export:
+
+One-month measurement study from a WISP middlebox (running [[https://github.com/LibreQoE/LibreQoS/][LibreQoS]])
+
+#+HTML: <small>
+Under submission
+#+HTML: </small>
+
+** Subnet RTTs                                                      :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_html: :style height: 800px;
+[[file:subnet-heatmap.svg]]
+
+** Traffic features                                                 :export:
+#+ATTR_html: :style height: 400px;
+[[file:traffic-features.svg]]
+
+** LAN and WAN traffic                                              :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_html: :style height: 800px;
+[[file:lan-wan-traffic.svg]]
+
+* Takeaways                                                          :export:
+With ePPing we can:
+
+- Passively measure RTTs at scale on any Linux machine (server or middlebox)
+- Aggregate metrics per subnet over the whole internet
+- Investigate traffic characteristics on both the WAN and LAN side
+
+What can this tell you about **your** network?
+
+https://github.com/xdp-project/bpf-examples/tree/master/pping
+
+
+* Emacs end-tricks                                                 :noexport:
+
+This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
+in the compiled version.
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1> Toke Høiland-Jørgensen<br/>Red Hat"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
