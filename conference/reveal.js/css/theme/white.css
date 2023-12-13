@@ -204,6 +204,13 @@ body {
 .reveal small * {
   vertical-align: top; }
 
+.reveal .img-slide h3,
+.reveal .img-slide h2 {
+    position: absolute;
+    top: 0px;
+    left: .1em;
+}
+
 /*********************************************
  * LINKS
  *********************************************/
