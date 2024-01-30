@@ -49,6 +49,7 @@ tracepoint:irq:softirq_entry
 		/* Report on events over threshold */
 		if ($lat >= @threshold_usecs) {
 			// @stack[cpu, $lat] = kstack; //no useful stack
+			time("%H:%M:%S ");
 			printf("High IRQ-to-softirq latency: %d usec (%d ms) on CPU:%d\n",
 			       $lat, $lat / 1000, cpu);
 		}
