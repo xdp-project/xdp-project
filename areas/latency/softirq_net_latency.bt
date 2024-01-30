@@ -46,7 +46,7 @@ tracepoint:irq:softirq_entry
 		$lat = (nsecs - @start[cpu]) / 1000; /* convert to usecs */
 		@latency_usecs[cpu] = hist($lat);
 
-		/* Report on events over threshold */
+		/* Report on "not-able-to-run" events over threshold */
 		if ($lat >= @threshold_usecs) {
 			// @stack[cpu, $lat] = kstack; //no useful stack
 			time("%H:%M:%S ");
@@ -66,6 +66,14 @@ tracepoint:irq:softirq_exit
 	if (@measure_runtime && @runtime[cpu] > 0) {
 		$lat = (nsecs - @runtime[cpu]) / 1000;
 		@runtime_usecs[cpu] = hist($lat);
+
+		/* Report on "runtime" events over threshold */
+		if ($lat >= @threshold_usecs) {
+			time("%H:%M:%S ");
+			printf("Long softirq runtime: %d usec (%d ms) on CPU:%d\n",
+			       $lat, $lat / 1000, cpu);
+		}
+
 	}
 	delete(@runtime[cpu]);
 }
