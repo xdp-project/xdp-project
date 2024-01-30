@@ -50,8 +50,8 @@ tracepoint:irq:softirq_entry
 		if ($lat >= @threshold_usecs) {
 			// @stack[cpu, $lat] = kstack; //no useful stack
 			time("%H:%M:%S ");
-			printf("High IRQ-to-softirq latency: %d usec (%d ms) on CPU:%d\n",
-			       $lat, $lat / 1000, cpu);
+			printf("High IRQ-to-softirq latency: %d usec (%d ms) on CPU:%d comm:%s\n",
+			       $lat, $lat / 1000, cpu, comm);
 		}
 	}
 	delete(@start[cpu]);
@@ -70,8 +70,8 @@ tracepoint:irq:softirq_exit
 		/* Report on "runtime" events over threshold */
 		if ($lat >= @threshold_usecs) {
 			time("%H:%M:%S ");
-			printf("Long softirq runtime: %d usec (%d ms) on CPU:%d\n",
-			       $lat, $lat / 1000, cpu);
+			printf("Long softirq runtime: %d usec (%d ms) on CPU:%d comm:%s\n",
+			       $lat, $lat / 1000, cpu, comm);
 		}
 
 	}
