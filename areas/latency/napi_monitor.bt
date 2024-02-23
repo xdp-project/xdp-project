@@ -1,65 +1,81 @@
 #!/usr/bin/bpftrace
 /* SPDX-License-Identifier: GPL-2.0+
  *
+ * It is hard to detect when hardware RX-ring queue overflows.
+ * Here we attempt to detect it based on more than 16 repeated
+ * NAPI repoll events, assuming default RX-ring size 1024 (16*64=1024)
+ *
  * 31-Jan-2020	Jesper Dangaard Brouer	Created this
+ * 23-Feb-2024  Jesper Dangaard Brouer  Rewrote hooking __napi_poll
  */
 BEGIN
 {
 	/* Cmdline arg#1: latency threshold input in usec */
-	@threshold_usecs = $1 ? $1: 1000;
-	printf("Tracing softirq latency ... Hit Ctrl-C to end.\n");
-	printf(" - Will report on latency above %d usecs (= %d ms)\n",
+	@threshold_usecs = $1 ? $1: 3000;
+	printf("Tracing NAPI bulk and latency ... Hit Ctrl-C to end.\n");
+	printf(" - Will report on likely RX-ring full events\n");
+	printf(" - Will report on runtime latency above %d usecs (= %d ms)\n",
 	       @threshold_usecs, @threshold_usecs / 1000);
+	@threshold_ns = @threshold_usecs * 1000;
 }
 
-tracepoint:irq:softirq_raise
-/args->vec == 3/   /* NET_RX_SOFTIRQ = 3 */
-{
-	@start_raise[cpu] = nsecs;
+kfunc:__napi_poll {
+	//$napi = (struct napi_struct *)args->n;
+
+	@start[cpu] = nsecs;
 }
 
-tracepoint:irq:softirq_entry
-/args->vec == 3/
-{
-	if (@start_raise[cpu] > 0) {
-		$lat = (nsecs - @start_raise[cpu]) / 1000; /* convert to usecs */
-		@irq_to_softirq_latency_usecs = hist($lat);
-	}
-	delete(@start_raise[cpu]);
-	@start_entry[cpu] = nsecs;
-}
+kretfunc:__napi_poll /@start[cpu]/ {
+	$bulk = retval;
+	$napi = (struct napi_struct *)args->n;
+	$netdev = (struct net_device *)$napi->dev;
+	//$ifindex = (unsigned int)$netdev->ifindex;
+	$repoll = *args->repoll;
 
-tracepoint:irq:softirq_exit
-/args->vec == 3/
-{
-	if (@start_entry[cpu] > 0) {
-		$lat = (nsecs - @start_entry[cpu]) / 1000; /* convert to usecs */
-		@softirq_runtime_usecs = hist($lat);
+	@bulk_hist = lhist($bulk, 0, 65, 1);
+	if ($bulk > 0) {
+		$runtime = nsecs - @start[cpu];
+		@runtime_hist = hist($runtime);
+		@runtime_per_packet_hist = hist($runtime / $bulk);
 
-		/* Report on events over threshold */
-		if ($lat >= @threshold_usecs) {
-			// @stack[cpu, $lat] = kstack; //no useful stack
-			printf("High softirq runtime latency: %d usec (%d ms) on CPU:%d\n",
-			       $lat, $lat / 1000, cpu);
+		if ($repoll) {
+			/* Count how many time the full budget were used
+			 * which cause NAPI to repoll.
+			 */
+			@full[cpu]++;
+		} else {
+			/* If @full[] have any counts we are exiting repoll cycle.
+			 */
+			if (@full[cpu] > 0) {
+				@full_hist = lhist(@full[cpu], 0, 64, 1);
+			}
+			/* Print threshold for 16 as times 64 = 1024 frames,
+			 * which likely means RX-ring was full (default 1024).
+			 */
+			if (@full[cpu] >= 16) {
+				time("%H:%M:%S ");
+				printf("[ifindex:%d] Exit-repoll full cnt:%d on CPU:%d comm:%s runtime:%d usec\n",
+				       $netdev->ifindex, @full[cpu], cpu, comm, $runtime/1000);
+			}
+			@full[cpu] = 0;
+		}
+
+		/* Print threshold for excessive runtime.
+		 * Default net_rx_action is 2ms (2000000 nanosec)
+		 */
+		if ($runtime > @threshold_ns ) {
+			time("%H:%M:%S ");
+			printf("[ifindex:%d] Long runtime: (full:%d bulk:%d) on CPU:%d comm:%s runtime:%d usec\n",
+			       $netdev->ifindex, @full[cpu], $bulk, cpu, comm, $runtime/1000);
 		}
 	}
-	delete(@start_entry[cpu]);
-}
-
-tracepoint:napi:napi_poll
-{
-	$packets = args->work; /* packets processed in NIC driver poll func */
-	@napi_bulk = lhist($packets, 0, 64, 4);
-
-	/* Tracepoint invoked just after NIC poll func call returns */
-	if (@start_entry[cpu] > 0) {
-		$lat = (nsecs - @start_entry[cpu]) / 1000; /* convert to usecs */
-		@napi_bulk_sz_latency_usec[$packets] = hist($lat);
-	}
-	/* softirq_exit will cleanup delete(@start_entry[cpu]) */
+	delete(@start[cpu]);
 }
 
 END
 {	/* Default bpftrace will print all remaining maps at END */
 	clear(@threshold_usecs);
+	clear(@threshold_ns);
+	clear(@start);
+	clear(@full);
 }
