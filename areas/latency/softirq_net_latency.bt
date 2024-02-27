@@ -12,6 +12,7 @@
  *  https://bugzilla.redhat.com/show_bug.cgi?id=1795049#c8
  *
  * 26-Jan-2020	Jesper Dangaard Brouer	Created this
+ * 27-Feb-2024	Jesper Dangaard Brouer	Updated based on production usage
  */
 BEGIN
 {
@@ -19,7 +20,7 @@ BEGIN
 	@threshold_usecs = $1 ? $1: 2000;
 	/* Cmdline arg#2: enable measuring runtime of softirq func */
 	@measure_runtime = $2;
-	printf("Tracing softirq latency ... Hit Ctrl-C to end.\n");
+	printf("Tracing softirq wait-time latency ... Hit Ctrl-C to end.\n");
 	printf(" - Will report on latency above %d usecs (= %d ms)\n",
 	       @threshold_usecs, @threshold_usecs / 1000);
 	if (@measure_runtime) {
@@ -45,7 +46,7 @@ tracepoint:irq:softirq_entry
 {
 	if (@start[cpu] > 0) {
 		$lat = nsecs - @start[cpu];
-		@latency_nanosec[cpu] = hist($lat);
+		@softirq_wait_nanosec[cpu] = hist($lat);
 
 		/* Report on "not-able-to-run" events over threshold */
 		if ($lat >= @threshold_ns) {
