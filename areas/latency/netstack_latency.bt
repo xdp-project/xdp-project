@@ -42,9 +42,17 @@ tracepoint:irq:softirq_raise
 	}
 }
 
-// TODO combine with kfunc:__napi_poll()
-tracepoint:irq:softirq_entry
-/args->vec == 3/
+/* Avoiding tracepoint:irq:softirq_entry
+ *
+ * The softirq_entry is called for all softirqs, so script need to filter on
+ * args->vec == NET_RX_SOFTIRQ.
+ *
+ * The registered handler for NET_RX is 'net_rx_action', so we can hook that
+ * instead.
+ *
+ */
+//tracepoint:irq:softirq_entry /args->vec == 3/
+kfunc:net_rx_action
 {
 	if (@softirq_start[cpu] > 0) {
 		$lat = nsecs - @softirq_start[cpu];
