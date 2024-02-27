@@ -1,0 +1,128 @@
+#!/usr/bin/bpftrace
+/* SPDX-License-Identifier: GPL-2.0+
+ *
+ * Linux Network stack (netstack) latency detection tool.
+ *
+ * This combines softirq_net_latency.bt and napi_monitor.bt scripts.
+ *
+ * 27-Feb-2020	Jesper Dangaard Brouer	Created this
+ */
+BEGIN
+{
+	/* Cmdline arg#1: latency threshold input in usec */
+	@threshold1_usecs = $1 ? $1: 4000;
+	@threshold1_ns = @threshold1_usecs * 1000;
+
+	/* Cmdline arg#2: runtime threshold in usecs */
+	@threshold2_usecs = $2 ? $2: 2000;
+	@threshold2_ns = @threshold2_usecs * 1000;
+
+	/* Cmdline arg#3: consecutive repoll threshold */
+	@threshold3_repolls = $3 ? $3: 16;
+
+	printf("Tracing NAPI runtime and Softirq wait-time latency\n");
+	printf(" - Will report on wait-time above %d usecs (= %d ms)\n",
+	       @threshold1_usecs, @threshold1_usecs / 1000);
+	printf(" - Will report on NAPI runtime above %d usecs (= %d ms)\n",
+	       @threshold2_usecs, @threshold2_usecs / 1000);
+	printf(" - Will report on likely RX-ring full events (above %d repolls)\n",
+	       @threshold3_repolls);
+	printf("... Hit Ctrl-C to end.\n");
+}
+
+tracepoint:irq:softirq_raise
+/args->vec == 3/   /* NET_RX_SOFTIRQ = 3 */
+{
+	if (!@softirq_start[cpu]) {
+		/* Only catch first softirq_raise, to measure time
+		 * until softirq_entry happens.  Other raise events
+		 * could be triggered by other NICs.
+		 */
+		@softirq_start[cpu] = nsecs;
+	}
+}
+
+// TODO combine with kfunc:__napi_poll()
+tracepoint:irq:softirq_entry
+/args->vec == 3/
+{
+	if (@softirq_start[cpu] > 0) {
+		$lat = nsecs - @softirq_start[cpu];
+		@softirq_wait_nanosec = hist($lat);
+
+		/* Report on softirq wait "not-able-to-run" events over threshold */
+		if ($lat >= @threshold1_ns) {
+			// @stack[cpu, $lat] = kstack; //no useful stack
+			time("%H:%M:%S ");
+			printf("High IRQ-to-softirq latency: %d usec (%d ms) on CPU:%d comm:%s\n",
+			       $lat / 1000, $lat / 1000000, cpu, comm);
+		}
+	}
+	delete(@softirq_start[cpu]);
+}
+
+kfunc:__napi_poll {
+	@napi_start[cpu] = nsecs;
+}
+
+// kretprobe is faster, but no args avail
+// kretprobe:__napi_poll /@napi_start[cpu]/ {
+
+kretfunc:__napi_poll /@napi_start[cpu]/ {
+	$bulk = retval;
+	$napi = (struct napi_struct *)args->n;
+	$netdev = (struct net_device *)$napi->dev;
+	//$ifindex = (unsigned int)$netdev->ifindex;
+	$repoll = *args->repoll;
+
+	@bulk_hist = lhist($bulk, 0, 65, 1);
+	if ($bulk > 0) {
+		$runtime = nsecs - @napi_start[cpu];
+		@runtime_hist = hist($runtime);
+		@runtime_per_packet_hist = hist($runtime / $bulk);
+
+		if ($repoll) {
+			/* Count how many time the full budget were used
+			 * which cause NAPI to repoll.
+			 */
+			@full[cpu]++;
+		} else {
+			/* If @full[] have any counts we are exiting repoll cycle.
+			 */
+			if (@full[cpu] > 0) {
+				@full_hist = lhist(@full[cpu], 0, 64, 1);
+			}
+			/* Print threshold for 16 as times 64 = 1024 frames,
+			 * which likely means RX-ring was full (default 1024).
+			 */
+			if (@full[cpu] >= 16) {
+				time("%H:%M:%S ");
+				printf("[ifindex:%d] Exit-repoll RX-full cnt:%d on CPU:%d comm:%s runtime:%d usec\n",
+				       $netdev->ifindex, @full[cpu], cpu, comm, $runtime/1000);
+			}
+			@full[cpu] = 0;
+		}
+
+		/* Print threshold for excessive runtime.
+		 * Default net_rx_action is 2ms (2000000 nanosec)
+		 */
+		if ($runtime > @threshold2_ns ) {
+			time("%H:%M:%S ");
+			printf("[ifindex:%d] Long runtime: (full:%d bulk:%d) on CPU:%d comm:%s runtime:%d usec\n",
+			       $netdev->ifindex, @full[cpu], $bulk, cpu, comm, $runtime/1000);
+		}
+	}
+	delete(@napi_start[cpu]);
+}
+
+END
+{	/* Defavult bpftrace will print all remaining maps at END */
+	clear(@threshold1_usecs);
+	clear(@threshold1_ns);
+	clear(@threshold2_usecs);
+	clear(@threshold2_ns);
+	clear(@threshold3_repolls);
+	clear(@softirq_start);
+	clear(@napi_start);
+	clear(@full);
+}
