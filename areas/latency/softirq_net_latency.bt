@@ -12,6 +12,7 @@
  *  https://bugzilla.redhat.com/show_bug.cgi?id=1795049#c8
  *
  * 26-Jan-2020	Jesper Dangaard Brouer	Created this
+ * 27-Feb-2024	Jesper Dangaard Brouer	Updated based on production usage
  */
 BEGIN
 {
@@ -19,12 +20,13 @@ BEGIN
 	@threshold_usecs = $1 ? $1: 2000;
 	/* Cmdline arg#2: enable measuring runtime of softirq func */
 	@measure_runtime = $2;
-	printf("Tracing softirq latency ... Hit Ctrl-C to end.\n");
+	printf("Tracing softirq wait-time latency ... Hit Ctrl-C to end.\n");
 	printf(" - Will report on latency above %d usecs (= %d ms)\n",
 	       @threshold_usecs, @threshold_usecs / 1000);
 	if (@measure_runtime) {
 		printf(" - Also record runtime of softirq func call\n");
 	}
+	@threshold_ns = @threshold_usecs * 1000;
 }
 
 tracepoint:irq:softirq_raise
@@ -43,15 +45,15 @@ tracepoint:irq:softirq_entry
 /args->vec == 3/
 {
 	if (@start[cpu] > 0) {
-		$lat = (nsecs - @start[cpu]) / 1000; /* convert to usecs */
-		@latency_usecs[cpu] = hist($lat);
+		$lat = nsecs - @start[cpu];
+		@softirq_wait_nanosec = hist($lat);
 
 		/* Report on "not-able-to-run" events over threshold */
-		if ($lat >= @threshold_usecs) {
+		if ($lat >= @threshold_ns) {
 			// @stack[cpu, $lat] = kstack; //no useful stack
 			time("%H:%M:%S ");
 			printf("High IRQ-to-softirq latency: %d usec (%d ms) on CPU:%d comm:%s\n",
-			       $lat, $lat / 1000, cpu, comm);
+			       $lat / 1000, $lat / 1000000, cpu, comm);
 		}
 	}
 	delete(@start[cpu]);
@@ -64,14 +66,14 @@ tracepoint:irq:softirq_exit
 /args->vec == 3/
 {
 	if (@measure_runtime && @runtime[cpu] > 0) {
-		$lat = (nsecs - @runtime[cpu]) / 1000;
-		@runtime_usecs[cpu] = hist($lat);
+		$lat = nsecs - @runtime[cpu];
+		@runtime_nanosec = hist($lat);
 
 		/* Report on "runtime" events over threshold */
-		if ($lat >= @threshold_usecs) {
+		if ($lat >= @threshold_ns) {
 			time("%H:%M:%S ");
 			printf("Long softirq runtime: %d usec (%d ms) on CPU:%d comm:%s\n",
-			       $lat, $lat / 1000, cpu, comm);
+			       $lat / 1000, $lat / 1000000, cpu, comm);
 		}
 
 	}
@@ -82,4 +84,5 @@ END
 {	/* Default bpftrace will print all remaining maps at END */
 	clear(@measure_runtime);
 	clear(@threshold_usecs);
+	clear(@threshold_ns);
 }
