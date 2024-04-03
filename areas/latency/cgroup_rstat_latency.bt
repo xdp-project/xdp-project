@@ -54,8 +54,8 @@ kretprobe:cgroup_rstat_flush,kretprobe:cgroup_rstat_flush_irqsafe
 		if ($runtime >= @threshold1_ns) {
 			@stack[tid, comm] = kstack;
 			time("%H:%M:%S ");
-			printf("High runtime: %d usec (%d ms) on CPU:%d comm:%s\n",
-			       $runtime / 1000, $runtime / 1000000, cpu, comm);
+			printf("High runtime: %d usec (%d ms) on CPU:%d comm:%s func:%s\n",
+			       $runtime / 1000, $runtime / 1000000, cpu, comm, func);
 		}
 	}
         delete(@flush_start[tid]);
@@ -63,6 +63,16 @@ kretprobe:cgroup_rstat_flush,kretprobe:cgroup_rstat_flush_irqsafe
 
 interval:s:10
 {
+	time("%H:%M:%S ");
+	printf(" time elapsed: %d sec\n", elapsed / 1000000000);
 	print(@runtime_hist_ns);
 	//clear(@runtime_hist_ns);
+}
+
+END
+{	/* Default bpftrace will print all remaining maps at END */
+	clear(@threshold1_usecs);
+	clear(@threshold1_ns);
+	time("%H:%M:%S ");
+	printf("END time elapsed: %d sec\n", elapsed / 1000000000);
 }
