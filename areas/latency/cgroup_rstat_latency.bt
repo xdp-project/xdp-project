@@ -31,11 +31,8 @@ BEGIN
 }
 
 
-/* The _irqsafe variant exists on older kernels (e.g kernel 6.1)
- */
 kfunc:cgroup_rstat_flush,
-kfunc:cgroup_rstat_flush_hold,
-kfunc:cgroup_rstat_flush_irqsafe
+kfunc:cgroup_rstat_flush_hold
 {
 	/* Concurrency issue here? */
 	if (@flush_start[tid]) {
@@ -45,6 +42,15 @@ kfunc:cgroup_rstat_flush_irqsafe
 
 	@flush_start[tid] = nsecs;
 }
+
+/* The _irqsafe variant exists on older kernels (e.g kernel 6.1)
+ */
+/*
+kfunc:cgroup_rstat_flush_irqsafe
+{
+	@flush_start[tid] = nsecs;
+}
+*/
 
 /* Idea: Can we calculate/deduce the time spend waiting for lock?
  *
