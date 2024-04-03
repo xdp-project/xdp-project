@@ -27,11 +27,14 @@ BEGIN
 
 /* The _irqsafe variant exists on older kernels (e.g kernel 6.1)
  */
-kfunc:cgroup_rstat_flush,kfunc:cgroup_rstat_flush_irqsafe
+kfunc:cgroup_rstat_flush,
+kfunc:cgroup_rstat_flush_irqsafe,
+kfunc:cgroup_rstat_flush_hold
 {
 	/* Concurrency issue here? */
 	if (@flush_start[tid]) {
-		printf("Concurrency issue: tid[%d] comm[%s]\n", tid, comm);
+		printf("Concurrency issue: tid[%d] comm[%s] %s\n",
+		       tid, comm, probe);
 	}
 
 	@flush_start[tid] = nsecs;
@@ -52,13 +55,14 @@ kfunc:cgroup_rstat_flush_locked
 		       tid, comm, probe);
 	}
 
-	/* Hmm... it seems other caller of _locked exists */
 	if (@flush_start[tid] > 0) {
 		@flush_locked_start[tid] = nsecs;
 	}
 }
 
-kretprobe:cgroup_rstat_flush,kretprobe:cgroup_rstat_flush_irqsafe
+kretprobe:cgroup_rstat_flush,
+kretprobe:cgroup_rstat_flush_irqsafe,
+kretprobe:cgroup_rstat_flush_release
 {
 	if (@flush_start[tid] > 0) {
 		$now = nsecs;
