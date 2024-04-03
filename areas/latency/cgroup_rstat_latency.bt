@@ -1,0 +1,66 @@
+#!/usr/local/bin/bpftrace
+/* SPDX-License-Identifier: GPL-2.0+
+ *
+ * Script for evaluation the latency effect cgroup rstat (recursive stats).
+ *
+ * Production experience with softirq_net_latency.bt indicate that reading
+ * cgroup rstat (files under subdirs in /sys/fs/cgroup/) is *one* of the
+ * factors that can disrupt softirq processing.
+ *
+ * This script zoom into cgroup rstat function to evaluate kernel
+ * improvements in this area.
+ *
+ * 03-Apr-2024	Jesper Dangaard Brouer	Created this
+ */
+BEGIN
+{
+	/* Cmdline arg#1: runtime threshold input in usec */
+	@threshold1_usecs = $1 ? $1: 10000;
+	@threshold1_ns = @threshold1_usecs * 1000;
+
+	printf("Tracing latency caused by cgroup rstat\n");
+	printf(" - Will report on runtime above %d usecs (= %d ms)\n",
+	       @threshold1_usecs, @threshold1_usecs / 1000);
+	printf("... Hit Ctrl-C to end.\n");
+}
+
+
+kfunc:cgroup_rstat_flush
+{
+	/* Concurrency issue here? */
+	if (@flush_start[tid]) {
+		printf("Concurrency issue: tid[%d] comm[%s]\n", tid, comm);
+	}
+
+	@flush_start[tid] = nsecs;
+}
+
+kretprobe:cgroup_rstat_flush
+{
+	if (@flush_start[tid] > 0) {
+		$runtime = nsecs - @flush_start[tid];
+		@runtime_hist_ns = hist($runtime);
+
+		/* Report on events over threshold.
+		 *
+		 * Likely a spin_lock congestion on cgroup_rstat_lock.
+		 *
+		 * This runtime can include "too much" as a resched point in
+		 * cgroup_rstat_flush_locked() exists, but the calling code will
+		 * experience this delay.
+		 */
+		if ($runtime >= @threshold1_ns) {
+			@stack[tid, comm] = kstack;
+			time("%H:%M:%S ");
+			printf("High runtime: %d usec (%d ms) on CPU:%d comm:%s\n",
+			       $runtime / 1000, $runtime / 1000000, cpu, comm);
+		}
+	}
+        delete(@flush_start[tid]);
+}
+
+interval:s:10
+{
+	print(@runtime_hist_ns);
+	//clear(@runtime_hist_ns);
+}
