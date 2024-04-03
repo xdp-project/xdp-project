@@ -25,7 +25,9 @@ BEGIN
 }
 
 
-kfunc:cgroup_rstat_flush
+/* The _irqsafe variant exists on older kernels (e.g kernel 6.1)
+ */
+kfunc:cgroup_rstat_flush,kfunc:cgroup_rstat_flush_irqsafe
 {
 	/* Concurrency issue here? */
 	if (@flush_start[tid]) {
@@ -35,7 +37,7 @@ kfunc:cgroup_rstat_flush
 	@flush_start[tid] = nsecs;
 }
 
-kretprobe:cgroup_rstat_flush
+kretprobe:cgroup_rstat_flush,kretprobe:cgroup_rstat_flush_irqsafe
 {
 	if (@flush_start[tid] > 0) {
 		$runtime = nsecs - @flush_start[tid];
