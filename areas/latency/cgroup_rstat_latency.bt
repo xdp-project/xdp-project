@@ -18,9 +18,15 @@ BEGIN
 	@threshold1_usecs = $1 ? $1: 10000;
 	@threshold1_ns = @threshold1_usecs * 1000;
 
+	/* Cmdline arg#2: wait time threshold input in usec */
+	@threshold2_usecs = $2 ? $2: 1000;
+	@threshold2_ns = @threshold2_usecs * 1000;
+
 	printf("Tracing latency caused by cgroup rstat\n");
 	printf(" - Will report on runtime above %d usecs (= %d ms)\n",
 	       @threshold1_usecs, @threshold1_usecs / 1000);
+	printf(" - Will report on WAIT time above %d usecs (= %d ms)\n",
+	       @threshold2_usecs, @threshold2_usecs / 1000);
 	printf("... Hit Ctrl-C to end.\n");
 }
 
@@ -28,8 +34,8 @@ BEGIN
 /* The _irqsafe variant exists on older kernels (e.g kernel 6.1)
  */
 kfunc:cgroup_rstat_flush,
-kfunc:cgroup_rstat_flush_irqsafe,
-kfunc:cgroup_rstat_flush_hold
+kfunc:cgroup_rstat_flush_hold,
+kfunc:cgroup_rstat_flush_irqsafe
 {
 	/* Concurrency issue here? */
 	if (@flush_start[tid]) {
@@ -81,7 +87,7 @@ kretprobe:cgroup_rstat_flush_release
 		 * cgroup_rstat_flush_locked() exists, but the calling code will
 		 * experience this delay.
 		 */
-		if ($runtime >= @threshold1_ns) {
+		if ($runtime >= @threshold1_ns || $wait_time >= @threshold2_ns ) {
 			@stack[tid, comm] = kstack;
 			time("%H:%M:%S ");
 			printf("High runtime: %d usec (%d ms) wait: %d usec (%d ms) on CPU:%d comm:%s func:%s\n",
@@ -109,6 +115,8 @@ END
 {	/* Default bpftrace will print all remaining maps at END */
 	clear(@threshold1_usecs);
 	clear(@threshold1_ns);
+	clear(@threshold2_usecs);
+	clear(@threshold2_ns);
 	time("%H:%M:%S ");
 	printf("END time elapsed: %d sec\n", elapsed / 1000000000);
 }
