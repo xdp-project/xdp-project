@@ -37,11 +37,37 @@ kfunc:cgroup_rstat_flush,kfunc:cgroup_rstat_flush_irqsafe
 	@flush_start[tid] = nsecs;
 }
 
+/* Idea: Can we calculate/deduce the time spend waiting for lock?
+ *
+ * Entering cgroup_rstat_flush_locked() means we are holding the
+ * cgroup_rstat_lock. Calculating time in this function and subtracting it from
+ * cgroup_rstat_flush runtime, should give us time waiting for lock. The resched
+ * in cgroup_rstat_flush_locked() might screw this number.
+ */
+kfunc:cgroup_rstat_flush_locked
+{
+	/* Concurrency issue here? */
+	if (@flush_locked_start[tid]) {
+		printf("Concurrency issue: tid[%d] comm[%s] %s\n",
+		       tid, comm, probe);
+	}
+
+	/* Hmm... it seems other caller of _locked exists */
+	if (@flush_start[tid] > 0) {
+		@flush_locked_start[tid] = nsecs;
+	}
+}
+
 kretprobe:cgroup_rstat_flush,kretprobe:cgroup_rstat_flush_irqsafe
 {
 	if (@flush_start[tid] > 0) {
-		$runtime = nsecs - @flush_start[tid];
+		$now = nsecs;
+		$runtime = $now - @flush_start[tid];
+		$locked_time = $now - @flush_locked_start[tid];
+		$wait_time = $runtime - $locked_time;
+
 		@runtime_hist_ns = hist($runtime);
+		@wait_time_hist_ns = hist($wait_time);
 
 		/* Report on events over threshold.
 		 *
@@ -54,18 +80,24 @@ kretprobe:cgroup_rstat_flush,kretprobe:cgroup_rstat_flush_irqsafe
 		if ($runtime >= @threshold1_ns) {
 			@stack[tid, comm] = kstack;
 			time("%H:%M:%S ");
-			printf("High runtime: %d usec (%d ms) on CPU:%d comm:%s func:%s\n",
-			       $runtime / 1000, $runtime / 1000000, cpu, comm, func);
+			printf("High runtime: %d usec (%d ms) wait: %d usec (%d ms) on CPU:%d comm:%s func:%s\n",
+			       $runtime / 1000, $runtime / 1000000,
+			       $wait_time / 1000, $wait_time / 1000000,
+			       cpu, comm, func);
 		}
 	}
-        delete(@flush_start[tid]);
+	delete(@flush_start[tid]);
+	delete(@flush_locked_start[tid]);
 }
+
+
 
 interval:s:10
 {
 	time("%H:%M:%S ");
 	printf(" time elapsed: %d sec\n", elapsed / 1000000000);
 	print(@runtime_hist_ns);
+	print(@wait_time_hist_ns);
 	//clear(@runtime_hist_ns);
 }
 
