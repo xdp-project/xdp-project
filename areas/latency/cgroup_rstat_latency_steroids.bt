@@ -1,0 +1,128 @@
+#!/usr/local/bin/bpftrace
+/* SPDX-License-Identifier: GPL-2.0+
+ *
+ * Script for evaluation the latency effect cgroup rstat (recursive stats).
+ *
+ * Production experience with softirq_net_latency.bt indicate that reading
+ * cgroup rstat (files under subdirs in /sys/fs/cgroup/) is *one* of the
+ * factors that can disrupt softirq processing.
+ *
+ * This script zoom into cgroup rstat function to evaluate kernel
+ * improvements in this area.
+ *
+ * 03-Apr-2024	Jesper Dangaard Brouer	Created this
+ */
+BEGIN
+{
+	/* Cmdline arg#1: runtime threshold input in usec */
+	@threshold1_usecs = $1 ? $1: 10000;
+	@threshold1_ns = @threshold1_usecs * 1000;
+
+	/* Cmdline arg#2: wait time threshold input in usec */
+	@threshold2_usecs = $2 ? $2: 1000;
+	@threshold2_ns = @threshold2_usecs * 1000;
+
+	printf("Tracing latency caused by cgroup rstat\n");
+	printf(" - Will report on runtime above %d usecs (= %d ms)\n",
+	       @threshold1_usecs, @threshold1_usecs / 1000);
+	printf(" - Will report on WAIT time above %d usecs (= %d ms)\n",
+	       @threshold2_usecs, @threshold2_usecs / 1000);
+	printf("... Hit Ctrl-C to end.\n");
+}
+
+
+kfunc:cgroup_rstat_flush,
+kfunc:cgroup_rstat_flush_hold
+{
+	/* Concurrency issue here? */
+	if (@flush_start[tid]) {
+		printf("Concurrency issue: tid[%d] comm[%s] %s\n",
+		       tid, comm, probe);
+	}
+
+	@flush_start[tid] = nsecs;
+}
+
+/* The _irqsafe variant exists on older kernels (e.g kernel 6.1)
+ */
+/*
+kfunc:cgroup_rstat_flush_irqsafe
+{
+	@flush_start[tid] = nsecs;
+}
+*/
+
+/* Idea: Can we calculate/deduce the time spend waiting for lock?
+ *
+ * Entering cgroup_rstat_flush_locked() means we are holding the
+ * cgroup_rstat_lock. Calculating time in this function and subtracting it from
+ * cgroup_rstat_flush runtime, should give us time waiting for lock. The resched
+ * in cgroup_rstat_flush_locked() might screw this number.
+ */
+kfunc:cgroup_rstat_flush_locked
+{
+	/* Concurrency issue here? */
+	if (@flush_locked_start[tid]) {
+		printf("Concurrency issue: tid[%d] comm[%s] %s\n",
+		       tid, comm, probe);
+	}
+
+	if (@flush_start[tid] > 0) {
+		@flush_locked_start[tid] = nsecs;
+	}
+}
+
+kretprobe:cgroup_rstat_flush,
+kretprobe:cgroup_rstat_flush_irqsafe,
+kretprobe:cgroup_rstat_flush_release
+{
+	if (@flush_start[tid] > 0) {
+		$now = nsecs;
+		$runtime = $now - @flush_start[tid];
+		$locked_time = $now - @flush_locked_start[tid];
+		$wait_time = $runtime - $locked_time;
+
+		@runtime_hist_ns = hist($runtime);
+		@wait_time_hist_ns = hist($wait_time);
+
+		/* Report on events over threshold.
+		 *
+		 * Likely a spin_lock congestion on cgroup_rstat_lock.
+		 *
+		 * This runtime can include "too much" as a resched point in
+		 * cgroup_rstat_flush_locked() exists, but the calling code will
+		 * experience this delay.
+		 */
+		if ($runtime >= @threshold1_ns || $wait_time >= @threshold2_ns ) {
+			@stack[tid, comm] = kstack;
+			time("%H:%M:%S ");
+			printf("High runtime: %d usec (%d ms) wait: %d usec (%d ms) on CPU:%d comm:%s func:%s\n",
+			       $runtime / 1000, $runtime / 1000000,
+			       $wait_time / 1000, $wait_time / 1000000,
+			       cpu, comm, func);
+		}
+	}
+	delete(@flush_start[tid]);
+	delete(@flush_locked_start[tid]);
+}
+
+
+
+interval:s:10
+{
+	time("%H:%M:%S ");
+	printf(" time elapsed: %d sec\n", elapsed / 1000000000);
+	print(@runtime_hist_ns);
+	print(@wait_time_hist_ns);
+	//clear(@runtime_hist_ns);
+}
+
+END
+{	/* Default bpftrace will print all remaining maps at END */
+	clear(@threshold1_usecs);
+	clear(@threshold1_ns);
+	clear(@threshold2_usecs);
+	clear(@threshold2_ns);
+	time("%H:%M:%S ");
+	printf("END time elapsed: %d sec\n", elapsed / 1000000000);
+}
