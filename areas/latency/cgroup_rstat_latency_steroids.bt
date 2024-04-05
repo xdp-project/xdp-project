@@ -123,7 +123,7 @@ kprobe:cgroup_rstat_flush_locked+0x235 /* unlock (6.6.22-cloudflare-2024.3.15) *
 		$locked_time = $now - @flush_locked_start[tid];
 		$wait_time = $runtime - $locked_time;
 
-		@runtime_hist_ns = hist($runtime);
+		@lock_time_hist_ns = hist($runtime);
 		@wait_time_hist_ns = hist($wait_time);
 
 		/* Report on events over threshold.
@@ -153,9 +153,8 @@ interval:s:10
 {
 	time("%H:%M:%S ");
 	printf(" time elapsed: %d sec\n", elapsed / 1000000000);
-	print(@runtime_hist_ns);
+	print(@lock_time_hist_ns);
 	print(@wait_time_hist_ns);
-	//clear(@runtime_hist_ns);
 }
 
 END
