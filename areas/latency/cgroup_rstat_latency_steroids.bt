@@ -44,15 +44,19 @@ BEGIN
  * this allows us to measure locks critical section (where it blocks IRQs and
  * BH/softirq).
  *
- * Decoding the offsets
+ * Decoding the offsets requires access to the binary build with debuginfo.
  *
  * For kernel build: 6.6.22-cloudflare-2024.3.15
  *  cgroup_rstat_flush_locked+0x235 = unlock
  *  cgroup_rstat_flush_locked+0x24c = lock again
  *
+ * For kernel build 6.6.21-cloudflare-2024.3.8 we see:
+ *  cgroup_rstat_flush_locked+0x2aa = unlock
+ *  cgroup_rstat_flush_locked+0x2c1 = lock again
+ *
  */
-//kprobe:cgroup_rstat_flush_locked+0x235 { /* unlock */ }
-//kprobe:cgroup_rstat_flush_locked+0x24c { /*lock again */ }
+//kprobe:cgroup_rstat_flush_locked+0x235 {/* unlock */}
+//kprobe:cgroup_rstat_flush_locked+0x24c {/* lock again */}
 
 /* Start flush operation */
 kfunc:cgroup_rstat_flush,
@@ -98,6 +102,7 @@ kfunc:cgroup_rstat_flush_locked
 }
 
 kprobe:cgroup_rstat_flush_locked+0x24c // lock again (6.6.22-cloudflare-2024.3.15)
+//kprobe:cgroup_rstat_flush_locked+0x2c1 // lock again (6.6.21-cloudflare-2024.3.8)
 {
 	if (@flush_start[tid] > 0) {
 		$now = nsecs;
@@ -110,6 +115,7 @@ kprobe:cgroup_rstat_flush_locked+0x24c // lock again (6.6.22-cloudflare-2024.3.1
 kretprobe:cgroup_rstat_flush,
 kretprobe:cgroup_rstat_flush_release,
 kprobe:cgroup_rstat_flush_locked+0x235 /* unlock (6.6.22-cloudflare-2024.3.15) */
+//kprobe:cgroup_rstat_flush_locked+0x2aa /* unlock (6.6.21-cloudflare-2024.3.8) */
 {
 	if (@flush_start[tid] > 0) {
 		$now = nsecs;
