@@ -11,6 +11,9 @@
  * improvements in this area.
  *
  * 03-Apr-2024	Jesper Dangaard Brouer	Created this
+ * 05-Apr-2024	Jesper Dangaard Brouer	Steroids: needs adaption to binary build
+ *
+ *
  */
 BEGIN
 {
@@ -30,7 +33,28 @@ BEGIN
 	printf("... Hit Ctrl-C to end.\n");
 }
 
+/* Steroids: You don't want to take this pill
+ *
+ * It is possible to use kprobes attached to the middle of a kernel function. as
+ * described in:
+ * https://blog.tohojo.dk/2023/04/netfilter-packet-drop-attribution-using-bpf.html
+ *
+ * I want to know if (and when) `cgroup_rstat_flush_locked()` a release of
+ * cgroup_rstat_lock in side the loop (see comment "play nice and yield"). As
+ * this allows us to measure locks critical section (where it blocks IRQs and
+ * BH/softirq).
+ *
+ * Decoding the offsets
+ *
+ * For kernel build: 6.6.22-cloudflare-2024.3.15
+ *  cgroup_rstat_flush_locked+0x235 = unlock
+ *  cgroup_rstat_flush_locked+0x24c = lock again
+ *
+ */
+//kprobe:cgroup_rstat_flush_locked+0x235 { /* unlock */ }
+//kprobe:cgroup_rstat_flush_locked+0x24c { /*lock again */ }
 
+/* Start flush operation */
 kfunc:cgroup_rstat_flush,
 kfunc:cgroup_rstat_flush_hold
 {
@@ -56,8 +80,9 @@ kfunc:cgroup_rstat_flush_irqsafe
  *
  * Entering cgroup_rstat_flush_locked() means we are holding the
  * cgroup_rstat_lock. Calculating time in this function and subtracting it from
- * cgroup_rstat_flush runtime, should give us time waiting for lock. The resched
- * in cgroup_rstat_flush_locked() might screw this number.
+ * cgroup_rstat_flush runtime, should give us time waiting for lock.
+ *
+ * The resched in cgroup_rstat_flush_locked() is captured via offset kprobes
  */
 kfunc:cgroup_rstat_flush_locked
 {
@@ -72,9 +97,19 @@ kfunc:cgroup_rstat_flush_locked
 	}
 }
 
+kprobe:cgroup_rstat_flush_locked+0x24c // lock again (6.6.22-cloudflare-2024.3.15)
+{
+	if (@flush_start[tid] > 0) {
+		$now = nsecs;
+		@flush_locked_start[tid] = $now;
+		@flush_start[tid] = $now; // Reset "start" time
+	}
+}
+
+// kretprobe:cgroup_rstat_flush_irqsafe,
 kretprobe:cgroup_rstat_flush,
-kretprobe:cgroup_rstat_flush_irqsafe,
-kretprobe:cgroup_rstat_flush_release
+kretprobe:cgroup_rstat_flush_release,
+kprobe:cgroup_rstat_flush_locked+0x235 /* unlock (6.6.22-cloudflare-2024.3.15) */
 {
 	if (@flush_start[tid] > 0) {
 		$now = nsecs;
@@ -96,10 +131,10 @@ kretprobe:cgroup_rstat_flush_release
 		if ($runtime >= @threshold1_ns || $wait_time >= @threshold2_ns ) {
 			@stack[tid, comm] = kstack;
 			time("%H:%M:%S ");
-			printf("High runtime: %d usec (%d ms) wait: %d usec (%d ms) on CPU:%d comm:%s func:%s\n",
+			printf("High lock_time: %d usec (%d ms) wait: %d usec (%d ms) on CPU:%d comm:%s func:%s probe:%s\n",
 			       $runtime / 1000, $runtime / 1000000,
 			       $wait_time / 1000, $wait_time / 1000000,
-			       cpu, comm, func);
+			       cpu, comm, func, probe);
 		}
 	}
 	delete(@flush_start[tid]);
