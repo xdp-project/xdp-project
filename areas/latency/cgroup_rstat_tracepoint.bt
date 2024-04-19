@@ -35,13 +35,17 @@ BEGIN
 
 tracepoint:cgroup:cgroup_rstat_lock_contended
 {
+	$now = nsecs;
+
 	/* Concurrency issue here? */
 	if (@wait_start[tid]) {
 		printf("Concurrency issue: tid[%d] comm[%s] %s\n",
 		       tid, comm, probe);
 	}
+	@contended_cnt++;
+	@contended_cnt2++;
 
-	@wait_start[tid]=nsecs
+	@wait_start[tid]=$now;
 }
 
 tracepoint:cgroup:cgroup_rstat_locked
@@ -52,8 +56,6 @@ tracepoint:cgroup:cgroup_rstat_locked
 		$wait_time = $now - @wait_start[tid];
 		@wait_ns=hist($wait_time);
 		delete(@wait_start[tid]);
-		@contended_cnt++;
-		@contended_cnt2++;
 	} else {
 		$wait = 0;
 	}
@@ -110,17 +112,36 @@ tracepoint:cgroup:cgroup_rstat_unlock
 kfunc:cgroup_rstat_flush_locked
 {
 	@flush_calls++;
+	@flush_calls2++;
 	// @flush_calls = count();
 }
 
 interval:s:1
 {
 	$sec = (uint64) elapsed/1000000000;
-	time("%H:%M:%S ");
-	printf(" time elapsed: %d sec\n", $sec);
+	time("\n%H:%M:%S ");
+	printf(" time elapsed: %d sec (interval = 1 sec)\n", $sec);
 
-	print(@wait_ns);
-	print(@locked_ns);
+	/* Rate per interval is calculate via resetting cnt2 vars */
+	$flush_interval = @flush_calls2;	@flush_calls2 = 0;
+	$lock_interval  = @lock_cnt2;		@lock_cnt2 = 0;
+	$yield_interval = @yield_cnt2;		@yield_cnt2 = 0;
+	$contended_interval = @contended_cnt2;	@contended_cnt2 = 0;
+
+	printf(" Flushes(%d) %d/interval (avg %d/sec)\n",
+	       @flush_calls, $flush_interval, @flush_calls / $sec);
+
+        printf(" Locks(%d) %d/interval (avg %d/sec)\n",
+	       @lock_cnt, $lock_interval, @lock_cnt / $sec);
+
+	printf(" Yields(%d) %d/interval (avg %d/sec)\n",
+	       @yield_cnt, $yield_interval, @yield_cnt / $sec);
+
+	printf(" Contended(%d) %d/interval (avg %d/sec)\n",
+	       @contended_cnt, $contended_interval, @contended_cnt / $sec);
+
+	//print(@wait_ns);
+	//print(@locked_ns);
 }
 
 END
@@ -129,6 +150,13 @@ END
 	clear(@threshold1_ns);
 	clear(@threshold2_usecs);
 	clear(@threshold2_ns);
+
+	/* Interval counter are not relevant to print at END */
+	clear(@contended_cnt2);
+	clear(@lock_cnt2);
+	clear(@yield_cnt2);
+	clear(@lock_cnt2);
+
 	time("%H:%M:%S ");
 	printf("END time elapsed: %d sec\n", elapsed / 1000000000);
 }
