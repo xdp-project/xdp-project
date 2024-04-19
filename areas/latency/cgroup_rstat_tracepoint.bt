@@ -142,6 +142,12 @@ interval:s:1
 
 	//print(@wait_ns);
 	//print(@locked_ns);
+
+	/* How can record rate spikes?*/
+	@flush_rates = hist($flush_interval);
+	@locks_rates = hist($lock_interval);
+	@yield_rates = hist($yield_interval);
+	@contended_rates = hist($contended_interval);
 }
 
 END
@@ -156,6 +162,7 @@ END
 	clear(@lock_cnt2);
 	clear(@yield_cnt2);
 	clear(@lock_cnt2);
+	clear(@flush_calls2);
 
 	time("%H:%M:%S ");
 	printf("END time elapsed: %d sec\n", elapsed / 1000000000);
