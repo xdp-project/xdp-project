@@ -116,6 +116,26 @@ kfunc:cgroup_rstat_flush_locked
 	// @flush_calls = count();
 }
 
+/* Track high freq update events
+ *  - WARNING comment-in for DEBUGGING only
+ *  - overhead is mitigated via count() but still enable with caution
+ *
+kfunc:__mod_memcg_state,
+kfunc:__mod_memcg_lruvec_state,
+kfunc:__count_memcg_events
+{
+        // These functions calls: memcg_rstat_updated() inlined
+        @memcg_rstat_updated_cnt[probe] = count();
+}
+
+kfunc:cgroup_rstat_updated
+{
+	// Notice: using count() which does per-cpu counter until read
+	// Don't use @cgroup_rstat_updated_cnt++ in a place like this!
+        @cgroup_rstat_updated_cnt = count();
+}
+ * WARNING comment-in above for DEBUGGING only */
+
 interval:s:1
 {
 	$sec = (uint64) elapsed/1000000000;
@@ -142,6 +162,16 @@ interval:s:1
 
 	//print(@wait_ns);
 	//print(@locked_ns);
+
+	/* For high-freq update events comment below in
+	 *
+	printf("DEBUG: memcg_rstat_updated per/interval:\n");
+	print(@memcg_rstat_updated_cnt);
+	clear(@memcg_rstat_updated_cnt);
+	printf("DEBUG: cgroup_rstat_updated per/interval:\n");
+	print(@cgroup_rstat_updated_cnt);
+	clear(@cgroup_rstat_updated_cnt);
+	 */
 
 	/* How can record rate spikes?*/
 	@flush_rates = hist($flush_interval);
