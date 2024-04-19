@@ -1,0 +1,134 @@
+#!/usr/bin/env bpftrace
+/* SPDX-License-Identifier: GPL-2.0+
+ *
+ * Script for evaluation the latency effect cgroup rstat (recursive stats).
+ *
+ * It depends on tracepoints expected added in kernel 6.10
+ *
+ * Production experience with softirq_net_latency.bt indicate that reading
+ * cgroup rstat (files under subdirs in /sys/fs/cgroup/) is *one* of the
+ * factors that can disrupt softirq processing.
+ *
+ * This script zoom into cgroup rstat locking tracepoints to evaluate kernel
+ * improvements in this area.
+ *
+ * 19-Apr-2024	Jesper Dangaard Brouer	Created this
+ *
+ */
+BEGIN
+{
+	/* Cmdline arg#1: runtime threshold input in usec */
+	@threshold1_usecs = $1 ? $1: 10000;
+	@threshold1_ns = @threshold1_usecs * 1000;
+
+	/* Cmdline arg#2: wait time threshold input in usec */
+	@threshold2_usecs = $2 ? $2: 1000;
+	@threshold2_ns = @threshold2_usecs * 1000;
+
+	printf("Tracing latency caused by cgroup rstat\n");
+	printf(" - Will report on locked time above %d usecs (= %d ms)\n",
+	       @threshold1_usecs, @threshold1_usecs / 1000);
+	printf(" - Will report on WAIT time above %d usecs (= %d ms)\n",
+	       @threshold2_usecs, @threshold2_usecs / 1000);
+	printf("... Hit Ctrl-C to end.\n");
+}
+
+tracepoint:cgroup:cgroup_rstat_lock_contended
+{
+	/* Concurrency issue here? */
+	if (@wait_start[tid]) {
+		printf("Concurrency issue: tid[%d] comm[%s] %s\n",
+		       tid, comm, probe);
+	}
+
+	@wait_start[tid]=nsecs
+}
+
+tracepoint:cgroup:cgroup_rstat_locked
+{
+	$now = nsecs;
+	@locked_start[tid]=$now;
+	if (args->contended) {
+		$wait_time = $now - @wait_start[tid];
+		@wait_ns=hist($wait_time);
+		delete(@wait_start[tid]);
+		@contended_cnt++;
+		@contended_cnt2++;
+	} else {
+		$wait = 0;
+	}
+
+	/* WARNING: Using @xxx++ is an expensive atomic operation.
+	 *  Recommend using @xxx = count()
+	 *  Not doing it here as "count" type cannot be used in printf
+	*/
+	@lock_cnt++;
+	@lock_cnt2++;
+
+	/* Detect if lock was yielded inside cgroup_rstat_flush_locked */
+	if (args->cpu_in_loop >= 0) {
+		@yield_cnt++;
+		@yield_cnt2++;
+	}
+
+	/* Report/record on events over threshold.
+	 *  for lock contention on cgroup_rstat_lock.
+	 */
+	if ($wait_time >= @threshold2_ns ) {
+		@stack[tid, comm] = kstack;
+		time("%H:%M:%S ");
+		printf("High Lock-contention: wait: %d usec (%d ms) on CPU:%d comm:%s\n",
+		       $wait_time / 1000, $wait_time / 1000000,
+		       cpu, comm);
+	}
+}
+
+tracepoint:cgroup:cgroup_rstat_unlock
+{
+	$now = nsecs;
+	$locked_time = $now - @locked_start[tid];
+	@locked_ns = hist($locked_time);
+
+	/* Report/record on events over threshold.
+	 *  for lock contention on cgroup_rstat_lock.
+	 */
+	if ($locked_time >= @threshold1_ns ) {
+		@stack[tid, comm] = kstack;
+		time("%H:%M:%S ");
+		printf("Long lock-hold time: %d usec (%d ms) on CPU:%d comm:%s\n",
+		       $locked_time / 1000, $locked_time / 1000000,
+		       cpu, comm);
+	}
+
+	delete(@locked_start[tid]);
+}
+
+/* Get a count on how many times flush is called.
+ *  - Remember that lock can be yielded inside this function
+ *    Thus, a single call can result in many unlock/lock calls
+ */
+kfunc:cgroup_rstat_flush_locked
+{
+	@flush_calls++;
+	// @flush_calls = count();
+}
+
+interval:s:1
+{
+	$sec = (uint64) elapsed/1000000000;
+	time("%H:%M:%S ");
+	printf(" time elapsed: %d sec\n", $sec);
+
+	print(@wait_ns);
+	print(@locked_ns);
+}
+
+END
+{	/* Default bpftrace will print all remaining maps at END */
+	clear(@threshold1_usecs);
+	clear(@threshold1_ns);
+	clear(@threshold2_usecs);
+	clear(@threshold2_ns);
+	time("%H:%M:%S ");
+	printf("END time elapsed: %d sec\n", elapsed / 1000000000);
+}
