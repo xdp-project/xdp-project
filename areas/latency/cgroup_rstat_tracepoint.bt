@@ -68,7 +68,7 @@ tracepoint:cgroup:cgroup_rstat_locked
 	@lock_cnt2++;
 
 	/* Detect if lock was yielded inside cgroup_rstat_flush_locked */
-	if (args->cpu_in_loop >= 0) {
+	if (args->cpu >= 0) {
 		@yield_cnt++;
 		@yield_cnt2++;
 	}
