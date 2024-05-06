@@ -77,11 +77,12 @@ tracepoint:cgroup:cgroup_rstat_locked
 	 *  for lock contention on cgroup_rstat_lock.
 	 */
 	if ($wait_time >= @threshold2_ns ) {
-		@stack_wait[tid, comm] = kstack;
+		$cgrp = args->id;
+		@stack_wait[tid, comm, $cgrp] = kstack;
 		time("%H:%M:%S ");
-		printf("High Lock-contention: wait: %d usec (%d ms) on CPU:%d comm:%s\n",
+		printf("High Lock-contention: wait: %d usec (%d ms) on CPU:%d cgrp:%d comm:%s\n",
 		       $wait_time / 1000, $wait_time / 1000000,
-		       cpu, comm);
+		       cpu, $cgrp, comm);
 	}
 }
 
@@ -95,11 +96,12 @@ tracepoint:cgroup:cgroup_rstat_unlock
 	 *  for lock contention on cgroup_rstat_lock.
 	 */
 	if ($locked_time >= @threshold1_ns ) {
-		@stack_locked[tid, comm] = kstack;
+		$cgrp = args->id;
+		@stack_locked[tid, comm, $cgrp] = kstack;
 		time("%H:%M:%S ");
-		printf("Long lock-hold time: %d usec (%d ms) on CPU:%d comm:%s\n",
+		printf("Long lock-hold time: %d usec (%d ms) on CPU:%d cgrp:%d comm:%s\n",
 		       $locked_time / 1000, $locked_time / 1000000,
-		       cpu, comm);
+		       cpu, $cgrp, comm);
 	}
 
 	delete(@locked_start[tid]);
