@@ -25,11 +25,17 @@ BEGIN
 	@threshold2_usecs = $2 ? $2: 1000;
 	@threshold2_ns = @threshold2_usecs * 1000;
 
+	/* Cmdline arg#3: wait time threshold input in usec */
+	@threshold3_usecs = $3 ? $3: 100;
+	@threshold3_ns = @threshold3_usecs * 1000;
+
 	printf("Tracing latency caused by cgroup rstat\n");
 	printf(" - Will report on locked time above %d usecs (= %d ms)\n",
 	       @threshold1_usecs, @threshold1_usecs / 1000);
 	printf(" - Will report on WAIT time above %d usecs (= %d ms)\n",
 	       @threshold2_usecs, @threshold2_usecs / 1000);
+	printf(" - Will report on per-CPU (wait/locked) time above %d usecs (= %d ms)\n",
+	       @threshold3_usecs, @threshold3_usecs / 1000);
 	printf("... Hit Ctrl-C to end.\n");
 }
 
@@ -68,7 +74,7 @@ tracepoint:cgroup:cgroup_rstat_locked
 	@lock_cnt2++;
 
 	/* Detect if lock was yielded inside cgroup_rstat_flush_locked */
-	if (args->cpu_in_loop >= 0) {
+	if (args->cpu >= 0) {
 		@yield_cnt++;
 		@yield_cnt2++;
 	}
@@ -77,11 +83,12 @@ tracepoint:cgroup:cgroup_rstat_locked
 	 *  for lock contention on cgroup_rstat_lock.
 	 */
 	if ($wait_time >= @threshold2_ns ) {
-		@stack[tid, comm] = kstack;
+		$cgrp = args->id;
+		@stack_wait[tid, comm, $cgrp] = kstack;
 		time("%H:%M:%S ");
-		printf("High Lock-contention: wait: %d usec (%d ms) on CPU:%d comm:%s\n",
+		printf("High Lock-contention: wait: %d usec (%d ms) on CPU:%d cgrp:%d comm:%s\n",
 		       $wait_time / 1000, $wait_time / 1000000,
-		       cpu, comm);
+		       cpu, $cgrp, comm);
 	}
 }
 
@@ -95,11 +102,12 @@ tracepoint:cgroup:cgroup_rstat_unlock
 	 *  for lock contention on cgroup_rstat_lock.
 	 */
 	if ($locked_time >= @threshold1_ns ) {
-		@stack[tid, comm] = kstack;
+		$cgrp = args->id;
+		@stack_locked[tid, comm, $cgrp] = kstack;
 		time("%H:%M:%S ");
-		printf("Long lock-hold time: %d usec (%d ms) on CPU:%d comm:%s\n",
+		printf("Long lock-hold time: %d usec (%d ms) on CPU:%d cgrp:%d comm:%s\n",
 		       $locked_time / 1000, $locked_time / 1000000,
-		       cpu, comm);
+		       cpu, $cgrp, comm);
 	}
 
 	delete(@locked_start[tid]);
@@ -136,6 +144,71 @@ kfunc:cgroup_rstat_updated
 }
  * WARNING comment-in above for DEBUGGING only */
 
+/* The per-CPU locks are different from global lock.
+ *  - While holding global lock
+ *  - Kernel walks for_each CPU talking these locks
+ *  - Global lock can by yielded
+ *  - Thus, per-CPU lock latency shows lower bound on latency possible
+ *  - Reminder: This is slow-path "flush" code, not fast-path "update" code
+ */
+tracepoint:cgroup:cgroup_rstat_cpu_lock_contended
+{
+	$now = nsecs;
+
+	/* Concurrency issue here? */
+	if (@wait_cpu_start[tid]) {
+		printf("Concurrency issue: tid[%d] comm[%s] %s\n",
+		       tid, comm, probe);
+	}
+	@contended_cpu_cnt++;
+	@contended_cpu_cnt2++;
+
+	@wait_cpu_start[tid]=$now;
+}
+
+tracepoint:cgroup:cgroup_rstat_cpu_locked
+{
+	$now = nsecs;
+	@locked_cpu_start[tid]=$now;
+	if (args->contended) {
+		$wait_time = $now - @wait_cpu_start[tid];
+		@wait_per_cpu_ns=hist($wait_time);
+		delete(@wait_cpu_start[tid]);
+	} else {
+		$wait = 0;
+	}
+
+	@lock_cpu_cnt = count();
+	@lock_cpu_cnt2 = count();
+
+	if ($wait_time >= @threshold3_ns ) {
+		$cgrp = args->id;
+		@stack_per_cpu_wait[tid, comm, $cgrp] = kstack;
+		time("%H:%M:%S ");
+		printf("PER_CPU - High CPU-Lock-contention: wait: %d usec (%d ms) on CPU:%d cgrp:%d comm:%s\n",
+		       $wait_time / 1000, $wait_time / 1000000,
+		       cpu, $cgrp, comm);
+	}
+}
+
+tracepoint:cgroup:cgroup_rstat_cpu_unlock
+{
+	$now = nsecs;
+	$locked_time = $now - @locked_cpu_start[tid];
+	@locked_per_cpu_ns = hist($locked_time);
+
+	if ($locked_time >= @threshold3_ns ) {
+		$cgrp = args->id;
+		@stack_per_cpu_locked[tid, comm, $cgrp] = kstack;
+		time("%H:%M:%S ");
+		printf("PER_CPU - Long CPU-lock-hold time: %d usec (%d ms) on CPU:%d cgrp:%d comm:%s\n",
+		       $locked_time / 1000, $locked_time / 1000000,
+		       cpu, $cgrp, comm);
+	}
+
+	delete(@locked_cpu_start[tid]);
+}
+
 interval:s:1
 {
 	$sec = (uint64) elapsed/1000000000;
@@ -147,6 +220,7 @@ interval:s:1
 	$lock_interval  = @lock_cnt2;		@lock_cnt2 = 0;
 	$yield_interval = @yield_cnt2;		@yield_cnt2 = 0;
 	$contended_interval = @contended_cnt2;	@contended_cnt2 = 0;
+	$contended_cpu_interval = @contended_cpu_cnt2;	@contended_cpu_cnt2 = 0;
 
 	printf(" Flushes(%d) %d/interval (avg %d/sec)\n",
 	       @flush_calls, $flush_interval, @flush_calls / $sec);
@@ -159,6 +233,9 @@ interval:s:1
 
 	printf(" Contended(%d) %d/interval (avg %d/sec)\n",
 	       @contended_cnt, $contended_interval, @contended_cnt / $sec);
+
+	printf(" PER-CPU-contended(%d) %d/interval (avg %d/sec)\n",
+	       @contended_cpu_cnt, $contended_cpu_interval, @contended_cpu_cnt / $sec);
 
 	//print(@wait_ns);
 	//print(@locked_ns);
@@ -173,11 +250,12 @@ interval:s:1
 	clear(@cgroup_rstat_updated_cnt);
 	 */
 
-	/* How can record rate spikes?*/
+	/* How can we record rate spikes?*/
 	@flush_rates = hist($flush_interval);
 	@locks_rates = hist($lock_interval);
 	@yield_rates = hist($yield_interval);
 	@contended_rates = hist($contended_interval);
+	@PER_CPU_contended_rates = hist($contended_cpu_interval);
 }
 
 END
