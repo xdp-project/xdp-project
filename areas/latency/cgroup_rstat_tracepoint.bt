@@ -66,7 +66,7 @@ tracepoint:cgroup:cgroup_rstat_locked
 		$wait_time = 0;
 	}
 
-	/* WARNING: Using @xxx++ is an expensive atomic operation.
+	/* WARNING: Using @xxx++ is slow (non-atomic) operation dirtying cache-lines
 	 *  Recommend using @xxx = count()
 	 *  Not doing it here as "count" type cannot be used in printf
 	*/
