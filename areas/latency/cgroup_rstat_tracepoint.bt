@@ -58,11 +58,19 @@ tracepoint:cgroup:cgroup_rstat_locked
 {
 	$now = nsecs;
 	@locked_start[tid]=$now;
-	if (args->contended) {
+	$contended = args->contended;
+
+	if ($contended == 1) {
 		$wait_time = $now - @wait_start[tid];
 		@wait_ns=hist($wait_time);
 		delete(@wait_start[tid]);
+	} else if ($contended == 0) {
+		$wait_time = 0;
 	} else {
+		time("%H:%M:%S ");
+		printf("***ERROR*** contended:%d not a boolean - probe:%s\n",
+		       $contended, probe);
+		delete(@wait_start[tid]);
 		$wait_time = 0;
 	}
 
@@ -170,11 +178,19 @@ tracepoint:cgroup:cgroup_rstat_cpu_locked
 {
 	$now = nsecs;
 	@locked_cpu_start[tid]=$now;
-	if (args->contended) {
+	$contended = args->contended;
+
+	if ($contended == 1) {
 		$wait_time = $now - @wait_cpu_start[tid];
 		@wait_per_cpu_ns=hist($wait_time);
 		delete(@wait_cpu_start[tid]);
+	} else if ($contended == 0){
+		$wait_time = 0;
 	} else {
+		time("%H:%M:%S ");
+		printf("***ERROR*** contended:%d not a boolean - probe:%s\n",
+		       $contended, probe);
+		delete(@wait_cpu_start[tid]);
 		$wait_time = 0;
 	}
 
