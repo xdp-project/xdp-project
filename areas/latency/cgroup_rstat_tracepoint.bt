@@ -63,10 +63,10 @@ tracepoint:cgroup:cgroup_rstat_locked
 		@wait_ns=hist($wait_time);
 		delete(@wait_start[tid]);
 	} else {
-		$wait = 0;
+		$wait_time = 0;
 	}
 
-	/* WARNING: Using @xxx++ is an expensive atomic operation.
+	/* WARNING: Using @xxx++ is slow (non-atomic) operation dirtying cache-lines
 	 *  Recommend using @xxx = count()
 	 *  Not doing it here as "count" type cannot be used in printf
 	*/
@@ -175,7 +175,7 @@ tracepoint:cgroup:cgroup_rstat_cpu_locked
 		@wait_per_cpu_ns=hist($wait_time);
 		delete(@wait_cpu_start[tid]);
 	} else {
-		$wait = 0;
+		$wait_time = 0;
 	}
 
 	@lock_cpu_cnt = count();
