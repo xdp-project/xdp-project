@@ -39,7 +39,7 @@ BEGIN
 	printf("... Hit Ctrl-C to end.\n");
 }
 
-tracepoint:cgroup:cgroup_rstat_lock_contended
+rawtracepoint:cgroup_rstat_lock_contended
 {
 	$now = nsecs;
 
@@ -54,15 +54,27 @@ tracepoint:cgroup:cgroup_rstat_lock_contended
 	@wait_start[tid]=$now;
 }
 
-tracepoint:cgroup:cgroup_rstat_locked
+rawtracepoint:cgroup_rstat_locked
 {
 	$now = nsecs;
+	$cgrp=(struct cgroup*)arg0;
+	$lvl=$cgrp->level;
+	$cpu=(int32)arg1;
+	$contended = arg2;
+
 	@locked_start[tid]=$now;
-	if (args->contended) {
+
+	if ($contended == 1) {
 		$wait_time = $now - @wait_start[tid];
 		@wait_ns=hist($wait_time);
 		delete(@wait_start[tid]);
+	} else if ($contended == 0) {
+		$wait_time = 0;
 	} else {
+		time("%H:%M:%S ");
+		printf("***ERROR*** contended:%d not a boolean - probe:%s\n",
+		       $contended, probe);
+		delete(@wait_start[tid]);
 		$wait_time = 0;
 	}
 
@@ -74,7 +86,7 @@ tracepoint:cgroup:cgroup_rstat_locked
 	@lock_cnt2++;
 
 	/* Detect if lock was yielded inside cgroup_rstat_flush_locked */
-	if (args->cpu >= 0) {
+	if ($cpu >= 0) {
 		@yield_cnt++;
 		@yield_cnt2++;
 	}
@@ -83,18 +95,20 @@ tracepoint:cgroup:cgroup_rstat_locked
 	 *  for lock contention on cgroup_rstat_lock.
 	 */
 	if ($wait_time >= @threshold2_ns ) {
-		$cgrp = args->id;
-		@stack_wait[tid, comm, $cgrp] = kstack;
+		@stack_wait[tid, comm, $lvl] = kstack;
 		time("%H:%M:%S ");
-		printf("High Lock-contention: wait: %d usec (%d ms) on CPU:%d cgrp:%d comm:%s\n",
+		printf("High Lock-contention: wait: %d usec (%d ms) on CPU:%d cgrp-level:%d comm:%s\n",
 		       $wait_time / 1000, $wait_time / 1000000,
-		       cpu, $cgrp, comm);
+		       cpu, $lvl, comm);
 	}
 }
 
-tracepoint:cgroup:cgroup_rstat_unlock
+rawtracepoint:cgroup_rstat_unlock
 {
 	$now = nsecs;
+	$cgrp=(struct cgroup*)arg0;
+	$lvl=$cgrp->level;
+
 	$locked_time = $now - @locked_start[tid];
 	@locked_ns = hist($locked_time);
 
@@ -102,12 +116,11 @@ tracepoint:cgroup:cgroup_rstat_unlock
 	 *  for lock contention on cgroup_rstat_lock.
 	 */
 	if ($locked_time >= @threshold1_ns ) {
-		$cgrp = args->id;
-		@stack_locked[tid, comm, $cgrp] = kstack;
+		@stack_locked[tid, comm, $lvl] = kstack;
 		time("%H:%M:%S ");
-		printf("Long lock-hold time: %d usec (%d ms) on CPU:%d cgrp:%d comm:%s\n",
+		printf("Long lock-hold time: %d usec (%d ms) on CPU:%d cgrp-level:%d comm:%s\n",
 		       $locked_time / 1000, $locked_time / 1000000,
-		       cpu, $cgrp, comm);
+		       cpu, $lvl, comm);
 	}
 
 	delete(@locked_start[tid]);
@@ -151,7 +164,7 @@ kfunc:cgroup_rstat_updated
  *  - Thus, per-CPU lock latency shows lower bound on latency possible
  *  - Reminder: This is slow-path "flush" code, not fast-path "update" code
  */
-tracepoint:cgroup:cgroup_rstat_cpu_lock_contended
+rawtracepoint:cgroup_rstat_cpu_lock_contended
 {
 	$now = nsecs;
 
@@ -166,15 +179,26 @@ tracepoint:cgroup:cgroup_rstat_cpu_lock_contended
 	@wait_cpu_start[tid]=$now;
 }
 
-tracepoint:cgroup:cgroup_rstat_cpu_locked
+rawtracepoint:cgroup_rstat_cpu_locked
 {
 	$now = nsecs;
+	$cgrp=(struct cgroup*)arg0;
+	$lvl=$cgrp->level;
+	$contended = arg2;
+
 	@locked_cpu_start[tid]=$now;
-	if (args->contended) {
+
+	if ($contended == 1) {
 		$wait_time = $now - @wait_cpu_start[tid];
 		@wait_per_cpu_ns=hist($wait_time);
 		delete(@wait_cpu_start[tid]);
+	} else if ($contended == 0){
+		$wait_time = 0;
 	} else {
+		time("%H:%M:%S ");
+		printf("***ERROR*** contended:%d not a boolean - probe:%s\n",
+		       $contended, probe);
+		delete(@wait_cpu_start[tid]);
 		$wait_time = 0;
 	}
 
@@ -182,28 +206,30 @@ tracepoint:cgroup:cgroup_rstat_cpu_locked
 	@lock_cpu_cnt2 = count();
 
 	if ($wait_time >= @threshold3_ns ) {
-		$cgrp = args->id;
-		@stack_per_cpu_wait[tid, comm, $cgrp] = kstack;
+		@stack_per_cpu_wait[tid, comm, $lvl] = kstack;
 		time("%H:%M:%S ");
-		printf("PER_CPU - High CPU-Lock-contention: wait: %d usec (%d ms) on CPU:%d cgrp:%d comm:%s\n",
+		printf("PER_CPU - High CPU-Lock-contention: wait: %d usec (%d ms) on CPU:%d cgrp-level:%d comm:%s\n",
 		       $wait_time / 1000, $wait_time / 1000000,
-		       cpu, $cgrp, comm);
+		       cpu, $lvl, comm);
 	}
 }
 
-tracepoint:cgroup:cgroup_rstat_cpu_unlock
+rawtracepoint:cgroup_rstat_cpu_unlock
 {
 	$now = nsecs;
+	$cgrp=(struct cgroup*)arg0;
+	$lvl=$cgrp->level;
+	$contended = arg2;
+
 	$locked_time = $now - @locked_cpu_start[tid];
 	@locked_per_cpu_ns = hist($locked_time);
 
 	if ($locked_time >= @threshold3_ns ) {
-		$cgrp = args->id;
-		@stack_per_cpu_locked[tid, comm, $cgrp] = kstack;
+		@stack_per_cpu_locked[tid, comm, $lvl] = kstack;
 		time("%H:%M:%S ");
-		printf("PER_CPU - Long CPU-lock-hold time: %d usec (%d ms) on CPU:%d cgrp:%d comm:%s\n",
+		printf("PER_CPU - Long CPU-lock-hold time: %d usec (%d ms) on CPU:%d cgrp-level:%d comm:%s\n",
 		       $locked_time / 1000, $locked_time / 1000000,
-		       cpu, $cgrp, comm);
+		       cpu, $lvl, comm);
 	}
 
 	delete(@locked_cpu_start[tid]);
