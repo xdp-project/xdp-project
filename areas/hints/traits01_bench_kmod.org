@@ -1,0 +1,40 @@
+#+Title: Benchmarking "traits" via kernel module
+
+Using the prototype-kernel (out-of-tree) time_bench framework for
+micro-benchmarking "traits".
+
+* Kernel tree and branch under test
+
+Tested on top of kernel tree and branch:
+ - https://github.com/arthurfabre/linux/tree/afabre/traits-002-bounds-inline
+
+* prototype-kernel
+
+** Basic benchmark module for traits
+
+https://github.com/netoptimizer/prototype-kernel/pull/48/commits
+
+Module loading:
+#+begin_src sh
+modprobe bench_traits_simple
+#+end_src
+
+** Build and push commands
+
+The build process is documented here:
+ - https://prototype-kernel.readthedocs.io/en/latest/prototype-kernel/build-process.html
+
+For convenience listing the commands I use here:
+
+Building:
+#+begin_src sh
+  $ dirs
+  ~/git/prototype-kernel/kernel
+  $ make kbuilddir=~/git/kernel/arthur/ -j12
+#+end_src
+
+Pushing to remote host:
+#+begin_src sh
+make push_remote kbuilddir=~/git/kernel/arthur/ HOST=broadwell
+#+end_src
+
