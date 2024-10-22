@@ -29,6 +29,10 @@ This document will help guide development to be a
   - [[#host-broadwell][Host: broadwell]]
 - [[#benchmark-basics][Benchmark basics]]
   - [[#building-blocks][Building blocks]]
+- [[#initial-benchmarking][Initial benchmarking]]
+  - [[#selecting-benchmark-trick][Selecting benchmark trick]]
+  - [[#bench-bpf_xdp_trait_set][Bench: bpf_xdp_trait_set]]
+  - [[#bench-bpf_xdp_trait_get][Bench: bpf_xdp_trait_get]]
 
 * Code under test
 
@@ -75,7 +79,11 @@ index 92f1b75098f0..297abb2004d0 100644
 
 ** Basic benchmark module for traits
 
-https://github.com/netoptimizer/prototype-kernel/pull/48/commits
+Pull request:
+  - https://github.com/netoptimizer/prototype-kernel/pull/48
+
+Commits explaining steps:
+ - https://github.com/netoptimizer/prototype-kernel/pull/48/commits
 
 Module loading:
 #+begin_src sh
@@ -181,3 +189,60 @@ Doing a normal C function calls is not very expensive:
 
 The function pointer call is affected by mitigations:
  - Type:func_ptr_call_cost = 30 cycles(tsc) 8.463 ns
+
+* Initial benchmarking
+
+In the initial [[https://github.com/netoptimizer/prototype-kernel/pull/48][pull request #48]]
+ - We do a very simple benchmark of *get* and *set operations
+ - via XDP kfunc interface
+   - =bpf_xdp_trait_set()= and =bpf_xdp_trait_get()=
+
+** Selecting benchmark trick
+
+The kernel module support parameters for:
+ - changing the number of =loops= and
+ - also selecting tests to run via =run_flags=
+
+A bash shells trick allow us to easily set a specific flag bit in =run_flags=,
+like =run_flags=$((2#110))= to unset bit-0 (which is =bit_run_bench_baseline=)
+and set bits 1 and 2 (=bit_run_bench_trait_set= and =bit_run_bench_trait_get=).
+
+#+begin_example
+ # modprobe bench_traits_simple loops=200000000 run_flags=$((2#110))
+#+end_example
+
+The kernel log contains the results:
+#+begin_example
+time_bench: Type:trait_set Per elem: 42 cycles(tsc) 11.849 ns (step:0) - (measurement period time:2.369994559 sec time_interval:2369994559) - (invoke count:200000000 tsc_interval:8532078713)
+time_bench: Type:trait_get Per elem: 29 cycles(tsc) 8.056 ns (step:0) - (measurement period time:1.611246844 sec time_interval:1611246844) - (invoke count:200000000 tsc_interval:5800555470)
+#+end_example
+
+** Bench: bpf_xdp_trait_set
+
+Data: bpf_xdp_trait_set
+#+begin_example
+time_bench: Type:trait_set Per elem: 42 cycles(tsc) 11.849 ns
+#+end_example
+
+Cost of calling =bpf_xdp_trait_set=
+ - 42 cycles(tsc) 11.849 ns
+
+That is too large for our XDP budget
+ - e.g at 25Gbit this is 44% (11.849/26.88) of the budget.
+
+The expected use-case it to set multiple keys with values, which quickly blows
+the entire budget.
+
+** Bench: bpf_xdp_trait_get
+
+Data: bpf_xdp_trait_get
+#+begin_example
+time_bench: Type:trait_get Per elem: 29 cycles(tsc) 8.056 ns
+#+end_example
+
+Cost of calling =bpf_xdp_trait_get=
+ - 29 cycles(tsc) 8.056 ns
+
+Even-though =get= is faster than =set= is it still too high. Doing a =get=
+implies a =set= in needed earlier (we do that in the bench outside for-loop).
+Thus, 11.849 + 8.056 = 19.9 ns is the combined cost, 74% of 25G budget.
