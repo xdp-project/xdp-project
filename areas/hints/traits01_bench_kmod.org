@@ -7,6 +7,17 @@ The feature under test is (currently) called "traits". It is a *compressed*
 *key-value* *store*, that live in the top of the XDP packet data frame, just
 after the struct =xdp_frame=.
 
+The hope is to create a *fast and flexible* API for storing "hints" associated
+with the packet. This is *one* of the ideas from LPC talk:
+[[https://lpc.events/event/18/contributions/1935/][Marking Packets With Rich Metadata]]
+by Arthur Fabre (Cloudflare) and Jakub Sitnicki (Cloudflare).
+
+The question is:
+ - Can we optimize API for be *fast-enough to satisfy XDP speed requirements?*
+
+This document will help guide development to be a
+ - *benchmark based development process* to satisfy XDP speed requirements
+
 * Generate: Table of Contents                                           :toc:
 - [[#code-under-test][Code under test]]
   - [[#kernel-tree-and-branch-under-test][Kernel tree and branch under test]]
