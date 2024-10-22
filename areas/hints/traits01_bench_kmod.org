@@ -3,7 +3,20 @@
 Using the prototype-kernel (out-of-tree) time_bench framework for
 micro-benchmarking "traits".
 
-* Kernel tree and branch under test
+The feature under test is (currently) called "traits". It is a *compressed*
+*key-value* *store*, that live in the top of the XDP packet data frame, just
+after the struct =xdp_frame=.
+
+* Generate: Table of Contents                                           :toc:
+- [[#code-under-test][Code under test]]
+  - [[#kernel-tree-and-branch-under-test][Kernel tree and branch under test]]
+- [[#prototype-kernel][prototype-kernel]]
+  - [[#basic-benchmark-module-for-traits][Basic benchmark module for traits]]
+  - [[#build-and-push-commands][Build and push commands]]
+
+* Code under test
+
+** Kernel tree and branch under test
 
 Tested on top of kernel tree and branch:
  - https://github.com/arthurfabre/linux/tree/afabre/traits-002-bounds-inline
