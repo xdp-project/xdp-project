@@ -24,6 +24,10 @@ This document will help guide development to be a
 - [[#prototype-kernel][prototype-kernel]]
   - [[#basic-benchmark-module-for-traits][Basic benchmark module for traits]]
   - [[#build-and-push-commands][Build and push commands]]
+- [[#device-under-test-dut][Device Under Test (DUT)]]
+  - [[#host-broadwell][Host: broadwell]]
+- [[#benchmark-basics][Benchmark basics]]
+  - [[#building-blocks][Building blocks]]
 
 * Code under test
 
@@ -61,4 +65,52 @@ Pushing to remote host:
 #+begin_src sh
 make push_remote kbuilddir=~/git/kernel/arthur/ HOST=broadwell
 #+end_src
+
+* Device Under Test (DUT)
+
+** Host: broadwell
+
+CPU info from =lscpu=:
+#+begin_example
+CPU(s):                   6
+  On-line CPU(s) list:    0-5
+Vendor ID:                GenuineIntel
+  Model name:             Intel(R) Xeon(R) CPU E5-1650 v4 @ 3.60GHz
+    CPU family:           6
+    Model:                79
+    Thread(s) per core:   1
+    Core(s) per socket:   6
+    CPU(s) scaling MHz:   35%
+    CPU max MHz:          4000.0000
+    CPU min MHz:          1200.0000
+#+end_example
+
+Notice disabled Hyper-Threading.
+
+* Benchmark basics
+
+XDP speed requirements are in the nanosec time range.
+
+** Building blocks
+
+The =bench_traits_simple= module contains some baseline tests, that measures
+some of the building blocks, such that we get a sense the time scale
+requirements.
+
+*** for-loop
+
+The tests usually consist of a for-loop getting measured. (Wrapped by
+=time_bench_start()= and =time_bench_stop()=). One baseline test is an empty
+for-loop for seeing what overhead that adds.
+
+On host: broadwell:
+#+begin_example
+time_bench: Type:for_loop Per elem: 0 cycles(tsc) 0.265 ns (step:0)
+- (measurement period time:0.027240766 sec time_interval:27240766)
+- (invoke count:100000000 tsc_interval:98066760)
+#+end_example
+
+The nanosec cost is 0.265 ns and cycles(tsc) gets rounded down. From extra info
+tsc_interval:98066760 and count:100000000 calc cycles is 0.98, which is very
+close to 1 cycle. This is a 3.6GHz CPU, so 0.265*3.6 is 0.9540 cycles.
 
