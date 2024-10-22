@@ -91,6 +91,17 @@ Notice disabled Hyper-Threading.
 
 XDP speed requirements are in the nanosec time range.
 
+The packet rate determines the inter-gap between packets arriving for processing
+by the Operating System (OS). This inter-gap directly translates into a
+time-budget the OS have before the next packet arrive.
+
+| Link speed | Packet rate           | Time-budget   |
+|            | at smallest pkts size | per packet    |
+|------------+-----------------------+---------------|
+|  10 Gbit/s |  14,880,952 pps       | 67.2 nanosec  |
+|  25 Gbit/s |  37,202,381 pps       | 26.88 nanosec |
+| 100 Gbit/s | 148,809,523 pps       |  6.72 nanosec |
+
 ** Building blocks
 
 The =bench_traits_simple= module contains some baseline tests, that measures
@@ -114,3 +125,24 @@ The nanosec cost is 0.265 ns and cycles(tsc) gets rounded down. From extra info
 tsc_interval:98066760 and count:100000000 calc cycles is 0.98, which is very
 close to 1 cycle. This is a 3.6GHz CPU, so 0.265*3.6 is 0.9540 cycles.
 
+*** function calls
+
+The function call overhead also consumes a surprisingly large part of the XDP
+budget at the nanosec scale. Due to CPU side-channel mitigations, especially
+calling via a function pointer is expensive.
+
+On host: broadwell:
+#+begin_example
+time_bench: Type:function_call_cost Per elem: 4 cycles(tsc) 1.266 ns (step:0)
+ - (measurement period time:0.126639966 sec time_interval:126639966)
+ - (invoke count:100000000 tsc_interval:455908107)
+time_bench: Type:func_ptr_call_cost Per elem: 30 cycles(tsc) 8.463 ns (step:0)
+- (measurement period time:0.846375884 sec time_interval:846375884)
+- (invoke count:100000000 tsc_interval:3046986747)
+#+end_example
+
+Doing a normal C function calls is not very expensive:
+ - Type:function_call_cost = 4 cycles(tsc) 1.266 ns
+
+The function pointer call is affected by mitigations:
+ - Type:func_ptr_call_cost = 30 cycles(tsc) 8.463 ns
