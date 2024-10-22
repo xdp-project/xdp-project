@@ -33,6 +33,8 @@ This document will help guide development to be a
   - [[#selecting-benchmark-trick][Selecting benchmark trick]]
   - [[#bench-bpf_xdp_trait_set][Bench: bpf_xdp_trait_set]]
   - [[#bench-bpf_xdp_trait_get][Bench: bpf_xdp_trait_get]]
+- [[#perf-events-recording][Perf events recording]]
+  - [[#perf-record1-bpf_xdp_trait_set][perf record#1: bpf_xdp_trait_set]]
 
 * Code under test
 
@@ -246,3 +248,39 @@ Cost of calling =bpf_xdp_trait_get=
 Even-though =get= is faster than =set= is it still too high. Doing a =get=
 implies a =set= in needed earlier (we do that in the bench outside for-loop).
 Thus, 11.849 + 8.056 = 19.9 ns is the combined cost, 74% of 25G budget.
+
+* Perf events recording
+
+To find out: What is eating up cycles?
+ - Let's sample profile what code the kernel module is executing.
+
+** perf record#1: bpf_xdp_trait_set
+
+Select bench for =bpf_xdp_trait_set=
+#+begin_example
+perf record -g modprobe bench_traits_simple loops=400000000 run_flags=$((2#010)) stay_loaded=1
+[ perf record: Woken up 17 times to write data ]
+[ perf record: Captured and wrote 4.112 MB perf.data (20390 samples) ]
+#+end_example
+
+Results for  =bpf_xdp_trait_set= as hierarchy (via =perf report --hierarchy=):
+ - And zooming into kernel code via using the 'k' hotkey
+
+#+begin_example
+Samples: 20K of event 'cycles:P', Event count (approx.): 17280847030, DSO: [kernel.kallsyms]
+  Overhead        Command / Shared Object / Symbol
+-  100.00%        modprobe
+   -  100.00%        [kernel.kallsyms]
+      +   50.14%        [k] trait_set
+      +   16.87%        [k] memmove
+      +   13.49%        [k] total_length
+      +    9.50%        [k] bpf_xdp_trait_set
+      +    5.98%        [k] memcpy_orig
+      +    3.34%        [k] memcpy
+#+end_example
+
+Above clearly shows that a lot of function calls are involved when calling
+=bpf_xdp_trait_set=. The main =set= operations is in function call =trait_set=,
+which "only" consumes around 50% of the time spend, which indicate a lot of room
+for optimizations.
+
