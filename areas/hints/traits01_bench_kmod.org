@@ -21,6 +21,7 @@ This document will help guide development to be a
 * Generate: Table of Contents                                           :toc:
 - [[#code-under-test][Code under test]]
   - [[#kernel-tree-and-branch-under-test][Kernel tree and branch under test]]
+  - [[#code-adjustments-for-bench][Code adjustments for bench]]
 - [[#prototype-kernel][prototype-kernel]]
   - [[#basic-benchmark-module-for-traits][Basic benchmark module for traits]]
   - [[#build-and-push-commands][Build and push commands]]
@@ -35,6 +36,40 @@ This document will help guide development to be a
 
 Tested on top of kernel tree and branch:
  - https://github.com/arthurfabre/linux/tree/afabre/traits-002-bounds-inline
+
+** Code adjustments for bench
+
+In-order for kernel module to access the function call symbols, this benchmark
+have added the following `EXPORT_SYMBOL_GPL` statements:
+
+#+begin_src diff
+diff --git a/net/core/xdp.c b/net/core/xdp.c
+index 92f1b75098f0..297abb2004d0 100644
+--- a/net/core/xdp.c
++++ b/net/core/xdp.c
+@@ -844,6 +844,7 @@ __bpf_kfunc int bpf_xdp_trait_set(const struct xdp_buff *xdp, u64 key,
+        return trait_set(xdp_traits(xdp), xdp->data_meta, key,
+                         val, val__sz, flags);
+ }
++EXPORT_SYMBOL_GPL(bpf_xdp_trait_set); // for bench module
+ 
+ __bpf_kfunc int bpf_xdp_trait_get(const struct xdp_buff *xdp, u64 key,
+                                  void *val, u64 val__sz)
+@@ -853,6 +854,7 @@ __bpf_kfunc int bpf_xdp_trait_get(const struct xdp_buff *xdp, u64 key,
+ 
+        return trait_get(xdp_traits(xdp), key, val, val__sz);
+ }
++EXPORT_SYMBOL_GPL(bpf_xdp_trait_get); // for bench module
+ 
+ __bpf_kfunc int bpf_xdp_trait_del(const struct xdp_buff *xdp, u64 key)
+ {
+@@ -861,6 +863,7 @@ __bpf_kfunc int bpf_xdp_trait_del(const struct xdp_buff *xdp, u64 key)
+ 
+        return trait_del(xdp_traits(xdp), key);
+ }
++EXPORT_SYMBOL_GPL(bpf_xdp_trait_del); // for bench module
+ 
+#+end_src
 
 * prototype-kernel
 
