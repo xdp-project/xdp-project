@@ -331,3 +331,15 @@ The =memcpy= in =trait_set= is used for assigning a single 64-bit value
 5.98% that together takes 9.32% of the time. This can be replaced by a single
 assignment (=movq=) instruction.
 
+*** bpf_xdp_trait_set
+
+The function =bpf_xdp_trait_set= is very simple, it contains a single inlined
+=xdp_data_meta_unsupported= check and calls =trait_set=. The overhead is 9.50%,
+which corresponds to the overhead of a function call (e.g. 42/100*9.50 = 3.99
+cycles).
+
+The expected API usage is that XDP will be the primary *set* user, what will be
+setting multiple values (e.g. offloads extracted from NIC hardware). Thus, it
+might make sense to inline =trait_set= here. The =get= API might be another
+story (but we consider this separately).
+
