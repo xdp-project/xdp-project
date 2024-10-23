@@ -284,3 +284,24 @@ Above clearly shows that a lot of function calls are involved when calling
 which "only" consumes around 50% of the time spend, which indicate a lot of room
 for optimizations.
 
+*** memmove
+
+The =memmove= call is a bit surprising, because the benchmark =time_trait_set=
+simply for-loop repeats setting the same key (1) and value (42). Our API
+expectations was that a =memmove= would be unnecessary. Inspecting the
+=trait_set= code shows =memmove= is called unconditionally, which seems like a
+bug. For this case we believe memmove is called with length zero (so it doesn't
+cause a memory bug, but is completely unnecessary).
+
+#+begin_src C
+static int time_trait_set(struct time_bench_record *rec, void *data)
+  [...]
+  time_bench_start(rec);
+  /** Loop to measure **/
+  for (i = 0; i < rec->loops; i++) {
+          bpf_xdp_trait_set(xdp, key, &val, sizeof(val), 0);
+          loops_cnt++;
+  }
+  time_bench_stop(rec, loops_cnt);
+#+end_src
+
