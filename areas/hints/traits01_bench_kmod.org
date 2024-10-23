@@ -305,3 +305,22 @@ static int time_trait_set(struct time_bench_record *rec, void *data)
   time_bench_stop(rec, loops_cnt);
 #+end_src
 
+*** total_length (popcnt)
+
+The function =total_length= should have been inlined, but for some reason the
+compiler chooses not to.  The function looks very simple:
+
+#+begin_src C
+static int total_length(struct hdr h)
+{
+	return (hweight64(h.high) << 2) + (hweight64(h.low) << 1);
+}
+#+end_src
+
+It is worth noticing that the =hweight64= call, will get replaced with a
+=popcnt= instruction as our arch support this (=X86_FEATURE_POPCNT=). (Details
+notice the ELF section named =.altinstr_replacement= when using objdump).
+
+We expect the function call overhead is significantly larger than executing the
+two =popcnt= assembly operations.
+
