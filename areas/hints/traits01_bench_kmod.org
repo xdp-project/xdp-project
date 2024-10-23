@@ -324,3 +324,10 @@ notice the ELF section named =.altinstr_replacement= when using objdump).
 We expect the function call overhead is significantly larger than executing the
 two =popcnt= assembly operations.
 
+*** memcpy
+
+The =memcpy= in =trait_set= is used for assigning a single 64-bit value
+(8bytes). It results in two function calls =memcpy= 3.34% and =memcpy_orig=
+5.98% that together takes 9.32% of the time. This can be replaced by a single
+assignment (=movq=) instruction.
+
