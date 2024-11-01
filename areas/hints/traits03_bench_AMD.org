@@ -2,11 +2,22 @@
 
 See intro in [[file:traits01_bench_kmod.org]].
 
-* AMD CPU under test
+Micro benchmarking [[https://blog.cloudflare.com/gen-12-servers/][Cloudflare's Gen12 server]]
+ - with traits benchmarking kernel module
+
+* Generate: Table of Contents                                           :toc:
+- [[#device-under-test-dut][Device Under Test (DUT)]]
+  - [[#details-on-cpu-amd-epyc-9684x][Details on CPU AMD EPYC 9684X]]
+- [[#initial-benchmark-results][Initial benchmark results]]
+  - [[#baseline-intel-cpu-e5-1650][Baseline: Intel CPU E5-1650]]
+
+* Device Under Test (DUT)
 
 AMD EPYC 9684X 96-Core Processor
+ - 2 threads per core
+ - 192 logical CPU cores
 
-** Details on CPU
+** Details on CPU AMD EPYC 9684X
 
 #+begin_src
 Architecture:             x86_64
@@ -60,4 +71,32 @@ Vulnerabilities:
   Srbds:                  Not affected
   Tsx async abort:        Not affected
 #+end_src
+
+* Initial benchmark results
+
+** Baseline: Intel CPU E5-1650
+
+Copying the baseline for Intel CPU E5-1650 we got from
+[[file:traits02_optimizations.org]] that originates [[file:traits01_bench_kmod.org]]:
+
+Cost of normal function call
+ - 4 cycles(tsc) 1.266 ns
+
+Cost of indirect function (pointer) call
+ - 30 cycles(tsc) 8.463 ns
+ - this large overhead is caused by Mitigation: Retpolines
+
+Cost of calling =bpf_xdp_trait_set=
+ - 42 cycles(tsc) 11.849 ns
+
+Cost of calling =bpf_xdp_trait_get=
+ - 29 cycles(tsc) 8.056 ns
+
+| Intel CPU E5-1650 |        |           |
+| micro-bench       | cycles | nanosec   |
+|-------------------+--------+-----------|
+| function call     |      4 | 1.266 ns  |
+| indirect call     |     30 | 8.463 ns  |
+| bpf_xdp_trait_set |     42 | 11.849 ns |
+| bpf_xdp_trait_get |     29 | 8.056 ns  |
 

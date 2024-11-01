@@ -11,13 +11,21 @@ Tested on top of kernel tree and branch:
 
 * Baseline
 
-The baseline we got from [[file:traits01_bench_kmod.org]].
+The baseline we got from [[file:traits01_bench_kmod.org]]:
+
+Cost of normal function call
+ - 4 cycles(tsc) 1.266 ns
+
+Cost of indirect function (pointer) call
+ - 30 cycles(tsc) 8.463 ns
+ - this large overhead is caused by Mitigation: Retpolines
 
 Cost of calling =bpf_xdp_trait_set=
  - 42 cycles(tsc) 11.849 ns
 
- Cost of calling =bpf_xdp_trait_get=
+Cost of calling =bpf_xdp_trait_get=
  - 29 cycles(tsc) 8.056 ns
+
 
 * Optimizations
 
