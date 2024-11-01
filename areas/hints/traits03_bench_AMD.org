@@ -10,6 +10,7 @@ Micro benchmarking [[https://blog.cloudflare.com/gen-12-servers/][Cloudflare's G
   - [[#details-on-cpu-amd-epyc-9684x][Details on CPU AMD EPYC 9684X]]
 - [[#initial-benchmark-results][Initial benchmark results]]
   - [[#baseline-intel-cpu-e5-1650][Baseline: Intel CPU E5-1650]]
+  - [[#initial-test-amd-epyc-9684x][Initial test: AMD EPYC 9684X]]
 
 * Device Under Test (DUT)
 
@@ -74,6 +75,9 @@ Vulnerabilities:
 
 * Initial benchmark results
 
+Tested on top of kernel tree and branch:
+ - https://github.com/arthurfabre/linux/tree/afabre/traits-002-bounds-inline
+
 ** Baseline: Intel CPU E5-1650
 
 Copying the baseline for Intel CPU E5-1650 we got from
@@ -100,3 +104,39 @@ Cost of calling =bpf_xdp_trait_get=
 | bpf_xdp_trait_set |     42 | 11.849 ns |
 | bpf_xdp_trait_get |     29 | 8.056 ns  |
 
+** Initial test: AMD EPYC 9684X
+
+| AMD EPYC 9684X    |        |           |
+| micro-bench       | cycles | nanosec   |
+|-------------------+--------+-----------|
+| function call     |     14 | 5.707 ns  |
+| indirect call     |     26 | 10.331 ns |
+| bpf_xdp_trait_set |    171 | 67.378 ns |
+| bpf_xdp_trait_get |     70 | 27.708 ns |
+
+These initial test results for AMD are *very disappointing*
+ 1. because it is many factors slower than Intel CPU
+ 2. and because it exceeds our link speed time budgets
+
+Remember our time budget for the different link speeds:
+
+| Link speed | Packet rate           | Time-budget   |
+|            | at smallest pkts size | per packet    |
+|------------+-----------------------+---------------|
+|  10 Gbit/s |  14,880,952 pps       | 67.2 nanosec  |
+|  25 Gbit/s |  37,202,381 pps       | 26.88 nanosec |
+| 100 Gbit/s | 148,809,523 pps       |  6.72 nanosec |
+
+A single =bpf_xdp_trait_set= calls takes 67.378 ns, which exceeds the 10Gbit/s
+time-budget. These machines have 2x 25Gbit/s NIC ports. A single
+=bpf_xdp_trait_get= takes 27.708 ns, which exceeds the 25Gbit/s time-budget.
+
+*** Raw data:
+
+#+begin_example
+time_bench: Type:for_loop Per elem: 0 cycles(tsc) 0.272 ns (step:0) - (measurement period time:0.027213823 sec time_interval:27213823) - (invoke count:100000000 tsc_interval:69289798)
+time_bench: Type:function_call_cost Per elem: 14 cycles(tsc) 5.707 ns (step:0) - (measurement period time:0.057076763 sec time_interval:57076763) - (invoke count:10000000 tsc_interval:145325928)
+time_bench: Type:func_ptr_call_cost Per elem: 26 cycles(tsc) 10.331 ns (step:0) - (measurement period time:0.103315506 sec time_interval:103315506) - (invoke count:10000000 tsc_interval:263057388)
+time_bench: Type:trait_set Per elem: 171 cycles(tsc) 67.378 ns (step:0) - (measurement period time:0.673788061 sec time_interval:673788061) - (invoke count:10000000 tsc_interval:1715578953)
+time_bench: Type:trait_get Per elem: 70 cycles(tsc) 27.708 ns (step:0) - (measurement period time:0.277087900 sec time_interval:277087900) - (invoke count:10000000 tsc_interval:705512351)
+#+end_example
