@@ -62,7 +62,7 @@ index 11b8a19975d9..c0e3ce8ccc16 100644
 
 The raw results:
 #+begin_example
-modprobe bench_traits_simple loops=200000000 run_flags=$((2#110))
+modprobe bench_traits_simple loops=200000000 run_flags=$((2#11000))
 time_bench: Type:trait_set Per elem: 36 cycles(tsc) 10.054 ns (step:0) - (measurement period time:2.010868341 sec time_interval:2010868341) - (invoke count:200000000 tsc_interval:7239206873)
 time_bench: Type:trait_get Per elem: 21 cycles(tsc) 6.016 ns (step:0) - (measurement period time:1.203382632 sec time_interval:1203382632) - (invoke count:200000000 tsc_interval:4332225720)
 #+end_example

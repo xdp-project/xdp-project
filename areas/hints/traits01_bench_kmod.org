@@ -206,11 +206,12 @@ The kernel module support parameters for:
  - also selecting tests to run via =run_flags=
 
 A bash shells trick allow us to easily set a specific flag bit in =run_flags=,
-like =run_flags=$((2#110))= to unset bit-0 (which is =bit_run_bench_baseline=)
-and set bits 1 and 2 (=bit_run_bench_trait_set= and =bit_run_bench_trait_get=).
+like =run_flags=$((2#11000))= to e.g. unset bits 0, 1, 2 (which is
+=bit_run_bench_baseline=, =func=, =func_ptr=) and set bits 3 and 4
+(=bit_run_bench_trait_set= and =bit_run_bench_trait_get=).
 
 #+begin_example
- # modprobe bench_traits_simple loops=200000000 run_flags=$((2#110))
+ # modprobe bench_traits_simple loops=200000000 run_flags=$((2#11000))
 #+end_example
 
 The kernel log contains the results:
@@ -258,7 +259,7 @@ To find out: What is eating up cycles?
 
 Select bench for =bpf_xdp_trait_set=
 #+begin_example
-perf record -g modprobe bench_traits_simple loops=400000000 run_flags=$((2#010)) stay_loaded=1
+perf record -g modprobe bench_traits_simple loops=400000000 run_flags=$((2#01000)) stay_loaded=1
 [ perf record: Woken up 17 times to write data ]
 [ perf record: Captured and wrote 4.112 MB perf.data (20390 samples) ]
 #+end_example
