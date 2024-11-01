@@ -11,6 +11,7 @@ Micro benchmarking [[https://blog.cloudflare.com/gen-12-servers/][Cloudflare's G
 - [[#initial-benchmark-results][Initial benchmark results]]
   - [[#baseline-intel-cpu-e5-1650][Baseline: Intel CPU E5-1650]]
   - [[#initial-test-amd-epyc-9684x][Initial test: AMD EPYC 9684X]]
+- [[#measured-cycles-vs-time][Measured: Cycles vs Time]]
 
 * Device Under Test (DUT)
 
@@ -80,7 +81,7 @@ Tested on top of kernel tree and branch:
 
 ** Baseline: Intel CPU E5-1650
 
-Copying the baseline for Intel CPU E5-1650 we got from
+Copying the baseline for Intel CPU E5-1650 v4 @ 3.60GHz we got from
 [[file:traits02_optimizations.org]] that originates [[file:traits01_bench_kmod.org]]:
 
 Cost of normal function call
@@ -96,23 +97,25 @@ Cost of calling =bpf_xdp_trait_set=
 Cost of calling =bpf_xdp_trait_get=
  - 29 cycles(tsc) 8.056 ns
 
-| Intel CPU E5-1650 |        |           |
-| micro-bench       | cycles | nanosec   |
-|-------------------+--------+-----------|
-| function call     |      4 | 1.266 ns  |
-| indirect call     |     30 | 8.463 ns  |
-| bpf_xdp_trait_set |     42 | 11.849 ns |
-| bpf_xdp_trait_get |     29 | 8.056 ns  |
+| Intel CPU E5-1650 |        |         | GHz derived |
+| micro-bench       | cycles | nanosec |   TSC clock |
+|-------------------+--------+---------+-------------|
+| function call     |      4 |   1.266 |   3.1595577 |
+| indirect call     |     30 |   8.463 |   3.5448423 |
+| bpf_xdp_trait_set |     42 |  11.849 |   3.5446029 |
+| bpf_xdp_trait_get |     29 |   8.056 |   3.5998014 |
+#+TBLFM: $4=$2/$3
 
 ** Initial test: AMD EPYC 9684X
 
-| AMD EPYC 9684X    |        |           |
-| micro-bench       | cycles | nanosec   |
-|-------------------+--------+-----------|
-| function call     |     14 | 5.707 ns  |
-| indirect call     |     26 | 10.331 ns |
-| bpf_xdp_trait_set |    171 | 67.378 ns |
-| bpf_xdp_trait_get |     70 | 27.708 ns |
+| AMD EPYC 9684X    |        |         | GHz derived |
+| micro-bench       | cycles | nanosec |   TSC clock |
+|-------------------+--------+---------+-------------|
+| function call     |     14 |   5.707 |   2.4531277 |
+| indirect call     |     26 |  10.331 |   2.5166973 |
+| bpf_xdp_trait_set |    171 |  67.378 |   2.5379204 |
+| bpf_xdp_trait_get |     70 |  27.708 |   2.5263462 |
+#+TBLFM: $4=$2/$3
 
 These initial test results for AMD are *very disappointing*
  1. because it is many factors slower than Intel CPU
@@ -140,3 +143,36 @@ time_bench: Type:func_ptr_call_cost Per elem: 26 cycles(tsc) 10.331 ns (step:0) 
 time_bench: Type:trait_set Per elem: 171 cycles(tsc) 67.378 ns (step:0) - (measurement period time:0.673788061 sec time_interval:673788061) - (invoke count:10000000 tsc_interval:1715578953)
 time_bench: Type:trait_get Per elem: 70 cycles(tsc) 27.708 ns (step:0) - (measurement period time:0.277087900 sec time_interval:277087900) - (invoke count:10000000 tsc_interval:705512351)
 #+end_example
+
+* Measured: Cycles vs Time
+
+The Clock Boost in this CPU is making recording TSC cycles lower than actual CPU
+Clock Cycles executed. Thus, for this CPU it is more *reliable* for us to
+*focus* on the *measured time*.
+
+As explained in [[https://blog.cloudflare.com/gen-12-servers/][blog]] this CPU have a Base Clock of 2.5GHz (specifically 2545 MHz
+according to =/proc/cpuinfo=), but CPU can Boost Clock to 3.7GHz. (All Core
+Boost Clock gets limited to 3.42 GHz). This is a factor 1.48 (3.7/2.5) over the
+Base Clock, which is the TSC (2.5GHz) clock that =time_bench= records.
+
+The tables above have been extended with a calculated GHz derived TSC clock,
+based on dividing "cycles" with "nanosec" time.
+
+This makes is hard to compare these two CPUs based on TSC clock measurement.
+
+The discrepancy for the measured "indirect call" clearly shows the issue, as AMD
+cycles(26) is less-than Intel cycles(30), but the time spend is higher for AMD
+(10.331 ns) than Intel (8.463 ns).
+
+|                |               |    TSC |         |  Boost | adjust |   TSC | Boost |
+| CPU            | micro-bench   | cycles | nanosec | factor | cycles | clock | Clock |
+|----------------+---------------+--------+---------+--------+--------+-------+-------|
+| Intel E5-1650  | indirect call |     30 |   8.463 |   1.11 |  33.33 |   3.6 |   4.0 |
+| AMD EPYC 9684X | indirect call |     26 |  10.331 |   1.48 |  38.48 |   2.5 |   3.7 |
+#+TBLFM: $5=$8/$7::$6=$3*$5
+
+Above table, shows the discrepancy. The adjusted cycles column is the calculated
+CPU cycles executed during Clock Boost. We see that the AMD 26 cycles(tsc) turns
+into 38 cycles with boost, which this doesn't affect the Intel CPU much.
+
+
