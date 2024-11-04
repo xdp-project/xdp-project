@@ -184,21 +184,36 @@ To understand and explain why the AMD CPU is having horrible performance
 compared to the Intel CPU, we first need to understand the *relationship*
 between *Cycles* and *Instructions*.
 
-*** Raw data: E5-1650
+Lets make a measurement based approach via using =perf stat= tool. When loading
+kernel module =bench_traits_simple= we can limit the benchmark to be the normal
+function call (selecing =bit_run_bench_func= via =run_flags=$((2#010)=) and
+increase the number of =loops= (to approximate 1 second execution time). Below
+is the data from the two CPUs under test.
+
+The Intel CPU is executing (many) 1.76 instructions for every clock cycle. This
+is what we want and expect to see, showing CPU pipelining is working
+efficiently. The AMD CPU is executing less than 1 (0.56) instructions per clock
+cycle. This is not want we want to see, and indicate CPU pipelining is getting
+stalled. Anything below 1 instruction per cycle is bad.
+
+We explain/identify the root-cause later, but below we look at the observed data
+reported from the =perf stat= tool.
+
+*** Perf stat data: Intel E5-1650
 
 #+begin_example
 # perf stat modprobe bench_traits_simple run_flags=$((2#010)) loops=800000000
 
  Performance counter stats for 'modprobe bench_traits_simple run_flags=2 loops=800000000':
 
-          1,042.89 msec task-clock                       #    0.973 CPUs utilized             
-                 4      context-switches                 #    3.835 /sec                      
-                 1      cpu-migrations                   #    0.959 /sec                      
-               216      page-faults                      #  207.116 /sec                      
-     4,103,926,761      cycles                           #    3.935 GHz                       
-     7,226,819,844      instructions                     #    1.76  insn per cycle            
-     2,405,369,819      branches                         #    2.306 G/sec                     
-           141,927      branch-misses                    #    0.01% of all branches           
+          1,042.89 msec task-clock                       #    0.973 CPUs utilized
+                 4      context-switches                 #    3.835 /sec
+                 1      cpu-migrations                   #    0.959 /sec
+               216      page-faults                      #  207.116 /sec
+     4,103,926,761      cycles                           #    3.935 GHz
+     7,226,819,844      instructions                     #    1.76  insn per cycle
+     2,405,369,819      branches                         #    2.306 G/sec
+           141,927      branch-misses                    #    0.01% of all branches
 
        1.072254386 seconds time elapsed
 
@@ -206,26 +221,51 @@ between *Cycles* and *Instructions*.
        1.041577000 seconds sys
 #+end_example
 
-*** Raw data: AMD
+We manually adjusted =loops= to run for approx 1 sec to make it easier to
+eyeball the results. To be precise it ran for 1043 ms. Looks like the Intel CPU
+was running in a Turbo Boost of 3.935 GHz, for 1043 ms (factor 1043/1000 =
+1.043) which is approx (3.935*1.043) 4.104 G-cycles. which corresponds to that
+perf stat reports 4,103,926,761 cycles.
+
+In this time 7,226,819,844 instructions were executed, which is pretty cool as
+it kind of means it is operating at 7.226 GHz. The perf output calculates the
+1.76 insn per cycle for us.
+
+*** Perf stat data: AMD EPYC 9684X
 
 #+begin_example
 perf stat modprobe bench_traits_simple run_flags=$((2#010)) loops=180000000
 
  Performance counter stats for 'modprobe bench_traits_simple run_flags=2 loops=180000000':
 
-          1,077.60 msec task-clock                       #    0.973 CPUs utilized          
-                 5      context-switches                 #    4.640 /sec                   
-                 1      cpu-migrations                   #    0.928 /sec                   
-               209      page-faults                      #  193.950 /sec                   
-     3,929,454,291      cycles                           #    3.646 GHz                    
-     3,006,632,749      stalled-cycles-frontend          #   76.52% frontend cycles idle   
-     2,187,968,487      instructions                     #    0.56  insn per cycle         
+          1,077.60 msec task-clock                       #    0.973 CPUs utilized
+                 5      context-switches                 #    4.640 /sec
+                 1      cpu-migrations                   #    0.928 /sec
+               209      page-faults                      #  193.950 /sec
+     3,929,454,291      cycles                           #    3.646 GHz
+     3,006,632,749      stalled-cycles-frontend          #   76.52% frontend cycles idle
+     2,187,968,487      instructions                     #    0.56  insn per cycle
                                                   #    1.37  stalled cycles per insn
-       905,772,907      branches                         #  840.547 M/sec                  
-       180,544,248      branch-misses                    #   19.93% of all branches        
+       905,772,907      branches                         #  840.547 M/sec
+       180,544,248      branch-misses                    #   19.93% of all branches
 
        1.107366645 seconds time elapsed
 
        0.002052000 seconds user
        1.072258000 seconds sys
 #+end_example
+
+We reduced the =loops= count from 800,000,000 to 180,000,000 to run for approx 1
+sec. To be precise it ran for 1078 ms. The AMD CPU have a base clock of 2.5GHz
+and perf show it is running in a Turbo Boost of 3.646 GHz, giving us
+3,929,454,291 cycles executed (3.646*1078/1000 = 3.930 G-cycles).
+
+Sadly the AMD CPU wasn't very efficient at executing a normal function call in a
+tight loop. In this time (only) 2,187,968,487 instructions were executed, which
+isn't efficient use of the 3,929,454,291 cycles executed. The perf output
+calculates the 0.56 insn per cycle for us.
+
+The =perf stat= output gives us more data than before. It collected
+=stalled-cycles-frontend= and calculated that 76.52% frontend cycles were idle.
+It also reports 1.37 stalled cycles per insn.
+
