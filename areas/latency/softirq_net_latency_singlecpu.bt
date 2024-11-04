@@ -17,11 +17,11 @@
 BEGIN
 {
 	/* Cmdline arg#1: latency threshold input in usec */
-	@threshold_usecs = $1 ? $1: 5000;
+	@threshold_usecs = (uint64) ($1 ? $1: 5000);
 	/* Cmdline arg#2: CPU to measure
 	 *  On prod systems (e.g with 128 cores) limit impact
 	 */
-	@my_cpu = $2 ? $2 : 0;
+	@my_cpu = (uint64) ($2 ? $2 : 0);
 	printf("Tracing softirq latency on CPU:%d ... Hit Ctrl-C to end.\n",
 	       @my_cpu);
 	printf(" - Will report on latency above %d usecs (= %d ms)\n",

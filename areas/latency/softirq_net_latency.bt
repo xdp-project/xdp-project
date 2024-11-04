@@ -17,9 +17,9 @@
 BEGIN
 {
 	/* Cmdline arg#1: latency threshold input in usec */
-	@threshold_usecs = $1 ? $1: 2000;
+	@threshold_usecs = (uint64) ($1 ? $1: 2000);
 	/* Cmdline arg#2: enable measuring runtime of softirq func */
-	@measure_runtime = $2;
+	@measure_runtime = (uint64) $2;
 	printf("Tracing softirq wait-time latency ... Hit Ctrl-C to end.\n");
 	printf(" - Will report on latency above %d usecs (= %d ms)\n",
 	       @threshold_usecs, @threshold_usecs / 1000);
