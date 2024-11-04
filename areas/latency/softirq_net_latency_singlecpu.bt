@@ -60,4 +60,5 @@ tracepoint:irq:softirq_entry
 END
 {	/* Default bpftrace will print all remaining maps at END */
 	clear(@threshold_usecs);
+	clear(@my_cpu);
 }
