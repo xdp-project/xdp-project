@@ -13,6 +13,8 @@ Micro benchmarking [[https://blog.cloudflare.com/gen-12-servers/][Cloudflare's G
   - [[#initial-test-amd-epyc-9684x][Initial test: AMD EPYC 9684X]]
 - [[#measured-cycles-vs-time][Measured: Cycles vs Time]]
   - [[#instructions-per-cycle][Instructions per Cycle]]
+- [[#root-cause-srso][Root-cause: SRSO]]
+  - [[#perf-report-srso_alias_safe_ret][perf report: srso_alias_safe_ret]]
 
 * Device Under Test (DUT)
 
@@ -268,4 +270,78 @@ calculates the 0.56 insn per cycle for us.
 The =perf stat= output gives us more data than before. It collected
 =stalled-cycles-frontend= and calculated that 76.52% frontend cycles were idle.
 It also reports 1.37 stalled cycles per insn.
+
+* Root-cause: SRSO
+
+Side-channel Mitigation: Speculative Return Stack Overflow (SRSO)
+ - Have been identified as the root-cause for function call overhead
+
+Kernel documentation for this mitigation:
+ - https://docs.kernel.org/admin-guide/hw-vuln/srso.html
+
+** perf report: srso_alias_safe_ret
+
+We can clearly see the SRSO overhead via =perf record= and =perf report=.
+
+#+begin_example
+sudo perf record -g modprobe bench_traits_simple run_flags=$((2#010)) \
+  loops=1800000000 stay_loaded=1
+[ perf record: Woken up 27 times to write data ]
+[ perf record: Captured and wrote 6.684 MB perf.data (42104 samples) ]
+#+end_example
+
+The output from =perf report --hierarchy=, zoomed into =kernel.vmlinux= clearly
+show that SRSO function calls (=srso_alias_return_thunk= and
+=srso_alias_safe_ret=) are the main overhead:
+
+#+begin_example
+# perf report --hierarchy
+Samples: 42K of event 'cycles', Event count (approx.): 5653768845, DSO: [kernel.vmlinux]
+  Overhead        Command / Shared Object / Symbol
+-  100.00%        modprobe
+   -  100.00%        [kernel.vmlinux]
+      +   64.63%        [k] srso_alias_return_thunk
+      +   33.30%        [k] srso_alias_safe_ret
+           0.67%        [k] io_serial_in
+#+end_example
+
+Not zooming into the kernel, but the =modprobe= thread, make it harder to spot
+that SRSO is causing this. The =perf= tool doesn't decode our kernel module
+addresses (=0xffffffffc1d4cXXX=) correctly (even-though we kept it loaded via
+=stay_loaded=1=).
+
+Below, the kernel module addresses (=0xffffffffc1d4cXXX=) also gets "blamed" for
+spending cycles. E.g. 66.11% (for =0xffffffffc1d4c1db=) of which 35.61% is spend
+in =srso_alias_return_thunk=. We believe this is caused by the =srso_alias=
+calls are stalling the CPU pipeline. Next step: Try turning off mitigation and
+see if overhead disappears.
+
+#+begin_example
+# perf report --hierarchy
+Samples: 42K of event 'cycles', Event count (approx.): 38090732795, Thread: modprobe
+  Overhead        Command / Shared Object / Symbol
+-  100.00%        modprobe
+   -   85.15%        [unknown]
+      -   66.11%        [k] 0xffffffffc1d4c1db
+           syscall
+           [...]
+           do_init_module
+           [...]
+         - time_bench_loop
+            - 48.43% 0xffffffffc1d4c1db
+               - 35.61% srso_alias_return_thunk
+                    srso_alias_safe_ret
+                 2.60% 0xffffffffc1d4c010
+              17.65% 0xffffffffc1d4c1dd
+      +    7.14%        [k] 0xffffffffc1d4c1d6
+      +    4.56%        [k] 0xffffffffc1d4c1d3
+      +    2.43%        [k] 0xffffffffc1d4c1ce
+      +    1.67%        [k] 0xffffffffc1d4c01f
+      +    1.63%        [k] 0xffffffffc1d4c010
+      +    1.61%        [k] 0xffffffffc1d4c019
+   -   14.84%        [kernel.vmlinux]
+      +    9.59%        [k] srso_alias_return_thunk
+      +    4.94%        [k] srso_alias_safe_ret
+           0.10%        [k] io_serial_in
+#+end_example
 
