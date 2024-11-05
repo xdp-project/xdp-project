@@ -17,6 +17,7 @@ Micro benchmarking [[https://blog.cloudflare.com/gen-12-servers/][Cloudflare's G
   - [[#perf-report-srso_alias_safe_ret][perf report: srso_alias_safe_ret]]
 - [[#experiments-with-srso-modes][Experiments with SRSO modes]]
   - [[#spec_rstack_overflowoff][spec_rstack_overflow=off]]
+  - [[#spec_rstack_overflowmicrocode][spec_rstack_overflow=microcode]]
 
 * Device Under Test (DUT)
 
@@ -420,3 +421,33 @@ seeing 0.00% branch-misses, before it was 19.93%. There are still
 stalled-cycles-frontend, but reduced to 0.23 stalled cycles per insn (before
 1.37).
 
+** spec_rstack_overflow=microcode
+
+Mitigation via boot cmdline:
+ - =spec_rstack_overflow=microcode=
+
+#+begin_example
+$ grep -H . /sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow
+/sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow:Vulnerable: Microcode, no safe RET
+#+end_example
+
+As described in [[https://docs.kernel.org/admin-guide/hw-vuln/srso.html][kernel documentation]]:
+
+- Extended IBPB functionality microcode patch has been applied. It does not
+  address =User->Kernel= and =Guest->Host= transitions protection but it does
+  address =User->User= and =VM->VM= attack vectors.
+
+Table comparing mode "microcode" vs "off":
+
+| *Mitigation: mode* | *microcode* |  "off" | *microcode* |   "off" |
+| AMD EPYC 9684X     |      cycles | cycles |     nanosec | nanosec |
+|--------------------+-------------+--------+-------------+---------|
+| function call      |           3 |      3 |       1.358 |   1.356 |
+| indirect call      |          15 |     15 |       6.241 |   6.235 |
+| bpf_xdp_trait_set  |         109 |    111 |      43.160 |  43.742 |
+| bpf_xdp_trait_get  |          21 |     21 |       8.278 |   8.373 |
+
+This *microcode* mode gives same performance as *off* mode, when doing internal
+kernel function calls (=Kernel->Kernel= case)
+
+The =perf stat= looks the same as *off* mode.
