@@ -16,6 +16,7 @@ Micro benchmarking [[https://blog.cloudflare.com/gen-12-servers/][Cloudflare's G
 - [[#root-cause-srso][Root-cause: SRSO]]
   - [[#perf-report-srso_alias_safe_ret][perf report: srso_alias_safe_ret]]
 - [[#experiments-with-srso-modes][Experiments with SRSO modes]]
+  - [[#spec_rstack_overflowoff][spec_rstack_overflow=off]]
 
 * Device Under Test (DUT)
 
@@ -189,7 +190,7 @@ between *Cycles* and *Instructions*.
 
 Lets make a measurement based approach via using =perf stat= tool. When loading
 kernel module =bench_traits_simple= we can limit the benchmark to be the normal
-function call (selecing =bit_run_bench_func= via =run_flags=$((2#010)=) and
+function call (selecting =bit_run_bench_func= via =run_flags=$((2#010)=) and
 increase the number of =loops= (to approximate 1 second execution time). Below
 is the data from the two CPUs under test.
 
@@ -349,10 +350,73 @@ Samples: 42K of event 'cycles', Event count (approx.): 38090732795, Thread: modp
 * Experiments with SRSO modes
 
 As documented in [[https://docs.kernel.org/admin-guide/hw-vuln/srso.html][kernel documentation]] for this SRSO mitigation:
- - It can run in *different modes via boot cmdline options =spec_rstack_overflow=
+ - It can run in *different modes* via boot cmdline options =spec_rstack_overflow=
 
 The sysfs file showing SRSO mitigation status is:
  - /sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow
 
+** spec_rstack_overflow=off
 
+Starting with *turning off* the mitigation via boot cmdline:
+ - =spec_rstack_overflow=off=
+
+#+begin_example
+$ grep -H . /sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow
+/sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow:Vulnerable
+#+end_example
+
+Table comparing (default) most restrictive mode "Safe RET" vs "off".
+
+| *Mitigation:*     | Safe RET |  *off* | Safe RET |   *off* |
+| AMD EPYC 9684X    |   cycles | cycles |  nanosec | nanosec |
+|-------------------+----------+--------+----------+---------|
+| function call     |       14 |      3 |    5.707 |   1.356 |
+| indirect call     |       26 |     15 |   10.331 |   6.235 |
+| bpf_xdp_trait_set |      171 |    111 |   67.378 |  43.742 |
+| bpf_xdp_trait_get |       70 |     21 |   27.708 |   8.373 |
+
+The normal "function call" see a dramatic improvement. The 1.356 ns overhead is
+very close to the Intel CPUs 1.266 ns. Inspection with perf report shows
+=srso_alias= calls are completely gone. This mitigation also affect the
+"indirect call".
+
+The "bpf_xdp_trait_get" call see (8.373 ns) which is a huge improvement that
+brings it into the same range as Intel (8.056 ns).
+
+The "bpf_xdp_trait_set" call do see an improvement, but the observed value
+(43.742 ns) is still lacking behind Intel (11.849 ns). This requires more
+investigating, but it is getting restructured in 
+
+*** perf stat: spec_rstack_overflow=off
+
+Results with =perf stat= tool. With kernel module =bench_traits_simple= limit
+benchmark to be the *normal function call* (selecting =bit_run_bench_func= via
+=run_flags=$((2#010)=) and increase the number of =loops= (to approximate 1
+second execution time). This is comparable to section [[#instructions-per-cycle][Instructions per Cycle]].
+
+#+begin_example
+ Performance counter stats for 'modprobe bench_traits_simple run_flags=2 loops=717500000':
+
+          1,000.16 msec task-clock                       #    0.971 CPUs utilized
+                 4      context-switches                 #    3.999 /sec
+                 1      cpu-migrations                   #    1.000 /sec
+               211      page-faults                      #  210.967 /sec
+     3,666,671,315      cycles                           #    3.666 GHz
+     1,498,482,267      stalled-cycles-frontend          #   40.87% frontend cycles idle
+     6,477,011,591      instructions                     #    1.77  insn per cycle
+                                                  #    0.23  stalled cycles per insn
+     2,156,048,922      branches                         #    2.156 G/sec
+            46,497      branch-misses                    #    0.00% of all branches
+
+       1.030277809 seconds time elapsed
+
+       0.001022000 seconds user
+       0.997962000 seconds sys
+#+end_example
+
+This AMD CPU is now operating at *1.77 instructions per cycle*, which is *very*
+*good* and basically the same as the Intel CPU (1.76 insn per cycle). Now we are
+seeing 0.00% branch-misses, before it was 19.93%. There are still
+stalled-cycles-frontend, but reduced to 0.23 stalled cycles per insn (before
+1.37).
 
