@@ -15,6 +15,7 @@ Micro benchmarking [[https://blog.cloudflare.com/gen-12-servers/][Cloudflare's G
   - [[#instructions-per-cycle][Instructions per Cycle]]
 - [[#root-cause-srso][Root-cause: SRSO]]
   - [[#perf-report-srso_alias_safe_ret][perf report: srso_alias_safe_ret]]
+- [[#experiments-with-srso-modes][Experiments with SRSO modes]]
 
 * Device Under Test (DUT)
 
@@ -344,4 +345,14 @@ Samples: 42K of event 'cycles', Event count (approx.): 38090732795, Thread: modp
       +    4.94%        [k] srso_alias_safe_ret
            0.10%        [k] io_serial_in
 #+end_example
+
+* Experiments with SRSO modes
+
+As documented in [[https://docs.kernel.org/admin-guide/hw-vuln/srso.html][kernel documentation]] for this SRSO mitigation:
+ - It can run in *different modes via boot cmdline options =spec_rstack_overflow=
+
+The sysfs file showing SRSO mitigation status is:
+ - /sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow
+
+
 
