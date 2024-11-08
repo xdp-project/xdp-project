@@ -1,0 +1,515 @@
+#+Title: Investigating AMD CPU overhead
+
+See intro in [[file:traits01_bench_kmod.org]].
+
+Micro benchmarking [[https://blog.cloudflare.com/gen-12-servers/][Cloudflare's Gen12 server]]
+ - with traits benchmarking kernel module
+
+* Generate: Table of Contents                                           :toc:
+- [[#device-under-test-dut][Device Under Test (DUT)]]
+  - [[#details-on-cpu-amd-epyc-9684x][Details on CPU AMD EPYC 9684X]]
+- [[#initial-benchmark-results][Initial benchmark results]]
+  - [[#baseline-intel-cpu-e5-1650][Baseline: Intel CPU E5-1650]]
+  - [[#initial-test-amd-epyc-9684x][Initial test: AMD EPYC 9684X]]
+- [[#measured-cycles-vs-time][Measured: Cycles vs Time]]
+  - [[#instructions-per-cycle][Instructions per Cycle]]
+- [[#root-cause-srso][Root-cause: SRSO]]
+  - [[#perf-report-srso_alias_safe_ret][perf report: srso_alias_safe_ret]]
+- [[#experiments-with-srso-modes][Experiments with SRSO modes]]
+  - [[#spec_rstack_overflowoff][spec_rstack_overflow=off]]
+  - [[#spec_rstack_overflowmicrocode][spec_rstack_overflow=microcode]]
+  - [[#spec_rstack_overflowibpb][spec_rstack_overflow=ibpb]]
+
+* Device Under Test (DUT)
+
+AMD EPYC 9684X 96-Core Processor
+ - 2 threads per core
+ - 192 logical CPU cores
+
+** Details on CPU AMD EPYC 9684X
+
+#+begin_src
+Architecture:             x86_64
+  CPU op-mode(s):         32-bit, 64-bit
+  Address sizes:          46 bits physical, 57 bits virtual
+  Byte Order:             Little Endian
+CPU(s):                   192
+  On-line CPU(s) list:    0-191
+Vendor ID:                AuthenticAMD
+  Model name:             AMD EPYC 9684X 96-Core Processor
+    CPU family:           25
+    Model:                17
+    Thread(s) per core:   2
+    Core(s) per socket:   96
+    Socket(s):            1
+    Stepping:             2
+ [... cut ...]
+Caches (sum of all):
+  L1d:                    3 MiB (96 instances)
+  L1i:                    3 MiB (96 instances)
+  L2:                     96 MiB (96 instances)
+  L3:                     1.1 GiB (12 instances)
+NUMA:
+  NUMA node(s):           12
+  NUMA node0 CPU(s):      0-7,96-103
+  NUMA node1 CPU(s):      8-15,104-111
+  NUMA node2 CPU(s):      16-23,112-119
+  NUMA node3 CPU(s):      24-31,120-127
+  NUMA node4 CPU(s):      32-39,128-135
+  NUMA node5 CPU(s):      40-47,136-143
+  NUMA node6 CPU(s):      48-55,144-151
+  NUMA node7 CPU(s):      56-63,152-159
+  NUMA node8 CPU(s):      64-71,160-167
+  NUMA node9 CPU(s):      72-79,168-175
+  NUMA node10 CPU(s):     80-87,176-183
+  NUMA node11 CPU(s):     88-95,184-191
+Vulnerabilities:
+  Gather data sampling:   Not affected
+  Itlb multihit:          Not affected
+  L1tf:                   Not affected
+  Mds:                    Not affected
+  Meltdown:               Not affected
+  Mmio stale data:        Not affected
+  Reg file data sampling: Not affected
+  Retbleed:               Not affected
+  Spec rstack overflow:   Mitigation; Safe RET
+  Spec store bypass:      Mitigation; Speculative Store Bypass disabled via prctl
+  Spectre v1:             Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+  Spectre v2:             Mitigation; Enhanced / Automatic IBRS; IBPB conditional; STIBP always-
+                          on; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected
+  Srbds:                  Not affected
+  Tsx async abort:        Not affected
+#+end_src
+
+* Initial benchmark results
+
+Tested on top of kernel tree and branch:
+ - https://github.com/arthurfabre/linux/tree/afabre/traits-002-bounds-inline
+
+** Baseline: Intel CPU E5-1650
+
+Copying the baseline for Intel CPU E5-1650 v4 @ 3.60GHz we got from
+[[file:traits02_optimizations.org]] that originates [[file:traits01_bench_kmod.org]]:
+
+Cost of normal function call
+ - 4 cycles(tsc) 1.266 ns
+
+Cost of indirect function (pointer) call
+ - 30 cycles(tsc) 8.463 ns
+ - this large overhead is caused by Mitigation: Retpolines
+
+Cost of calling =bpf_xdp_trait_set=
+ - 42 cycles(tsc) 11.849 ns
+
+Cost of calling =bpf_xdp_trait_get=
+ - 29 cycles(tsc) 8.056 ns
+
+| Intel CPU E5-1650 |        |         | GHz derived |
+| micro-bench       | cycles | nanosec |   TSC clock |
+|-------------------+--------+---------+-------------|
+| function call     |      4 |   1.266 |   3.1595577 |
+| indirect call     |     30 |   8.463 |   3.5448423 |
+| bpf_xdp_trait_set |     42 |  11.849 |   3.5446029 |
+| bpf_xdp_trait_get |     29 |   8.056 |   3.5998014 |
+#+TBLFM: $4=$2/$3
+
+** Initial test: AMD EPYC 9684X
+
+| AMD EPYC 9684X    |        |         | GHz derived |
+| micro-bench       | cycles | nanosec |   TSC clock |
+|-------------------+--------+---------+-------------|
+| function call     |     14 |   5.707 |   2.4531277 |
+| indirect call     |     26 |  10.331 |   2.5166973 |
+| bpf_xdp_trait_set |    171 |  67.378 |   2.5379204 |
+| bpf_xdp_trait_get |     70 |  27.708 |   2.5263462 |
+#+TBLFM: $4=$2/$3
+
+These initial test results for AMD are *very disappointing*
+ 1. because it is many factors slower than Intel CPU
+ 2. and because it exceeds our link speed time budgets
+
+Remember our time budget for the different link speeds:
+
+| Link speed | Packet rate           | Time-budget   |
+|            | at smallest pkts size | per packet    |
+|------------+-----------------------+---------------|
+|  10 Gbit/s |  14,880,952 pps       | 67.2 nanosec  |
+|  25 Gbit/s |  37,202,381 pps       | 26.88 nanosec |
+| 100 Gbit/s | 148,809,523 pps       |  6.72 nanosec |
+
+A single =bpf_xdp_trait_set= calls takes 67.378 ns, which exceeds the 10Gbit/s
+time-budget. These machines have 2x 25Gbit/s NIC ports. A single
+=bpf_xdp_trait_get= takes 27.708 ns, which exceeds the 25Gbit/s time-budget.
+
+*** Raw data:
+
+#+begin_example
+time_bench: Type:for_loop Per elem: 0 cycles(tsc) 0.272 ns (step:0) - (measurement period time:0.027213823 sec time_interval:27213823) - (invoke count:100000000 tsc_interval:69289798)
+time_bench: Type:function_call_cost Per elem: 14 cycles(tsc) 5.707 ns (step:0) - (measurement period time:0.057076763 sec time_interval:57076763) - (invoke count:10000000 tsc_interval:145325928)
+time_bench: Type:func_ptr_call_cost Per elem: 26 cycles(tsc) 10.331 ns (step:0) - (measurement period time:0.103315506 sec time_interval:103315506) - (invoke count:10000000 tsc_interval:263057388)
+time_bench: Type:trait_set Per elem: 171 cycles(tsc) 67.378 ns (step:0) - (measurement period time:0.673788061 sec time_interval:673788061) - (invoke count:10000000 tsc_interval:1715578953)
+time_bench: Type:trait_get Per elem: 70 cycles(tsc) 27.708 ns (step:0) - (measurement period time:0.277087900 sec time_interval:277087900) - (invoke count:10000000 tsc_interval:705512351)
+#+end_example
+
+* Measured: Cycles vs Time
+
+The Clock Boost in this CPU is making recording TSC cycles lower than actual CPU
+Clock Cycles executed. Thus, for this CPU it is more *reliable* for us to
+*focus* on the *measured time*.
+
+As explained in [[https://blog.cloudflare.com/gen-12-servers/][blog]] this CPU have a Base Clock of 2.5GHz (specifically 2545 MHz
+according to =/proc/cpuinfo=), but CPU can Boost Clock to 3.7GHz. (All Core
+Boost Clock gets limited to 3.42 GHz). This is a factor 1.48 (3.7/2.5) over the
+Base Clock, which is the TSC (2.5GHz) clock that =time_bench= records.
+
+The tables above have been extended with a calculated GHz derived TSC clock,
+based on dividing "cycles" with "nanosec" time.
+
+This makes is hard to compare these two CPUs based on TSC clock measurement.
+
+The discrepancy for the measured "indirect call" clearly shows the issue, as AMD
+cycles(26) is less-than Intel cycles(30), but the time spend is higher for AMD
+(10.331 ns) than Intel (8.463 ns).
+
+|                |               |    TSC |         |  Boost | adjust |   TSC | Boost |
+| CPU            | micro-bench   | cycles | nanosec | factor | cycles | clock | Clock |
+|----------------+---------------+--------+---------+--------+--------+-------+-------|
+| Intel E5-1650  | indirect call |     30 |   8.463 |   1.11 |  33.33 |   3.6 |   4.0 |
+| AMD EPYC 9684X | indirect call |     26 |  10.331 |   1.48 |  38.48 |   2.5 |   3.7 |
+#+TBLFM: $5=$8/$7::$6=$3*$5
+
+Above table, shows the discrepancy. The adjusted cycles column is the calculated
+CPU cycles executed during Clock Boost. We see that the AMD 26 cycles(tsc) turns
+into 38 cycles with boost, which this doesn't affect the Intel CPU much.
+
+** Instructions per Cycle
+
+The rabbit hole is deeper.
+
+To understand and explain why the AMD CPU is having horrible performance
+compared to the Intel CPU, we first need to understand the *relationship*
+between *Cycles* and *Instructions*.
+
+Lets make a measurement based approach via using =perf stat= tool. When loading
+kernel module =bench_traits_simple= we can limit the benchmark to be the normal
+function call (selecting =bit_run_bench_func= via =run_flags=$((2#010)=) and
+increase the number of =loops= (to approximate 1 second execution time). Below
+is the data from the two CPUs under test.
+
+The Intel CPU is executing (many) 1.76 instructions for every clock cycle. This
+is what we want and expect to see, showing CPU pipelining is working
+efficiently. The AMD CPU is executing less than 1 (0.56) instructions per clock
+cycle. This is not want we want to see, and indicate CPU pipelining is getting
+stalled. Anything below 1 instruction per cycle is bad.
+
+We explain/identify the root-cause later, but below we look at the observed data
+reported from the =perf stat= tool.
+
+*** Perf stat data: Intel E5-1650
+
+#+begin_example
+# perf stat modprobe bench_traits_simple run_flags=$((2#010)) loops=800000000
+
+ Performance counter stats for 'modprobe bench_traits_simple run_flags=2 loops=800000000':
+
+          1,042.89 msec task-clock                       #    0.973 CPUs utilized
+                 4      context-switches                 #    3.835 /sec
+                 1      cpu-migrations                   #    0.959 /sec
+               216      page-faults                      #  207.116 /sec
+     4,103,926,761      cycles                           #    3.935 GHz
+     7,226,819,844      instructions                     #    1.76  insn per cycle
+     2,405,369,819      branches                         #    2.306 G/sec
+           141,927      branch-misses                    #    0.01% of all branches
+
+       1.072254386 seconds time elapsed
+
+       0.000000000 seconds user
+       1.041577000 seconds sys
+#+end_example
+
+We manually adjusted =loops= to run for approx 1 sec to make it easier to
+eyeball the results. To be precise it ran for 1043 ms. Looks like the Intel CPU
+was running in a Turbo Boost of 3.935 GHz, for 1043 ms (factor 1043/1000 =
+1.043) which is approx (3.935*1.043) 4.104 G-cycles. which corresponds to that
+perf stat reports 4,103,926,761 cycles.
+
+In this time 7,226,819,844 instructions were executed, which is pretty cool as
+it kind of means it is operating at 7.226 GHz. The perf output calculates the
+1.76 insn per cycle for us.
+
+*** Perf stat data: AMD EPYC 9684X
+
+#+begin_example
+perf stat modprobe bench_traits_simple run_flags=$((2#010)) loops=180000000
+
+ Performance counter stats for 'modprobe bench_traits_simple run_flags=2 loops=180000000':
+
+          1,077.60 msec task-clock                       #    0.973 CPUs utilized
+                 5      context-switches                 #    4.640 /sec
+                 1      cpu-migrations                   #    0.928 /sec
+               209      page-faults                      #  193.950 /sec
+     3,929,454,291      cycles                           #    3.646 GHz
+     3,006,632,749      stalled-cycles-frontend          #   76.52% frontend cycles idle
+     2,187,968,487      instructions                     #    0.56  insn per cycle
+                                                  #    1.37  stalled cycles per insn
+       905,772,907      branches                         #  840.547 M/sec
+       180,544,248      branch-misses                    #   19.93% of all branches
+
+       1.107366645 seconds time elapsed
+
+       0.002052000 seconds user
+       1.072258000 seconds sys
+#+end_example
+
+We reduced the =loops= count from 800,000,000 to 180,000,000 to run for approx 1
+sec. To be precise it ran for 1078 ms. The AMD CPU have a base clock of 2.5GHz
+and perf show it is running in a Turbo Boost of 3.646 GHz, giving us
+3,929,454,291 cycles executed (3.646*1078/1000 = 3.930 G-cycles).
+
+Sadly the AMD CPU wasn't very efficient at executing a normal function call in a
+tight loop. In this time (only) 2,187,968,487 instructions were executed, which
+isn't efficient use of the 3,929,454,291 cycles executed. The perf output
+calculates the 0.56 insn per cycle for us.
+
+The =perf stat= output gives us more data than before. It collected
+=stalled-cycles-frontend= and calculated that 76.52% frontend cycles were idle.
+It also reports 1.37 stalled cycles per insn.
+
+* Root-cause: SRSO
+
+Side-channel Mitigation: Speculative Return Stack Overflow (SRSO)
+ - Have been identified as the root-cause for function call overhead
+
+Kernel documentation for this mitigation:
+ - https://docs.kernel.org/admin-guide/hw-vuln/srso.html
+
+** perf report: srso_alias_safe_ret
+
+We can clearly see the SRSO overhead via =perf record= and =perf report=.
+
+#+begin_example
+sudo perf record -g modprobe bench_traits_simple run_flags=$((2#010)) \
+  loops=1800000000 stay_loaded=1
+[ perf record: Woken up 27 times to write data ]
+[ perf record: Captured and wrote 6.684 MB perf.data (42104 samples) ]
+#+end_example
+
+The output from =perf report --hierarchy=, zoomed into =kernel.vmlinux= clearly
+show that SRSO function calls (=srso_alias_return_thunk= and
+=srso_alias_safe_ret=) are the main overhead:
+
+#+begin_example
+# perf report --hierarchy
+Samples: 42K of event 'cycles', Event count (approx.): 5653768845, DSO: [kernel.vmlinux]
+  Overhead        Command / Shared Object / Symbol
+-  100.00%        modprobe
+   -  100.00%        [kernel.vmlinux]
+      +   64.63%        [k] srso_alias_return_thunk
+      +   33.30%        [k] srso_alias_safe_ret
+           0.67%        [k] io_serial_in
+#+end_example
+
+Not zooming into the kernel, but the =modprobe= thread, make it harder to spot
+that SRSO is causing this. The =perf= tool doesn't decode our kernel module
+addresses (=0xffffffffc1d4cXXX=) correctly (even-though we kept it loaded via
+=stay_loaded=1=).
+
+Below, the kernel module addresses (=0xffffffffc1d4cXXX=) also gets "blamed" for
+spending cycles. E.g. 66.11% (for =0xffffffffc1d4c1db=) of which 35.61% is spend
+in =srso_alias_return_thunk=. We believe this is caused by the =srso_alias=
+calls are stalling the CPU pipeline. Next step: Try turning off mitigation and
+see if overhead disappears.
+
+#+begin_example
+# perf report --hierarchy
+Samples: 42K of event 'cycles', Event count (approx.): 38090732795, Thread: modprobe
+  Overhead        Command / Shared Object / Symbol
+-  100.00%        modprobe
+   -   85.15%        [unknown]
+      -   66.11%        [k] 0xffffffffc1d4c1db
+           syscall
+           [...]
+           do_init_module
+           [...]
+         - time_bench_loop
+            - 48.43% 0xffffffffc1d4c1db
+               - 35.61% srso_alias_return_thunk
+                    srso_alias_safe_ret
+                 2.60% 0xffffffffc1d4c010
+              17.65% 0xffffffffc1d4c1dd
+      +    7.14%        [k] 0xffffffffc1d4c1d6
+      +    4.56%        [k] 0xffffffffc1d4c1d3
+      +    2.43%        [k] 0xffffffffc1d4c1ce
+      +    1.67%        [k] 0xffffffffc1d4c01f
+      +    1.63%        [k] 0xffffffffc1d4c010
+      +    1.61%        [k] 0xffffffffc1d4c019
+   -   14.84%        [kernel.vmlinux]
+      +    9.59%        [k] srso_alias_return_thunk
+      +    4.94%        [k] srso_alias_safe_ret
+           0.10%        [k] io_serial_in
+#+end_example
+
+* Experiments with SRSO modes
+
+As documented in [[https://docs.kernel.org/admin-guide/hw-vuln/srso.html][kernel documentation]] for this SRSO mitigation:
+ - It can run in *different modes* via boot cmdline options =spec_rstack_overflow=
+
+The sysfs file showing SRSO mitigation status is:
+ - /sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow
+
+** spec_rstack_overflow=off
+
+Starting with *turning off* the mitigation via boot cmdline:
+ - =spec_rstack_overflow=off=
+
+#+begin_example
+$ grep -H . /sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow
+/sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow:Vulnerable
+#+end_example
+
+Table comparing (default) most restrictive mode "Safe RET" vs "off".
+
+| *Mitigation:*     | Safe RET |  *off* | Safe RET |   *off* |
+| AMD EPYC 9684X    |   cycles | cycles |  nanosec | nanosec |
+|-------------------+----------+--------+----------+---------|
+| function call     |       14 |      3 |    5.707 |   1.356 |
+| indirect call     |       26 |     15 |   10.331 |   6.235 |
+| bpf_xdp_trait_set |      171 |    111 |   67.378 |  43.742 |
+| bpf_xdp_trait_get |       70 |     21 |   27.708 |   8.373 |
+
+The normal "function call" see a dramatic improvement. The 1.356 ns overhead is
+very close to the Intel CPUs 1.266 ns. Inspection with perf report shows
+=srso_alias= calls are completely gone. This mitigation also affect the
+"indirect call".
+
+The "bpf_xdp_trait_get" call see (8.373 ns) which is a huge improvement that
+brings it into the same range as Intel (8.056 ns).
+
+The "bpf_xdp_trait_set" call do see an improvement, but the observed value
+(43.742 ns) is still lacking behind Intel (11.849 ns). This requires more
+investigating, but it is getting restructured in 
+
+*** perf stat: spec_rstack_overflow=off
+
+Results with =perf stat= tool. With kernel module =bench_traits_simple= limit
+benchmark to be the *normal function call* (selecting =bit_run_bench_func= via
+=run_flags=$((2#010)=) and increase the number of =loops= (to approximate 1
+second execution time). This is comparable to section [[#instructions-per-cycle][Instructions per Cycle]].
+
+#+begin_example
+ Performance counter stats for 'modprobe bench_traits_simple run_flags=2 loops=717500000':
+
+          1,000.16 msec task-clock                       #    0.971 CPUs utilized
+                 4      context-switches                 #    3.999 /sec
+                 1      cpu-migrations                   #    1.000 /sec
+               211      page-faults                      #  210.967 /sec
+     3,666,671,315      cycles                           #    3.666 GHz
+     1,498,482,267      stalled-cycles-frontend          #   40.87% frontend cycles idle
+     6,477,011,591      instructions                     #    1.77  insn per cycle
+                                                  #    0.23  stalled cycles per insn
+     2,156,048,922      branches                         #    2.156 G/sec
+            46,497      branch-misses                    #    0.00% of all branches
+
+       1.030277809 seconds time elapsed
+
+       0.001022000 seconds user
+       0.997962000 seconds sys
+#+end_example
+
+This AMD CPU is now operating at *1.77 instructions per cycle*, which is *very*
+*good* and basically the same as the Intel CPU (1.76 insn per cycle). Now we are
+seeing 0.00% branch-misses, before it was 19.93%. There are still
+stalled-cycles-frontend, but reduced to 0.23 stalled cycles per insn (before
+1.37).
+
+** spec_rstack_overflow=microcode
+
+Mitigation via boot cmdline:
+ - =spec_rstack_overflow=microcode=
+
+#+begin_example
+$ grep -H . /sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow
+/sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow:Vulnerable: Microcode, no safe RET
+#+end_example
+
+As described in [[https://docs.kernel.org/admin-guide/hw-vuln/srso.html][kernel documentation]]:
+
+- Extended IBPB functionality microcode patch has been applied. It does not
+  address =User->Kernel= and =Guest->Host= transitions protection but it does
+  address =User->User= and =VM->VM= attack vectors.
+
+Table comparing mode "microcode" vs "off":
+
+| *Mitigation: mode* | *microcode* |  "off" | *microcode* |   "off" |
+| AMD EPYC 9684X     |      cycles | cycles |     nanosec | nanosec |
+|--------------------+-------------+--------+-------------+---------|
+| function call      |           3 |      3 |       1.358 |   1.356 |
+| indirect call      |          15 |     15 |       6.241 |   6.235 |
+| bpf_xdp_trait_set  |         109 |    111 |      43.160 |  43.742 |
+| bpf_xdp_trait_get  |          21 |     21 |       8.278 |   8.373 |
+
+This *microcode* mode gives same performance as *off* mode, when doing internal
+kernel function calls (=Kernel->Kernel= case)
+
+The =perf stat= looks the same as *off* mode.
+
+** spec_rstack_overflow=ibpb
+
+Mitigation IBPB via boot cmdline:
+ - =spec_rstack_overflow=ibpb=
+
+#+begin_example
+/sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow:Mitigation: IBPB
+#+end_example
+
+The IBPB (Indirect Branch Prediction Barrier) in [[https://docs.kernel.org/admin-guide/hw-vuln/srso.html][kernel documentation]] for SRSO
+is described as *similar protection as "safe RET"*:
+
+- Similar protection as “safe RET” above but employs an IBPB barrier on
+  privilege domain crossings (User->Kernel, Guest->Host).
+
+- Mitigation: IBPB is another *full mitigation* type employing an indirect branch
+  prediction barrier after having applied the required microcode patch for one’s
+  system. This mitigation comes also at a performance cost.
+
+Table comparing mode "IBPB" vs "off":
+
+| *Mitigation: mode* | *IBPB* |  "off" |  *IBPB* |   "off" |
+| AMD EPYC 9684X     | cycles | cycles | nanosec | nanosec |
+|--------------------+--------+--------+---------+---------|
+| function call      |      3 |      3 |   1.356 |   1.356 |
+| indirect call      |     15 |     15 |   6.237 |   6.235 |
+| bpf_xdp_trait_set  |    111 |    111 |  43.925 |  43.742 |
+| bpf_xdp_trait_get  |     21 |     21 |   8.627 |   8.373 |
+
+It is a very *positive surprise* that (for this =kernel->kernel= use-case) the
+IBPB mode gives same performance as *off* mode. We were expecting high
+performance cost given documentation and that IBPB is usually considered a more
+secure mode for other mitigation setting.
+
+Quoting [[https://www.phoronix.com/news/AMD-Linux-Retbleed-STIBP-IBPB][phoronix]]:
+
+- "The IBPB-based protection for Retbleed is deemed the most secure but also the
+  highest performance impact [...]"
+
+It might be relevant to list the systems other mitigations:
+
+#+begin_example
+Vulnerabilities:
+  Gather data sampling:   Not affected
+  Itlb multihit:          Not affected
+  L1tf:                   Not affected
+  Mds:                    Not affected
+  Meltdown:               Not affected
+  Mmio stale data:        Not affected
+  Reg file data sampling: Not affected
+  Retbleed:               Not affected
+  Spec rstack overflow:   Mitigation; IBPB
+  Spec store bypass:      Mitigation; Speculative Store Bypass disabled via prctl
+  Spectre v1:             Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+  Spectre v2:             Mitigation; Enhanced / Automatic IBRS; IBPB conditional; STIBP always
+                          -on; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected
+  Srbds:                  Not affected
+  Tsx async abort:        Not affected
+#+end_example
+

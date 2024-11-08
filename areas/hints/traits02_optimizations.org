@@ -1,0 +1,84 @@
+#+Title: Investigating optimizations for "traits" via micro-benchmark
+
+See intro in [[file:traits01_bench_kmod.org]].
+
+* Code under test
+
+** Kernel tree and branch under test
+
+Tested on top of kernel tree and branch:
+ - https://github.com/arthurfabre/linux/tree/afabre/traits-002-bounds-inline
+
+* Baseline
+
+The baseline we got from [[file:traits01_bench_kmod.org]]:
+
+Cost of normal function call
+ - 4 cycles(tsc) 1.266 ns
+
+Cost of indirect function (pointer) call
+ - 30 cycles(tsc) 8.463 ns
+ - this large overhead is caused by Mitigation: Retpolines
+
+Cost of calling =bpf_xdp_trait_set=
+ - 42 cycles(tsc) 11.849 ns
+
+Cost of calling =bpf_xdp_trait_get=
+ - 29 cycles(tsc) 8.056 ns
+
+
+* Optimizations
+
+Trying out-different optimizations.
+
+** Inline: total_length
+
+One of the proposed optimizations is to inline =total_length=. For that to work
+we also need to "force" inline =offset= and =traits_size=. See below diff.
+
+#+begin_src diff
+diff --git a/net/core/trait.c b/net/core/trait.c
+index 11b8a19975d9..c0e3ce8ccc16 100644
+--- a/net/core/trait.c
++++ b/net/core/trait.c
+@@ -40,7 +40,7 @@ struct hdr {
+ };
+ static_assert(sizeof(struct hdr) == __TRAITS_HDR_SIZE);
+ 
+-static int total_length(struct hdr h)
++static __always_inline int total_length(struct hdr h)
+ {
+        return (hweight64(h.high) << 2) + (hweight64(h.low) << 1);
+ }
+@@ -53,13 +53,13 @@ static struct hdr and (struct hdr h, u64 mask)
+        };
+ }
+ 
+-static int offset(struct hdr h, u64 key)
++static __always_inline int offset(struct hdr h, u64 key)
+ {
+        /* Calculate total length of previous keys by masking out keys after. */
+        return sizeof(struct hdr) + total_length(and(h, ~(~0llu << key)));
+ }
+ 
+-int traits_size(void *traits)
++__always_inline int traits_size(void *traits)
+ {
+        return sizeof(struct hdr) + total_length(*(struct hdr *)traits);
+ }
+#+end_src
+
+The raw results:
+#+begin_example
+modprobe bench_traits_simple loops=200000000 run_flags=$((2#11000))
+time_bench: Type:trait_set Per elem: 36 cycles(tsc) 10.054 ns (step:0) - (measurement period time:2.010868341 sec time_interval:2010868341) - (invoke count:200000000 tsc_interval:7239206873)
+time_bench: Type:trait_get Per elem: 21 cycles(tsc) 6.016 ns (step:0) - (measurement period time:1.203382632 sec time_interval:1203382632) - (invoke count:200000000 tsc_interval:4332225720)
+#+end_example
+
+Cost of calling =bpf_xdp_trait_set=
+ - reduced to 36 cycles(tsc) 10.054 ns
+ - this saved 6 cycles, which is higher than expected 4 cycles from func call.
+
+Cost of calling =bpf_xdp_trait_get=
+ - reduced to 21 cycles(tsc) 6.016 ns
+ - this saved 8 cycles, which is higher than expected 4 cycles from func call.

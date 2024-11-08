@@ -1,0 +1,346 @@
+#+Title: Benchmarking "traits" via kernel module
+
+Using the prototype-kernel (out-of-tree) time_bench framework for
+micro-benchmarking "traits".
+
+The feature under test is (currently) called "traits". It is a *compressed*
+*key-value* *store*, that live in the top of the XDP packet data frame, just
+after the struct =xdp_frame=.
+
+The hope is to create a *fast and flexible* API for storing "hints" associated
+with the packet. This is *one* of the ideas from LPC talk:
+[[https://lpc.events/event/18/contributions/1935/][Marking Packets With Rich Metadata]]
+by Arthur Fabre (Cloudflare) and Jakub Sitnicki (Cloudflare).
+
+The question is:
+ - Can we optimize API for be *fast-enough to satisfy XDP speed requirements?*
+
+This document will help guide development to be a
+ - *benchmark based development process* to satisfy XDP speed requirements
+
+* Generate: Table of Contents                                           :toc:
+- [[#code-under-test][Code under test]]
+  - [[#kernel-tree-and-branch-under-test][Kernel tree and branch under test]]
+  - [[#code-adjustments-for-bench][Code adjustments for bench]]
+- [[#prototype-kernel][prototype-kernel]]
+  - [[#basic-benchmark-module-for-traits][Basic benchmark module for traits]]
+  - [[#build-and-push-commands][Build and push commands]]
+- [[#device-under-test-dut][Device Under Test (DUT)]]
+  - [[#host-broadwell][Host: broadwell]]
+- [[#benchmark-basics][Benchmark basics]]
+  - [[#building-blocks][Building blocks]]
+- [[#initial-benchmarking][Initial benchmarking]]
+  - [[#selecting-benchmark-trick][Selecting benchmark trick]]
+  - [[#bench-bpf_xdp_trait_set][Bench: bpf_xdp_trait_set]]
+  - [[#bench-bpf_xdp_trait_get][Bench: bpf_xdp_trait_get]]
+- [[#perf-events-recording][Perf events recording]]
+  - [[#perf-record1-bpf_xdp_trait_set][perf record#1: bpf_xdp_trait_set]]
+
+* Code under test
+
+** Kernel tree and branch under test
+
+Tested on top of kernel tree and branch:
+ - https://github.com/arthurfabre/linux/tree/afabre/traits-002-bounds-inline
+
+** Code adjustments for bench
+
+In-order for kernel module to access the function call symbols, this benchmark
+have added the following `EXPORT_SYMBOL_GPL` statements:
+
+#+begin_src diff
+diff --git a/net/core/xdp.c b/net/core/xdp.c
+index 92f1b75098f0..297abb2004d0 100644
+--- a/net/core/xdp.c
++++ b/net/core/xdp.c
+@@ -844,6 +844,7 @@ __bpf_kfunc int bpf_xdp_trait_set(const struct xdp_buff *xdp, u64 key,
+        return trait_set(xdp_traits(xdp), xdp->data_meta, key,
+                         val, val__sz, flags);
+ }
++EXPORT_SYMBOL_GPL(bpf_xdp_trait_set); // for bench module
+ 
+ __bpf_kfunc int bpf_xdp_trait_get(const struct xdp_buff *xdp, u64 key,
+                                  void *val, u64 val__sz)
+@@ -853,6 +854,7 @@ __bpf_kfunc int bpf_xdp_trait_get(const struct xdp_buff *xdp, u64 key,
+ 
+        return trait_get(xdp_traits(xdp), key, val, val__sz);
+ }
++EXPORT_SYMBOL_GPL(bpf_xdp_trait_get); // for bench module
+ 
+ __bpf_kfunc int bpf_xdp_trait_del(const struct xdp_buff *xdp, u64 key)
+ {
+@@ -861,6 +863,7 @@ __bpf_kfunc int bpf_xdp_trait_del(const struct xdp_buff *xdp, u64 key)
+ 
+        return trait_del(xdp_traits(xdp), key);
+ }
++EXPORT_SYMBOL_GPL(bpf_xdp_trait_del); // for bench module
+ 
+#+end_src
+
+* prototype-kernel
+
+** Basic benchmark module for traits
+
+Pull request:
+  - https://github.com/netoptimizer/prototype-kernel/pull/48
+
+Commits explaining steps:
+ - https://github.com/netoptimizer/prototype-kernel/pull/48/commits
+
+Module loading:
+#+begin_src sh
+modprobe bench_traits_simple
+#+end_src
+
+** Build and push commands
+
+The build process is documented here:
+ - https://prototype-kernel.readthedocs.io/en/latest/prototype-kernel/build-process.html
+
+For convenience listing the commands I use here:
+
+Building:
+#+begin_src sh
+  $ dirs
+  ~/git/prototype-kernel/kernel
+  $ make kbuilddir=~/git/kernel/arthur/ -j12
+#+end_src
+
+Pushing to remote host:
+#+begin_src sh
+make push_remote kbuilddir=~/git/kernel/arthur/ HOST=broadwell
+#+end_src
+
+* Device Under Test (DUT)
+
+** Host: broadwell
+
+CPU info from =lscpu=:
+#+begin_example
+CPU(s):                   6
+  On-line CPU(s) list:    0-5
+Vendor ID:                GenuineIntel
+  Model name:             Intel(R) Xeon(R) CPU E5-1650 v4 @ 3.60GHz
+    CPU family:           6
+    Model:                79
+    Thread(s) per core:   1
+    Core(s) per socket:   6
+    CPU(s) scaling MHz:   35%
+    CPU max MHz:          4000.0000
+    CPU min MHz:          1200.0000
+#+end_example
+
+Notice disabled Hyper-Threading.
+
+* Benchmark basics
+
+XDP speed requirements are in the nanosec time range.
+
+The packet rate determines the inter-gap between packets arriving for processing
+by the Operating System (OS). This inter-gap directly translates into a
+time-budget the OS have before the next packet arrive.
+
+| Link speed | Packet rate           | Time-budget   |
+|            | at smallest pkts size | per packet    |
+|------------+-----------------------+---------------|
+|  10 Gbit/s |  14,880,952 pps       | 67.2 nanosec  |
+|  25 Gbit/s |  37,202,381 pps       | 26.88 nanosec |
+| 100 Gbit/s | 148,809,523 pps       |  6.72 nanosec |
+
+** Building blocks
+
+The =bench_traits_simple= module contains some baseline tests, that measures
+some of the building blocks, such that we get a sense the time scale
+requirements.
+
+*** for-loop
+
+The tests usually consist of a for-loop getting measured. (Wrapped by
+=time_bench_start()= and =time_bench_stop()=). One baseline test is an empty
+for-loop for seeing what overhead that adds.
+
+On host: broadwell:
+#+begin_example
+time_bench: Type:for_loop Per elem: 0 cycles(tsc) 0.265 ns (step:0)
+- (measurement period time:0.027240766 sec time_interval:27240766)
+- (invoke count:100000000 tsc_interval:98066760)
+#+end_example
+
+The nanosec cost is 0.265 ns and cycles(tsc) gets rounded down. From extra info
+tsc_interval:98066760 and count:100000000 calc cycles is 0.98, which is very
+close to 1 cycle. This is a 3.6GHz CPU, so 0.265*3.6 is 0.9540 cycles.
+
+*** function calls
+
+The function call overhead also consumes a surprisingly large part of the XDP
+budget at the nanosec scale. Due to CPU side-channel mitigations, especially
+calling via a function pointer is expensive.
+
+On host: broadwell:
+#+begin_example
+time_bench: Type:function_call_cost Per elem: 4 cycles(tsc) 1.266 ns (step:0)
+ - (measurement period time:0.126639966 sec time_interval:126639966)
+ - (invoke count:100000000 tsc_interval:455908107)
+time_bench: Type:func_ptr_call_cost Per elem: 30 cycles(tsc) 8.463 ns (step:0)
+- (measurement period time:0.846375884 sec time_interval:846375884)
+- (invoke count:100000000 tsc_interval:3046986747)
+#+end_example
+
+Doing a normal C function calls is not very expensive:
+ - Type:function_call_cost = 4 cycles(tsc) 1.266 ns
+
+The function pointer call is affected by mitigations:
+ - Type:func_ptr_call_cost = 30 cycles(tsc) 8.463 ns
+
+* Initial benchmarking
+
+In the initial [[https://github.com/netoptimizer/prototype-kernel/pull/48][pull request #48]]
+ - We do a very simple benchmark of *get* and *set operations
+ - via XDP kfunc interface
+   - =bpf_xdp_trait_set()= and =bpf_xdp_trait_get()=
+
+** Selecting benchmark trick
+
+The kernel module support parameters for:
+ - changing the number of =loops= and
+ - also selecting tests to run via =run_flags=
+
+A bash shells trick allow us to easily set a specific flag bit in =run_flags=,
+like =run_flags=$((2#11000))= to e.g. unset bits 0, 1, 2 (which is
+=bit_run_bench_baseline=, =func=, =func_ptr=) and set bits 3 and 4
+(=bit_run_bench_trait_set= and =bit_run_bench_trait_get=).
+
+#+begin_example
+ # modprobe bench_traits_simple loops=200000000 run_flags=$((2#11000))
+#+end_example
+
+The kernel log contains the results:
+#+begin_example
+time_bench: Type:trait_set Per elem: 42 cycles(tsc) 11.849 ns (step:0) - (measurement period time:2.369994559 sec time_interval:2369994559) - (invoke count:200000000 tsc_interval:8532078713)
+time_bench: Type:trait_get Per elem: 29 cycles(tsc) 8.056 ns (step:0) - (measurement period time:1.611246844 sec time_interval:1611246844) - (invoke count:200000000 tsc_interval:5800555470)
+#+end_example
+
+** Bench: bpf_xdp_trait_set
+
+Data: bpf_xdp_trait_set
+#+begin_example
+time_bench: Type:trait_set Per elem: 42 cycles(tsc) 11.849 ns
+#+end_example
+
+Cost of calling =bpf_xdp_trait_set=
+ - 42 cycles(tsc) 11.849 ns
+
+That is too large for our XDP budget
+ - e.g at 25Gbit this is 44% (11.849/26.88) of the budget.
+
+The expected use-case it to set multiple keys with values, which quickly blows
+the entire budget.
+
+** Bench: bpf_xdp_trait_get
+
+Data: bpf_xdp_trait_get
+#+begin_example
+time_bench: Type:trait_get Per elem: 29 cycles(tsc) 8.056 ns
+#+end_example
+
+Cost of calling =bpf_xdp_trait_get=
+ - 29 cycles(tsc) 8.056 ns
+
+Even-though =get= is faster than =set= is it still too high. Doing a =get=
+implies a =set= in needed earlier (we do that in the bench outside for-loop).
+Thus, 11.849 + 8.056 = 19.9 ns is the combined cost, 74% of 25G budget.
+
+* Perf events recording
+
+To find out: What is eating up cycles?
+ - Let's sample profile what code the kernel module is executing.
+
+** perf record#1: bpf_xdp_trait_set
+
+Select bench for =bpf_xdp_trait_set=
+#+begin_example
+perf record -g modprobe bench_traits_simple loops=400000000 run_flags=$((2#01000)) stay_loaded=1
+[ perf record: Woken up 17 times to write data ]
+[ perf record: Captured and wrote 4.112 MB perf.data (20390 samples) ]
+#+end_example
+
+Results for  =bpf_xdp_trait_set= as hierarchy (via =perf report --hierarchy=):
+ - And zooming into kernel code via using the 'k' hotkey
+
+#+begin_example
+Samples: 20K of event 'cycles:P', Event count (approx.): 17280847030, DSO: [kernel.kallsyms]
+  Overhead        Command / Shared Object / Symbol
+-  100.00%        modprobe
+   -  100.00%        [kernel.kallsyms]
+      +   50.14%        [k] trait_set
+      +   16.87%        [k] memmove
+      +   13.49%        [k] total_length
+      +    9.50%        [k] bpf_xdp_trait_set
+      +    5.98%        [k] memcpy_orig
+      +    3.34%        [k] memcpy
+#+end_example
+
+Above clearly shows that a lot of function calls are involved when calling
+=bpf_xdp_trait_set=. The main =set= operations is in function call =trait_set=,
+which "only" consumes around 50% of the time spend, which indicate a lot of room
+for optimizations.
+
+*** memmove
+
+The =memmove= call is a bit surprising, because the benchmark =time_trait_set=
+simply for-loop repeats setting the same key (1) and value (42). Our API
+expectations was that a =memmove= would be unnecessary. Inspecting the
+=trait_set= code shows =memmove= is called unconditionally, which seems like a
+bug. For this case we believe memmove is called with length zero (so it doesn't
+cause a memory bug, but is completely unnecessary).
+
+#+begin_src C
+static int time_trait_set(struct time_bench_record *rec, void *data)
+  [...]
+  time_bench_start(rec);
+  /** Loop to measure **/
+  for (i = 0; i < rec->loops; i++) {
+          bpf_xdp_trait_set(xdp, key, &val, sizeof(val), 0);
+          loops_cnt++;
+  }
+  time_bench_stop(rec, loops_cnt);
+#+end_src
+
+*** total_length (popcnt)
+
+The function =total_length= should have been inlined, but for some reason the
+compiler chooses not to.  The function looks very simple:
+
+#+begin_src C
+static int total_length(struct hdr h)
+{
+	return (hweight64(h.high) << 2) + (hweight64(h.low) << 1);
+}
+#+end_src
+
+It is worth noticing that the =hweight64= call, will get replaced with a
+=popcnt= instruction as our arch support this (=X86_FEATURE_POPCNT=). (Details
+notice the ELF section named =.altinstr_replacement= when using objdump).
+
+We expect the function call overhead is significantly larger than executing the
+two =popcnt= assembly operations.
+
+*** memcpy
+
+The =memcpy= in =trait_set= is used for assigning a single 64-bit value
+(8bytes). It results in two function calls =memcpy= 3.34% and =memcpy_orig=
+5.98% that together takes 9.32% of the time. This can be replaced by a single
+assignment (=movq=) instruction.
+
+*** bpf_xdp_trait_set
+
+The function =bpf_xdp_trait_set= is very simple, it contains a single inlined
+=xdp_data_meta_unsupported= check and calls =trait_set=. The overhead is 9.50%,
+which corresponds to the overhead of a function call (e.g. 42/100*9.50 = 3.99
+cycles).
+
+The expected API usage is that XDP will be the primary *set* user, what will be
+setting multiple values (e.g. offloads extracted from NIC hardware). Thus, it
+might make sense to inline =trait_set= here. The =get= API might be another
+story (but we consider this separately).
+
