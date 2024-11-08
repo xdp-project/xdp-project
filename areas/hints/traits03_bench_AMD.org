@@ -458,6 +458,10 @@ The =perf stat= looks the same as *off* mode.
 Mitigation IBPB via boot cmdline:
  - =spec_rstack_overflow=ibpb=
 
+UPDATE: This IBPB test might be INVALID as it was tested without:
+ - [[https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ade8ff3b6aca47c234e][Merge tag 'x86_bugs_post_ibpb']]
+ - Contained in v6.12-rc4~31
+
 #+begin_example
 /sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow:Mitigation: IBPB
 #+end_example
