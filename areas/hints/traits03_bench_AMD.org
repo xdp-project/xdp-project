@@ -458,9 +458,16 @@ The =perf stat= looks the same as *off* mode.
 Mitigation IBPB via boot cmdline:
  - =spec_rstack_overflow=ibpb=
 
-UPDATE: This IBPB test might be INVALID as it was tested without:
- - [[https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ade8ff3b6aca47c234e][Merge tag 'x86_bugs_post_ibpb']]
+UPDATE: These IBPB tests have been updated:
+ - Tested on Linux v6.12-rc6 as it contains SRSO+IBPB fixes in
+ - Merge commit [[https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ade8ff3b6aca47c234e][Merge tag 'x86_bugs_post_ibpb']]
  - Contained in v6.12-rc4~31
+ - Verified the following fixes commits were included:
+   - https://git.kernel.org/torvalds/c/c62fa117c32b ("x86/bugs: Do not use UNTRAIN_RET with IBPB on entry")
+   - https://git.kernel.org/torvalds/c/0fad2878642e ("x86/bugs: Skip RSB fill at VMEXIT")
+   - https://git.kernel.org/torvalds/c/50e4b3b94090 ("x86/entry: Have entry_ibpb() invalidate return predictions")
+   - https://git.kernel.org/torvalds/c/3ea87dfa31a7 ("x86/cpufeatures: Add a IBPB_NO_RET BUG flag")
+   - https://git.kernel.org/torvalds/c/ff898623af2e ("x86/cpufeatures: Define X86_FEATURE_AMD_IBPB_RET")
 
 #+begin_example
 /sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow:Mitigation: IBPB
@@ -481,13 +488,13 @@ Table comparing mode "IBPB" vs "off":
 | *Mitigation: mode* | *IBPB* |  "off" |  *IBPB* |   "off" |
 | AMD EPYC 9684X     | cycles | cycles | nanosec | nanosec |
 |--------------------+--------+--------+---------+---------|
-| function call      |      3 |      3 |   1.356 |   1.356 |
-| indirect call      |     15 |     15 |   6.237 |   6.235 |
-| bpf_xdp_trait_set  |    111 |    111 |  43.925 |  43.742 |
-| bpf_xdp_trait_get  |     21 |     21 |   8.627 |   8.373 |
+| function call      |      3 |      3 |   1.357 |   1.356 |
+| indirect call      |     15 |     15 |   6.242 |   6.235 |
+| bpf_xdp_trait_set  |    110 |    111 |  43.314 |  43.742 |
+| bpf_xdp_trait_get  |     23 |     21 |   9.126 |   8.373 |
 
 It is a very *positive surprise* that (for this =kernel->kernel= use-case) the
-IBPB mode gives same performance as *off* mode. We were expecting high
+IBPB mode gives same approx performance as *off* mode. We were expecting high
 performance cost given documentation and that IBPB is usually considered a more
 secure mode for other mitigation setting.
 
@@ -511,8 +518,8 @@ Vulnerabilities:
   Spec rstack overflow:   Mitigation; IBPB
   Spec store bypass:      Mitigation; Speculative Store Bypass disabled via prctl
   Spectre v1:             Mitigation; usercopy/swapgs barriers and __user pointer sanitization
-  Spectre v2:             Mitigation; Enhanced / Automatic IBRS; IBPB conditional; STIBP always
-                          -on; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected
+  Spectre v2:             Mitigation; Enhanced / Automatic IBRS; IBPB conditional; STIBP always-on;
+                           RSB filling; PBRSB-eIBRS Not affected; BHI Not affected
   Srbds:                  Not affected
   Tsx async abort:        Not affected
 #+end_example
