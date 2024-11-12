@@ -26,8 +26,10 @@ This document will help guide development to be a
   - [[#code-adjustments-for-bench][Code adjustments for bench]]
 - [[#devices-under-test-dut][Device(s) Under Test (DUT)]]
   - [[#dut-01-amd-epyc-9684x][DUT-01: AMD EPYC 9684X]]
+  - [[#dut-02-intel-cpu-e5-1650][DUT-02: Intel CPU E5-1650]]
 - [[#benchmark-results][Benchmark results]]
   - [[#dut-01-amd-epyc-9684x---srso-mode-safe-ret][DUT-01: AMD EPYC 9684X - SRSO mode: Safe RET]]
+  - [[#dut-02-intel-cpu-e5-1650-1][DUT-02: Intel CPU E5-1650]]
 
 * Code under test
 
@@ -85,9 +87,11 @@ AMD EPYC 9684X 96-Core Processor
 
 More CPU detail in: [[file:traits03_bench_AMD.org]]
 
+** DUT-02: Intel CPU E5-1650
+
+Intel CPU E5-1650 v4 @ 3.60GHz.
+
 * Benchmark results
-
-
 
 ** DUT-01: AMD EPYC 9684X - SRSO mode: Safe RET
 
@@ -107,5 +111,16 @@ grep -H . /sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow
 | indirect call     |     26 |  10.320 |   2.5193798 |
 | bpf_xdp_trait_set |     23 |   9.229 |   2.4921443 |
 | bpf_xdp_trait_get |     22 |   8.958 |   2.4559053 |
+#+TBLFM: $4=$2/$3
+
+** DUT-02: Intel CPU E5-1650
+
+| Intel CPU E5-1650 |        |         | GHz derived |
+| micro-bench       | cycles | nanosec |   TSC clock |
+|-------------------+--------+---------+-------------|
+| function call     |      4 |   1.259 |   3.1771247 |
+| indirect call     |     30 |   8.492 |   3.5327367 |
+| bpf_xdp_trait_set |     21 |   6.024 |   3.4860558 |
+| bpf_xdp_trait_get |     16 |   4.517 |   3.5421740 |
 #+TBLFM: $4=$2/$3
 
