@@ -30,6 +30,7 @@ This document will help guide development to be a
 - [[#benchmark-results][Benchmark results]]
   - [[#dut-01-amd-epyc-9684x---srso-mode-safe-ret][DUT-01: AMD EPYC 9684X - SRSO mode: Safe RET]]
   - [[#dut-02-intel-cpu-e5-1650-1][DUT-02: Intel CPU E5-1650]]
+  - [[#dut-01-amd-epyc-9684x---srso-modeibpb][DUT-01: AMD EPYC 9684X - SRSO mode:IBPB]]
 
 * Code under test
 
@@ -93,6 +94,8 @@ Intel CPU E5-1650 v4 @ 3.60GHz.
 
 * Benchmark results
 
+
+
 ** DUT-01: AMD EPYC 9684X - SRSO mode: Safe RET
 
 Kernel: 6.12.0-rc6-traits-004+
@@ -122,5 +125,20 @@ grep -H . /sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow
 | indirect call     |     30 |   8.492 |   3.5327367 |
 | bpf_xdp_trait_set |     21 |   6.024 |   3.4860558 |
 | bpf_xdp_trait_get |     16 |   4.517 |   3.5421740 |
+#+TBLFM: $4=$2/$3
+
+** DUT-01: AMD EPYC 9684X - SRSO mode:IBPB
+
+#+begin_example
+/sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow:Mitigation: IBPB
+#+end_example
+
+| AMD EPYC 9684X    |        |         | GHz derived |
+| micro-bench       | cycles | nanosec |   TSC clock |
+|-------------------+--------+---------+-------------|
+| function call     |      3 |   1.355 |   2.4548483 |
+| indirect call     |     15 |   6.235 |   2.5193798 |
+| bpf_xdp_trait_set |      9 |   3.797 |   2.4921443 |
+| bpf_xdp_trait_get |      7 |   3.118 |   2.4559053 |
 #+TBLFM: $4=$2/$3
 
