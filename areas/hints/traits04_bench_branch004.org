@@ -24,6 +24,10 @@ This document will help guide development to be a
 - [[#code-under-test][Code under test]]
   - [[#kernel-tree-and-branch-under-test][Kernel tree and branch under test]]
   - [[#code-adjustments-for-bench][Code adjustments for bench]]
+- [[#devices-under-test-dut][Device(s) Under Test (DUT)]]
+  - [[#dut-01-amd-epyc-9684x][DUT-01: AMD EPYC 9684X]]
+- [[#benchmark-results][Benchmark results]]
+  - [[#dut-01-amd-epyc-9684x---srso-mode-safe-ret][DUT-01: AMD EPYC 9684X - SRSO mode: Safe RET]]
 
 * Code under test
 
@@ -32,6 +36,8 @@ This document will help guide development to be a
 Tested on top of kernel tree and branch:
  - https://github.com/arthurfabre/linux/tree/afabre/traits-004-memmove
  - https://github.com/arthurfabre/linux/commits/afabre/traits-004-memmove/
+
+TODO: Explain code changes
 
 ** Code adjustments for bench
 
@@ -68,3 +74,38 @@ index aec6863d5918..b196f39113e2 100644
 +EXPORT_SYMBOL_GPL(bpf_xdp_trait_del); // for bench module
  
 #+end_src
+
+* Device(s) Under Test (DUT)
+
+** DUT-01: AMD EPYC 9684X
+
+AMD EPYC 9684X 96-Core Processor
+ - 2 threads per core
+ - 192 logical CPU cores
+
+More CPU detail in: [[file:traits03_bench_AMD.org]]
+
+* Benchmark results
+
+
+
+** DUT-01: AMD EPYC 9684X - SRSO mode: Safe RET
+
+Kernel: 6.12.0-rc6-traits-004+
+ - branch traits-004-memmove
+ - SRSO mode: Safe RET
+
+#+begin_example
+grep -H . /sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow
+/sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow:Mitigation: Safe RET
+#+end_example
+
+| AMD EPYC 9684X    |        |         | GHz derived |
+| micro-bench       | cycles | nanosec |   TSC clock |
+|-------------------+--------+---------+-------------|
+| function call     |     14 |   5.703 |   2.4548483 |
+| indirect call     |     26 |  10.320 |   2.5193798 |
+| bpf_xdp_trait_set |     23 |   9.229 |   2.4921443 |
+| bpf_xdp_trait_get |     22 |   8.958 |   2.4559053 |
+#+TBLFM: $4=$2/$3
+
