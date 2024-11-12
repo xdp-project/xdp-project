@@ -1,0 +1,70 @@
+#+Title: Benchmarking branch "traits-004" via kernel module
+
+Using the prototype-kernel (out-of-tree) time_bench framework for
+micro-benchmarking "traits" branch:
+
+ - https://github.com/arthurfabre/linux/tree/afabre/traits-004-memmove
+
+The feature under test is (currently) called "traits". It is a *compressed*
+*key-value* *store*, that live in the top of the XDP packet data frame, just
+after the struct =xdp_frame=.
+
+The hope is to create a *fast and flexible* API for storing "hints" associated
+with the packet. This is *one* of the ideas from LPC talk:
+[[https://lpc.events/event/18/contributions/1935/][Marking Packets With Rich Metadata]]
+by Arthur Fabre (Cloudflare) and Jakub Sitnicki (Cloudflare).
+
+The question is:
+ - Can we optimize API for be *fast-enough to satisfy XDP speed requirements?*
+
+This document will help guide development to be a
+ - *benchmark based development process* to satisfy XDP speed requirements
+
+* Generate: Table of Contents                                           :toc:
+- [[#code-under-test][Code under test]]
+  - [[#kernel-tree-and-branch-under-test][Kernel tree and branch under test]]
+  - [[#code-adjustments-for-bench][Code adjustments for bench]]
+
+* Code under test
+
+** Kernel tree and branch under test
+
+Tested on top of kernel tree and branch:
+ - https://github.com/arthurfabre/linux/tree/afabre/traits-004-memmove
+ - https://github.com/arthurfabre/linux/commits/afabre/traits-004-memmove/
+
+** Code adjustments for bench
+
+Rebased on 6.12.0-rc6 (as it contains some fixes for SRSO in IBBP mode).
+
+In-order for kernel module to access the function call symbols, this benchmark
+have added the some `EXPORT_SYMBOL_GPL` statements to the XDP helpers.
+
+#+begin_src diff
+diff --git a/net/core/xdp.c b/net/core/xdp.c
+index aec6863d5918..b196f39113e2 100644
+--- a/net/core/xdp.c
++++ b/net/core/xdp.c
+@@ -844,6 +844,7 @@ __bpf_kfunc int bpf_xdp_trait_set(const struct xdp_buff *xdp, u64 key,
+        return trait_set(xdp_traits(xdp), xdp->data_meta, key,
+                         val, val__sz, flags);
+ }
++EXPORT_SYMBOL_GPL(bpf_xdp_trait_set); // for bench module
+ 
+ __bpf_kfunc int bpf_xdp_trait_get(const struct xdp_buff *xdp, u64 key,
+                                  void *val, u64 val__sz)
+@@ -853,6 +854,7 @@ __bpf_kfunc int bpf_xdp_trait_get(const struct xdp_buff *xdp, u64 key,
+ 
+        return trait_get(xdp_traits(xdp), key, val, val__sz);
+ }
++EXPORT_SYMBOL_GPL(bpf_xdp_trait_get); // for bench module
+ 
+ __bpf_kfunc int bpf_xdp_trait_del(const struct xdp_buff *xdp, u64 key)
+ {
+@@ -861,6 +863,7 @@ __bpf_kfunc int bpf_xdp_trait_del(const struct xdp_buff *xdp, u64 key)
+ 
+        return trait_del(xdp_traits(xdp), key);
+ }
++EXPORT_SYMBOL_GPL(bpf_xdp_trait_del); // for bench module
+ 
+#+end_src
