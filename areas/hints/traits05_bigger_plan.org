@@ -1,0 +1,30 @@
+#+Title: Bigger plan for traits
+
+Benchmarking shows that traits performance is feasible (when tuning side-channel
+mitigating modes). This means we can move forward and spend more engineering
+resources on making this usable (for our use-cases).
+
+We are not targeting "feature complete" as upstream development is an
+evolutionary process, where we learn and take input from others.
+
+We do need to sketch out a bigger plan for traits, as a common vision that
+upstream developers can buy into. Introducing something/anything upstream comes
+with a future maintenance cost. Without a plan the biggest worry is painting
+ourselves into a corner for some of the use-cases we cannot implement in the
+first iteration. (Netdev rule of thumb is no more than 15 patches in a
+patchset).
+
+Upstream discussions have already started on making the API flexible enough for
+handling future changes, but those recommendations have not been fully
+implemented yet.
+
+Generally upstream will accept features that are useful on it own. The
+compressed Key-Value system that "traits" implement can likely be useful in
+other contexts.
+
+Goal: This document need to investigate
+ - Layout the bigger plan
+ - Make sure our future expansions are doable (no corner painting)
+ - Identify unresolved issues
+ - Determine the minimum feature set for initial patchset
+
