@@ -1,5 +1,20 @@
 #+Title: Bigger plan for traits
 
+Next steps for traits.
+
+* Generate: Table of Contents                                           :toc:
+- [[#intro][Intro]]
+- [[#unresolved-issues][Unresolved issues]]
+  - [[#storing-bits][Storing bits]]
+  - [[#access-from-skb][Access from SKB]]
+  - [[#skb-merging][SKB merging]]
+  - [[#reserved-ids][Reserved IDs]]
+  - [[#update-semantics][Update semantics]]
+  - [[#socket-api][Socket API]]
+- [[#registration-api][Registration API]]
+
+* Intro
+
 Benchmarking shows that traits performance is feasible (when tuning side-channel
 mitigating modes). This means we can move forward and spend more engineering
 resources on making this usable (for our use-cases).
@@ -35,12 +50,56 @@ Goal: This document need to investigate
 Current traits implementation support data lengths 2, 4, 8 bytes.
 
 There are use-cases for storing a single bit (aka "flags").
- - One example is checksum-complete on RX path.
+ - One example is checksum-unnessary on RX path (CHECKSUM_UNNECESSARY)
+ - Link to: [[https://www.kernel.org/doc/html/latest/networking/skbuff.html#checksumming-of-received-packets-by-device][SKB kernel checksum doc]]
+
+Q: How do we store this?
+ - E.g. using 2 bits into, set-or-not and bit-value.
+
+Q: Do we also need 16 bytes storage size?
+ - Extending to 16 bytes requires extending trait header anyway
+ - which can also be extended to carry single bit flags?
 
 ** Access from SKB
 
 We need to extend the SKB (=struct sk_buff=) with information that traits are
 available for a given SKB.
+
+Q: How many bits do we need?
+ - Single bit force location of traits to be fixed
+ - On =pskb_expand_head= we might want to move or compress traits area
+
+SKB access APIs
+ - kfuncs
+ - kernel also need to call these
+
+Issues around: frags and clones
+
+SKB cloning
+ - We assume non-concurrent access, but that change when SKB cloning
+ - read-only on cloning or reject access?
+ - can we tell whom is the clone?
+
+SKB (BPF-prog) access: Disallow access to reserved IDs to avoid data redundancy
+ - As they are already transferred to SKB
+
+** SKB merging
+
+SKB merging - e.g. GRO step
+ - Keep data from which packet?
+ - Today XDP-metadata does memcpy (exact match) which we don't like
+   - as it breaks our use-case for adding timestamps for tracing
+ - Possible options:
+   - BPF programmable GRO to take the decision (BPF policy)
+   - Store policy in reg-API for how merging happens for this trait
+     - e.g. keep first packet or last packet traits
+
+TCP stack
+ - Under memory pressure TCP stack will "collapse" SKBs to save memory
+ - See blogpost: https://blog.cloudflare.com/optimizing-tcp-for-high-throughput-and-low-latency/
+ - Lookup code: tcp_prune_queue() and tcp_collapse_ofo_queue()
+ - Sysctl setting: net.ipv4.tcp_collapse_max_bytes in proposed patch
+
 
 ** Reserved IDs
 
@@ -66,8 +125,13 @@ From an API programmers perspective, will it be useful to have CRUD semantics?
 
 Current patchset provides traits =set=, =get=, =del=.
 
-E.g. can we think of cases where programmer only want to *replace* the value if
-something earlier in the call chain has =set= it.
+E.g. can we think of cases where programmer only want to *replace* or *update*
+the value if something earlier in the call chain has =set= it. Example: counter?
+byte counter?
+
+The CRUD semantics seems overkill. It is often used in connection with
+concurrent access semantics. In most cases we can assume non-concurrent access
+as this is per packet (meta)data (although see challenges around SKB cloning).
 
 The BPF map API =bpf_map_update_elem= have these =flags=. The man
 =bpf-helpers(7)= description says: "Add or update the value of the entry
@@ -79,6 +143,13 @@ associated to key in map with value. flags is one of:"
 | =BPF_EXIST=   | The entry for key must already exist in the map.    |
 | =BPF_ANY=     | No condition on the existence of the entry for key. |
 |               |                                                     |
+
+** Socket API
+
+How does socket API interact with this?
+
+E.g via setsockopt + getsockopt APIs
+
 
 * Registration API
 
@@ -94,4 +165,12 @@ Generally a registration API will make it easier to avoid ID collisions. Having
 to share global knowledge about IDs for products/services (or teams) requires
 coordination. Having the kernel be authoritative will make this easier. We can
 likely express/export this via BTF information (/sys/kernel/btf/).
+
+Store policy for how merging happens for trait.
+
+Avoid hardcoding IDs: Can registration API help avoid BPF-prog from
+(over)writing IDs, without first doing the lookup for the string to ID.
+
+Crazy Idea: Dynamically create kfuncs on registration?
+ - Per trait ID kfuncs
 
