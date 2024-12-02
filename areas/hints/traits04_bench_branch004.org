@@ -20,7 +20,18 @@ The question is:
 This document will help guide development to be a
  - *benchmark based development process* to satisfy XDP speed requirements
 
+* Summary - recommendations
+
+Changing SRSO mode to be IBPB makes AMD performance comparable (slightly better)
+than Intel CPU performance.
+
+Even-though micro-bench performance on this branch have improved significantly,
+we still still recommend making traits more inline friendly. Simply moving
+traits code into a header file will allow the XDP helpers/kfunc's
+(bpf_xdp_trait_set and get) to inline and avoid yet another function call.
+
 * Generate: Table of Contents                                           :toc:
+- [[#summary---recommendations][Summary - recommendations]]
 - [[#code-under-test][Code under test]]
   - [[#kernel-tree-and-branch-under-test][Kernel tree and branch under test]]
   - [[#code-adjustments-for-bench][Code adjustments for bench]]
