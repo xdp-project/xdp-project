@@ -28,3 +28,59 @@ Goal: This document need to investigate
  - Identify unresolved issues
  - Determine the minimum feature set for initial patchset
 
+* Unresolved issues
+
+** Storing bits
+
+Current traits implementation support data lengths 2, 4, 8 bytes.
+
+There are use-cases for storing a single bit (aka "flags").
+ - One example is checksum-complete on RX path.
+
+** Access from SKB
+
+We need to extend the SKB (=struct sk_buff=) with information that traits are
+available for a given SKB.
+
+** Reserved IDs
+
+The traits proposal blocked Lorenzo's patchset that added fixed struct members
+to =xdp_frame=. These members were targeted bridging the gap between XDP and
+SKB. Focused on the current HW offload fields in SKB today.
+
+There are multiple places where an =xdp_frame= gets converted into an SKB. In
+these places, we are (currently) loosing the NIC hardware offloads (HW-metadata)
+as this information isn't available any longer (from RX hardware descriptor).
+
+Transferring these HW offloads via traits, implies that kernel C-code also need
+to consume and understand traits.  Upstream proposal is to reserve some IDs for
+the kernels usage.
+
+** Update semantics
+
+From an API programmers perspective, will it be useful to have CRUD semantics?
+ - C = Create
+ - R = Replace
+ - U = Update
+ - D = Delete
+
+Current patchset provides traits =set=, =get=, =del=.
+
+E.g. can we think of cases where programmer only want to *replace* the value if
+something earlier in the call chain has =set= it.
+
+The BPF map API =bpf_map_update_elem= have these =flags=. The man
+=bpf-helpers(7)= description says: "Add or update the value of the entry
+associated to key in map with value. flags is one of:"
+
+| Flag          | Description                                         |
+|---------------+-----------------------------------------------------|
+| =BPF_NOEXIST= | The entry for key must not exist in the map.        |
+| =BPF_EXIST=   | The entry for key must already exist in the map.    |
+| =BPF_ANY=     | No condition on the existence of the entry for key. |
+|               |                                                     |
+
+* Registration API
+
+Whether or not to have a registration API deserves it own section.
+
