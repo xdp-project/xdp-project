@@ -84,3 +84,14 @@ associated to key in map with value. flags is one of:"
 
 Whether or not to have a registration API deserves it own section.
 
+It would be cool if BPF-progs can store a string as the trait identifier, and
+then libbpf will translate this into the trait-ID as BPF load time.
+
+The kernel reserved IDs would also be listed as part of the registration API.
+This would make it easy to know what the kernel supports.
+
+Generally a registration API will make it easier to avoid ID collisions. Having
+to share global knowledge about IDs for products/services (or teams) requires
+coordination. Having the kernel be authoritative will make this easier. We can
+likely express/export this via BTF information (/sys/kernel/btf/).
+
