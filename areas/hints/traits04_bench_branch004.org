@@ -1,0 +1,158 @@
+#+Title: Benchmarking branch "traits-004" via kernel module
+
+Using the prototype-kernel (out-of-tree) time_bench framework for
+micro-benchmarking "traits" branch:
+
+ - https://github.com/arthurfabre/linux/tree/afabre/traits-004-memmove
+
+The feature under test is (currently) called "traits". It is a *compressed*
+*key-value* *store*, that live in the top of the XDP packet data frame, just
+after the struct =xdp_frame=.
+
+The hope is to create a *fast and flexible* API for storing "hints" associated
+with the packet. This is *one* of the ideas from LPC talk:
+[[https://lpc.events/event/18/contributions/1935/][Marking Packets With Rich Metadata]]
+by Arthur Fabre (Cloudflare) and Jakub Sitnicki (Cloudflare).
+
+The question is:
+ - Can we optimize API for be *fast-enough to satisfy XDP speed requirements?*
+
+This document will help guide development to be a
+ - *benchmark based development process* to satisfy XDP speed requirements
+
+* Summary - recommendations
+
+Changing SRSO mode to be IBPB makes AMD performance comparable (slightly better)
+than Intel CPU performance.
+
+Even-though micro-bench performance on this branch have improved significantly,
+we still still recommend making traits more inline friendly. Simply moving
+traits code into a header file will allow the XDP helpers/kfunc's
+(bpf_xdp_trait_set and get) to inline and avoid yet another function call.
+
+* Generate: Table of Contents                                           :toc:
+- [[#summary---recommendations][Summary - recommendations]]
+- [[#code-under-test][Code under test]]
+  - [[#kernel-tree-and-branch-under-test][Kernel tree and branch under test]]
+  - [[#code-adjustments-for-bench][Code adjustments for bench]]
+- [[#devices-under-test-dut][Device(s) Under Test (DUT)]]
+  - [[#dut-01-amd-epyc-9684x][DUT-01: AMD EPYC 9684X]]
+  - [[#dut-02-intel-cpu-e5-1650][DUT-02: Intel CPU E5-1650]]
+- [[#benchmark-results][Benchmark results]]
+  - [[#dut-01-amd-epyc-9684x---srso-mode-safe-ret][DUT-01: AMD EPYC 9684X - SRSO mode: Safe RET]]
+  - [[#dut-02-intel-cpu-e5-1650-1][DUT-02: Intel CPU E5-1650]]
+  - [[#dut-01-amd-epyc-9684x---srso-modeibpb][DUT-01: AMD EPYC 9684X - SRSO mode:IBPB]]
+
+* Code under test
+
+** Kernel tree and branch under test
+
+Tested on top of kernel tree and branch:
+ - https://github.com/arthurfabre/linux/tree/afabre/traits-004-memmove
+ - https://github.com/arthurfabre/linux/commits/afabre/traits-004-memmove/
+
+** Code adjustments for bench
+
+Rebased on 6.12.0-rc6 (as it contains some fixes for SRSO in IBBP mode).
+
+In-order for kernel module to access the function call symbols, this benchmark
+have added the some `EXPORT_SYMBOL_GPL` statements to the XDP helpers.
+
+#+begin_src diff
+diff --git a/net/core/xdp.c b/net/core/xdp.c
+index aec6863d5918..b196f39113e2 100644
+--- a/net/core/xdp.c
++++ b/net/core/xdp.c
+@@ -844,6 +844,7 @@ __bpf_kfunc int bpf_xdp_trait_set(const struct xdp_buff *xdp, u64 key,
+        return trait_set(xdp_traits(xdp), xdp->data_meta, key,
+                         val, val__sz, flags);
+ }
++EXPORT_SYMBOL_GPL(bpf_xdp_trait_set); // for bench module
+ 
+ __bpf_kfunc int bpf_xdp_trait_get(const struct xdp_buff *xdp, u64 key,
+                                  void *val, u64 val__sz)
+@@ -853,6 +854,7 @@ __bpf_kfunc int bpf_xdp_trait_get(const struct xdp_buff *xdp, u64 key,
+ 
+        return trait_get(xdp_traits(xdp), key, val, val__sz);
+ }
++EXPORT_SYMBOL_GPL(bpf_xdp_trait_get); // for bench module
+ 
+ __bpf_kfunc int bpf_xdp_trait_del(const struct xdp_buff *xdp, u64 key)
+ {
+@@ -861,6 +863,7 @@ __bpf_kfunc int bpf_xdp_trait_del(const struct xdp_buff *xdp, u64 key)
+ 
+        return trait_del(xdp_traits(xdp), key);
+ }
++EXPORT_SYMBOL_GPL(bpf_xdp_trait_del); // for bench module
+ 
+#+end_src
+
+* Device(s) Under Test (DUT)
+
+** DUT-01: AMD EPYC 9684X
+
+AMD EPYC 9684X 96-Core Processor
+ - 2 threads per core
+ - 192 logical CPU cores
+
+More CPU detail in: [[file:traits03_bench_AMD.org]]
+
+** DUT-02: Intel CPU E5-1650
+
+Intel CPU E5-1650 v4 @ 3.60GHz.
+
+* Benchmark results
+
+Gotcha: These benchmarks shows the best-case situation. Due to the code change
+in this branch, repeated calls to get and set avoids calling the memmove
+operation, plus the memset have been open-coded inlined.
+
+The plan is to extend (prototype-kernel) benchmark with tests that exercises the
+memmove part of the code.
+
+** DUT-01: AMD EPYC 9684X - SRSO mode: Safe RET
+
+Kernel: 6.12.0-rc6-traits-004+
+ - branch traits-004-memmove
+ - SRSO mode: Safe RET
+
+#+begin_example
+grep -H . /sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow
+/sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow:Mitigation: Safe RET
+#+end_example
+
+| AMD EPYC 9684X    |        |         | GHz derived |
+| micro-bench       | cycles | nanosec |   TSC clock |
+|-------------------+--------+---------+-------------|
+| function call     |     14 |   5.703 |   2.4548483 |
+| indirect call     |     26 |  10.320 |   2.5193798 |
+| bpf_xdp_trait_set |     23 |   9.229 |   2.4921443 |
+| bpf_xdp_trait_get |     22 |   8.958 |   2.4559053 |
+#+TBLFM: $4=$2/$3
+
+** DUT-02: Intel CPU E5-1650
+
+| Intel CPU E5-1650 |        |         | GHz derived |
+| micro-bench       | cycles | nanosec |   TSC clock |
+|-------------------+--------+---------+-------------|
+| function call     |      4 |   1.259 |   3.1771247 |
+| indirect call     |     30 |   8.492 |   3.5327367 |
+| bpf_xdp_trait_set |     21 |   6.024 |   3.4860558 |
+| bpf_xdp_trait_get |     16 |   4.517 |   3.5421740 |
+#+TBLFM: $4=$2/$3
+
+** DUT-01: AMD EPYC 9684X - SRSO mode:IBPB
+
+#+begin_example
+/sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow:Mitigation: IBPB
+#+end_example
+
+| AMD EPYC 9684X    |   TSC  |         | GHz derived |
+| micro-bench       | cycles | nanosec |   TSC clock |
+|-------------------+--------+---------+-------------|
+| function call     |      3 |   1.355 |   2.4548483 |
+| indirect call     |     15 |   6.235 |   2.5193798 |
+| bpf_xdp_trait_set |      9 |   3.797 |   2.4921443 |
+| bpf_xdp_trait_get |      7 |   3.118 |   2.4559053 |
+#+TBLFM: $4=$2/$3
+
