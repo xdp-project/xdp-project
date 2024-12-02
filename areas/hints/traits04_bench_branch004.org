@@ -40,8 +40,6 @@ Tested on top of kernel tree and branch:
  - https://github.com/arthurfabre/linux/tree/afabre/traits-004-memmove
  - https://github.com/arthurfabre/linux/commits/afabre/traits-004-memmove/
 
-TODO: Explain code changes
-
 ** Code adjustments for bench
 
 Rebased on 6.12.0-rc6 (as it contains some fixes for SRSO in IBBP mode).
@@ -94,7 +92,12 @@ Intel CPU E5-1650 v4 @ 3.60GHz.
 
 * Benchmark results
 
+Gotcha: These benchmarks shows the best-case situation. Due to the code change
+in this branch, repeated calls to get and set avoids calling the memmove
+operation, plus the memset have been open-coded inlined.
 
+The plan is to extend (prototype-kernel) benchmark with tests that exercises the
+memmove part of the code.
 
 ** DUT-01: AMD EPYC 9684X - SRSO mode: Safe RET
 
@@ -133,7 +136,7 @@ grep -H . /sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow
 /sys/devices/system/cpu/vulnerabilities/spec_rstack_overflow:Mitigation: IBPB
 #+end_example
 
-| AMD EPYC 9684X    |        |         | GHz derived |
+| AMD EPYC 9684X    |   TSC  |         | GHz derived |
 | micro-bench       | cycles | nanosec |   TSC clock |
 |-------------------+--------+---------+-------------|
 | function call     |      3 |   1.355 |   2.4548483 |
