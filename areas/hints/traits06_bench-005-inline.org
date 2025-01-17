@@ -1,0 +1,59 @@
+#+Title: Benchmarking branch "traits-005" via kernel module
+
+Using the prototype-kernel (out-of-tree) time_bench framework for
+micro-benchmarking "traits" branch:
+
+ - https://github.com/arthurfabre/linux/tree/afabre/traits-005-inline
+
+This is basically repeating [[file:traits04_bench_branch004.org]] with new branch.
+
+* Generate: Table of Contents                                           :toc:
+- [[#code-under-test][Code under test]]
+  - [[#kernel-tree-and-branch-under-test][Kernel tree and branch under test]]
+- [[#devices-under-test-dut][Device(s) Under Test (DUT)]]
+  - [[#dut-02-intel-cpu-e5-1650][DUT-02: Intel CPU E5-1650]]
+- [[#benchmark-results][Benchmark results]]
+  - [[#dut-02-intel-cpu-e5-1650-1][DUT-02: Intel CPU E5-1650]]
+
+* Code under test
+
+** Kernel tree and branch under test
+
+Tested on top of kernel tree and branch:
+ - https://github.com/arthurfabre/linux/tree/afabre/traits-005-inline
+ - https://github.com/arthurfabre/linux/commits/afabre/traits-005-inline/
+
+* Device(s) Under Test (DUT)
+
+** DUT-02: Intel CPU E5-1650
+
+Intel CPU E5-1650 v4 @ 3.60GHz.
+
+* Benchmark results
+
+** DUT-02: Intel CPU E5-1650
+
+Comparing against [[file:traits04_bench_branch004.org]].
+
+| Intel CPU E5-1650 | branch004 | branch005 | branch004 | branch005 |        |
+| micro-bench       |  *cycles* |           | *nanosec* |           |   diff |
+|-------------------+-----------+-----------+-----------+-----------+--------|
+| function call     |         4 |         4 |     1.259 |     1.261 |  0.002 |
+| indirect call     |        30 |        30 |     8.492 |     8.562 |  0.070 |
+| bpf_xdp_trait_set |        21 |        18 |     6.024 |     5.010 | -1.014 |
+| bpf_xdp_trait_get |        16 |        15 |     4.517 |     4.266 | -0.251 |
+#+TBLFM: $6=$5-$4;%.3f
+
+We definitely see an improvement with branch.
+
+Currently our "bench_traits_simple" doesn't exercise the memmove optimizations
+available in the branch.
+
+Raw data:
+#+begin_example
+[  903.911934] time_bench: Type:for_loop Per elem: 0 cycles(tsc) 0.262 ns (step:0) - (measurement period time:0.026295514 sec time_interval:26295514) - (invoke count:100000000 tsc_interval:94663821)
+[  903.942093] time_bench: Type:function_call_cost Per elem: 4 cycles(tsc) 1.261 ns (step:0) - (measurement period time:0.012611272 sec time_interval:12611272) - (invoke count:10000000 tsc_interval:45400128)
+[  904.046016] time_bench: Type:func_ptr_call_cost Per elem: 30 cycles(tsc) 8.562 ns (step:0) - (measurement period time:0.085629528 sec time_interval:85629528) - (invoke count:10000000 tsc_interval:308269320)
+[  904.114595] time_bench: Type:trait_set Per elem: 18 cycles(tsc) 5.010 ns (step:0) - (measurement period time:0.050109984 sec time_interval:50109984) - (invoke count:10000000 tsc_interval:180397158)
+[  904.174947] time_bench: Type:trait_get Per elem: 15 cycles(tsc) 4.266 ns (step:0) - (measurement period time:0.042667050 sec time_interval:42667050) - (invoke count:10000000 tsc_interval:153602490)
+#+end_example
