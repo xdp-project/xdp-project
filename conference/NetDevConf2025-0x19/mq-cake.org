@@ -1,0 +1,32 @@
+# -*- fill-column: 79; -*-
+#+TITLE: mq-cake
+#+AUTHOR: Jonas Köppeler <j.koeppeler@tu-berlin.de> and Toke Høiland-Jørgensen <toke@redhat.com>
+#+EMAIL: j.koeppeler@tu-berlin.de, toke@redhat.com
+#+REVEAL_THEME: white
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:t reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: NetDevconf 0x19 2025                             :noexport:
+
+This presentation is for Netdevconf 0x19 in Zagreb, Croatia
+
+* Outline / ideas                                                  :noexport:
+
+
+* MQ-CAKE                                                            :export:
+
+Slide contents go here
+
+* Emacs end-tricks                                                 :noexport:
+
+This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
+in the compiled version.
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1> Jonas Köppeler - TU Berlin <br /> Toke Høiland-Jørgensen - Red Hat"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
