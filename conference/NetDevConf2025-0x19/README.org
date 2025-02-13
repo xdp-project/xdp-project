@@ -1,17 +1,12 @@
-#+Title: NetConf 2023
+#+Title: Netdevconf 0x19
 
-Last conference [[http://vger.kernel.org/netconf2019.html][Netconf 2019]] (delayed due to Covid19).
 
-* Description from NetConf 2019
+* Description from Netdevconf 0x19
 
-Netconf is a Linux community conference, by-invitation-only, running since 2004.
-The agenda has a clear focus on kernel level networking. Attendees are the main
-maintainers and developers of the Linux networking subsystem.
+Netdev 0x19, like all the previous netdev conferences, is a conference of the
+netdev community, by the netdev community, for the netdev community. Linux
+kernel networking and user space utilization of the interfaces to the Linux
+kernel networking subsystem are the focus. If you are using Linux as a boot
+system for proprietary networking, then this conference _may not be for you_.
 
-Due to the distributed nature of the Network subsystem development, contributors
-to the stack are located in different corners of the globe and coordinate
-security and bug fixes as well as maintanance and new features via email.
-
-Netconf is intended to be a face to face working meetup to compliment those
-email exchanges. Problematic unresolved issues are hashed out and bold new ideas
-are discussed.
+https://netdevconf.info/0x19/
