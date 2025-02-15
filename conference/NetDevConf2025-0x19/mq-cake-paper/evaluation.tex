@@ -1,1 +1,129 @@
 \section{Evaluation}\label{sec:evaluation}
+\subsection{Experimental Setup}
+The experimental setup consists of two identical servers, both of which are equipped with: 
+(1) an Intel CPU (Intel(R) Xeon(R) Gold 6209U CPU@2.10GHz) with 20 physical cores and hyperthreading capabilities;
+(2) 192GB RAM;
+(3) two 25G NICs (Intel XXV710 for 25GbE SFP28 (rev 02)).
+Both servers run an Ubuntu 22.04.4 LTS with a 6.5.0-35-generic kernel that contains \textit{MQ\_CAKE}. 
+These machines are connected back-to-back, where one machine generates traffic and measures throughput either using MoonGen~\cite{moongen} or Flent~\cite{flent} and the other machine --- the Server under Test (SuT) --- receives the traffic, enforces a rate limit, and sends the traffic back to the traffic generating device.
+%
+The generated traffic using MoonGen consists only of UDP flows, with a transmission speed of 25Gbps.
+%
+In case of the Flent tests, 1024 TCP streams are used to saturate the link.
+%
+If not mentioned otherwise, hyperthreading is enabled on the SuT.
+
+The receiving interface of the SuT distributes the incoming flows in a round-robin fashion across its receive queues.
+%
+The interrupts of each receive queue are mapped to exactly one CPU core and irqbalance daemon~\cite{irqbalance} is disabled.
+%
+To avoid any side effects from existing firewall and routing rules, the ingress and egress interface of the SuT are attached to a separate network namespace~\cite{network-namespace}.
+%
+The intel\_iommu~\cite{iommu} feature is also explicitly disabled, since it is enabled by default in the 6.5 Linux kernel version and massively degrades the performance of network IO operations.
+%
+Further, NIC offloading capabilities like GRO, GSO and TSO~\cite{offloads} are disabled on each interface on the SuT.
+%
+A modified version~\cite{my-modified-tipsy} of the TIPSY framework~\cite{tipsy} is used to orchestrate the tests.
+%
+For configuring and installing \textit{MQ\_CAKE}, the \textit{tc} command line tool is extended~\cite{my-iproute}.
+%
+Further, in case of the MoonGen UDP flood tests, the installed \textit{MQ\_CAKE} instances are configured with \textit{besteffort flows overhead 18 mpu 64 noatm memlimit (default\_memlimit$\div$nr of queues)}~\cite{cake-manual}.
+%
+The overhead compensation is configured so that the rate calculation of MoonGen and \textit{MQ\_CAKE} are identical.
+%
+
+\subsection{Scalability and Accuracy}
+Figure throughput vs queues
+Accuracy
+
+\subsection{Synctime}
+Up to this point, the traffic in the previous evaluations has been held static, meaning that the number of flows did not change.
+%
+In order to investigate the impact of the synchronization time on the rate limiter's accuracy, the number of flows in the following test configuration is changed by switching from the  initial 4 flows to 40 flows.
+%
+\begin{figure}
+    \centering
+    \includesvg[scale=0.5]{images/switching_200us}
+    \caption{\textit{MQ\_CAKE}'s behavior when switching from 4 to 40 flows with a 200$\mu s$ synchronization time, full MTU-sized packets, and 40 transmission queues}\label{fig:switching_200us}
+\end{figure}
+%
+
+Figure~\ref{fig:switching_200us} shows such a switching event between 4.94s and 4.95s.
+%
+During the switch, the throughput spikes due to \textit{MQ\_CAKE}'s inaccurate estimation of the number of active queues.
+%
+Before the switch, only 4 queues were active: During the switch, the remaining 36 inactive queues are activated and then scan all other qdiscs to estimate their local rate limit.
+%
+Since this scanning is not necessarily executed simultaneously, the active queue estimation per qdisc will likely be lower than 40 --- not all qdiscs will have already enqueued or transmitted a packet at the point of scanning.
+%
+Further, the 4 already-active qdiscs will not immediately update their estimated rate upon new flow arrivals, which can delay their local rate limit reduction.
+%
+These conditions result in the observed overshoot in Figure~\ref{fig:switching_200us}.
+%
+
+% Figure~\ref{} shows the relative deviation of the spike depending on the synchronization time for a 15Gbits/s rate limit.
+%
+When evaluating accuracy, it is important to consider the induced queue length at the next bottleneck in the packet path, which is caused by the throughput spike, as well as the increased latencies it produces.
+%
+The width of the spike can be controlled by manipulating the \textit{synctime}.
+%
+Exceeding the global rate limit leads to buffering excess packets on the next bottleneck link.
+%
+This buffering increases latencies and may lead to packet drops.
+%
+To gain insights into the amount of induced latencies and to provision buffer sizes, the next step is to examine these metrics in relation to the synchronization time. 
+%
+\begin{figure*}
+    \begin{subfigure}{0.3\linewidth}
+        \centering
+        \includesvg[scale=0.3]{images/qlen_qdel_200us_2}
+        \caption{Rate limit 2 Gbps.}\label{fig:qlen_qdel_200us_2}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\linewidth}
+        \centering
+        \includesvg[scale=0.3]{images/qlen_qdel_200us}
+        \caption{Rate limit 8 Gbps.}\label{fig:qlen_qdel_200us_8}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\linewidth}
+        \centering
+        \includesvg[scale=0.3]{images/qlen_qdel_200us_15}
+        \caption{Rate limit 15 Gbps.}\label{fig:qlen_qdel_200us_15}
+    \end{subfigure}
+    \caption{Induced queue lengths and delays at varying \textit{synctimes} and at a configured global rate limit of 2, 8, and 15 Gbps}\label{fig:qlen_qdel}
+\end{figure*}
+Figure~\ref{fig:qlen_qdel} outlines the induced queue lengths as well as the corresponding induced queueing delays at three different global rate limits.
+%
+Synchronization times beyond 100$\mu s$ increase the spike's overshoot as well as its duration for the reasons described above.
+%
+The longer the \textit{synctime}, the longer queues will send an inordinately high number of bytes due to their inaccurate local rate estimation.
+%
+These plots also clearly show that reducing the \textit{syncime} also inhibits the spike intensity as well as the queueing delay.
+%
+However, if the \textit{synctime} is too greatly reduced (i.e.\ less than 50$\mu s$ in the conducted experiments), the overhead of the synchronization loop increases, lowering the achieved throughput.
+%
+\begin{figure}[H]
+    \centering
+    \includesvg[scale=0.49]{images/sync_txq_64}
+    \caption{Achieved packet rate based on the available transmission queues for varying \textit{synctimes}. The traffic consists of 4 flows containing only 64 byte packets.}\label{fig:sync_txq_64}
+\end{figure}
+Figure~\ref{fig:sync_txq_64} shows the relation between the achieved rate and the number of transmission queues for different \textit{synctimes}.
+%
+This plot clearly shows that when the \textit{synctime} is too low, the achieved packet rate decreases due to the synchronization overhead.
+%
+A greater number of transmission queues increases the \textit{MQ\_CAKE} instances' scanning time and may well lead to cache misses when accessing the other qdiscs' activity metrics.
+%
+
+\subsection{TCP and Latencies}
+\begin{figure}
+    \centering
+    \includesvg[scale=0.52]{images/tp-edtbpf-mqcake-20000}
+    \caption{}\label{fig:flent_tp}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includesvg[scale=0.52]{images/ping-edtbpf-mqcake-20000}
+    \caption{}\label{fig:flent_ping}
+\end{figure}
