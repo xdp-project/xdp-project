@@ -33,10 +33,35 @@ The overhead compensation is configured so that the rate calculation of MoonGen 
 %
 
 \subsection{Scalability and Accuracy}
+\begin{figure*}
+    \begin{subfigure}{0.3\linewidth}
+        \centering
+        \includesvg[scale=0.5]{images/tp_rate_conformance}
+        \caption{}\label{fig:tp_rate_conformance}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\linewidth}
+        \centering
+        \includesvg[scale=0.5]{images/tp_deviation_perc}
+        \caption{}\label{fig:tp_deviation_perc}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\linewidth}
+        \centering
+        \includesvg[scale=0.5]{images/tp_deviation_total.svg}
+        \caption{}\label{fig:tp_deviation_total}
+    \end{subfigure}
+    \caption{Rate conformance}\label{fig:tp_rate_conformance}
+\end{figure*}
+\begin{figure}
+    \centering
+    \includesvg[scale=0.5]{images/txq_scaling_64}
+    \caption{Scaling behavior}\label{fig:scaling}
+\end{figure}
 Figure throughput vs queues
 Accuracy
 
-\subsection{Synctime}
+\subsection{Synctime}\label{sec:synchronization-time}
 Up to this point, the traffic in the previous evaluations has been held static, meaning that the number of flows did not change.
 %
 In order to investigate the impact of the synchronization time on the rate limiter's accuracy, the number of flows in the following test configuration is changed by switching from the  initial 4 flows to 40 flows.
@@ -61,7 +86,6 @@ Further, the 4 already-active qdiscs will not immediately update their estimated
 These conditions result in the observed overshoot in Figure~\ref{fig:switching_200us}.
 %
 
-% Figure~\ref{} shows the relative deviation of the spike depending on the synchronization time for a 15Gbits/s rate limit.
 %
 When evaluating accuracy, it is important to consider the induced queue length at the next bottleneck in the packet path, which is caused by the throughput spike, as well as the increased latencies it produces.
 %
@@ -76,19 +100,19 @@ To gain insights into the amount of induced latencies and to provision buffer si
 \begin{figure*}
     \begin{subfigure}{0.3\linewidth}
         \centering
-        \includesvg[scale=0.3]{images/qlen_qdel_200us_2}
+        \includesvg[scale=0.5]{images/qlen_qdel_200us_2}
         \caption{Rate limit 2 Gbps.}\label{fig:qlen_qdel_200us_2}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.3\linewidth}
         \centering
-        \includesvg[scale=0.3]{images/qlen_qdel_200us}
+        \includesvg[scale=0.5]{images/qlen_qdel_200us}
         \caption{Rate limit 8 Gbps.}\label{fig:qlen_qdel_200us_8}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.3\linewidth}
         \centering
-        \includesvg[scale=0.3]{images/qlen_qdel_200us_15}
+        \includesvg[scale=0.5]{images/qlen_qdel_200us_15}
         \caption{Rate limit 15 Gbps.}\label{fig:qlen_qdel_200us_15}
     \end{subfigure}
     \caption{Induced queue lengths and delays at varying \textit{synctimes} and at a configured global rate limit of 2, 8, and 15 Gbps}\label{fig:qlen_qdel}
@@ -118,12 +142,78 @@ A greater number of transmission queues increases the \textit{MQ\_CAKE} instance
 \subsection{TCP and Latencies}
 \begin{figure}
     \centering
-    \includesvg[scale=0.52]{images/tp-edtbpf-mqcake-20000}
+    \includesvg[scale=0.52]{images/tp-edtbpf-mqcake-5ms-horizon-20000-grid}
     \caption{}\label{fig:flent_tp}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includesvg[scale=0.52]{images/ping-edtbpf-mqcake-20000}
+    \includesvg[scale=0.52]{images/ping-edtbpf-mqcake-5ms-horizon-20000-grid}
     \caption{}\label{fig:flent_ping}
 \end{figure}
+
+
+\subsection{Limitations}
+The presented experiments reveal that \textit{MQ\_CAKE} is able to shape traffic up to 25 Gbps while achieving high accuracy with a deviation below 0.25\%.
+%
+Further, \textit{MQ\_CAKE} increases throughput with a greater number of hardware queues, enabling it to enforce higher rate limits as compared to HTB and single-queue CAKE.
+%
+What is more, \textit{MQ\_CAKE} also achieves 14x higher packet rates in comparison with these single-queue queueing disciplines.
+%
+In addition, the analysis of the \textit{synctime} shows that setting its value too low increases the CPU overhead.
+%
+As a lower bound, the synchronization time should be higher than the time it takes to complete one scan over all qdiscs.
+%
+On the other hand, higher \textit{synctimes} lead to less CPU load but also increase the time it takes \textit{MQ\_CAKE} to converge.
+%
+To balance between CPU load and accuracy, the experiments show that a \textit{synctime} value between 100--200$\mu s$ is ideal.
+\textit{MQ\_CAKE} also improves rate conformance for TCP traffic as well as achieves similar latencies as compared to single-queue CAKE. 
+
+Overall, the aforementioned tests reveal that \textit{MQ\_CAKE} displays excellent scalability while maintaining accuracy in enforcing rate limits:
+%
+However, this approach is, of course, not without shortcomings.
+%
+The experiments conducted in this thesis ensure that the qdisc layer of the Linux kernel is saturated with packets.
+%
+However, under real-world conditions, this might not always be the case, as not all flows are sent at full speed or evenly distributed across transmission queues.
+%
+In the worst case, this can lead to imbalances between the loads of different \textit{MQ\_CAKE} instances, where traffic enqueued in one qdisc cannot saturate the estimated local rate limit while another qdisc instance is heavily flooded with packets.
+%
+These imbalances taint the active queue estimation and lead to much lower throughput.
+%
+
+For example, consider a case where the global rate limit is set to 10 Gbps and there is an incoming traffic of 10 Gbps.
+%
+In this example, 80\% of the incoming traffic is enqueued in Qdisc A and the remaining 20\% of the traffic is steered to Qdisc B. In this case, both Qdiscs will estimate two active queues and lower their rate limit to 5 Gbps each.
+However, since Qdisc B can only forward 2 Gbps and Qdisc A is capped at 5 Gbps, the resulting throughput is only 7 Gbps.
+%
+\begin{figure}[H]
+    \centering
+    \includesvg[scale=0.5]{images/txq_imbalance_1514}
+    \caption{Achieved throughput in relation to the number of available hardware transmission queues with different \textit{synctimes} for flows with full MTU-sized packets, where the rate limit is set to 20 Gbps and the number of receive queues is held at 40}\label{fig:txq_imbalance_1514}
+\end{figure}
+\newpage
+Figure~\ref{fig:txq_imbalance_1514} shows such an imbalance scenario.
+%
+In this experiment, the number of receive queues is held at 40 as the number of transmission queues increases.
+%
+Concentrating first on a \textit{synctime} of 200$\mu s$, this plot shows that the achieved rate worsens when the number of transmission queues surpasses half the number of receive queues.
+%
+At this critical juncture, the receive queues no longer distribute traffic equally across the transmission queues, which leads to the imbalanced scenario described above.
+%
+For example, when there are 24 transmission queues, 16 transmission queues receive double the amount of packets compared to the remaining 8 transmission queues.
+%
+The estimated rate of the 8 transmission queues is higher than the traffic they receive, leading to unused bandwidth and a declining throughput.
+%
+However, as more transmission queues are added, the imbalance is reduced. At the same time, the estimated rate for each transmission queue also decreases, leading to less unused bandwidth. 
+
+These imbalances in multi-queue networking environments are well known in the literature~\cite{titan}~\cite{loom}~\cite{silo}.
+%
+To address this issue, Titan~\cite{titan} attempts to balance out traffic between queues when packets are enqueued.
+%
+It is likely that \textit{MQ\_CAKE} could benefit from such a balancing system.
+%
+Initial tests of a rebalancing mechanism within \textit{MQ\_CAKE} also show that this is possible: However, this mechanism is not further analyzed within this paper.
+%
+Another method to counteract imbalances is to reduce the \textit{synctime}, which can be seen in Figure~\ref{fig:txq_imbalance_1514} for synchronization times of 5--10$\mu s$. However, as described above, reducing the \textit{synctime} is only possible to a certain extent and depends on the number of transmission queues.
+%

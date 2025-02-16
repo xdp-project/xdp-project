@@ -92,7 +92,7 @@ Algorithm~\ref{alg:algo} shows this synchronization algorithm.
     \caption{Synchronization algorithm}\label{alg:algo}
 \begin{algorithmic}[1]
 \Procedure{get\_active\_queues}{}
-\If{now - last\_interval < SYNC\_INTERVAL}
+\If{now - last\_interval $<$ SYNC\_INTERVAL}
     \State \Return -1;
 \EndIf
 \State active\_queues = 1;
