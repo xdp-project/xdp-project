@@ -1,4 +1,20 @@
 \section{Evaluation}\label{sec:evaluation}
+After examining the implementation (Chapter~\ref{chap:contribution}), this chapter analyzes and evaluates the proposed approach.
+%
+This evaluation reveals that \textit{MQ\_CAKE} can accurately enforce rate limits up to the network card's capabilities of 25 Gbps and achieves excellent linear scaling with an increasing number of hardware queues.
+
+This chapter is organized as follows:
+%
+The first section describes the experimental setup. 
+%
+Next, this work evaluates \textit{MQ\_CAKE}'s rate limiting capabilities and the corresponding accuracy as well as its scaling properties in comparison to EDT-eBPF.
+%
+The third section considers the dynamic properties of \textit{MQ\_CAKE}, especially its behavior when the number of UDP flows and \textit{synctime} change.
+%
+The fourth section tests and evaluates \textit{MQ\_CAKE} under TCP traffic using the Flent~\cite{flent} network testing tool.
+%
+Lastly, this work discusses the limitations of the current approach as well as open questions and future works in this field.
+
 \subsection{Experimental Setup}
 The experimental setup consists of two identical servers, both of which are equipped with: 
 (1) an Intel CPU (Intel(R) Xeon(R) Gold 6209U CPU@2.10GHz) with 20 physical cores and hyperthreading capabilities;
@@ -31,35 +47,74 @@ Further, in case of the MoonGen UDP flood tests, the installed \textit{MQ\_CAKE}
 %
 The overhead compensation is configured so that the rate calculation of MoonGen and \textit{MQ\_CAKE} are identical.
 %
+This overhead compensation is also added to the eBPF program.
+%
+The drop-horizon of the EDT-eBPF approach is set to 5$ms$, which achieved the best results in this specific test setup.
 
-\subsection{Scalability and Accuracy}
+
+\subsection{Accuracy and Scalability}
 \begin{figure*}
     \begin{subfigure}{0.3\linewidth}
         \centering
         \includesvg[scale=0.5]{images/tp_rate_conformance}
-        \caption{}\label{fig:tp_rate_conformance}
+        \caption{Achieved throughput}\label{fig:tp_rate_conformance}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.3\linewidth}
         \centering
         \includesvg[scale=0.5]{images/tp_deviation_perc}
-        \caption{}\label{fig:tp_deviation_perc}
+        \caption{Relative deviation}\label{fig:tp_deviation_perc}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.3\linewidth}
         \centering
         \includesvg[scale=0.5]{images/tp_deviation_total.svg}
-        \caption{}\label{fig:tp_deviation_total}
+        \caption{Total deviation}\label{fig:tp_deviation_total}
     \end{subfigure}
-    \caption{Rate conformance}\label{fig:tp_rate_conformance}
+    \caption{Rate conformance}\label{fig:accuracy}
 \end{figure*}
 \begin{figure}
     \centering
     \includesvg[scale=0.5]{images/txq_scaling_64}
     \caption{Scaling behavior}\label{fig:scaling}
 \end{figure}
-Figure throughput vs queues
-Accuracy
+Figure~\ref{fig:tp_rate_conformance} shows the achieved throughput for varying rate limits, ranging from 10 Mbps to 24 Gbps.
+%
+In this test run, the network traffic consists of 120 UDP flows containing only full MTU-sized packets.
+%
+The number of receive and transmission queues is set to 40, meaning that every available logical CPU is assigned one receive and transmission queue.
+%
+These settings maximize the achievable throughput and reduce concurrent access to the same qdisc by distributing packet handling across the per-transmission queue qdisc instances.
+%
+Figure~\ref{fig:tp_deviation_total} highlights the total deviation from the configured maximum rate limit as well as a relative percentage of the rate limit (Figure~\ref{fig:tp_deviation_perc}).
+%
+Together, these plots reveal that \textit{MQ\_CAKE} is able to shape traffic up to 24 Gbps, with a maximum deviation of less than 0.25\%.
+
+Figure~\ref{fig:throughput_deviation_1514_abs} shows that  \textit{MQ\_CAKE}'s achieved rate is slightly above the configured rate limit.
+%
+This slight overshoot is important to keep in mind so as to avoid over-provisioning the link: thus, the configured rate should be set to 99.75\% of the desired rate.
+%
+
+To show the scalability traits of \textit{MQ\_CAKE}, the next test is configured with a rate limit of 20 Gbps.
+%
+Further, the test setup ensures that the number of receive queues always equals the number of transmission queues.
+%
+This setting ensures that every transmission queue receives the same amount of the received packets, thus preventing imbalances in the load between qdiscs.
+%
+The effect of these imbalances are further explained in Section~\ref{sec:limitations}.
+%
+
+Figure~\ref{fig:txq_simple} reveals the throughput achieved by \textit{MQ\_CAKE} and EDT-eBPF in relation to the number of available hardware queues.
+%
+The test shows that both \textit{MQ\_CAKE} and EDT-eBPF scale linearly with an increasing number of transmission queues.
+%
+The achieved throughput increases at a quicker rate up to 20 transmission queues, after which point the improvement reduces due the use of hyperthreading cores.
+%
+This effect is due to resource-sharing between the two logical cores residing in one physical core:
+%
+Thus, their performance is not completely independent from one another.
+%
+However, even with hyperthreading enabled, \textit{MQ\_CAKE} and EDT-eBPF are still able to increase their throughput.
 
 \subsection{Synctime}\label{sec:synchronization-time}
 Up to this point, the traffic in the previous evaluations has been held static, meaning that the number of flows did not change.
@@ -129,7 +184,7 @@ However, if the \textit{synctime} is too greatly reduced (i.e.\ less than 50$\mu
 %
 \begin{figure}[H]
     \centering
-    \includesvg[scale=0.49]{images/sync_txq_64}
+    \includesvg[scale=0.5]{images/sync_txq_64}
     \caption{Achieved packet rate based on the available transmission queues for varying \textit{synctimes}. The traffic consists of 4 flows containing only 64 byte packets.}\label{fig:sync_txq_64}
 \end{figure}
 Figure~\ref{fig:sync_txq_64} shows the relation between the achieved rate and the number of transmission queues for different \textit{synctimes}.
@@ -151,14 +206,21 @@ A greater number of transmission queues increases the \textit{MQ\_CAKE} instance
     \includesvg[scale=0.52]{images/ping-edtbpf-mqcake-5ms-horizon-20000-grid}
     \caption{}\label{fig:flent_ping}
 \end{figure}
-
+% The previous tests are based on unresponsive UDP traffic:
+To review how this setup functions under a packet-loss sensitive transport protocol, this section inspects the initial results of TCP traffic and the resulting latencies using the network testing tool Flent~\cite{flent} and TCP cubic~\cite{tcp-cubic} algorithm.
+%
+Flent's tcp\_nup test is executed using 1024 TCP upload streams.
+%
+Figure~\ref{fig:flent_tp} compares the results for \textit{MQ\_CAKE} and EDT-eBPF with a global rate limit of 20 Gbps.
+Both approaches achieve similar performance and accuracy.
+%
+However, as shown in Figure~\ref{fig:flent_ping}, \textit{MQ\_CAKE} achieves 0.35 ms latencies at the 99th percentile, a 14X improvement as compared to EDT-eBPF.
+%
 
 \subsection{Limitations}
-The presented experiments reveal that \textit{MQ\_CAKE} is able to shape traffic up to 25 Gbps while achieving high accuracy with a deviation below 0.25\%.
+The presented experiments reveal that \textit{MQ\_CAKE} is able to shape traffic up to 25 Gbps while achieving high accuracy with a deviation around 0.2\%.
 %
-Further, \textit{MQ\_CAKE} increases throughput with a greater number of hardware queues, enabling it to enforce higher rate limits as compared to HTB and single-queue CAKE.
-%
-What is more, \textit{MQ\_CAKE} also achieves 14x higher packet rates in comparison with these single-queue queueing disciplines.
+Further, \textit{MQ\_CAKE} increases throughput with a greater number of hardware queues, even achieving slightly better higher throughput as compared to EDT-eBPF beyond 20 transmission queues.
 %
 In addition, the analysis of the \textit{synctime} shows that setting its value too low increases the CPU overhead.
 %
@@ -167,7 +229,7 @@ As a lower bound, the synchronization time should be higher than the time it tak
 On the other hand, higher \textit{synctimes} lead to less CPU load but also increase the time it takes \textit{MQ\_CAKE} to converge.
 %
 To balance between CPU load and accuracy, the experiments show that a \textit{synctime} value between 100--200$\mu s$ is ideal.
-\textit{MQ\_CAKE} also improves rate conformance for TCP traffic as well as achieves similar latencies as compared to single-queue CAKE. 
+\textit{MQ\_CAKE} also improves tail-latencies while being as accurate as the EDT-eBPF approach.
 
 Overall, the aforementioned tests reveal that \textit{MQ\_CAKE} displays excellent scalability while maintaining accuracy in enforcing rate limits:
 %
@@ -192,7 +254,6 @@ However, since Qdisc B can only forward 2 Gbps and Qdisc A is capped at 5 Gbps, 
     \includesvg[scale=0.5]{images/txq_imbalance_1514}
     \caption{Achieved throughput in relation to the number of available hardware transmission queues with different \textit{synctimes} for flows with full MTU-sized packets, where the rate limit is set to 20 Gbps and the number of receive queues is held at 40}\label{fig:txq_imbalance_1514}
 \end{figure}
-\newpage
 Figure~\ref{fig:txq_imbalance_1514} shows such an imbalance scenario.
 %
 In this experiment, the number of receive queues is held at 40 as the number of transmission queues increases.
