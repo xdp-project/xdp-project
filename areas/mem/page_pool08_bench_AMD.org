@@ -7,6 +7,7 @@
 - [[#amd-results][AMD results]]
   - [[#amd-cpu---devel-kernel-pp01-dma-fix-v7][AMD CPU - devel kernel pp01-DMA-fix-v7]]
   - [[#change-srso-mode-ibpb][Change SRSO mode: IBPB]]
+  - [[#page_pool-code-changes-made-it-worse][page_pool code changes made it worse]]
 
 * Intel results
 
@@ -102,3 +103,44 @@ Raw data:
 [   64.693384] bench_page_pool_simple: time_bench_page_pool03_slow(): in_serving_softirq fast-path
 [   65.079181] time_bench: Type:tasklet_page_pool03_slow Per elem: 95 cycles(tsc) 37.607 ns (step:0) - (measurement period time:0.376078904 sec time_interval:376078904) - (invoke count:10000000 tsc_interval:957559603)
 #+end_example
+
+** page_pool code changes made it worse
+
+Some recent page_pool code changes is making this worse.
+
+The (exported) function call =page_pool_alloc_pages()= was changed to call
+=page_pool_alloc_netmems()=, which cannot be inlined as it is also exported.
+This extra function call cause SRSO overhead for a very small wrapper function,
+which is a critical fast-path function call.
+
+See [[https://elixir.bootlin.com/linux/v6.14-rc3/source/net/core/page_pool.c#L580-L603][code section]] from v6.14-rc3 :
+
+#+begin_src C
+netmem_ref page_pool_alloc_netmems(struct page_pool *pool, gfp_t gfp)
+{
+	netmem_ref netmem;
+
+	/* Fast-path: Get a page from cache */
+	netmem = __page_pool_get_cached(pool);
+	if (netmem)
+		return netmem;
+
+	/* Slow-path: cache empty, do real allocation */
+	if (static_branch_unlikely(&page_pool_mem_providers) && pool->mp_ops)
+		netmem = pool->mp_ops->alloc_netmems(pool, gfp);
+	else
+		netmem = __page_pool_alloc_pages_slow(pool, gfp);
+	return netmem;
+}
+EXPORT_SYMBOL(page_pool_alloc_netmems);
+ALLOW_ERROR_INJECTION(page_pool_alloc_netmems, NULL);
+
+struct page *page_pool_alloc_pages(struct page_pool *pool, gfp_t gfp)
+{
+	return netmem_to_page(page_pool_alloc_netmems(pool, gfp));
+}
+EXPORT_SYMBOL(page_pool_alloc_pages);
+#+end_src
+
+This was changed in commit:
+ - https://git.kernel.org/torvalds/c/4dec64c52e24 ("page_pool: convert to use netmem")
