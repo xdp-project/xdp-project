@@ -6,6 +6,7 @@
 - [[#intel-results][Intel results]]
 - [[#amd-results][AMD results]]
   - [[#amd-cpu---devel-kernel-pp01-dma-fix-v7][AMD CPU - devel kernel pp01-DMA-fix-v7]]
+  - [[#change-srso-mode-ibpb][Change SRSO mode: IBPB]]
 
 * Intel results
 
@@ -59,3 +60,45 @@ Raw data:
  time_bench: Type:tasklet_page_pool03_slow Per elem: 354 cycles(tsc) 139.400 ns (step:0) - (measurement period time:1.394000956 sec time_interval:1394000956) - (invoke count:10000000 tsc_interval:3549369301)
 #+end_example
 
+** Change SRSO mode: IBPB
+
+Same kernel: 6.13.0-rc6-pp01-DMA-fix-v7+
+ - booted with SRSO cmdline: spec_rstack_overflow=ibpb
+
+#+begin_src sh
+sudo kexec -l --initrd=/boot/initrd.img-6.13.0-rc6-pp01-DMA-fix-v7+  '--append=root=UUID=ab25bbdd-c315-497d-b12e-ea9ccf76a1e1 ro spec_rstack_overflow=ibpb net.ifnames=0 console=tty0 console=ttyS0,115200n8 '  -- /boot/vmlinuz-6.13.0-rc6-pp01-DMA-fix-v7+
+#+end_src
+
+Compare table: Intel-baseline vs AMD-with-SRSO-mode-IBPB:
+
+| Test name   | Cycles |     |      | Nanosec |        |         |      % |
+| (tasklet_*) |  Intel | AMD | diff |   Intel |    AMD |    diff | change |
+|-------------+--------+-----+------+---------+--------+---------+--------|
+| fast_path   |     19 |  14 |   -5 |   5.399 |  5.555 |   0.156 |    2.9 |
+| ptr_ring    |     54 |  31 |  -23 |  15.090 | 12.389 |  -2.701 |  -17.9 |
+| slow        |    238 |  95 | -143 |  66.134 | 37.607 | -28.527 |  -43.1 |
+#+TBLFM: $4=$3-$2::$7=$6-$5::$8=(($7/$5)*100);%.1f
+
+It looks like performance regression is *caused by side-channel mitigation SRSO*
+ - https://docs.kernel.org/admin-guide/hw-vuln/srso.html
+
+Raw data:
+#+begin_example
+[   63.470944] bench_page_pool_simple: Loaded
+[   63.529856] time_bench: Type:for_loop Per elem: 1 cycles(tsc) 0.543 ns (step:0) - (measurement period time:0.054322298 sec time_interval:54322298) - (invoke count:100000000 tsc_interval:138312357)
+[   63.739017] time_bench: Type:atomic_inc Per elem: 4 cycles(tsc) 1.896 ns (step:0) - (measurement period time:0.189646034 sec time_interval:189646034) - (invoke count:100000000 tsc_interval:482870371)
+[   63.818542] time_bench: Type:lock Per elem: 15 cycles(tsc) 5.971 ns (step:0) - (measurement period time:0.059719740 sec time_interval:59719740) - (invoke count:10000000 tsc_interval:152055429)
+[   63.837774] bench_page_pool_simple: time_bench_page_pool01_fast_path(): Cannot use page_pool fast-path
+[   63.903016] time_bench: Type:no-softirq-page_pool01 Per elem: 13 cycles(tsc) 5.482 ns (step:0) - (measurement period time:0.054820667 sec time_interval:54820667) - (invoke count:10000000 tsc_interval:139581645)
+[   63.923912] bench_page_pool_simple: time_bench_page_pool02_ptr_ring(): Cannot use page_pool fast-path
+[   64.025630] time_bench: Type:no-softirq-page_pool02 Per elem: 23 cycles(tsc) 9.141 ns (step:0) - (measurement period time:0.091415141 sec time_interval:91415141) - (invoke count:10000000 tsc_interval:232757447)
+[   64.046530] bench_page_pool_simple: time_bench_page_pool03_slow(): Cannot use page_pool fast-path
+[   64.420369] time_bench: Type:no-softirq-page_pool03 Per elem: 92 cycles(tsc) 36.383 ns (step:0) - (measurement period time:0.363832351 sec time_interval:363832351) - (invoke count:10000000 tsc_interval:926378204)
+[   64.441499] bench_page_pool_simple: pp_tasklet_handler(): in_serving_softirq fast-path
+[   64.450372] bench_page_pool_simple: time_bench_page_pool01_fast_path(): in_serving_softirq fast-path
+[   64.516143] time_bench: Type:tasklet_page_pool01_fast_path Per elem: 14 cycles(tsc) 5.555 ns (step:0) - (measurement period time:0.055554086 sec time_interval:55554086) - (invoke count:10000000 tsc_interval:141449469)
+[   64.537713] bench_page_pool_simple: time_bench_page_pool02_ptr_ring(): in_serving_softirq fast-path
+[   64.671718] time_bench: Type:tasklet_page_pool02_ptr_ring Per elem: 31 cycles(tsc) 12.389 ns (step:0) - (measurement period time:0.123894439 sec time_interval:123894439) - (invoke count:10000000 tsc_interval:315455068)
+[   64.693384] bench_page_pool_simple: time_bench_page_pool03_slow(): in_serving_softirq fast-path
+[   65.079181] time_bench: Type:tasklet_page_pool03_slow Per elem: 95 cycles(tsc) 37.607 ns (step:0) - (measurement period time:0.376078904 sec time_interval:376078904) - (invoke count:10000000 tsc_interval:957559603)
+#+end_example
