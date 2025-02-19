@@ -7,7 +7,9 @@
 - [[#amd-results][AMD results]]
   - [[#amd-cpu---devel-kernel-pp01-dma-fix-v7][AMD CPU - devel kernel pp01-DMA-fix-v7]]
   - [[#change-srso-mode-ibpb][Change SRSO mode: IBPB]]
+- [[#code][Code]]
   - [[#page_pool-code-changes-made-it-worse][page_pool code changes made it worse]]
+  - [[#mitigation-patch-attempt-1][Mitigation patch attempt #1]]
 
 * Intel results
 
@@ -104,6 +106,8 @@ Raw data:
 [   65.079181] time_bench: Type:tasklet_page_pool03_slow Per elem: 95 cycles(tsc) 37.607 ns (step:0) - (measurement period time:0.376078904 sec time_interval:376078904) - (invoke count:10000000 tsc_interval:957559603)
 #+end_example
 
+* Code
+
 ** page_pool code changes made it worse
 
 Some recent page_pool code changes is making this worse.
@@ -144,3 +148,43 @@ EXPORT_SYMBOL(page_pool_alloc_pages);
 
 This was changed in commit:
  - https://git.kernel.org/torvalds/c/4dec64c52e24 ("page_pool: convert to use netmem")
+
+** Mitigation patch attempt #1
+
+Changing code to allow for inlining.
+
+PoC code change:
+#+begin_src diff
+diff --git a/net/core/page_pool.c b/net/core/page_pool.c
+index acef1fcd8ddc..54bdb231c2a1 100644
+--- a/net/core/page_pool.c
++++ b/net/core/page_pool.c
+@@ -585,7 +585,8 @@ static noinline netmem_ref __page_pool_alloc_pages_slow(struct page_pool *pool,
+ /* For using page_pool replace: alloc_pages() API calls, but provide
+  * synchronization guarantee for allocation side.
+  */
+-netmem_ref page_pool_alloc_netmems(struct page_pool *pool, gfp_t gfp)
++static
++netmem_ref __page_pool_alloc_netmems(struct page_pool *pool, gfp_t gfp)
+ {
+        netmem_ref netmem;
+ 
+@@ -601,12 +602,17 @@ netmem_ref page_pool_alloc_netmems(struct page_pool *pool, gfp_t gfp)
+                netmem = __page_pool_alloc_pages_slow(pool, gfp);
+        return netmem;
+ }
++
++netmem_ref page_pool_alloc_netmems(struct page_pool *pool, gfp_t gfp)
++{
++       return __page_pool_alloc_netmems(pool, gfp);
++}
+ EXPORT_SYMBOL(page_pool_alloc_netmems);
+ ALLOW_ERROR_INJECTION(page_pool_alloc_netmems, NULL);
+ 
+ struct page *page_pool_alloc_pages(struct page_pool *pool, gfp_t gfp)
+ {
+-       return netmem_to_page(page_pool_alloc_netmems(pool, gfp));
++       return netmem_to_page(__page_pool_alloc_netmems(pool, gfp));
+ }
+ EXPORT_SYMBOL(page_pool_alloc_pages);
+#+end_src
