@@ -13,6 +13,8 @@
 - [[#amd-results2-6130-traits-006-skb][AMD results#2: 6.13.0-traits-006-skb+]]
   - [[#amd-cpu---kernel-6130][AMD CPU - kernel 6.13.0]]
   - [[#change-srso-mode-ibpb-1][Change SRSO mode: IBPB]]
+- [[#amd-testing-patches][AMD testing patches]]
+  - [[#mitigation-patch1][Mitigation patch#1]]
 
 * Intel results
 
@@ -387,3 +389,58 @@ Raw data: bench_traits_simple
  time_bench: Type:trait_set Per elem: 8 cycles(tsc) 3.258 ns (step:0) - (measurement period time:0.032585282 sec time_interval:32585282) - (invoke count:10000000 tsc_interval:82966647)
  time_bench: Type:trait_get Per elem: 7 cycles(tsc) 2.985 ns (step:0) - (measurement period time:0.029858881 sec time_interval:29858881) - (invoke count:10000000 tsc_interval:76025011)
 #+end_example
+
+* AMD testing patches
+
+** Mitigation patch#1
+
+Needed to adjust [[#mitigation-patch-attempt-1][Mitigation patch attempt #1]] as this kernel doesn't have the
+rename of =page_pool_alloc_netmem= to =page_pool_alloc_netmems=.
+
+Rename happened in commit:
+ - 91a152cbb49c ("net: page_pool: rename page_pool_alloc_netmem to *_netmems")
+ - git describe --contains 91a152cbb49c
+ - v6.14-rc1~162^2~226^2~3
+
+
+#+begin_src diff
+diff --git a/net/core/page_pool.c b/net/core/page_pool.c
+index f89cf93f6eb4..c48b4cdc24b6 100644
+--- a/net/core/page_pool.c
++++ b/net/core/page_pool.c
+@@ -571,10 +571,9 @@ static noinline netmem_ref __page_pool_alloc_pages_slow(struct page_pool *pool,
+        return netmem;
+ }
+ 
+-/* For using page_pool replace: alloc_pages() API calls, but provide
+- * synchronization guarantee for allocation side.
+- */
+-netmem_ref page_pool_alloc_netmem(struct page_pool *pool, gfp_t gfp)
++/* Allocation side fast-path */
++static __always_inline netmem_ref
++__page_pool_alloc_netmem(struct page_pool *pool, gfp_t gfp)
+ {
+        netmem_ref netmem;
+ 
+@@ -590,11 +589,19 @@ netmem_ref page_pool_alloc_netmem(struct page_pool *pool, gfp_t gfp)
+                netmem = __page_pool_alloc_pages_slow(pool, gfp);
+        return netmem;
+ }
++
++/* For using page_pool replace: alloc_pages() API calls, but provide
++ * synchronization guarantee for allocation side.
++ */
++netmem_ref page_pool_alloc_netmem(struct page_pool *pool, gfp_t gfp)
++{
++       return __page_pool_alloc_netmem(pool, gfp);
++}
+ EXPORT_SYMBOL(page_pool_alloc_netmem);
+ 
+ struct page *page_pool_alloc_pages(struct page_pool *pool, gfp_t gfp)
+ {
+-       return netmem_to_page(page_pool_alloc_netmem(pool, gfp));
++       return netmem_to_page(__page_pool_alloc_netmem(pool, gfp));
+ }
+ EXPORT_SYMBOL(page_pool_alloc_pages);
+ ALLOW_ERROR_INJECTION(page_pool_alloc_pages, NULL);
+#+end_src
