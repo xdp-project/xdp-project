@@ -286,3 +286,93 @@ modprobe bench_traits_simple
 
 ** Change SRSO mode: IBPB
 
+Booting kernel 6.13.0-traits-006-skb+
+ - with SRSO cmdline: spec_rstack_overflow=ibpb
+
+#+begin_example
+sudo kexec -l --initrd=/boot/initrd.img-6.13.0-traits-006-skb+  '--append=root=UUID=ab25bbdd-c315-497d-b12e-ea9ccf76a1e1 ro spec_rstack_overflow=ibpb net.ifnames=0 console=tty0 console=ttyS0,115200n8 '  -- /boot/vmlinuz-6.13.0-traits-006-skb+
+sudo systemctl kexec
+#+end_example
+
+Compare table: AMD with SRSO-default vs SRSO=IBPB:
+
+| Test name   | Cycles |      |      | *Nanosec* |        |         |      % |
+| (tasklet_*) |   SRSO | IBPB | diff |      SRSO |   IBPB |    diff | change |
+|-------------+--------+------+------+-----------+--------+---------+--------|
+| fast_path   |     36 |    9 |  -27 |    14.166 |  3.801 | -10.365 |  -73.2 |
+| ptr_ring    |     87 |   26 |  -61 |    34.217 | 10.526 | -23.691 |  -69.2 |
+| slow        |    241 |   78 | -163 |    94.926 | 30.646 |  -64.28 |  -67.7 |
+#+TBLFM: $4=$3-$2::$7=$6-$5::$8=(($7/$5)*100);%.1f
+
+Compare table: Intel-baseline vs AMD with SRSO=IBPB:
+ - *Focus on nanosec time* as AMD TSC clock runs slower than turbo GHz
+
+| Test name   | Cycles | *IBPB* |      | *Nanosec* | *IBPB* |         |      % |
+| (tasklet_*) |  Intel |    AMD | diff |     Intel |    AMD |    diff | change |
+|-------------+--------+--------+------+-----------+--------+---------+--------|
+| fast_path   |     19 |      9 |  -10 |     5.399 |  3.801 |  -1.598 |  -29.6 |
+| ptr_ring    |     54 |     26 |  -28 |    15.090 | 10.526 |  -4.564 |  -30.2 |
+| slow        |    238 |     78 | -160 |    66.134 | 30.646 | -35.488 |  -53.7 |
+#+TBLFM: $4=$3-$2::$7=$6-$5::$8=(($7/$5)*100);%.1f
+
+Raw data: modprobe bench_page_pool_simple
+#+begin_example
+ bench_page_pool_simple: Loaded
+ time_bench: Type:for_loop Per elem: 1 cycles(tsc) 0.543 ns (step:0) - (measurement period time:0.054332348 sec time_interval:54332348) - (invoke count:100000000 tsc_interval:138338928)
+ time_bench: Type:atomic_inc Per elem: 4 cycles(tsc) 1.850 ns (step:0) - (measurement period time:0.185091112 sec time_interval:185091112) - (invoke count:100000000 tsc_interval:471272665)
+ time_bench: Type:lock Per elem: 15 cycles(tsc) 5.970 ns (step:0) - (measurement period time:0.059705362 sec time_interval:59705362) - (invoke count:10000000 tsc_interval:152019143)
+ bench_page_pool_simple: time_bench_page_pool01_fast_path(): Cannot use page_pool fast-path
+ time_bench: Type:no-softirq-page_pool01 Per elem: 9 cycles(tsc) 3.858 ns (step:0) - (measurement period time:0.038585777 sec time_interval:38585777) - (invoke count:10000000 tsc_interval:98244972)
+ bench_page_pool_simple: time_bench_page_pool02_ptr_ring(): Cannot use page_pool fast-path
+ time_bench: Type:no-softirq-page_pool02 Per elem: 28 cycles(tsc) 11.343 ns (step:0) - (measurement period time:0.113431501 sec time_interval:113431501) - (invoke count:10000000 tsc_interval:288815320)
+ bench_page_pool_simple: time_bench_page_pool03_slow(): Cannot use page_pool fast-path
+ time_bench: Type:no-softirq-page_pool03 Per elem: 76 cycles(tsc) 29.994 ns (step:0) - (measurement period time:0.299943355 sec time_interval:299943355) - (invoke count:10000000 tsc_interval:763706283)
+ bench_page_pool_simple: pp_tasklet_handler(): in_serving_softirq fast-path
+ bench_page_pool_simple: time_bench_page_pool01_fast_path(): in_serving_softirq fast-path
+ time_bench: Type:tasklet_page_pool01_fast_path Per elem: 9 cycles(tsc) 3.801 ns (step:0) - (measurement period time:0.038018776 sec time_interval:38018776) - (invoke count:10000000 tsc_interval:96801111)
+ bench_page_pool_simple: time_bench_page_pool02_ptr_ring(): in_serving_softirq fast-path
+ time_bench: Type:tasklet_page_pool02_ptr_ring Per elem: 26 cycles(tsc) 10.526 ns (step:0) - (measurement period time:0.105266937 sec time_interval:105266937) - (invoke count:10000000 tsc_interval:268027236)
+ bench_page_pool_simple: time_bench_page_pool03_slow(): in_serving_softirq fast-path
+ time_bench: Type:tasklet_page_pool03_slow Per elem: 78 cycles(tsc) 30.646 ns (step:0) - (measurement period time:0.306461417 sec time_interval:306461417) - (invoke count:10000000 tsc_interval:780302091)
+#+end_example
+
+*** time_bench_sample - with SRSO=IBPB
+
+The time_bench_sample gives us an idea of overhead of different base kernel
+operations.
+
+Raw data: time_bench_sample
+#+begin_example
+ time_bench_sample: Loaded
+ time_bench: Type:for_loop Per elem: 0 cycles(tsc) 0.271 ns (step:0) - (measurement period time:0.271174661 sec time_interval:271174661) - (invoke count:1000000000 tsc_interval:690456539)
+ time_bench: Type:spin_lock_unlock Per elem: 15 cycles(tsc) 5.969 ns (step:0) - (measurement period time:0.596907148 sec time_interval:596907148) - (invoke count:100000000 tsc_interval:1519827285)
+ time_bench: Type:spin_lock_unlock_irqsave Per elem: 16 cycles(tsc) 6.514 ns (step:0) - (measurement period time:0.325701231 sec time_interval:325701231) - (invoke count:50000000 tsc_interval:829290167)
+ time_bench: Type:irqsave_before_lock Per elem: 16 cycles(tsc) 6.516 ns (step:0) - (measurement period time:0.325842522 sec time_interval:325842522) - (invoke count:50000000 tsc_interval:829650329)
+ time_bench: Type:spin_lock_unlock_irq Per elem: 17 cycles(tsc) 7.008 ns (step:0) - (measurement period time:0.350405775 sec time_interval:350405775) - (invoke count:50000000 tsc_interval:892192699)
+ time_bench: Type:simple_irq_disable_before_lock Per elem: 16 cycles(tsc) 6.514 ns (step:0) - (measurement period time:0.325731256 sec time_interval:325731256) - (invoke count:50000000 tsc_interval:829366718)
+ time_bench: Type:local_BH_disable_enable Per elem: 4 cycles(tsc) 1.900 ns (step:0) - (measurement period time:0.190012327 sec time_interval:190012327) - (invoke count:100000000 tsc_interval:483802779)
+ time_bench: Type:local_IRQ_disable_enable Per elem: 11 cycles(tsc) 4.342 ns (step:0) - (measurement period time:0.434208241 sec time_interval:434208241) - (invoke count:100000000 tsc_interval:1105568565)
+ time_bench: Type:local_irq_save_restore Per elem: 10 cycles(tsc) 4.099 ns (step:0) - (measurement period time:0.409960931 sec time_interval:409960931) - (invoke count:100000000 tsc_interval:1043830311)
+ time_bench: Type:preempt_disable_enable Per elem: 2 cycles(tsc) 0.814 ns (step:0) - (measurement period time:0.081426870 sec time_interval:81426870) - (invoke count:100000000 tsc_interval:207325990)
+ time_bench: Type:this_cpu_cmpxchg Per elem: 6 cycles(tsc) 2.376 ns (step:0) - (measurement period time:0.237617000 sec time_interval:237617000) - (invoke count:100000000 tsc_interval:605012261)
+ time_bench: Type:cmpxchg Per elem: 6 cycles(tsc) 2.367 ns (step:0) - (measurement period time:0.118355540 sec time_interval:118355540) - (invoke count:50000000 tsc_interval:301352345)
+ time_bench: Type:funcion_call_cost Per elem: 3 cycles(tsc) 1.357 ns (step:0) - (measurement period time:0.135766079 sec time_interval:135766079) - (invoke count:100000000 tsc_interval:345682156)
+ time_bench: Type:func_ptr_call_cost Per elem: 15 cycles(tsc) 6.245 ns (step:0) - (measurement period time:0.624599867 sec time_interval:624599867) - (invoke count:100000000 tsc_interval:1590338176)
+ time_bench: Type:page_alloc_put Per elem: 116 cycles(tsc) 45.904 ns (step:0) - (measurement period time:0.045904531 sec time_interval:45904531) - (invoke count:1000000 tsc_interval:116879122)
+#+end_example
+
+*** bench_traits_simple - with SRSO=IBPB
+
+modprobe bench_traits_simple
+
+Also collect traits data as this kernel is our traits devel kernel.
+
+Raw data: bench_traits_simple
+#+begin_example
+ bench_traits_simple: Loaded
+ time_bench: Type:for_loop Per elem: 0 cycles(tsc) 0.271 ns (step:0) - (measurement period time:0.027142183 sec time_interval:27142183) - (invoke count:100000000 tsc_interval:69108086)
+ time_bench: Type:function_call_cost Per elem: 3 cycles(tsc) 1.356 ns (step:0) - (measurement period time:0.013565277 sec time_interval:13565277) - (invoke count:10000000 tsc_interval:34538399)
+ time_bench: Type:func_ptr_call_cost Per elem: 15 cycles(tsc) 6.243 ns (step:0) - (measurement period time:0.062439886 sec time_interval:62439886) - (invoke count:10000000 tsc_interval:158981841)
+ time_bench: Type:trait_set Per elem: 8 cycles(tsc) 3.258 ns (step:0) - (measurement period time:0.032585282 sec time_interval:32585282) - (invoke count:10000000 tsc_interval:82966647)
+ time_bench: Type:trait_get Per elem: 7 cycles(tsc) 2.985 ns (step:0) - (measurement period time:0.029858881 sec time_interval:29858881) - (invoke count:10000000 tsc_interval:76025011)
+#+end_example
