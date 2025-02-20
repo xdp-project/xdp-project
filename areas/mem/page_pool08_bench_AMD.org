@@ -367,6 +367,17 @@ modprobe bench_traits_simple
 
 Also collect traits data as this kernel is our traits devel kernel.
 
+Traits compare table: *traits* AMD SRSO-default vs SRSO=IBPB:
+
+| Test name          | Cycles |      |      | *Nanosec* |       |        |      % |
+|                    |   SRSO | IBPB | diff |      SRSO |  IBPB |   diff | change |
+|--------------------+--------+------+------+-----------+-------+--------+--------|
+| function_call_cost |     14 |    3 |  -11 |     5.702 | 1.356 | -4.346 |  -76.2 |
+| func_ptr_call      |     26 |   15 |  -11 |    10.335 | 6.243 | -4.092 |  -39.6 |
+| trait_set          |     22 |    8 |  -14 |     8.979 | 3.258 | -5.721 |  -63.7 |
+| trait_get          |     24 |    7 |  -17 |     9.791 | 2.985 | -6.806 |  -69.5 |
+#+TBLFM: $4=$3-$2::$7=$6-$5::$8=(($7/$5)*100);%.1f
+
 Raw data: bench_traits_simple
 #+begin_example
  bench_traits_simple: Loaded
