@@ -87,6 +87,8 @@ Thus, the reads and writes are racy --- however, this does not present a problem
 This approach has the benefit of not building contention points while still achieving accurate local rate limit estimations.
 %
 Algorithm~\ref{alg:algo} shows this synchronization algorithm.
+%
+The source code of \textit{MQ\_CAKE} is published here: \url{https://github.com/mq-cake/linux-mq-cake}.
 
 \begin{algorithm}[h]
     \caption{Synchronization algorithm}\label{alg:algo}

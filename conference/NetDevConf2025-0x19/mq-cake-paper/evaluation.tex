@@ -1,7 +1,9 @@
 \section{Evaluation}\label{sec:evaluation}
-After examining the implementation (Chapter~\ref{chap:contribution}), this chapter analyzes and evaluates the proposed approach.
+After examining the implementation, this chapter analyzes and evaluates the proposed approach.
 %
 This evaluation reveals that \textit{MQ\_CAKE} can accurately enforce rate limits up to the network card's capabilities of 25 Gbps and achieves excellent linear scaling with an increasing number of hardware queues.
+%
+Further, \textit{MQ\_CAKE} achieves 10--2500X lower tail-latencies as compared to EDT-eBPF approach.
 
 This chapter is organized as follows:
 %
@@ -11,7 +13,7 @@ Next, this work evaluates \textit{MQ\_CAKE}'s rate limiting capabilities and the
 %
 The third section considers the dynamic properties of \textit{MQ\_CAKE}, especially its behavior when the number of UDP flows and \textit{synctime} change.
 %
-The fourth section tests and evaluates \textit{MQ\_CAKE} under TCP traffic using the Flent~\cite{flent} network testing tool.
+The fourth section tests and evaluates \textit{MQ\_CAKE} and EDT-eBPF under TCP traffic using the Flent~\cite{flent} network testing tool.
 %
 Lastly, this work discusses the limitations of the current approach as well as open questions and future works in this field.
 
@@ -39,18 +41,47 @@ The intel\_iommu~\cite{iommu} feature is also explicitly disabled, since it is e
 %
 Further, NIC offloading capabilities like GRO, GSO and TSO~\cite{offloads} are disabled on each interface on the SuT.
 %
-A modified version~\cite{my-modified-tipsy} of the TIPSY framework~\cite{tipsy} is used to orchestrate the tests.
+The TIPSY framework~\cite{tipsy} is used to orchestrate tests.
 %
-For configuring and installing \textit{MQ\_CAKE}, the \textit{tc} command line tool is extended~\cite{my-iproute}.
+For configuring and installing \textit{MQ\_CAKE}, the \textit{tc} command line tool is extended~\cite{mq-cake-iproute}.
 %
 Further, in case of the MoonGen UDP flood tests, the installed \textit{MQ\_CAKE} instances are configured with \textit{besteffort flows overhead 18 mpu 64 noatm memlimit (default\_memlimit$\div$nr of queues)}~\cite{cake-manual}.
 %
 The overhead compensation is configured so that the rate calculation of MoonGen and \textit{MQ\_CAKE} are identical.
 %
-This overhead compensation is also added to the eBPF program.
+The EDT-eBPF program builds upon the pseudo-code presented at the Netdev Conference 0x14~\cite{edt-ebpf}, with modifications to enforce a global rate limit and incorporate the aforementioned overhead compensation.
 %
-The drop-horizon of the EDT-eBPF approach is set to 5$ms$, which achieved the best results in this specific test setup.
+The drop-horizon is set to $2s$, following the value proposed by the authors~\cite{edt-ebpf}. The adjusted eBPF program is detailed in Algorithm~\ref{alg:edt-ebpf}.
 
+To align with the expected buffer occupation, the \lstinline{limit} and \lstinline{flow_limit} parameters of the FQ instances are configured based on the following formula:
+\begin{align*}
+    \text{Limit} = \frac{\text{Rate Limit}\cdot \text{Drop Horizon}}{\text{\# FQ instances}\cdot \text{Packet size} \cdot 8}
+\end{align*}
+
+If the FQ buffer sizes are not properly adjusted, FQ may drop packets unnoticed by the eBPF program, ultimately impacting performance.
+
+\begin{algorithm}[h]
+    \caption{EDT-eBPF implementation}\label{alg:edt-ebpf}
+\begin{algorithmic}[1]
+\Procedure{rate\_limit}{skb}
+    \State pkt\_len = skb$\rightarrow$len + compensation
+    \State {delay\_ns = pkt\_len*NS\_PER\_SEC/global\_rate\_limit}
+    \State next\_tstamp = global\_next\_tstamp
+    \\
+    \If {next\_tstamp $\leq$ now}
+        \State global\_next\_tstamp = now + delay\_ns
+        \State \Return TC\_ACT\_OK
+    \EndIf
+    \\
+    \If {next\_tstamp$-$now $\geq$ DROP\_HORIZON}
+        \State \Return TC\_ACT\_SHOT
+    \EndIf
+    \\
+    \State skb$\rightarrow$tstamp = next\_tstamp
+    \State \_\_sync\_fetch\_and\_add(global\_next\_tstamp, delay\_ns)
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{Accuracy and Scalability}
 \begin{figure*}
@@ -62,22 +93,18 @@ The drop-horizon of the EDT-eBPF approach is set to 5$ms$, which achieved the be
     \hfill
     \begin{subfigure}{0.3\linewidth}
         \centering
-        \includesvg[scale=0.5]{images/tp_deviation_perc}
-        \caption{Relative deviation}\label{fig:tp_deviation_perc}
+        \includesvg[scale=0.5]{images/tp_deviation_total.svg}
+        \caption{Total deviation}\label{fig:tp_deviation_total}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.3\linewidth}
         \centering
-        \includesvg[scale=0.5]{images/tp_deviation_total.svg}
-        \caption{Total deviation}\label{fig:tp_deviation_total}
+        \includesvg[scale=0.5]{images/tp_deviation_perc}
+        \caption{Relative deviation}\label{fig:tp_deviation_perc}
     \end{subfigure}
-    \caption{Rate conformance}\label{fig:accuracy}
+    \caption{Achieved throughput and deviation from the target rate at various rate limits under
+    network traffic containing only full MTU-sized packets}\label{fig:accuracy}
 \end{figure*}
-\begin{figure}
-    \centering
-    \includesvg[scale=0.5]{images/txq_scaling_64}
-    \caption{Scaling behavior}\label{fig:scaling}
-\end{figure}
 Figure~\ref{fig:tp_rate_conformance} shows the achieved throughput for varying rate limits, ranging from 10 Mbps to 24 Gbps.
 %
 In this test run, the network traffic consists of 120 UDP flows containing only full MTU-sized packets.
@@ -88,23 +115,28 @@ These settings maximize the achievable throughput and reduce concurrent access t
 %
 Figure~\ref{fig:tp_deviation_total} highlights the total deviation from the configured maximum rate limit as well as a relative percentage of the rate limit (Figure~\ref{fig:tp_deviation_perc}).
 %
-Together, these plots reveal that \textit{MQ\_CAKE} is able to shape traffic up to 24 Gbps, with a maximum deviation of less than 0.25\%.
+Together, these plots demonstrate that both \textit{MQ\_CAKE} and EDT-eBPF can effectively shape traffic up to 24 Gbps, with a maximum deviation of less than 0.8\%. Notably, \textit{MQ\_CAKE} achieves an even lower deviation of approximately 0.2\%.
 
-Figure~\ref{fig:throughput_deviation_1514_abs} shows that  \textit{MQ\_CAKE}'s achieved rate is slightly above the configured rate limit.
+Figure~\ref{fig:tp_deviation_total} shows that  \textit{MQ\_CAKE}'s achieved rate is slightly above the configured rate limit.
 %
 This slight overshoot is important to keep in mind so as to avoid over-provisioning the link: thus, the configured rate should be set to 99.75\% of the desired rate.
 %
 
-To show the scalability traits of \textit{MQ\_CAKE}, the next test is configured with a rate limit of 20 Gbps.
+\begin{figure}[h]
+    \centering
+    \includesvg[scale=0.5]{images/txq_scaling_64}
+    \caption{Achieved throughput in relation to the number of available hardware queues for 64 byte packets and a 20 Gbps rate limit}\label{fig:scaling}
+\end{figure}
+To show the scalability traits of \textit{MQ\_CAKE}, the next test is configured with a rate limit of 20 Gbps and the UDP packet sizes are reduced to 64 bytes.
 %
 Further, the test setup ensures that the number of receive queues always equals the number of transmission queues.
 %
 This setting ensures that every transmission queue receives the same amount of the received packets, thus preventing imbalances in the load between qdiscs.
 %
-The effect of these imbalances are further explained in Section~\ref{sec:limitations}.
+The effect of these imbalances are further explained in the Limitations section.
 %
 
-Figure~\ref{fig:txq_simple} reveals the throughput achieved by \textit{MQ\_CAKE} and EDT-eBPF in relation to the number of available hardware queues.
+Figure~\ref{fig:scaling} reveals the throughput achieved by \textit{MQ\_CAKE} and EDT-eBPF in relation to the number of available hardware queues.
 %
 The test shows that both \textit{MQ\_CAKE} and EDT-eBPF scale linearly with an increasing number of transmission queues.
 %
@@ -127,6 +159,26 @@ In order to investigate the impact of the synchronization time on the rate limit
     \caption{\textit{MQ\_CAKE}'s behavior when switching from 4 to 40 flows with a 200$\mu s$ synchronization time, full MTU-sized packets, and 40 transmission queues}\label{fig:switching_200us}
 \end{figure}
 %
+\begin{figure*}
+    \begin{subfigure}{0.3\linewidth}
+        \centering
+        \includesvg[scale=0.5]{images/qlen_qdel_200us_2}
+        \caption{Rate limit 2 Gbps.}\label{fig:qlen_qdel_200us_2}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\linewidth}
+        \centering
+        \includesvg[scale=0.5]{images/qlen_qdel_200us}
+        \caption{Rate limit 8 Gbps.}\label{fig:qlen_qdel_200us_8}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\linewidth}
+        \centering
+        \includesvg[scale=0.5]{images/qlen_qdel_200us_15}
+        \caption{Rate limit 15 Gbps.}\label{fig:qlen_qdel_200us_15}
+    \end{subfigure}
+    \caption{Induced queue lengths and delays at varying \textit{synctimes} and at a configured global rate limit of 2, 8, and 15 Gbps}\label{fig:qlen_qdel}
+\end{figure*}
 
 Figure~\ref{fig:switching_200us} shows such a switching event between 4.94s and 4.95s.
 %
@@ -152,26 +204,6 @@ This buffering increases latencies and may lead to packet drops.
 %
 To gain insights into the amount of induced latencies and to provision buffer sizes, the next step is to examine these metrics in relation to the synchronization time. 
 %
-\begin{figure*}
-    \begin{subfigure}{0.3\linewidth}
-        \centering
-        \includesvg[scale=0.5]{images/qlen_qdel_200us_2}
-        \caption{Rate limit 2 Gbps.}\label{fig:qlen_qdel_200us_2}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.3\linewidth}
-        \centering
-        \includesvg[scale=0.5]{images/qlen_qdel_200us}
-        \caption{Rate limit 8 Gbps.}\label{fig:qlen_qdel_200us_8}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.3\linewidth}
-        \centering
-        \includesvg[scale=0.5]{images/qlen_qdel_200us_15}
-        \caption{Rate limit 15 Gbps.}\label{fig:qlen_qdel_200us_15}
-    \end{subfigure}
-    \caption{Induced queue lengths and delays at varying \textit{synctimes} and at a configured global rate limit of 2, 8, and 15 Gbps}\label{fig:qlen_qdel}
-\end{figure*}
 Figure~\ref{fig:qlen_qdel} outlines the induced queue lengths as well as the corresponding induced queueing delays at three different global rate limits.
 %
 Synchronization times beyond 100$\mu s$ increase the spike's overshoot as well as its duration for the reasons described above.
@@ -197,27 +229,57 @@ A greater number of transmission queues increases the \textit{MQ\_CAKE} instance
 \subsection{TCP and Latencies}
 \begin{figure}
     \centering
-    \includesvg[scale=0.52]{images/tp-edtbpf-mqcake-5ms-horizon-20000-grid}
-    \caption{}\label{fig:flent_tp}
+    \hspace{-0.25cm}
+    \begin{subfigure}{\linewidth}
+        \centering
+        \includesvg[scale=0.5]{images/tp-edtbpf-mqcake-2s-horizon-20000.svg}
+        \caption{Throughput}\label{fig:flent_tp_2s}
+    \end{subfigure}
+    \\
+    \begin{subfigure}{\linewidth}
+        \centering
+        \includesvg[scale=0.5]{images/ping-edtbpf-mqcake-2s-horizon-20000-log.svg}
+        \caption{Ping}\label{fig:flent_ping_2s}
+    \end{subfigure}
+    \caption{Flent tcp\_nup test with 1024 TCP streams, a configured rate limit of 20 Gbps, and a $2s$ drop horizon for EDT-eBPF}\label{fig:flent_2s}
 \end{figure}
 
-\begin{figure}
-    \centering
-    \includesvg[scale=0.52]{images/ping-edtbpf-mqcake-5ms-horizon-20000-grid}
-    \caption{}\label{fig:flent_ping}
-\end{figure}
 % The previous tests are based on unresponsive UDP traffic:
 To review how this setup functions under a packet-loss sensitive transport protocol, this section inspects the initial results of TCP traffic and the resulting latencies using the network testing tool Flent~\cite{flent} and TCP cubic~\cite{tcp-cubic} algorithm.
 %
 Flent's tcp\_nup test is executed using 1024 TCP upload streams.
 %
-Figure~\ref{fig:flent_tp} compares the results for \textit{MQ\_CAKE} and EDT-eBPF with a global rate limit of 20 Gbps.
-Both approaches achieve similar performance and accuracy.
+Figure~\ref{fig:flent_2s} compares the performance of \textit{MQ\_CAKE} and EDT-eBPF under a global rate limit of 20 Gbps.
+
+\textit{MQ\_CAKE} maintains stable rate enforcement, remaining slightly below the configured limit, whereas EDT-eBPF initially exceeds the rate limit before gradually reducing throughput in the latter half of the test (Figure~\ref{fig:flent_tp_2s}).
 %
-However, as shown in Figure~\ref{fig:flent_ping}, \textit{MQ\_CAKE} achieves 0.35 ms latencies at the 99th percentile, a 14X improvement as compared to EDT-eBPF.
+Figure~\ref{fig:flent_ping_2s} shows the latencies measured during the test execution. \textit{MQ\_CAKE} achieves 0.4 ms latencies at the 99th percentile, a 2500X improvement as compared to EDT-eBPF.
+%
+The drop horizon of EDT-eBPF directly corresponds with the expected latencies.
 %
 
-\subsection{Limitations}
+Figure~\ref{fig:flent_5ms} shows the same test execution as before but with a reduced drop horizon of $5ms$ for the EDT-eBPF approach. Figure~\ref{fig:flent_tp_5ms} reveals that lowering the drop horizon to $5ms$ not only stabilizes EDT-eBPF's rate conformance but also reduces the tail latencies to $5ms$ (Figure~\ref{fig:flent_ping_5ms}).
+%
+However, reducing the drop horizon only works effectively, if the RTT's of the TCP flows have similar values as the drop horizon, thus high RTT flows would suffer from such a low drop horizon.
+Even with this configuration \textit{MQ\_CAKE} achieves 10X lower latencies as compared to EDT-eBPF. 
+\begin{figure}
+    \centering
+    \hspace{-0.25cm}
+    \begin{subfigure}{\linewidth}
+        \centering
+        \includesvg[scale=0.5]{images/tp-edtbpf-mqcake-5ms-horizon-20000.svg}
+        \caption{Throughput}\label{fig:flent_tp_5ms}
+    \end{subfigure}
+    \\
+    \begin{subfigure}{\linewidth}
+        \centering
+        \includesvg[scale=0.5]{images/ping-edtbpf-mqcake-5ms-horizon-20000-log.svg}
+        \caption{Ping}\label{fig:flent_ping_5ms}
+    \end{subfigure}
+    \caption{Flent tcp\_nup test with 1024 TCP streams, a configured rate limit of 20 Gbps, and a $5ms$ drop horizon for EDT-eBPF}\label{fig:flent_5ms}
+\end{figure}
+
+\subsection{Discussion and Limitations}
 The presented experiments reveal that \textit{MQ\_CAKE} is able to shape traffic up to 25 Gbps while achieving high accuracy with a deviation around 0.2\%.
 %
 Further, \textit{MQ\_CAKE} increases throughput with a greater number of hardware queues, even achieving slightly better higher throughput as compared to EDT-eBPF beyond 20 transmission queues.
@@ -267,6 +329,8 @@ For example, when there are 24 transmission queues, 16 transmission queues recei
 The estimated rate of the 8 transmission queues is higher than the traffic they receive, leading to unused bandwidth and a declining throughput.
 %
 However, as more transmission queues are added, the imbalance is reduced. At the same time, the estimated rate for each transmission queue also decreases, leading to less unused bandwidth. 
+%
+It is important to note that the EDT-eBPF approach's performance is not affected by these imbalances.
 
 These imbalances in multi-queue networking environments are well known in the literature~\cite{titan}~\cite{loom}~\cite{silo}.
 %
