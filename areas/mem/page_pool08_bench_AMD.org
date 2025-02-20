@@ -15,6 +15,8 @@
   - [[#change-srso-mode-ibpb-1][Change SRSO mode: IBPB]]
 - [[#amd-testing-patches][AMD testing patches]]
   - [[#mitigation-patch1][Mitigation patch#1]]
+  - [[#amd-cpu---patch1---with-srso][AMD CPU - patch#1 - with SRSO]]
+  - [[#amd-cpu---patch1---with-srsoibpb][AMD CPU - patch#1 - with SRSO=IBPB]]
 
 * Intel results
 
@@ -444,3 +446,94 @@ index f89cf93f6eb4..c48b4cdc24b6 100644
  EXPORT_SYMBOL(page_pool_alloc_pages);
  ALLOW_ERROR_INJECTION(page_pool_alloc_pages, NULL);
 #+end_src
+
+** AMD CPU - patch#1 - with SRSO
+
+Kernel: containing patch#1
+ - 6.13.0-traits-006-skb-pp-fix+
+
+Reboot trick:
+#+begin_example
+sudo kexec -l --initrd=/boot/initrd.img-6.13.0-traits-006-skb-pp-fix+  '--append=root=UUID=ab25bbdd-c315-497d-b12e-ea9ccf76a1e1 ro net.ifnames=0 console=tty0 console=ttyS0,115200n8 '  -- /boot/vmlinuz-6.13.0-traits-006-skb-pp-fix+
+#+end_example
+
+Compare table: AMD with SRSO: patched vs normal
+ - surprisingly no perf change
+
+| Test name   | Cycles |         |      | *Nanosec* |        |        |      % |
+| (tasklet_*) |   SRSO | patched | diff |      SRSO |   IBPB |   diff | change |
+|-------------+--------+---------+------+-----------+--------+--------+--------|
+| fast_path   |     36 |      35 |   -1 |    14.166 | 14.116 |  -0.05 |   -0.4 |
+| ptr_ring    |     87 |      86 |   -1 |    34.217 | 34.127 |  -0.09 |   -0.3 |
+| slow        |    241 |     239 |   -2 |    94.926 | 93.932 | -0.994 |   -1.0 |
+#+TBLFM: $4=$3-$2::$7=$6-$5::$8=(($7/$5)*100);%.1f
+
+Surprisingly there isn't any real performance change. Looking at compiled code,
+the function was already getting inlined, before the patch. For kernel
+pp01-DMA-fix-v7 we verified with perf report that were was extra function calls.
+That patchset modified a small part of fast-path, likely enough that this was
+not-inlined any-longer.
+
+We still *conclude* that it's worth doing the =always_inline=, because it
+removes the uncertainty, when the compiler chooses to inline or not.
+
+Raw data:
+#+begin_example
+ bench_page_pool_simple: Loaded
+ time_bench: Type:for_loop Per elem: 1 cycles(tsc) 0.544 ns (step:0) - (measurement period time:0.054464721 sec time_interval:54464721) - (invoke count:100000000 tsc_interval:138675401)
+ time_bench: Type:atomic_inc Per elem: 4 cycles(tsc) 1.800 ns (step:0) - (measurement period time:0.180019937 sec time_interval:180019937) - (invoke count:100000000 tsc_interval:458361072)
+ time_bench: Type:lock Per elem: 37 cycles(tsc) 14.673 ns (step:0) - (measurement period time:0.146735517 sec time_interval:146735517) - (invoke count:10000000 tsc_interval:373612740)
+ bench_page_pool_simple: time_bench_page_pool01_fast_path(): Cannot use page_pool fast-path
+ time_bench: Type:no-softirq-page_pool01 Per elem: 35 cycles(tsc) 14.117 ns (step:0) - (measurement period time:0.141172879 sec time_interval:141172879) - (invoke count:10000000 tsc_interval:359448663)
+ bench_page_pool_simple: time_bench_page_pool02_ptr_ring(): Cannot use page_pool fast-path
+ time_bench: Type:no-softirq-page_pool02 Per elem: 91 cycles(tsc) 36.004 ns (step:0) - (measurement period time:0.360049819 sec time_interval:360049819) - (invoke count:10000000 tsc_interval:916748562)
+ bench_page_pool_simple: time_bench_page_pool03_slow(): Cannot use page_pool fast-path
+ time_bench: Type:no-softirq-page_pool03 Per elem: 243 cycles(tsc) 95.735 ns (step:0) - (measurement period time:0.957354943 sec time_interval:957354943) - (invoke count:10000000 tsc_interval:2437590926)
+ bench_page_pool_simple: pp_tasklet_handler(): in_serving_softirq fast-path
+ bench_page_pool_simple: time_bench_page_pool01_fast_path(): in_serving_softirq fast-path
+ time_bench: Type:tasklet_page_pool01_fast_path Per elem: 35 cycles(tsc) 14.116 ns (step:0) - (measurement period time:0.141165598 sec time_interval:141165598) - (invoke count:10000000 tsc_interval:359430966)
+ bench_page_pool_simple: time_bench_page_pool02_ptr_ring(): in_serving_softirq fast-path
+ time_bench: Type:tasklet_page_pool02_ptr_ring Per elem: 86 cycles(tsc) 34.127 ns (step:0) - (measurement period time:0.341270863 sec time_interval:341270863) - (invoke count:10000000 tsc_interval:868933793)
+ bench_page_pool_simple: time_bench_page_pool03_slow(): in_serving_softirq fast-path
+ time_bench: Type:tasklet_page_pool03_slow Per elem: 239 cycles(tsc) 93.932 ns (step:0) - (measurement period time:0.939328015 sec time_interval:939328015) - (invoke count:10000000 tsc_interval:2391691384)
+#+end_example
+
+** AMD CPU - patch#1 - with SRSO=IBPB
+
+Reboot trick: added spec_rstack_overflow=ibpb
+#+begin_example
+sudo kexec -l --initrd=/boot/initrd.img-6.13.0-traits-006-skb-pp-fix+  '--append=root=UUID=ab25bbdd-c315-497d-b12e-ea9ccf76a1e1 ro spec_rstack_overflow=ibpb net.ifnames=0 console=tty0 console=ttyS0,115200n8 '  -- /boot/vmlinuz-6.13.0-traits-006-skb-pp-fix+
+#+end_example
+
+
+Compare table: AMD with SRSO-default vs SRSO=IBPB:
+ - Very sad that SRSO=safe-ret have this much overhead
+
+| Test name   | Cycles |      |      | *Nanosec* |        |         |      % |
+| (tasklet_*) |   SRSO | IBPB | diff |      SRSO |   IBPB |    diff | change |
+|-------------+--------+------+------+-----------+--------+---------+--------|
+| fast_path   |     35 |    9 |  -26 |    14.116 |  3.801 | -10.315 |  -73.1 |
+| ptr_ring    |     86 |   26 |  -60 |    34.127 | 10.507 |  -23.62 |  -69.2 |
+| slow        |    239 |   77 | -162 |    93.932 | 30.344 | -63.588 |  -67.7 |
+#+TBLFM: $4=$3-$2::$7=$6-$5::$8=(($7/$5)*100);%.1f
+
+Raw data:
+#+begin_example
+ bench_page_pool_simple: Loaded
+ time_bench: Type:for_loop Per elem: 1 cycles(tsc) 0.543 ns (step:0) - (measurement period time:0.054363443 sec time_interval:54363443) - (invoke count:100000000 tsc_interval:138417570)
+ time_bench: Type:atomic_inc Per elem: 4 cycles(tsc) 1.862 ns (step:0) - (measurement period time:0.186220877 sec time_interval:186220877) - (invoke count:100000000 tsc_interval:474149805)
+ time_bench: Type:lock Per elem: 15 cycles(tsc) 5.975 ns (step:0) - (measurement period time:0.059752918 sec time_interval:59752918) - (invoke count:10000000 tsc_interval:152140114)
+ bench_page_pool_simple: time_bench_page_pool01_fast_path(): Cannot use page_pool fast-path
+ time_bench: Type:no-softirq-page_pool01 Per elem: 9 cycles(tsc) 3.807 ns (step:0) - (measurement period time:0.038070144 sec time_interval:38070144) - (invoke count:10000000 tsc_interval:96931416)
+ bench_page_pool_simple: time_bench_page_pool02_ptr_ring(): Cannot use page_pool fast-path
+ time_bench: Type:no-softirq-page_pool02 Per elem: 27 cycles(tsc) 10.932 ns (step:0) - (measurement period time:0.109329962 sec time_interval:109329962) - (invoke count:10000000 tsc_interval:278372331)
+ bench_page_pool_simple: time_bench_page_pool03_slow(): Cannot use page_pool fast-path
+ time_bench: Type:no-softirq-page_pool03 Per elem: 76 cycles(tsc) 30.019 ns (step:0) - (measurement period time:0.300190669 sec time_interval:300190669) - (invoke count:10000000 tsc_interval:764336898)
+ bench_page_pool_simple: pp_tasklet_handler(): in_serving_softirq fast-path
+ bench_page_pool_simple: time_bench_page_pool01_fast_path(): in_serving_softirq fast-path
+ time_bench: Type:tasklet_page_pool01_fast_path Per elem: 9 cycles(tsc) 3.801 ns (step:0) - (measurement period time:0.038018426 sec time_interval:38018426) - (invoke count:10000000 tsc_interval:96800550)
+ bench_page_pool_simple: time_bench_page_pool02_ptr_ring(): in_serving_softirq fast-path
+ time_bench: Type:tasklet_page_pool02_ptr_ring Per elem: 26 cycles(tsc) 10.507 ns (step:0) - (measurement period time:0.105077294 sec time_interval:105077294) - (invoke count:10000000 tsc_interval:267544291)
+ bench_page_pool_simple: time_bench_page_pool03_slow(): in_serving_softirq fast-path
+ time_bench: Type:tasklet_page_pool03_slow Per elem: 77 cycles(tsc) 30.344 ns (step:0) - (measurement period time:0.303440844 sec time_interval:303440844) - (invoke count:10000000 tsc_interval:772612081)
+#+end_example
