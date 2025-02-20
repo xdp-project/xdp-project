@@ -269,6 +269,20 @@ modprobe time_bench_sample
  time_bench: Type:page_alloc_put Per elem: 381 cycles(tsc) 149.846 ns (step:0) - (measurement period time:0.149846657 sec time_interval:149846657) - (invoke count:1000000 tsc_interval:381534086)
 #+end_example
 
+*** bench_traits_simple - with SRSO
+
+Also collect traits data as this kernel is our traits devel kernel.
+
+Raw data: bench_traits_simple
+#+begin_example
+modprobe bench_traits_simple
+ bench_traits_simple: Loaded
+ time_bench: Type:for_loop Per elem: 0 cycles(tsc) 0.271 ns (step:0) - (measurement period time:0.027188665 sec time_interval:27188665) - (invoke count:100000000 tsc_interval:69225844)
+ time_bench: Type:function_call_cost Per elem: 14 cycles(tsc) 5.702 ns (step:0) - (measurement period time:0.057021620 sec time_interval:57021620) - (invoke count:10000000 tsc_interval:145185984)
+ time_bench: Type:func_ptr_call_cost Per elem: 26 cycles(tsc) 10.335 ns (step:0) - (measurement period time:0.103354034 sec time_interval:103354034) - (invoke count:10000000 tsc_interval:263155997)
+ time_bench: Type:trait_set Per elem: 22 cycles(tsc) 8.979 ns (step:0) - (measurement period time:0.089793457 sec time_interval:89793457) - (invoke count:10000000 tsc_interval:228628359)
+ time_bench: Type:trait_get Per elem: 24 cycles(tsc) 9.791 ns (step:0) - (measurement period time:0.097910502 sec time_interval:97910502) - (invoke count:10000000 tsc_interval:249295268)
+#+end_example
 
 ** Change SRSO mode: IBPB
 
