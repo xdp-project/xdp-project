@@ -2,7 +2,7 @@
 This work builds upon the CAKE (sch\_cake) queuing discipline, with a particular focus on its bandwidth shaper. CAKE implements Active Queue Management (AQM) and rate limiting during packet dequeue, effectively eliminating the need for a backpressure mechanism. Through its bandwidth shaper, CAKE enforces a global rate limit on egress network traffic, preventing excessive packet buffering in the lower layers of the network stack. However, CAKE suffers from the aforementioned contention of the root qdisc lock, which prevents it from exploiting the potential of multiple transmission queues.
 
 \subsection{Approach}
-This work overcomes the aforementioned shortcomings by enabling a scalable version of \textit{sch\_cake}~\cite{cake} to run in combination with the MQ qdisc.
+Our approach overcomes the aforementioned shortcomings by enabling a scalable version of \textit{sch\_cake}~\cite{cake} to run in combination with the MQ qdisc~\cite{mq}.
 %
 This multi-queue version of CAKE is referred to as \textit{mq-cake}.
 In order to improve scalability and correctly enforce a global rate limit a synchronization mechanism between installed \textit{mq-cake} instances is necessary.
@@ -19,7 +19,7 @@ When this frequency is lower, the CPU load decreases but takes longer to converg
 Further, the CPU load increases as the number of hardware queues grows, since more data structures must be accessed in order to estimate the local rate.
 %
 However, if the per-packet CPU load becomes too high, the achieved throughput lowers, potentially hindering the system from driving higher rate limits.
-This phenomenon will be covered in greater detail in Chapter~\ref{sec:evaluation}.
+This phenomenon will be covered in greater detail in the \textit{Evaluation} chapter.
 
 \begin{figure}[h]
     \centering
@@ -45,11 +45,11 @@ Once the qdisc is installed, each \textit{mq-cake} instance scans the list of si
 %
 This duration of this interval is called the synchronization time, or \textit{synctime} for short.
 %
-If the \textit{synctime} is set too low, the overhead caused by the qdisc scan increases, lowering the achievable throughput and thus decreasing the maximum enforceable rate limit.
-The lower bound depends on the time it takes to complete one scan of all sibling qdisc.
-If this value is set too high, the accuracy suffers due to the slower convergence to the correct local rate estimation.
+% If the \textit{synctime} is set too low, the overhead caused by the qdisc scan increases, lowering the achievable throughput and thus decreasing the maximum enforceable rate limit.
+% The lower bound depends on the time it takes to complete one scan of all sibling qdisc.
+% If this value is set too high, the accuracy suffers due to the slower convergence to the correct local rate estimation.
 %
-In particular, this occurs if a qdisc's state changes either from active to inactive or vice versa.
+% In particular, this occurs if a qdisc's state changes either from active to inactive or vice versa.
 %
 The default setting for this value is $200\mu s$, which is an appropriate value to ensure fast convergence and low CPU overhead. 
 %
@@ -59,7 +59,7 @@ A scanning instance considers another qdisc active if it has packets enqueued an
 The logic behind these metrics is demonstrated in the following two scenarios:
 %
 (1) If a qdisc has only large packets enqueued while the global rate limit is low, the inter-packet gap may be larger than the \textit{synctime}.
-This is due to fact that qdiscs with large packets are slower in their release time and are buffered in the qdiscs queue.
+This is due to fact that qdiscs with large packets are slower in their release time and are buffered in the qdisc's queue.
 %
 This scenario would lead the qdisc to falsely read the instance as inactive if only considering the \textit{packet sent} metric, as the number of sent packets between the two scans  would not have changed.
 %
@@ -80,17 +80,7 @@ This means that, should a qdisc run empty, it would need to mark itself as inact
 between active and inactive, leading to inaccurate values for other qdiscs. 
 %
 
-The two activity metrics are read and written using the READ/WRITE\_ONCE macros.
-%
-Thus, the reads and writes are racy --- however, this does not present a problem, as the activity metrics do not rely on exact values but rather on whether the backlog of a qdisc is zero and whether the number of sent packets has changed.
-%
-This approach has the benefit of not building contention points while still achieving accurate local rate limit estimations.
-%
-Algorithm~\ref{alg:algo} shows this synchronization algorithm.
-%
-The source code of \textit{MQ\_CAKE} is published here: \url{https://github.com/mq-cake/linux-mq-cake}.
-
-\begin{algorithm}[h]
+\begin{algorithm}[t]
     \caption{Synchronization algorithm}\label{alg:algo}
 \begin{algorithmic}[1]
 \Procedure{get\_active\_queues}{}
@@ -110,3 +100,12 @@ The source code of \textit{MQ\_CAKE} is published here: \url{https://github.com/
 \EndProcedure
 \end{algorithmic}
 \end{algorithm}
+The two activity metrics are read and written using the READ/WRITE\_ONCE macros.
+%
+Thus, the reads and writes are racy --- however, this does not present a problem, as the activity metrics do not rely on exact values but rather on whether the backlog of a qdisc is zero and whether the number of sent packets has changed.
+%
+This approach has the benefit of not building contention points while still achieving accurate local rate limit estimations.
+%
+Algorithm~\ref{alg:algo} shows this synchronization algorithm.
+%
+The source code of \textit{MQ\_CAKE} is published here: \url{https://github.com/mq-cake/linux-mq-cake}.
