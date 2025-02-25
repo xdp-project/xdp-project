@@ -1,7 +1,5 @@
 \section{Evaluation}\label{sec:evaluation}
-After examining the implementation, this chapter analyzes and evaluates the proposed approach.
-%
-This evaluation reveals that \textit{mq-cake} can accurately enforce rate limits up to the network card's capabilities of 25 Gbps and achieves excellent linear scaling with an increasing number of hardware queues.
+In this section we evaluate \textit{mq-cake} and show its capabilities of accurately enforcing rate limits up to the network card's capabilities of 25 Gbps and achieves excellent linear scaling with an increasing number of hardware queues.
 %
 Further, \textit{mq-cake} achieves 10--2500X lower tail-latencies as compared to EDT-eBPF approach.
 
@@ -23,7 +21,7 @@ The experimental setup consists of two identical servers, both of which are equi
 (2) 192GB RAM;
 (3) two 25G NICs (Intel XXV710 for 25GbE SFP28 (rev 02)).
 Both servers run an Ubuntu 22.04.4 LTS with a 6.5.0-35-generic kernel that contains \textit{mq-cake}. 
-These machines are connected back-to-back, where one machine generates traffic and measures throughput either using MoonGen~\cite{moongen} or Flent~\cite{flent} and the other machine --- the Server under Test (SuT) --- receives the traffic, enforces a rate limit, and sends the traffic back to the traffic generating device.
+These machines are connected back-to-back, where one machine generates traffic and measures throughput either using MoonGen~\cite{moongen} or Flent~\cite{flent} and the other machine --- the Device under Test (DuT) --- receives the traffic, enforces a rate limit, and sends the traffic back to the traffic generating device.
 %
 The generated traffic using MoonGen consists only of UDP flows, with a transmission speed of 25 Gbps.
 %
@@ -87,25 +85,26 @@ If the FQ buffer sizes are not properly adjusted, FQ may drop packets unnoticed 
 \begin{figure*}
     \begin{subfigure}{0.3\linewidth}
         \centering
-        \includesvg[scale=0.5]{images/tp_rate_conformance}
+        \includesvg[scale=0.5]{images/tp_rate_conformance_htb_cake_mq-cake}
         \caption{Achieved throughput}\label{fig:tp_rate_conformance}
     \end{subfigure}
     \hfill
+    \hspace{0.5cm}
     \begin{subfigure}{0.3\linewidth}
         \centering
-        \includesvg[scale=0.5]{images/tp_deviation_total.svg}
+        \includesvg[scale=0.5]{images/tp_deviation_total_htb_cake_mq-cake}
         \caption{Total deviation}\label{fig:tp_deviation_total}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.3\linewidth}
         \centering
-        \includesvg[scale=0.5]{images/tp_deviation_perc}
-        \caption{Relative deviation}\label{fig:tp_deviation_perc}
+        \includesvg[scale=0.5]{images/tp_deviation_perc_htb_cake_mq-cake}
+        \caption{Relative absolute deviation}\label{fig:tp_deviation_perc}
     \end{subfigure}
     \caption{Achieved throughput and deviation from the target rate at various rate limits under
     network traffic containing only full MTU-sized packets}\label{fig:accuracy}
 \end{figure*}
-The most pressing questions about the presented approach is: Does it work? How accurately does it enforces the configured rate limit? And how does it scale with an increasing number of hardware queues?
+The most pressing questions about the presented approach is: How accurately does it enforces the configured rate limit? And how does it scale with an increasing number of hardware queues?
 In this section, we present an in-depth analysis of \textit{mq-cake}'s performance using an unresponsive UDP traffic flood and compare it to the EDT-eBPF approach. 
 We demonstrate that \textit{mq-cake} not only achieves excellent rate conformance but also exhibits near-perfect scaling properties.
 
@@ -121,14 +120,9 @@ Figure~\ref{fig:tp_deviation_total} highlights the total deviation from the conf
 %
 Together, these plots demonstrate that both \textit{mq-cake} and EDT-eBPF can effectively shape traffic up to 24 Gbps, with a maximum deviation of less than 0.8\%. Notably, \textit{mq-cake} achieves an even lower deviation of approximately 0.2\%.
 
-Figure~\ref{fig:tp_deviation_total} shows that  \textit{mq-cake}'s achieved rate is slightly above the configured rate limit.
-%
-This slight overshoot is important to keep in mind so as to avoid over-provisioning the link: thus, the configured rate should be set to 99.75\% of the desired rate.
-%
-
 \begin{figure}[h]
     \centering
-    \includesvg[scale=0.5]{images/txq_scaling_64}
+    \includesvg[scale=0.5]{images/txq_scaling_64_htb_cake_mq-cake}
     \caption{Achieved throughput in relation to the number of available hardware queues for 64 byte packets and a 20 Gbps rate limit}\label{fig:scaling}
 \end{figure}
 To show the scalability traits of \textit{mq-cake}, we configure the next experiment with a rate limit of 20 Gbps and reduce the UDP packet sizes to 64 bytes.
@@ -155,7 +149,7 @@ Up to this point, the traffic in the previous evaluations has been held static, 
 %
 With our next experiment, we show and evaluate the impact of the synctime on the rate limiter's accuracy, particularly when the number of active queues changes.
 %
-To gain insights in \textit{mq-cakeS}'s accuracy and responsiveness, we induce a change in the number of active queues by increasing the UDP traffic from initial 4 flows to 40 flows.
+To gain insights in \textit{mq-cake}'s accuracy and responsiveness, we induce a change in the number of active queues by increasing the UDP traffic from initial 4 flows to 40 flows.
 %
 
 % In order to investigate the impact of the synchronization time on the rate limiter's accuracy, the number of flows in the following test configuration is changed by switching from the  initial 4 flows to 40 flows.
@@ -175,7 +169,7 @@ To gain insights in \textit{mq-cakeS}'s accuracy and responsiveness, we induce a
     \hfill
     \begin{subfigure}{0.3\linewidth}
         \centering
-        \includesvg[scale=0.5]{images/qlen_qdel_200us}
+        \includesvg[scale=0.5]{images/qlen_qdel_200us_8}
         \caption{Rate limit 8 Gbps.}\label{fig:qlen_qdel_200us_8}
     \end{subfigure}
     \hfill

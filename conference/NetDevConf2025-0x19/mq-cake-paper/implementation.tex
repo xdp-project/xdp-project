@@ -28,7 +28,7 @@ This phenomenon will be covered in greater detail in the \textit{Evaluation} cha
 \end{figure}
 
 \subsection{Implementation}
-Central to this synchronization mechanism is a linked list between all \textit{mq-cake} instances installed on a network interface.
+This synchronization mechanism consists of a linked list between all \textit{mq-cake} instances installed on a network interface.
 %
 During the installation process of a new \textit{mq-cake} instance, this new instance searches for sibling qdiscs and adds itself to their linked list.
 %
@@ -51,23 +51,23 @@ This duration of this interval is called the synchronization time, or \textit{sy
 %
 % In particular, this occurs if a qdisc's state changes either from active to inactive or vice versa.
 %
-The default setting for this value is $200\mu s$, which is an appropriate value to ensure fast convergence and low CPU overhead. 
+The default setting for this value is $200\mu s$, which we found is an appropriate value to ensure fast convergence and low CPU overhead. 
 %
 
 A scanning instance considers another qdisc active if it has packets enqueued and/or has sent packets since the last scan.
 %
-The logic behind these metrics is demonstrated in the following two scenarios:
+The logic behind these conditions is demonstrated in the following two scenarios:
 %
 (1) If a qdisc has only large packets enqueued while the global rate limit is low, the inter-packet gap may be larger than the \textit{synctime}.
 This is due to fact that qdiscs with large packets are slower in their release time and are buffered in the qdisc's queue.
 %
-This scenario would lead the qdisc to falsely read the instance as inactive if only considering the \textit{packet sent} metric, as the number of sent packets between the two scans  would not have changed.
+This scenario would lead the qdisc to falsely read the instance as inactive if only considering the \textit{packet sent} condition, as the number of sent packets between the two scans  would not have changed.
 %
 However, any qdisc with packets enqueued is active, as it will eventually dequeue them and use its portion of the configured rate limit.
 %
 (2) If a qdisc receives very small packets while the global rate limit is high, the backlog of a qdisc consistently remains empty, as packets are less likely to be buffered and thus are immediately sent out.
 %
-This scenario would also lead the qdisc to falsely read the instance as inactive if only considering the \textit{has packets backlogged} metric, since the packets are only buffered for a very short interval.
+This scenario would also lead the qdisc to falsely read the instance as inactive if only considering the \textit{has packets backlogged} condition, since the packets are only buffered for a very short interval.
 %
 Thus, the scanning qdisc needs to maintain a counter --- similar to a heartbeat signal --- to determine if another qdisc has sent packets since the last synchronization scan.
 %
@@ -100,9 +100,9 @@ between active and inactive, leading to inaccurate values for other qdiscs.
 \EndProcedure
 \end{algorithmic}
 \end{algorithm}
-The two activity metrics are read and written using the READ/WRITE\_ONCE macros.
+The two activity indicators are read and written using the READ/WRITE\_ONCE macros.
 %
-Thus, the reads and writes are racy --- however, this does not present a problem, as the activity metrics do not rely on exact values but rather on whether the backlog of a qdisc is zero and whether the number of sent packets has changed.
+Thus, the reads and writes are racy --- however, this does not present a problem, as the activity indicators do not rely on exact values but rather on whether the backlog of a qdisc is zero and whether the number of sent packets has changed.
 %
 This approach has the benefit of not building contention points while still achieving accurate local rate limit estimations.
 %
