@@ -1,0 +1,10 @@
+#+Title: Benchmarking branch "traits-009-bench" via kernel module
+
+Using the prototype-kernel (out-of-tree) time_bench framework for
+micro-benchmarking "traits" branch:
+
+ - https://github.com/arthurfabre/linux/commits/afabre/traits-009-bench
+
+And using selftest benchmark.
+
+
