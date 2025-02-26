@@ -35,3 +35,25 @@ Raw data:
  time_bench: Type:trait_set Per elem: 26 cycles(tsc) 10.597 ns (step:0) - (measurement period time:0.105978783 sec time_interval:105978783) - (invoke count:10000000 tsc_interval:269838374)
  time_bench: Type:trait_get Per elem: 24 cycles(tsc) 9.509 ns (step:0) - (measurement period time:0.095091553 sec time_interval:95091553) - (invoke count:10000000 tsc_interval:242118165)
 #+end_example
+
+* BPF selftests
+
+Under =tools/testing/selftests/bpf/= there is a "bench" program "harness" that
+can be extended with benchmarks.
+
+** Explaining our bench extension
+
+Arthur added traits benchmark in commit:
+ - https://github.com/arthurfabre/linux/commit/da677f78b98e777e5fc76
+
+The BPF-prog being loaded is:
+ - [[https://github.com/arthurfabre/linux/commit/da677f78b98e777e5fc76#diff-b67549a8394fb00ba45ff77d069046c8cab11b29583b8c810595b89b50aa9098R16][tools/testing/selftests/bpf/progs/bench_xdp_traits.c]]
+
+The bench extension program is:
+ - [[https://github.com/arthurfabre/linux/commit/da677f78b98e777e5fc76#diff-7c5e2cd8b9a09de765cf10c202c56adf43790d7c707ef064818543dcdfa35ac0][tools/testing/selftests/bpf/benchs/bench_xdp_traits.c]]
+
+The BPF-prog benchmarks are basically doing 10.000 =ITERATIONS= in a for-loop,
+running the given traits operation. This is reported as "hits" to the harness.
+The BPF program is started via =bpf_prog_test_run_xdp()= (=bpf_test_run=) and
+harness will run that for default 7 iterations.
+
