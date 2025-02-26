@@ -7,4 +7,31 @@ micro-benchmarking "traits" branch:
 
 And using selftest benchmark.
 
+* Prototype-Kernel benchmarks
 
+** AMD CPU bench_traits_simple - with SRSO
+
+System:
+ - Kernel: 6.14.0-rc3-traits-009-bench+
+ - CPU: AMD EPYC 9684X 96-Core
+
+Traits compare table: between 6.13.0-traits-006-skb and this kernel
+ - data for 6.13.0-traits-006-skb from [[file:../mem/page_pool08_bench_AMD.org]]
+
+| Test name          | Cycles |     |      | *Nanosec* |        |        |      % |
+| branch: traits-NNN |    006 | 009 | diff |       006 |    009 |   diff | change |
+|--------------------+--------+-----+------+-----------+--------+--------+--------|
+| function_call_cost |     14 |  14 |    0 |     5.702 |  5.703 |   1e-3 |    0.0 |
+| func_ptr_call      |     26 |  26 |    0 |    10.335 | 10.329 |  -6e-3 |   -0.1 |
+| trait_set          |     22 |  26 |    4 |     8.979 | 10.597 |  1.618 |   18.0 |
+| trait_get          |     24 |  24 |    0 |     9.791 |  9.509 | -0.282 |   -2.9 |
+#+TBLFM: $4=$3-$2::$7=$6-$5::$8=(($7/$5)*100);%.1f
+
+Raw data:
+#+begin_example
+ time_bench: Type:for_loop Per elem: 0 cycles(tsc) 0.347 ns (step:0) - (measurement period time:0.034784133 sec time_interval:34784133) - (invoke count:100000000 tsc_interval:88565402)
+ time_bench: Type:function_call_cost Per elem: 14 cycles(tsc) 5.703 ns (step:0) - (measurement period time:0.057033614 sec time_interval:57033614) - (invoke count:10000000 tsc_interval:145216023)
+ time_bench: Type:func_ptr_call_cost Per elem: 26 cycles(tsc) 10.329 ns (step:0) - (measurement period time:0.103291046 sec time_interval:103291046) - (invoke count:10000000 tsc_interval:262995627)
+ time_bench: Type:trait_set Per elem: 26 cycles(tsc) 10.597 ns (step:0) - (measurement period time:0.105978783 sec time_interval:105978783) - (invoke count:10000000 tsc_interval:269838374)
+ time_bench: Type:trait_get Per elem: 24 cycles(tsc) 9.509 ns (step:0) - (measurement period time:0.095091553 sec time_interval:95091553) - (invoke count:10000000 tsc_interval:242118165)
+#+end_example
