@@ -17,9 +17,124 @@ This presentation is for Netdevconf 0x19 in Zagreb, Croatia
 * Outline / ideas                                                  :noexport:
 
 
-* MQ-CAKE                                                            :export:
+* Motivation														 :export:
 
-Slide contents go here
+- Network speeds >> CPU speeds
+- Scaling software rate limiting is challenging
+  - ..., especially enforcing a global rate limit on a network interface
+- Existing qdiscs in the kernel cannot keep up with network speeds
+  - ..., and do not scale
+
+** CAKE and HTB													 :export:
+
+#+ATTR_html: :height 620
+#+CAPTION: Global rate limit: 20 Gbps, UDP flood with full MTU-sized packets
+[[file:htb_cake_scaling.svg]]
+
+* Motivation (cont.)														 :export:
+- Solutions like EDT-BPF are great for rate limiting flow aggregates on end hosts
+  - ..., but fall short in enforcing a global rate limit
+  - builds a virtual FIFO across queues
+  - negative effects on latencies
+
+** EDT-BPF													 :export:
+
+#+ATTR_html: :height 620
+#+CAPTION: Global rate limit: 20 Gbps, 1024 TCP streams
+[[file:edt-global-rate-limit.svg]]
+
+* We present: mq-cake                                                            :export:
+
+- Multi-queue compatible variant of sch_cake
+- Enforce high rate limits while keeping queues smart
+
+* Outline                                                            :export:
+- Design 
+- Evaluation
+- Outlook
+
+* Design                                                            :export:
+
+** Architecture
+#+ATTR_html: :height 620
+#+CAPTION: Four hardware queues, mq-cake instances connected via linked list
+[[file:mq-cake-paper/images/mq_cake_architecture.svg]]
+
+** Algorithm                                                            :export:
+- Every instance loops over linked list in certain intervals
+  - Interval called synctime
+- Determine if other mq-cake instances are active
+- Calculate new local rate:
+#+ATTR_html: :height 120
+[[file:equation.svg]]
+
+** Active qdisc
+- A qdisc is considered active if:
+  - packets are backlogged
+  - packets were sent since last scan
+
+* Evaluation :export:
+** Rate Conformance
+#+ATTR_html: :height 620
+#+CAPTION: 40 queues, UDP-flood with full MTU-sized packets
+[[file:mq-cake-paper/images/tp_rate_conformance_htb_cake_mq-cake.svg]]
+
+** Deviation
+#+ATTR_html: :height 620
+#+CAPTION: 40 queues, UDP-flood with full MTU-sized packets
+[[file:mq-cake-paper/images/tp_deviation_perc_htb_cake_mq-cake.svg]]
+
+** Scaling
+#+ATTR_html: :height 620
+#+CAPTION: 40 queues, UDP-flood with 64 byte packets
+[[file:mq-cake-paper/images/txq_scaling_64_htb_cake_mq-cake.svg]]
+
+** Latencies
+#+ATTR_html: :height 620
+#+CAPTION: 1024 TCP streams, 2s drop horizon for EDT-BPF
+[[file:ping-edtbpf-mqcake-2s-horizon-20000-log.svg]]
+
+
+* Impact of Synctime :export:
+
+** Synctime 10us
+#+ATTR_html: :height 620
+#+CAPTION: Switching from 4 to 40 flows
+[[file:mq-cake-paper/images/switching_10us.svg]]
+
+** Synctime 100us
+#+ATTR_html: :height 620
+#+CAPTION: Switching from 4 to 40 flows
+[[file:mq-cake-paper/images/switching_100us.svg]]
+
+** Synctime 100ms
+#+ATTR_html: :height 620
+#+CAPTION: Switching from 4 to 40 flows
+[[file:mq-cake-paper/images/switching_100ms.svg]]
+
+* Current Limitations :export:
+
+** Imbalances
+#+ATTR_html: :height 620
+#+CAPTION: Imbalance in traffic load between qdiscs
+[[file:mq-cake-paper/images/txq_imbalance_1514.svg]]
+
+** Synchronization overhead
+#+ATTR_html: :height 620
+#+CAPTION: Lower synctimes lead to higher CPU overhead
+[[file:mq-cake-paper/images/sync_txq_64.svg]]
+
+* Outlook :export:
+
+** Future Work
+- Tackle imbalance issue
+- Mitigate overshoot during switching events
+- Test under real-world conditions
+- Automatically determine best synctime value
+
+** Upstreaming Plans
+
+
 
 * Emacs end-tricks                                                 :noexport:
 
