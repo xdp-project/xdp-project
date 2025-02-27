@@ -32,8 +32,8 @@ This presentation is for Netdevconf 0x19 in Zagreb, Croatia
 [[file:htb_cake_scaling.svg]]
 
 * Motivation (cont.)														 :export:
-- Solutions like EDT-BPF are great for rate limiting flow aggregates on end hosts
-  - ..., but fall short in enforcing a global rate limit
+- A solution like EDT-BPF is great for rate limiting flow aggregates on end hosts
+  - ..., but falls short in enforcing a global rate limit
   - builds a virtual FIFO across queues
   - negative effects on latencies
 
