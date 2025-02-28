@@ -129,10 +129,21 @@ The BPF-prog being loaded is:
 The bench extension program is:
  - [[https://github.com/arthurfabre/linux/commit/da677f78b98e777e5fc76#diff-7c5e2cd8b9a09de765cf10c202c56adf43790d7c707ef064818543dcdfa35ac0][tools/testing/selftests/bpf/benchs/bench_xdp_traits.c]]
 
-The BPF-prog benchmarks are basically doing 10.000 =ITERATIONS= in a for-loop,
-running the given traits operation. This is reported as "hits" to the harness.
-The BPF program is started via =bpf_prog_test_run_xdp()= (=bpf_test_run=) and
-harness will run that for default 7 iterations.
+The BPF-prog benchmarks are basically doing 10.000 =ITERATIONS= per BPF-prog
+invocation started via =bpf_prog_test_run_xdp()= (=bpf_test_run=). This amortize
+overhead of the =bpf_test_run= calls. Progress is stored (*atomic incremented*)
+in the global variable =hits=, which actually is a skeleton created BPF-map.
+
+How the harness collects the results is a little mind-boggling:
+
+The BPF-prog invocations are started as concurrently pthread(s) that have an
+eternal while-true loop (that will be killed/stop once main/parent program
+exits). The main/parent process set up a periodic 1-second (sigalarm) timer,
+that *collects* measurements (via call-back =trait_measure=) that does an
+atomic_swap() (with zero) on the BPF-map with "hint" into the harness
+=res->hits= data structures (per iteration). The harness will run that for
+default 7 (sigalarm) iterations before =main= exits (when sigalarm does a
+=pthread_cond_signal= that =main= is waiting for).
 
 ** Example: Variable results
 
