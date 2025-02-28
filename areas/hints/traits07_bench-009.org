@@ -22,6 +22,9 @@ And using selftest benchmark.
   - [[#amd-xdp-trait-move][AMD: xdp-trait-move]]
 - [[#bpf-selftests-amd-cpu-with-ibpb][BPF selftests: AMD CPU with IBPB]]
 - [[#bpf-selftests-intel-cpu][BPF selftests: Intel CPU]]
+  - [[#amd-xdp-trait-get-1][AMD: xdp-trait-get]]
+  - [[#amd-xdp-trait-set-1][AMD: xdp-trait-set]]
+  - [[#amd-xdp-trait-move-1][AMD: xdp-trait-move]]
 
 * Prototype-Kernel benchmarks
 
@@ -358,3 +361,107 @@ Summary: throughput  134.823 ± 0.114 M ops/s ( 67.412M ops/prod), latency   14.
 
 * BPF selftests: Intel CPU
 
+Testlab: Device Under Test
+ - CPU: Intel(R) Xeon(R) CPU E5-1650 v4 @ 3.60GHz
+ - Kernel: 6.14.0-rc3-traits-009-bench+ #32
+ - Mitigation: Spec rstack overflow:   Not affected
+
+| Bench name     |  Intel CPU |             |                |
+|                | nanosec/op | Mops/second | insn per cycle |
+|----------------+------------+-------------+----------------|
+| xdp-trait-get  |      5.530 |     180.843 |           3.73 |
+| xdp-trait-set  |      7.538 |     132.653 |           3.59 |
+| xdp-trait-move |     14.245 |      70.201 |           3.13 |
+
+
+** AMD: xdp-trait-get
+
+Raw data:
+#+begin_example
+$ sudo perf stat ./bench xdp-trait-get --producers=2 --affinity
+Setting up benchmark 'xdp-trait-get'...
+Benchmark 'xdp-trait-get' started.
+Iter   0 ( 81.865us): hits  353.201M/s (176.601M/prod)
+Iter   1 (-21.238us): hits  361.968M/s (180.984M/prod)
+Iter   2 ( 19.395us): hits  361.593M/s (180.796M/prod)
+Iter   3 (-54.850us): hits  361.400M/s (180.700M/prod)
+Iter   4 ( 54.498us): hits  360.780M/s (180.390M/prod)
+Iter   5 (  3.639us): hits  362.139M/s (181.069M/prod)
+Iter   6 ( 11.635us): hits  362.226M/s (181.113M/prod)
+Summary: throughput  361.685 ± 0.541 M ops/s (180.843M ops/prod), latency    5.530 ns/op
+
+ Performance counter stats for './bench xdp-trait-get --producers=2 --affinity':
+
+         14,214.51 msec task-clock                       #    1.958 CPUs utilized             
+                72      context-switches                 #    5.065 /sec                      
+                 1      cpu-migrations                   #    0.070 /sec                      
+             3,161      page-faults                      #  222.378 /sec                      
+    54,755,639,763      cycles                           #    3.852 GHz                       
+   204,133,875,011      instructions                     #    3.73  insn per cycle            
+    25,699,691,200      branches                         #    1.808 G/sec                     
+         3,682,907      branch-misses                    #    0.01% of all branches           
+
+       7.258655200 seconds time elapsed
+#+end_example
+
+Very impressive to see Intel CPU operating with *3.73  insn per cycle*.
+
+** AMD: xdp-trait-set
+
+Raw data:
+#+begin_example
+$ sudo perf stat ./bench xdp-trait-set --producers=2 --affinity
+Setting up benchmark 'xdp-trait-set'...
+Benchmark 'xdp-trait-set' started.
+Iter   0 ( 81.339us): hits  261.719M/s (130.859M/prod)
+Iter   1 (  0.627us): hits  260.940M/s (130.470M/prod)
+Iter   2 (  0.157us): hits  264.410M/s (132.205M/prod)
+Iter   3 ( -1.381us): hits  266.730M/s (133.365M/prod)
+Iter   4 ( -0.068us): hits  266.520M/s (133.260M/prod)
+Iter   5 ( -1.034us): hits  266.750M/s (133.375M/prod)
+Iter   6 ( -0.128us): hits  266.480M/s (133.240M/prod)
+Summary: throughput  265.305 ± 2.316 M ops/s (132.653M ops/prod), latency    7.538 ns/op
+
+ Performance counter stats for './bench xdp-trait-set --producers=2 --affinity':
+
+         14,176.38 msec task-clock                       #    1.954 CPUs utilized             
+                69      context-switches                 #    4.867 /sec                      
+                 4      cpu-migrations                   #    0.282 /sec                      
+             3,159      page-faults                      #  222.835 /sec                      
+    54,785,034,066      cycles                           #    3.865 GHz                       
+   196,856,553,816      instructions                     #    3.59  insn per cycle            
+    26,410,894,017      branches                         #    1.863 G/sec                     
+         3,015,535      branch-misses                    #    0.01% of all branches           
+
+       7.255810851 seconds time elapsed
+#+end_example
+
+** AMD: xdp-trait-move
+
+Raw data:
+#+begin_example
+$ sudo perf stat ./bench xdp-trait-move --producers=2 --affinity
+Setting up benchmark 'xdp-trait-move'...
+Benchmark 'xdp-trait-move' started.
+Iter   0 ( 84.563us): hits  135.379M/s ( 67.689M/prod)
+Iter   1 ( -6.558us): hits  140.421M/s ( 70.210M/prod)
+Iter   2 (  0.048us): hits  140.440M/s ( 70.220M/prod)
+Iter   3 (  1.889us): hits  139.850M/s ( 69.925M/prod)
+Iter   4 ( -4.674us): hits  140.401M/s ( 70.200M/prod)
+Iter   5 (  1.665us): hits  140.660M/s ( 70.330M/prod)
+Iter   6 (  1.589us): hits  140.640M/s ( 70.320M/prod)
+Summary: throughput  140.402 ± 0.293 M ops/s ( 70.201M ops/prod), latency   14.245 ns/op
+
+ Performance counter stats for './bench xdp-trait-move --producers=2 --affinity':
+
+         14,198.73 msec task-clock                       #    1.959 CPUs utilized             
+                83      context-switches                 #    5.846 /sec                      
+                 4      cpu-migrations                   #    0.282 /sec                      
+             3,163      page-faults                      #  222.766 /sec                      
+    54,821,638,060      cycles                           #    3.861 GHz                       
+   171,461,678,805      instructions                     #    3.13  insn per cycle            
+    21,491,326,869      branches                         #    1.514 G/sec                     
+         3,067,185      branch-misses                    #    0.01% of all branches           
+
+       7.249746122 seconds time elapsed
+#+end_example
