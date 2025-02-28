@@ -297,12 +297,13 @@ Testlab: Device Under Test
  - Kernel: 6.14.0-rc3-traits-009-bench+ #32
  - Mitigation (SRSO): Spec rstack overflow:   Mitigation; Safe RET
 
-| Bench name     | AMD w/SRSO |             |
-|                | nanosec/op | Mops/second |
-|----------------+------------+-------------|
-| xdp-trait-get  |      9.188 |     108.843 |
-| xdp-trait-set  |     10.050 |      99.503 |
-| xdp-trait-move |     14.834 |      67.412 |
+| Bench name     | AMD w/SRSO |         compared to |             |
+|                | nanosec/op | bench_traits_simple | Mops/second |
+|----------------+------------+---------------------+-------------|
+| xdp-trait-get  |      9.188 |               9.509 |     108.843 |
+| xdp-trait-set  |     10.050 |              10.597 |      99.503 |
+| xdp-trait-move |     14.834 |                     |      67.412 |
+|                |            |                     |             |
 
 ** AMD: xdp-trait-get
 
@@ -359,6 +360,14 @@ Summary: throughput  134.823 ± 0.114 M ops/s ( 67.412M ops/prod), latency   14.
 
 * BPF selftests: AMD CPU with IBPB
 
+Booting kernel with cmdline: =spec_rstack_overflow=ibpb=
+
+Testlab: Device Under Test
+ - CPU: AMD EPYC 9684X 96-Core Processor
+ - Kernel: 6.14.0-rc3-traits-009-bench+ #32
+
+Results delayed as testlab have boot issues.
+
 * BPF selftests: Intel CPU
 
 Testlab: Device Under Test
@@ -372,7 +381,6 @@ Testlab: Device Under Test
 | xdp-trait-get  |      5.530 |     180.843 |           3.73 |
 | xdp-trait-set  |      7.538 |     132.653 |           3.59 |
 | xdp-trait-move |     14.245 |      70.201 |           3.13 |
-
 
 ** AMD: xdp-trait-get
 
