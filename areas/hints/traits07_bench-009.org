@@ -13,6 +13,8 @@ And using selftest benchmark.
 - [[#bpf-selftests][BPF selftests]]
   - [[#explaining-our-bench-extension][Explaining our bench extension]]
   - [[#example-variable-results][Example: Variable results]]
+  - [[#example-getting-turbo-boost-speeds][Example: Getting turbo-boost speeds]]
+  - [[#example-scaling-to-96-cpu-cores][Example: Scaling to 96 CPU cores]]
 
 * Prototype-Kernel benchmarks
 
@@ -110,7 +112,7 @@ Notice that CPU were running at 3.003 GHz.
 
 We are *very* happy to see 2.47 insn per cycle.
 
-Running this again we captured a case where CPU was only running at 2 GHz:
+Running this again we captured a case where CPU was only running at 2.045 GHz:
 #+begin_example
 12G:~/git/kernel/arthur/tools/testing/selftests/bpf$
  sudo perf stat ./bench xdp-trait-get --producers=1
@@ -141,3 +143,131 @@ Summary: throughput   42.437 ± 1.082 M ops/s ( 42.437M ops/prod), latency   23.
 
        7.420082002 seconds time elapsed
 #+end_example
+
+Notice we observed same issue on Intel CPU E5-1650
+ - 3.60GHz CPU with 3.7GHz turbo-boost operating at 2.937 GHz
+
+** Example: Getting turbo-boost speeds
+
+The BPF selftest bench harness support some parameters that turned out to help
+us getting the CPUs into turbo-boost mode.
+
+To avoid CPU-migrations we use the =--affinity= option, but this isn't helping
+with turbo-boost GHz increase. It does helps keep the results more stable.
+
+The harness support running parallel tests on multiple CPUs (spawns pthreads).
+Our bench extension is hooking in as a "producer". The parameter =--producers=
+determine how many parallel producer (pthreads) to start. Already at two (2)
+producers, we get the CPU into our expected GHz operating area.
+
+With two (=--producers=2=) CPU is operation at 3.672 GHz:
+#+begin_example
+12G:~/git/kernel/arthur/tools/testing/selftests/bpf$
+sudo perf stat ./bench xdp-trait-get --producers=2 --affinity
+
+Setting up benchmark 'xdp-trait-get'...
+Benchmark 'xdp-trait-get' started.
+Iter   0 (106.652us): hits  228.776M/s (114.388M/prod)
+Iter   1 (-25.036us): hits  195.115M/s ( 97.557M/prod)
+Iter   2 ( 10.757us): hits  237.467M/s (118.734M/prod)
+Iter   3 (-12.678us): hits  237.443M/s (118.722M/prod)
+Iter   4 ( 39.822us): hits  237.471M/s (118.735M/prod)
+Iter   5 (  9.135us): hits  237.458M/s (118.729M/prod)
+Iter   6 (-37.685us): hits  237.469M/s (118.734M/prod)
+Summary: throughput  230.403 ± 17.290 M ops/s (115.202M ops/prod), latency    8.680 ns/op
+
+ Performance counter stats for './bench xdp-trait-get --producers=2 --affinity':
+
+         14,017.61 msec task-clock                       #    1.893 CPUs utilized          
+                92      context-switches                 #    6.563 /sec                   
+                 2      cpu-migrations                   #    0.143 /sec                   
+             3,232      page-faults                      #  230.567 /sec                   
+    51,476,930,877      cycles                           #    3.672 GHz                    
+    24,979,869,353      stalled-cycles-frontend          #   48.53% frontend cycles idle   
+   136,086,777,026      instructions                     #    2.64  insn per cycle         
+                                                  #    0.18  stalled cycles per insn
+    19,872,053,780      branches                         #    1.418 G/sec                  
+     1,650,078,045      branch-misses                    #    8.30% of all branches        
+
+       7.404950881 seconds time elapsed
+#+end_example
+
+The test result summary:
+ - Summary: throughput  230.403 ± 17.290 M ops/s (115.202M ops/prod), latency 8.680 ns/op
+
+Shows per operation latency as *8.680 ns/op* (per producer) which comes very
+close to the *9.509 nanosec* observed by our =bench_traits_simple= results
+(shown earlier in section [[#amd-cpu-bench_traits_simple---with-srso][AMD CPU bench_traits_simple - with SRSO]]).
+
+** Example: Scaling to 96 CPU cores
+
+This CPU have 96 CPU cores, and scales up to that, running at 3.684 GHz:
+#+begin_example
+12G:~/git/kernel/arthur/tools/testing/selftests/bpf$
+ sudo perf stat ./bench xdp-trait-get --producers=96 --affinity
+
+Setting up benchmark 'xdp-trait-get'...
+Benchmark 'xdp-trait-get' started.
+Iter   0 ( 42.426us): hits 11017.653M/s (114.767M/prod)
+Iter   1 (  7.612us): hits 11381.223M/s (118.554M/prod)
+Iter   2 (  9.747us): hits 11380.859M/s (118.551M/prod)
+Iter   3 ( -9.724us): hits 11381.381M/s (118.556M/prod)
+Iter   4 ( 32.330us): hits 11381.282M/s (118.555M/prod)
+Iter   5 (-31.816us): hits 11381.702M/s (118.559M/prod)
+Iter   6 ( -6.849us): hits 11382.468M/s (118.567M/prod)
+Summary: throughput 11381.488 ± 0.492 M ops/s (118.557M ops/prod), latency    8.435 ns/op
+
+ Performance counter stats for './bench xdp-trait-get --producers=96 --affinity':
+
+        671,328.28 msec task-clock                       #   90.315 CPUs utilized          
+               971      context-switches                 #    1.446 /sec                   
+                96      cpu-migrations                   #    0.143 /sec                   
+             3,798      page-faults                      #    5.657 /sec                   
+ 2,472,919,815,347      cycles                           #    3.684 GHz                    
+ 1,196,096,983,202      stalled-cycles-frontend          #   48.37% frontend cycles idle   
+ 6,590,733,926,285      instructions                     #    2.67  insn per cycle         
+                                                  #    0.18  stalled cycles per insn
+   953,492,585,416      branches                         #    1.420 G/sec                  
+    79,501,950,421      branch-misses                    #    8.34% of all branches        
+
+       7.433223406 seconds time elapsed
+#+end_example
+
+The reported CPU cores on the system are 192 CPUs, due to HyperThreading.
+Running test with 192 threads show that these CPUs are not "full" CPUs, and the
+system doesn't scale with number of CPUs above 96:
+ - The per producer speed drops to 73.072M ops/prod from 118.557M ops/prod
+
+#+begin_example
+12G:~/git/kernel/arthur/tools/testing/selftests/bpf$
+ sudo perf stat ./bench xdp-trait-get --producers=192 --affinity
+Setting up benchmark 'xdp-trait-get'...
+Benchmark 'xdp-trait-get' started.
+Iter   0 ( 57.087us): hits 13519.188M/s ( 70.412M/prod)
+Iter   1 (457.137us): hits 14054.115M/s ( 73.199M/prod)
+Iter   2 (-378.316us): hits 14039.101M/s ( 73.120M/prod)
+Iter   3 (-72.718us): hits 14031.350M/s ( 73.080M/prod)
+Iter   4 (-21.691us): hits 14024.394M/s ( 73.044M/prod)
+Iter   5 ( 26.080us): hits 14018.374M/s ( 73.012M/prod)
+Iter   6 (-35.672us): hits 14011.820M/s ( 72.978M/prod)
+Summary: throughput 14029.802 ± 17.074 M ops/s ( 73.072M ops/prod), latency   13.685 ns/op
+
+ Performance counter stats for './bench xdp-trait-get --producers=192 --affinity':
+
+      1,342,863.03 msec task-clock                       #  180.578 CPUs utilized          
+             1,932      context-switches                 #    1.439 /sec                   
+               192      cpu-migrations                   #    0.143 /sec                   
+             4,113      page-faults                      #    3.063 /sec                   
+ 4,725,974,445,934      cycles                           #    3.519 GHz                    
+ 2,041,693,724,793      stalled-cycles-frontend          #   43.20% frontend cycles idle   
+ 8,121,607,567,245      instructions                     #    1.72  insn per cycle         
+                                                  #    0.25  stalled cycles per insn
+ 1,175,169,451,227      branches                         #  875.122 M/sec                  
+    98,022,004,277      branch-misses                    #    8.34% of all branches        
+
+       7.436481789 seconds time elapsed
+#+end_example
+
+The all Core Boost Speed is still pretty good with 3.519 GHz, bit the drop in
+*1.72 insn per cycle* shows that we don't have "access" to all CPU resources.
+
