@@ -8,6 +8,7 @@ micro-benchmarking "traits" branch:
 And using selftest benchmark.
 
 * Table of Contents                                                     :toc:
+- [[#summary][Summary]]
 - [[#prototype-kernel-benchmarks][Prototype-Kernel benchmarks]]
   - [[#amd-cpu-bench_traits_simple---with-srso][AMD CPU bench_traits_simple - with SRSO]]
   - [[#amd-cpu-bench_traits_simple---with-srsoibpb][AMD CPU bench_traits_simple - with SRSO=IBPB]]
@@ -30,6 +31,27 @@ And using selftest benchmark.
   - [[#intel-xdp-trait-get][Intel: xdp-trait-get]]
   - [[#intel-xdp-trait-set][Intel: xdp-trait-set]]
   - [[#intel-xdp-trait-move][Intel: xdp-trait-move]]
+
+* Summary
+
+Summary table with nanosec per operation results:
+ - Generally traits performance is really good
+ - The side-channel mitigation SRSO hurts AMD performance
+
+|                    |  Intel CPU | AMD (IBPB) | AMD (SRSO) |
+| Bench name         | nanosec/op | nanosec/op | nanosec/op |
+|--------------------+------------+------------+------------|
+| xdp-trait-get      |      5.530 |      3.901 |      9.188 |
+| xdp-trait-set      |      7.538 |      4.941 |     10.050 |
+| xdp-trait-move     |     14.245 |      8.865 |     14.834 |
+|--------------------+------------+------------+------------|
+| Function overhead  |  Intel CPU | AMD (IBPB) | AMD (SRSO) |
+|--------------------+------------+------------+------------|
+| function_call_cost |      1.319 |      1.359 |      5.703 |
+| func_ptr_call      |      8.922 |      6.251 |     10.329 |
+
+For comparison and to understand how fast traits performance really is, the
+table also include the basic overhead of function calls.
 
 * Prototype-Kernel benchmarks
 
