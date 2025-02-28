@@ -7,6 +7,13 @@ micro-benchmarking "traits" branch:
 
 And using selftest benchmark.
 
+* Table of Contents                                                     :toc:
+- [[#prototype-kernel-benchmarks][Prototype-Kernel benchmarks]]
+  - [[#amd-cpu-bench_traits_simple---with-srso][AMD CPU bench_traits_simple - with SRSO]]
+- [[#bpf-selftests][BPF selftests]]
+  - [[#explaining-our-bench-extension][Explaining our bench extension]]
+  - [[#example-variable-results][Example: Variable results]]
+
 * Prototype-Kernel benchmarks
 
 ** AMD CPU bench_traits_simple - with SRSO
@@ -57,3 +64,80 @@ running the given traits operation. This is reported as "hits" to the harness.
 The BPF program is started via =bpf_prog_test_run_xdp()= (=bpf_test_run=) and
 harness will run that for default 7 iterations.
 
+** Example: Variable results
+
+On AMD testlab machine I was surprised to see variation in results:
+ - We see operations between 40.970M/s - 63.769M/s
+
+Using =perf stat= when running the results:
+#+begin_example
+12G:~/git/kernel/arthur/tools/testing/selftests/bpf$
+ sudo perf stat ./bench xdp-trait-get
+
+Setting up benchmark 'xdp-trait-get'...
+Benchmark 'xdp-trait-get' started.
+Iter   0 ( 80.753us): hits   41.597M/s ( 41.597M/prod)
+Iter   1 ( -9.643us): hits   40.970M/s ( 40.970M/prod)
+Iter   2 (  9.765us): hits   54.769M/s ( 54.769M/prod)
+Iter   3 ( 30.728us): hits   62.338M/s ( 62.338M/prod)
+Iter   4 ( 14.714us): hits   61.949M/s ( 61.949M/prod)
+Iter   5 (-52.588us): hits   63.283M/s ( 63.283M/prod)
+Iter   6 ( 20.652us): hits   63.769M/s ( 63.769M/prod)
+Summary: throughput   57.847 ± 8.899 M ops/s ( 57.847M ops/prod), latency   17.287 ns/op
+
+ Performance counter stats for './bench xdp-trait-get':
+
+          4,654.91 msec task-clock                       #    0.629 CPUs utilized          
+               334      context-switches                 #   71.752 /sec                   
+                 1      cpu-migrations                   #    0.215 /sec                   
+             3,222      page-faults                      #  692.172 /sec                   
+    13,976,805,892      cycles                           #    3.003 GHz                    
+     6,616,038,726      stalled-cycles-frontend          #   47.34% frontend cycles idle   
+    34,566,485,152      instructions                     #    2.47  insn per cycle         
+                                                  #    0.19  stalled cycles per insn
+     5,191,797,425      branches                         #    1.115 G/sec                  
+       426,294,938      branch-misses                    #    8.21% of all branches        
+
+       7.402855283 seconds time elapsed
+#+end_example
+
+There is clear indication that CPU frequency changes are happening.
+
+Notice that CPU were running at 3.003 GHz.
+ - Not too bad as base clock is 2.55 GHz
+ - But turbo boost allows this CPU to run at 3.7 GHz
+   - which is what we expected given our testlab is idle
+
+We are *very* happy to see 2.47 insn per cycle.
+
+Running this again we captured a case where CPU was only running at 2 GHz:
+#+begin_example
+12G:~/git/kernel/arthur/tools/testing/selftests/bpf$
+ sudo perf stat ./bench xdp-trait-get --producers=1
+
+Setting up benchmark 'xdp-trait-get'...
+Benchmark 'xdp-trait-get' started.
+Iter   0 ( 85.059us): hits   41.416M/s ( 41.416M/prod)
+Iter   1 (-21.881us): hits   40.931M/s ( 40.931M/prod)
+Iter   2 ( -1.060us): hits   41.240M/s ( 41.240M/prod)
+Iter   3 ( 24.778us): hits   42.809M/s ( 42.809M/prod)
+Iter   4 ( 84.358us): hits   43.516M/s ( 43.516M/prod)
+Iter   5 (-61.491us): hits   43.233M/s ( 43.233M/prod)
+Iter   6 (-38.777us): hits   42.892M/s ( 42.892M/prod)
+Summary: throughput   42.437 ± 1.082 M ops/s ( 42.437M ops/prod), latency   23.565 ns/op
+
+ Performance counter stats for './bench xdp-trait-get --producers=1':
+
+          5,347.78 msec task-clock                       #    0.721 CPUs utilized          
+               265      context-switches                 #   49.553 /sec                   
+                 2      cpu-migrations                   #    0.374 /sec                   
+             3,224      page-faults                      #  602.867 /sec                   
+    10,938,802,987      cycles                           #    2.045 GHz                    
+     5,497,305,036      stalled-cycles-frontend          #   50.26% frontend cycles idle   
+    26,863,637,718      instructions                     #    2.46  insn per cycle         
+                                                  #    0.20  stalled cycles per insn
+     4,077,116,526      branches                         #  762.394 M/sec                  
+       333,381,343      branch-misses                    #    8.18% of all branches        
+
+       7.420082002 seconds time elapsed
+#+end_example
