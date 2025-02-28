@@ -10,6 +10,7 @@ And using selftest benchmark.
 * Table of Contents                                                     :toc:
 - [[#prototype-kernel-benchmarks][Prototype-Kernel benchmarks]]
   - [[#amd-cpu-bench_traits_simple---with-srso][AMD CPU bench_traits_simple - with SRSO]]
+  - [[#intel-cpu-bench_traits_simple][Intel CPU bench_traits_simple]]
 - [[#bpf-selftests-challenges][BPF selftests: Challenges]]
   - [[#explaining-our-bench-extension][Explaining our bench extension]]
   - [[#example-variable-results][Example: Variable results]]
@@ -53,6 +54,30 @@ Raw data:
  time_bench: Type:func_ptr_call_cost Per elem: 26 cycles(tsc) 10.329 ns (step:0) - (measurement period time:0.103291046 sec time_interval:103291046) - (invoke count:10000000 tsc_interval:262995627)
  time_bench: Type:trait_set Per elem: 26 cycles(tsc) 10.597 ns (step:0) - (measurement period time:0.105978783 sec time_interval:105978783) - (invoke count:10000000 tsc_interval:269838374)
  time_bench: Type:trait_get Per elem: 24 cycles(tsc) 9.509 ns (step:0) - (measurement period time:0.095091553 sec time_interval:95091553) - (invoke count:10000000 tsc_interval:242118165)
+#+end_example
+
+** Intel CPU bench_traits_simple
+
+System:
+ - Kernel: 6.14.0-rc3-traits-009-bench+ #32
+ - CPU: Intel(R) Xeon(R) CPU E5-1650 v4 @ 3.60GHz
+
+| Test name          | Cycles | *Nanosec* |
+| branch: traits-NNN |    009 |       009 |
+|--------------------+--------+-----------|
+| function_call_cost |      4 |     1.319 |
+| func_ptr_call      |     32 |     8.922 |
+| trait_set          |     24 |     6.860 |
+| trait_get          |     20 |     5.799 |
+
+Raw data:
+#+begin_example
+ bench_traits_simple: Loaded
+ time_bench: Type:for_loop Per elem: 0 cycles(tsc) 0.276 ns (step:0) - (measurement period time:0.027666097 sec time_interval:27666097) - (invoke count:100000000 tsc_interval:99597952)
+ time_bench: Type:function_call_cost Per elem: 4 cycles(tsc) 1.319 ns (step:0) - (measurement period time:0.013197982 sec time_interval:13197982) - (invoke count:10000000 tsc_interval:47512377)
+ time_bench: Type:func_ptr_call_cost Per elem: 32 cycles(tsc) 8.922 ns (step:0) - (measurement period time:0.089226929 sec time_interval:89226929) - (invoke count:10000000 tsc_interval:321220014)
+ time_bench: Type:trait_set Per elem: 24 cycles(tsc) 6.860 ns (step:0) - (measurement period time:0.068603511 sec time_interval:68603511) - (invoke count:10000000 tsc_interval:246974781)
+ time_bench: Type:trait_get Per elem: 20 cycles(tsc) 5.799 ns (step:0) - (measurement period time:0.057993834 sec time_interval:57993834) - (invoke count:10000000 tsc_interval:208779525)
 #+end_example
 
 * BPF selftests: Challenges
@@ -375,12 +400,12 @@ Testlab: Device Under Test
  - Kernel: 6.14.0-rc3-traits-009-bench+ #32
  - Mitigation: Spec rstack overflow:   Not affected
 
-| Bench name     |  Intel CPU |             |                |
-|                | nanosec/op | Mops/second | insn per cycle |
-|----------------+------------+-------------+----------------|
-| xdp-trait-get  |      5.530 |     180.843 |           3.73 |
-| xdp-trait-set  |      7.538 |     132.653 |           3.59 |
-| xdp-trait-move |     14.245 |      70.201 |           3.13 |
+| Bench name     |  Intel CPU |         compared to |             |                |
+|                | nanosec/op | bench_traits_simple | Mops/second | insn per cycle |
+|----------------+------------+---------------------+-------------+----------------|
+| xdp-trait-get  |      5.530 |               5.799 |     180.843 |           3.73 |
+| xdp-trait-set  |      7.538 |               6.860 |     132.653 |           3.59 |
+| xdp-trait-move |     14.245 |                     |      70.201 |           3.13 |
 
 ** AMD: xdp-trait-get
 
