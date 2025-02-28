@@ -10,11 +10,18 @@ And using selftest benchmark.
 * Table of Contents                                                     :toc:
 - [[#prototype-kernel-benchmarks][Prototype-Kernel benchmarks]]
   - [[#amd-cpu-bench_traits_simple---with-srso][AMD CPU bench_traits_simple - with SRSO]]
-- [[#bpf-selftests][BPF selftests]]
+- [[#bpf-selftests-challenges][BPF selftests: Challenges]]
   - [[#explaining-our-bench-extension][Explaining our bench extension]]
   - [[#example-variable-results][Example: Variable results]]
   - [[#example-getting-turbo-boost-speeds][Example: Getting turbo-boost speeds]]
   - [[#example-scaling-to-96-cpu-cores][Example: Scaling to 96 CPU cores]]
+- [[#bpf-selftests-intro][BPF selftests: Intro]]
+- [[#bpf-selftests-amd-cpu-with-srso][BPF selftests: AMD CPU with SRSO]]
+  - [[#amd-xdp-trait-get][AMD: xdp-trait-get]]
+  - [[#amd-xdp-trait-set][AMD: xdp-trait-set]]
+  - [[#amd-xdp-trait-move][AMD: xdp-trait-move]]
+- [[#bpf-selftests-amd-cpu-with-ibpb][BPF selftests: AMD CPU with IBPB]]
+- [[#bpf-selftests-intel-cpu][BPF selftests: Intel CPU]]
 
 * Prototype-Kernel benchmarks
 
@@ -45,7 +52,7 @@ Raw data:
  time_bench: Type:trait_get Per elem: 24 cycles(tsc) 9.509 ns (step:0) - (measurement period time:0.095091553 sec time_interval:95091553) - (invoke count:10000000 tsc_interval:242118165)
 #+end_example
 
-* BPF selftests
+* BPF selftests: Challenges
 
 Under =tools/testing/selftests/bpf/= there is a "bench" program "harness" that
 can be extended with benchmarks.
@@ -270,4 +277,84 @@ Summary: throughput 14029.802 ± 17.074 M ops/s ( 73.072M ops/prod), latency   1
 
 The all Core Boost Speed is still pretty good with 3.519 GHz, bit the drop in
 *1.72 insn per cycle* shows that we don't have "access" to all CPU resources.
+
+* BPF selftests: Intro
+
+The =bench= program under =tools/testing/selftests/bpf/= is used for
+benchmarking in this section.
+
+As explained above, we run =bench= with parameters:
+ - =--producers=2= to avoid slow GHz state
+ - =--affinity= to get more stable results
+
+* BPF selftests: AMD CPU with SRSO
+
+Testlab: Device Under Test
+ - CPU: AMD EPYC 9684X 96-Core Processor
+ - Kernel: 6.14.0-rc3-traits-009-bench+ #32
+ - Mitigation (SRSO): Spec rstack overflow:   Mitigation; Safe RET
+
+| Bench name     | AMD w/SRSO |             |
+|                | nanosec/op | Mops/second |
+|----------------+------------+-------------|
+| xdp-trait-get  |      9.188 |     108.843 |
+| xdp-trait-set  |     10.050 |      99.503 |
+| xdp-trait-move |     14.834 |      67.412 |
+
+** AMD: xdp-trait-get
+
+Raw data: 'xdp-trait-get'
+#+begin_example
+12G:~/git/kernel/arthur/tools/testing/selftests/bpf$ sudo ./bench xdp-trait-get --producers=2 --affinity
+Setting up benchmark 'xdp-trait-get'...
+Benchmark 'xdp-trait-get' started.
+Iter   0 ( 76.345us): hits  209.414M/s (104.707M/prod)
+Iter   1 (-15.912us): hits  217.753M/s (108.877M/prod)
+Iter   2 ( 15.034us): hits  217.597M/s (108.798M/prod)
+Iter   3 (-16.313us): hits  217.844M/s (108.922M/prod)
+Iter   4 (  5.259us): hits  217.579M/s (108.789M/prod)
+Iter   5 ( 32.370us): hits  217.743M/s (108.871M/prod)
+Iter   6 (-32.117us): hits  217.607M/s (108.803M/prod)
+Summary: throughput  217.687 ± 0.108 M ops/s (108.843M ops/prod), latency    9.188 ns/op
+#+end_example
+
+** AMD: xdp-trait-set
+
+Raw data: 'xdp-trait-set'
+#+begin_example
+12G:~/git/kernel/arthur/tools/testing/selftests/bpf$
+ sudo ./bench xdp-trait-set --producers=2 --affinity
+Setting up benchmark 'xdp-trait-set'...
+Benchmark 'xdp-trait-set' started.
+Iter   0 ( 73.182us): hits  185.096M/s ( 92.548M/prod)
+Iter   1 ( -9.283us): hits  199.012M/s ( 99.506M/prod)
+Iter   2 ( -3.644us): hits  199.011M/s ( 99.505M/prod)
+Iter   3 (  9.916us): hits  198.988M/s ( 99.494M/prod)
+Iter   4 ( 54.183us): hits  198.999M/s ( 99.500M/prod)
+Iter   5 (-15.882us): hits  199.003M/s ( 99.502M/prod)
+Iter   6 ( 31.618us): hits  199.014M/s ( 99.507M/prod)
+Summary: throughput  199.007 ± 0.010 M ops/s ( 99.503M ops/prod), latency   10.050 ns/op
+#+end_example
+
+** AMD: xdp-trait-move
+
+Raw data: 'xdp-trait-move'
+#+begin_example
+jesper@12G:~/git/kernel/arthur/tools/testing/selftests/bpf$
+ sudo perf stat ./bench xdp-trait-move --producers=2 --affinity
+Setting up benchmark 'xdp-trait-move'...
+Benchmark 'xdp-trait-move' started.
+Iter   0 ( 92.501us): hits  129.878M/s ( 64.939M/prod)
+Iter   1 ( 47.593us): hits  134.704M/s ( 67.352M/prod)
+Iter   2 (-72.067us): hits  134.930M/s ( 67.465M/prod)
+Iter   3 ( 19.781us): hits  134.917M/s ( 67.459M/prod)
+Iter   4 ( 10.196us): hits  134.739M/s ( 67.369M/prod)
+Iter   5 ( 26.832us): hits  134.936M/s ( 67.468M/prod)
+Iter   6 (-35.602us): hits  134.715M/s ( 67.357M/prod)
+Summary: throughput  134.823 ± 0.114 M ops/s ( 67.412M ops/prod), latency   14.834 ns/op
+#+end_example
+
+* BPF selftests: AMD CPU with IBPB
+
+* BPF selftests: Intel CPU
 
