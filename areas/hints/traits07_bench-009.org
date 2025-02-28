@@ -10,6 +10,7 @@ And using selftest benchmark.
 * Table of Contents                                                     :toc:
 - [[#prototype-kernel-benchmarks][Prototype-Kernel benchmarks]]
   - [[#amd-cpu-bench_traits_simple---with-srso][AMD CPU bench_traits_simple - with SRSO]]
+  - [[#amd-cpu-bench_traits_simple---with-srsoibpb][AMD CPU bench_traits_simple - with SRSO=IBPB]]
   - [[#intel-cpu-bench_traits_simple][Intel CPU bench_traits_simple]]
 - [[#bpf-selftests-challenges][BPF selftests: Challenges]]
   - [[#explaining-our-bench-extension][Explaining our bench extension]]
@@ -21,11 +22,14 @@ And using selftest benchmark.
   - [[#amd-xdp-trait-get][AMD: xdp-trait-get]]
   - [[#amd-xdp-trait-set][AMD: xdp-trait-set]]
   - [[#amd-xdp-trait-move][AMD: xdp-trait-move]]
-- [[#bpf-selftests-amd-cpu-with-ibpb][BPF selftests: AMD CPU with IBPB]]
+- [[#bpf-selftests-amd-cpu-with-srsoibpb][BPF selftests: AMD CPU with SRSO=IBPB]]
+  - [[#amd-ibpb-xdp-trait-get][AMD-IBPB: xdp-trait-get]]
+  - [[#amd-ibpb-xdp-trait-set][AMD-IBPB: xdp-trait-set]]
+  - [[#amd-ibpb-xdp-trait-move][AMD-IBPB: xdp-trait-move]]
 - [[#bpf-selftests-intel-cpu][BPF selftests: Intel CPU]]
-  - [[#amd-xdp-trait-get-1][AMD: xdp-trait-get]]
-  - [[#amd-xdp-trait-set-1][AMD: xdp-trait-set]]
-  - [[#amd-xdp-trait-move-1][AMD: xdp-trait-move]]
+  - [[#intel-xdp-trait-get][Intel: xdp-trait-get]]
+  - [[#intel-xdp-trait-set][Intel: xdp-trait-set]]
+  - [[#intel-xdp-trait-move][Intel: xdp-trait-move]]
 
 * Prototype-Kernel benchmarks
 
@@ -54,6 +58,35 @@ Raw data:
  time_bench: Type:func_ptr_call_cost Per elem: 26 cycles(tsc) 10.329 ns (step:0) - (measurement period time:0.103291046 sec time_interval:103291046) - (invoke count:10000000 tsc_interval:262995627)
  time_bench: Type:trait_set Per elem: 26 cycles(tsc) 10.597 ns (step:0) - (measurement period time:0.105978783 sec time_interval:105978783) - (invoke count:10000000 tsc_interval:269838374)
  time_bench: Type:trait_get Per elem: 24 cycles(tsc) 9.509 ns (step:0) - (measurement period time:0.095091553 sec time_interval:95091553) - (invoke count:10000000 tsc_interval:242118165)
+#+end_example
+
+** AMD CPU bench_traits_simple - with SRSO=IBPB
+
+System:
+ - Kernel: 6.14.0-rc3-traits-009-bench+
+ - CPU: AMD EPYC 9684X 96-Core
+ - cmdline: spec_rstack_overflow=ibpb
+
+Traits compare table: between 6.13.0-traits-006-skb and this kernel
+ - data for 6.13.0-traits-006-skb from [[file:../mem/page_pool08_bench_AMD.org]]
+
+| Test name          | Cycles |     |      | *Nanosec* |       |       |      % |
+| branch: traits-NNN |    006 | 009 | diff |       006 |   009 |  diff | change |
+|--------------------+--------+-----+------+-----------+-------+-------+--------|
+| function_call_cost |      3 |   3 |    0 |     1.356 | 1.359 |  3e-3 |    0.2 |
+| func_ptr_call      |     15 |  15 |    0 |     6.243 | 6.251 |  8e-3 |    0.1 |
+| trait_set          |      8 |  11 |    3 |     3.258 | 4.618 |  1.36 |   41.7 |
+| trait_get          |      7 |   9 |    2 |     2.985 | 3.672 | 0.687 |   23.0 |
+#+TBLFM: $4=$3-$2::$7=$6-$5::$8=(($7/$5)*100);%.1f
+
+Raw data:
+#+begin_example
+ bench_traits_simple: Loaded
+ time_bench: Type:for_loop Per elem: 0 cycles(tsc) 0.321 ns (step:0) - (measurement period time:0.032110158 sec time_interval:32110158) - (invoke count:100000000 tsc_interval:81757004)
+ time_bench: Type:function_call_cost Per elem: 3 cycles(tsc) 1.359 ns (step:0) - (measurement period time:0.013593010 sec time_interval:13593010) - (invoke count:10000000 tsc_interval:34609059)
+ time_bench: Type:func_ptr_call_cost Per elem: 15 cycles(tsc) 6.251 ns (step:0) - (measurement period time:0.062519164 sec time_interval:62519164) - (invoke count:10000000 tsc_interval:159183699)
+ time_bench: Type:trait_set Per elem: 11 cycles(tsc) 4.618 ns (step:0) - (measurement period time:0.046181406 sec time_interval:46181406) - (invoke count:10000000 tsc_interval:117584427)
+ time_bench: Type:trait_get Per elem: 9 cycles(tsc) 3.672 ns (step:0) - (measurement period time:0.036724314 sec time_interval:36724314) - (invoke count:10000000 tsc_interval:93505925)
 #+end_example
 
 ** Intel CPU bench_traits_simple
@@ -383,15 +416,130 @@ Iter   6 (-35.602us): hits  134.715M/s ( 67.357M/prod)
 Summary: throughput  134.823 ± 0.114 M ops/s ( 67.412M ops/prod), latency   14.834 ns/op
 #+end_example
 
-* BPF selftests: AMD CPU with IBPB
+* BPF selftests: AMD CPU with SRSO=IBPB
 
 Booting kernel with cmdline: =spec_rstack_overflow=ibpb=
 
 Testlab: Device Under Test
  - CPU: AMD EPYC 9684X 96-Core Processor
  - Kernel: 6.14.0-rc3-traits-009-bench+ #32
+ - Mitigation (SRSO): Spec rstack overflow:   Mitigation; IBPB
 
 Results delayed as testlab have boot issues.
+ - disabling CONFIG_AMD_AE4DMA fixed boot issue
+ - [[https://lore.kernel.org/all/45ddbb23-bf92-4d46-84b6-6c80886d4278@kernel.org/][reported here]]
+
+| (SRSO=IBPB)    |    AMD CPU |         compared to |             |                |
+| Bench name     | nanosec/op | bench_traits_simple | Mops/second | insn per cycle |
+|----------------+------------+---------------------+-------------+----------------|
+| xdp-trait-get  |      3.901 |               3.672 |     256.331 |           5.67 |
+| xdp-trait-set  |      4.941 |               4.618 |     202.377 |           5.79 |
+| xdp-trait-move |      8.865 |                     |     112.804 |           5.61 |
+
+** AMD-IBPB: xdp-trait-get
+
+Below *5.67 insn per cycle* is beyond good it is amazing.
+
+Notice: how the *stalled-cycles-frontend* are basically gone
+ - which is a really good sign.
+ - =0.00  stalled cycles per insn=
+
+Raw data:
+#+begin_example
+12G:~/git/kernel/arthur/tools/testing/selftests/bpf$
+ sudo perf stat ./bench xdp-trait-get --producers=2 --affinity
+Setting up benchmark 'xdp-trait-get'...
+Benchmark 'xdp-trait-get' started.
+Iter   0 ( 93.943us): hits  466.466M/s (233.233M/prod)
+Iter   1 (-20.609us): hits  525.971M/s (262.985M/prod)
+Iter   2 ( 15.986us): hits  526.082M/s (263.041M/prod)
+Iter   3 (-16.182us): hits  526.089M/s (263.044M/prod)
+Iter   4 (  7.924us): hits  526.106M/s (263.053M/prod)
+Iter   5 ( 24.278us): hits  525.957M/s (262.979M/prod)
+Iter   6 (  0.444us): hits  445.760M/s (222.880M/prod)
+Summary: throughput  512.662 ± 32.775 M ops/s (256.331M ops/prod), latency    3.901 ns/op
+
+ Performance counter stats for './bench xdp-trait-get --producers=2 --affinity':
+
+         13,776.01 msec task-clock                       #    1.911 CPUs utilized          
+                97      context-switches                 #    7.041 /sec                   
+                 2      cpu-migrations                   #    0.145 /sec                   
+             3,230      page-faults                      #  234.466 /sec                   
+    50,380,800,494      cycles                           #    3.657 GHz                    
+       130,944,516      stalled-cycles-frontend          #    0.26% frontend cycles idle   
+   285,690,726,548      instructions                     #    5.67  insn per cycle         
+                                                  #    0.00  stalled cycles per insn
+    35,894,608,757      branches                         #    2.606 G/sec                  
+         1,892,287      branch-misses                    #    0.01% of all branches        
+
+       7.209982393 seconds time elapsed
+#+end_example
+
+** AMD-IBPB: xdp-trait-set
+
+Raw data:
+#+begin_example
+12G:~/git/kernel/arthur/tools/testing/selftests/bpf$
+ sudo perf stat ./bench xdp-trait-set --producers=2 --affinity
+Setting up benchmark 'xdp-trait-set'...
+Benchmark 'xdp-trait-set' started.
+Iter   0 ( 80.774us): hits  359.651M/s (179.825M/prod)
+Iter   1 ( -3.113us): hits  382.031M/s (191.016M/prod)
+Iter   2 (  7.724us): hits  409.317M/s (204.658M/prod)
+Iter   3 ( -6.117us): hits  409.243M/s (204.621M/prod)
+Iter   4 (  5.891us): hits  409.298M/s (204.649M/prod)
+Iter   5 ( 22.856us): hits  409.301M/s (204.650M/prod)
+Iter   6 (-27.829us): hits  409.331M/s (204.666M/prod)
+Summary: throughput  404.753 ± 11.132 M ops/s (202.377M ops/prod), latency    4.941 ns/op
+
+ Performance counter stats for './bench xdp-trait-set --producers=2 --affinity':
+
+         13,876.05 msec task-clock                       #    1.924 CPUs utilized          
+                89      context-switches                 #    6.414 /sec                   
+                 2      cpu-migrations                   #    0.144 /sec                   
+             3,229      page-faults                      #  232.703 /sec                   
+    50,950,766,208      cycles                           #    3.672 GHz                    
+       124,535,600      stalled-cycles-frontend          #    0.24% frontend cycles idle   
+   295,008,221,927      instructions                     #    5.79  insn per cycle         
+                                                  #    0.00  stalled cycles per insn
+    39,497,548,031      branches                         #    2.846 G/sec                  
+         1,716,045      branch-misses                    #    0.00% of all branches        
+
+       7.211973260 seconds time elapsed
+#+end_example
+
+** AMD-IBPB: xdp-trait-move
+
+Raw data:
+#+begin_example
+12G:~/git/kernel/arthur/tools/testing/selftests/bpf$
+ sudo perf stat ./bench xdp-trait-move --producers=2 --affinity
+Setting up benchmark 'xdp-trait-move'...
+Benchmark 'xdp-trait-move' started.
+Iter   0 ( 89.176us): hits  228.120M/s (114.060M/prod)
+Iter   1 (-11.465us): hits  224.503M/s (112.251M/prod)
+Iter   2 ( 24.189us): hits  214.575M/s (107.287M/prod)
+Iter   3 (-22.332us): hits  240.725M/s (120.363M/prod)
+Iter   4 ( 18.300us): hits  240.726M/s (120.363M/prod)
+Iter   5 ( 29.556us): hits  232.773M/s (116.387M/prod)
+Iter   6 (-28.090us): hits  200.346M/s (100.173M/prod)
+Summary: throughput  225.608 ± 15.936 M ops/s (112.804M ops/prod), latency    8.865 ns/op
+
+ Performance counter stats for './bench xdp-trait-move --producers=2 --affinity':
+
+         13,388.06 msec task-clock                       #    1.855 CPUs utilized          
+               153      context-switches                 #   11.428 /sec                   
+                 2      cpu-migrations                   #    0.149 /sec                   
+             3,230      page-faults                      #  241.260 /sec                   
+    49,200,372,358      cycles                           #    3.675 GHz                    
+       119,173,311      stalled-cycles-frontend          #    0.24% frontend cycles idle   
+   276,016,209,423      instructions                     #    5.61  insn per cycle         
+                                                  #    0.00  stalled cycles per insn
+    34,485,424,976      branches                         #    2.576 G/sec                  
+         1,503,101      branch-misses                    #    0.00% of all branches        
+
+       7.216969228 seconds time elapsed
+#+end_example
 
 * BPF selftests: Intel CPU
 
@@ -407,7 +555,7 @@ Testlab: Device Under Test
 | xdp-trait-set  |      7.538 |               6.860 |     132.653 |           3.59 |
 | xdp-trait-move |     14.245 |                     |      70.201 |           3.13 |
 
-** AMD: xdp-trait-get
+** Intel: xdp-trait-get
 
 Raw data:
 #+begin_example
@@ -439,7 +587,7 @@ Summary: throughput  361.685 ± 0.541 M ops/s (180.843M ops/prod), latency    5.
 
 Very impressive to see Intel CPU operating with *3.73  insn per cycle*.
 
-** AMD: xdp-trait-set
+** Intel: xdp-trait-set
 
 Raw data:
 #+begin_example
@@ -469,7 +617,7 @@ Summary: throughput  265.305 ± 2.316 M ops/s (132.653M ops/prod), latency    7.
        7.255810851 seconds time elapsed
 #+end_example
 
-** AMD: xdp-trait-move
+** Intel: xdp-trait-move
 
 Raw data:
 #+begin_example
