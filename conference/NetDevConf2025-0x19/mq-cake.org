@@ -16,14 +16,16 @@ This presentation is for Netdevconf 0x19 in Zagreb, Croatia
 
 * Outline / ideas                                                  :noexport:
 
-
 * Motivation														 :export:
-
+#+ATTR_REVEAL: :frag (appear)
 - Network speeds >> CPU speeds
 - Scaling software rate limiting is challenging
-  - ..., especially enforcing a global rate limit on a network interface
+    #+ATTR_REVEAL: :frag (appear)
+    - ..., especially enforcing a global rate limit on a network interface
+#+ATTR_REVEAL: :frag (appear)
 - Existing qdiscs in the kernel cannot keep up with network speeds
-  - ..., and do not scale
+    #+ATTR_REVEAL: :frag (appear)
+    - ..., and do not scale
 
 ** CAKE and HTB													 :export:
 
@@ -31,11 +33,13 @@ This presentation is for Netdevconf 0x19 in Zagreb, Croatia
 #+CAPTION: Global rate limit: 20 Gbps, UDP flood with full MTU-sized packets
 [[file:htb_cake_scaling.svg]]
 
-* Motivation (cont.)														 :export:
+** Motivation (cont.)														 :export:
+#+ATTR_REVEAL: :frag (appear)
 - A solution like EDT-BPF is great for rate limiting flow aggregates on end hosts
-  - ..., but falls short in enforcing a global rate limit
-  - builds a virtual FIFO across queues
-  - negative effects on latencies
+    #+ATTR_REVEAL: :frag (appear)
+    - ..., but falls short in enforcing a global rate limit
+    - builds a virtual FIFO across queues
+    - negative effects on latencies
 
 ** EDT-BPF													 :export:
 
@@ -45,6 +49,7 @@ This presentation is for Netdevconf 0x19 in Zagreb, Croatia
 
 * We present: mq-cake                                                            :export:
 
+#+ATTR_REVEAL: :frag (appear)
 - Multi-queue compatible variant of sch_cake
 - Enforce high rate limits while keeping queues smart
 
@@ -61,17 +66,19 @@ This presentation is for Netdevconf 0x19 in Zagreb, Croatia
 [[file:mq-cake-paper/images/mq_cake_architecture.svg]]
 
 ** Algorithm                                                            :export:
+#+ATTR_REVEAL: :frag (appear)
 - Every instance loops over linked list in certain intervals
   - Interval called synctime
 - Determine if other mq-cake instances are active
 - Calculate new local rate:
-#+ATTR_html: :height 120
-[[file:equation.svg]]
+#+ATTR_REVEAL: :frag (appear)
+$$rate_{local}=\frac{rate_{global}}{\text{# active qdiscs}}$$
 
 ** Active qdisc
 - A qdisc is considered active if:
-  - packets are backlogged
-  - packets were sent since last scan
+    #+ATTR_REVEAL: :frag (appear)
+    - packets are backlogged
+    - packets were sent since last scan
 
 * Evaluation :export:
 ** Rate Conformance
@@ -127,6 +134,7 @@ This presentation is for Netdevconf 0x19 in Zagreb, Croatia
 * Outlook :export:
 
 ** Future Work
+#+ATTR_REVEAL: :frag (appear)
 - Tackle imbalance issue
 - Mitigate overshoot during switching events
 - Test under real-world conditions
