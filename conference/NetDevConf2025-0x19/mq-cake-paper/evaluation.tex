@@ -111,7 +111,7 @@ If the FQ buffer sizes are not properly adjusted, FQ may drop packets unnoticed 
     \caption{Achieved throughput and deviation from the target rate at various rate limits under
     network traffic containing only full MTU-sized packets}\label{fig:accuracy}
 \end{figure*}
-The most pressing questions about the presented approach is: How accurately does it enforces the configured rate limit? And how does it scale with an increasing number of hardware queues?
+The most pressing questions about the presented approach is: How accurately does it enforce the configured rate limit? And how does it scale with an increasing number of hardware queues?
 In this section, we present an in-depth analysis of \textit{mq-cake}'s performance using an unresponsive UDP traffic flood and compare it to the single-queue sch\_cake and sch\_htb. 
 We demonstrate that \textit{mq-cake} not only achieves excellent rate conformance but also exhibits near-perfect scaling properties.
 
@@ -253,7 +253,7 @@ A greater number of transmission queues increases the \textit{mq-cake} instances
 \end{figure}
 
 The previous experiments are based on unresponsive UDP traffic.
-To review how these approaches perform with a packet-loss sensitive transport protocol, we inspect the rate conformance under TCP traffic and the resulting latencies using the network testing tool Flent~\cite{flent} and the TCP cubic~\cite{tcp-cubic} algorithm.
+To review how these approaches perform with a packet-loss sensitive transport protocol, we inspect the rate conformance under TCP traffic and the resulting latencies using the network testing tool Flent~\cite{flent} and the TCP Cubic~\cite{tcp-cubic} algorithm.
 %
 Flent's tcp\_nup test is executed using 1024 TCP upload streams.
 %
@@ -344,9 +344,9 @@ On the other hand, higher \textit{synctimes} lead to less CPU load but also incr
 %
 To balance between CPU load and accuracy, the experiments show that a \textit{synctime} value between 100--200$\mu s$ is ideal.
 
-Looking ahead, we aim to further explore solutions for addressing load imbalances between \textit{mq-cake} instances.
+Looking ahead, we aim to further explore solutions for addressing load imbalances between \textit{mq-cake} instances as well as approaches to mitigate overshooting above the configured rate limit during switching events.
 %
-In initial tests, we could already observe that it is possible to add a rebalance mechanism within \textit{mq-cake}, which can adjust local rate limit estimations.
+Concerning imbalances, in initial tests, we could already observe that it is feasible to add a rebalance mechanism to \textit{mq-cake}, which can improve local rate limit estimations.
 %
 In addition, we seek to investigate automated approaches to adjust and configure the \textit{synctime} interval and other internal configurations such as for example the \textit{memlimit}.
 %

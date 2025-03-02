@@ -2,6 +2,7 @@
 % Modified from ICCC.tex by B. Bogart
 \documentclass[letterpaper]{article}
 \usepackage{isea}
+\usepackage{balance}
 \usepackage[pdftex]{graphicx}
 \usepackage{times}
 \usepackage{helvet}
@@ -18,7 +19,7 @@
 /Title (mq-cake: Scaling software rate limiting across CPU cores)  
 /Author (Jonas Köppeler, Toke H\o{}iland-J\o{}rgensen, Stefan Schmid)}
 \title{mq-cake: Scaling software rate limiting across CPU cores}
-\author{Jonas Köppeler\\TU Berlin \And Toke H\o{}iland-J\o{}rgensen\\RedHat \And Stefan Schmid \\ TU Berlin
+\author{Jonas Köppeler\\TU Berlin \\j.koeppeler@tu-berlin.de \And Toke H\o{}iland-J\o{}rgensen\\RedHat\\toke@redhat.com \And Stefan Schmid \\ TU Berlin\\stefan.schmid@tu-berlin.de
 }
 \setcounter{secnumdepth}{0}
 
@@ -32,8 +33,10 @@ rate limiting, qdisc, cake
 \input{implementation.tex}
 \input{evaluation.tex}
 \input{conclusion.tex}
+\input{ack.tex}
 
 \bibliographystyle{isea}
+\balance
 \bibliography{isea}
 
 \end{document}
