@@ -1,5 +1,5 @@
 # -*- fill-column: 79; -*-
-#+TITLE: mq-cake
+#+TITLE: Scaling Software Rate Limiting across CPU cores
 #+AUTHOR: Jonas Köppeler <j.koeppeler@tu-berlin.de> and Toke Høiland-Jørgensen <toke@redhat.com>
 #+EMAIL: j.koeppeler@tu-berlin.de, toke@redhat.com
 #+REVEAL_THEME: white
