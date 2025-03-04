@@ -139,6 +139,107 @@ $$rate_{local}=\frac{rate_{global}}{\text{# active qdiscs}}$$
 
 ** Upstreaming Plans
 
+Current implementation:
+
+- sch_cake walks qdisc tree
+- build data structure across sibling qdiscs
+
+For upstreaming, we proposed a "shared qdisc state API"
+
+
+
+** Shared qdisc state API
+
+#+HTML: <small>
+#+ATTR_HTML: :style background-color: #002b36; color: #93a1a1; width: 700px; padding: 1em;
+#+begin_src diff
+
+--- a/include/net/sch_generic.h
++++ b/include/net/sch_generic.h
+@@ -70,6 +70,14 @@ struct qdisc_skb_head {
+        spinlock_t      lock;
+ };
+ 
++struct qdisc_shared_data {
++       struct list_head         head;
++       const struct Qdisc_ops  *owner;
++       struct rcu_head  rcu;
++       refcount_t               refs;
++       u8                       data[];
++};
++
+ struct Qdisc {
+        int                     (*enqueue)(struct sk_buff *skb,
+                                           struct Qdisc *sch,
+@@ -109,7 +117,7 @@ struct Qdisc {
+        struct gnet_stats_queue __percpu *cpu_qstats;
+        int                     pad;
+        refcount_t              refcnt;
+-
++       struct list_head        shared_state;
+        /*
+         * For performance sake on SMP, we put highly modified fields at the end
+         */
+@@ -289,6 +297,7 @@ struct Qdisc_ops {
+        const struct Qdisc_class_ops    *cl_ops;
+        char                    id[IFNAMSIZ];
+        int                     priv_size;
++       int                     shared_size;
+        unsigned int            static_flags;
+ 
+        int                     (*enqueue)(struct sk_buff *skb,
+@@ -319,6 +328,9 @@ struct Qdisc_ops {
+        u32                     (*ingress_block_get)(struct Qdisc *sch);
+        u32                     (*egress_block_get)(struct Qdisc *sch);
+ 
++       void                    (*shared_init)(void *shared);
++       void                    (*shared_assign)(struct Qdisc *, void *shared);
++
+        struct module           *owner;
+ };
+
+#+end_src
+#+HTML: </small>
+
+** Shared qdisc state API (cont.)
+
+#+HTML: <small>
+#+ATTR_HTML: :style background-color: #002b36; color: #93a1a1; width: 800px; padding: 1em;
+#+begin_src diff
+--- a/net/sched/sch_mq.c
++++ b/net/sched/sch_mq.c
+@@ -178,6 +189,15 @@ static int mq_graft(struct Qdisc *sch, unsigned long cl, struct Qdisc *new,
+        struct netdev_queue *dev_queue = mq_queue_get(sch, cl);
+        struct tc_mq_qopt_offload graft_offload;
+        struct net_device *dev = qdisc_dev(sch);
++       struct qdisc_shared_data *shared;
++
++       if (new && new->ops->shared_size) {
++               shared = qdisc_shared_get(sch, new->ops);
++               if (!shared)
++                       return -ENOMEM;
++
++               new->ops->shared_assign(new, &shared->data);
++       }
+@@ -185,6 +205,12 @@ static int mq_graft(struct Qdisc *sch, unsigned long cl, struct Qdisc *new,
+        *old = dev_graft_qdisc(dev_queue, new);
+        if (new)
+                new->flags |= TCQ_F_ONETXQUEUE | TCQ_F_NOPARENT;
++
++       if (*old && (*old)->ops->shared_size) {
++               (*old)->ops->shared_assign(*old, NULL);
++               qdisc_shared_put(sch, (*old)->ops);
++       }
++
+        if (dev->flags & IFF_UP)
+                dev_activate(dev);
+
+#+end_src
+#+HTML: </small>
+
+Full patch:
+
+https://git.kernel.org/toke/l/mq-cake-api-experiments
 
 
 * Emacs end-tricks                                                 :noexport:
