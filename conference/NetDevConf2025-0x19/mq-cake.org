@@ -21,30 +21,31 @@ This presentation is for Netdevconf 0x19 in Zagreb, Croatia
 - Network speeds >> CPU speeds
 - Scaling software rate limiting is challenging
     #+ATTR_REVEAL: :frag (appear)
-    - ..., especially enforcing a global rate limit on a network interface
+    - ... especially enforcing a global rate limit on a network interface
+
 #+ATTR_REVEAL: :frag (appear)
 - Existing qdiscs in the kernel cannot keep up with network speeds
     #+ATTR_REVEAL: :frag (appear)
-    - ..., and do not scale
+    - ... and do not scale
 
 ** CAKE and HTB													 :export:
 
 #+ATTR_html: :height 620
-#+CAPTION: Global rate limit: 20 Gbps, UDP flood with full MTU-sized packets
+#+CAPTION: 20 Gbps rate limit, UDP flood with full MTU-sized packets
 [[file:htb_cake_scaling.svg]]
 
 ** Motivation (cont.)														 :export:
 #+ATTR_REVEAL: :frag (appear)
 - A solution like EDT-BPF is great for rate limiting flow aggregates on end hosts
     #+ATTR_REVEAL: :frag (appear)
-    - ..., but falls short in enforcing a global rate limit
+    - ... but falls short in enforcing a global rate limit
     - builds a virtual FIFO across queues
     - negative effects on latencies
 
 ** EDT-BPF													 :export:
 
 #+ATTR_html: :height 620
-#+CAPTION: Global rate limit: 20 Gbps, 1024 TCP streams
+#+CAPTION: 20 Gbps rate limit, 1024 TCP streams
 [[file:edt-global-rate-limit.svg]]
 
 * We present: mq-cake                                                            :export:
@@ -83,18 +84,18 @@ $$rate_{local}=\frac{rate_{global}}{\text{# active qdiscs}}$$
 * Evaluation :export:
 ** Rate Conformance
 #+ATTR_html: :height 620
-#+CAPTION: 40 queues, UDP-flood with full MTU-sized packets
-[[file:mq-cake-paper/images/tp_rate_conformance_htb_cake_mq-cake.svg]]
+#+CAPTION: 40 queues, UDP flood with full MTU-sized packets
+[[file:rate_conformance_slides.svg]]
 
 ** Deviation
 #+ATTR_html: :height 620
-#+CAPTION: 40 queues, UDP-flood with full MTU-sized packets
-[[file:mq-cake-paper/images/tp_deviation_perc_htb_cake_mq-cake.svg]]
+#+CAPTION: 40 queues, UDP flood with full MTU-sized packets
+[[file:deviation_slides.svg]]
 
 ** Scaling
 #+ATTR_html: :height 620
-#+CAPTION: 40 queues, UDP-flood with 64 byte packets
-[[file:mq-cake-paper/images/txq_scaling_64_htb_cake_mq-cake.svg]]
+#+CAPTION: 20 Gbps rate limit, UDP flood with 64 byte packets
+[[file:txq_slides.svg]]
 
 ** Latencies
 #+ATTR_html: :height 620
@@ -106,17 +107,17 @@ $$rate_{local}=\frac{rate_{global}}{\text{# active qdiscs}}$$
 
 ** Synctime 10us
 #+ATTR_html: :height 620
-#+CAPTION: Switching from 4 to 40 flows
+#+CAPTION: Switching from 4 to 40 active qdiscs
 [[file:mq-cake-paper/images/switching_10us.svg]]
 
 ** Synctime 100us
 #+ATTR_html: :height 620
-#+CAPTION: Switching from 4 to 40 flows
+#+CAPTION: Switching from 4 to 40 active qdiscs
 [[file:mq-cake-paper/images/switching_100us.svg]]
 
 ** Synctime 100ms
 #+ATTR_html: :height 620
-#+CAPTION: Switching from 4 to 40 flows
+#+CAPTION: Switching from 4 to 40 active qdiscs
 [[file:mq-cake-paper/images/switching_100ms.svg]]
 
 * Current Limitations :export:
@@ -124,12 +125,12 @@ $$rate_{local}=\frac{rate_{global}}{\text{# active qdiscs}}$$
 ** Imbalances
 #+ATTR_html: :height 620
 #+CAPTION: Imbalance in traffic load between qdiscs
-[[file:mq-cake-paper/images/txq_imbalance_1514.svg]]
+[[file:imbalances.svg]]
 
 ** Synchronization overhead
 #+ATTR_html: :height 620
 #+CAPTION: Lower synctimes lead to higher CPU overhead
-[[file:mq-cake-paper/images/sync_txq_64.svg]]
+[[file:sync_overhead.svg]]
 
 * Outlook :export:
 
