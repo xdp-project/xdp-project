@@ -16,7 +16,7 @@ This presentation is for Netdevconf 0x19 in Zagreb, Croatia
 
 * Outline / ideas                                                  :noexport:
 
-* Motivation														 :export:
+* Motivation                                                         :export:
 #+ATTR_REVEAL: :frag (appear)
 - Network speeds >> CPU speeds
 - Scaling software rate limiting is challenging
@@ -28,13 +28,13 @@ This presentation is for Netdevconf 0x19 in Zagreb, Croatia
     #+ATTR_REVEAL: :frag (appear)
     - ... and do not scale
 
-** CAKE and HTB													 :export:
+** CAKE and HTB                                                     :export:
 
 #+ATTR_html: :height 620
 #+CAPTION: 20 Gbps rate limit, UDP flood with full MTU-sized packets
 [[file:htb_cake_scaling.svg]]
 
-** Motivation (cont.)														 :export:
+** Motivation (cont.)                                               :export:
 #+ATTR_REVEAL: :frag (appear)
 - A solution like EDT-BPF is great for rate limiting flow aggregates on end hosts
     #+ATTR_REVEAL: :frag (appear)
@@ -42,31 +42,31 @@ This presentation is for Netdevconf 0x19 in Zagreb, Croatia
     - builds a virtual FIFO across queues
     - negative effects on latencies
 
-** EDT-BPF													 :export:
+** EDT-BPF                                                          :export:
 
 #+ATTR_html: :height 620
 #+CAPTION: 20 Gbps rate limit, 1024 TCP streams
 [[file:edt-global-rate-limit.svg]]
 
-* We present: mq-cake                                                            :export:
+* We present: mq-cake                                                :export:
 
 #+ATTR_REVEAL: :frag (appear)
 - Multi-queue compatible variant of sch_cake
 - Enforce high rate limits while keeping queues smart
 
 * Outline                                                            :export:
-- Design 
+- Design
 - Evaluation
 - Outlook
 
-* Design                                                            :export:
+* Design                                                             :export:
 
 ** Architecture
 #+ATTR_html: :height 620
 #+CAPTION: Four hardware queues, mq-cake instances connected via linked list
 [[file:mq-cake-paper/images/mq_cake_architecture.svg]]
 
-** Algorithm                                                            :export:
+** Algorithm                                                        :export:
 #+ATTR_REVEAL: :frag (appear)
 - Every instance loops over linked list in certain intervals
   - Interval called synctime
@@ -78,10 +78,10 @@ $$rate_{local}=\frac{rate_{global}}{\text{# active qdiscs}}$$
 ** Active qdisc
 - A qdisc is considered active if:
     #+ATTR_REVEAL: :frag (appear)
-    - packets are backlogged
+    - packets are backlogged, or
     - packets were sent since last scan
 
-* Evaluation :export:
+* Evaluation                                                         :export:
 ** Rate Conformance
 #+ATTR_html: :height 620
 #+CAPTION: 40 queues, UDP flood with full MTU-sized packets
@@ -103,7 +103,7 @@ $$rate_{local}=\frac{rate_{global}}{\text{# active qdiscs}}$$
 [[file:ping-edtbpf-mqcake-2s-horizon-20000-log.svg]]
 
 
-* Impact of Synctime :export:
+* Impact of Synctime                                                 :export:
 
 ** Synctime 10us
 #+ATTR_html: :height 620
@@ -120,7 +120,7 @@ $$rate_{local}=\frac{rate_{global}}{\text{# active qdiscs}}$$
 #+CAPTION: Switching from 4 to 40 active qdiscs
 [[file:mq-cake-paper/images/switching_100ms.svg]]
 
-* Current Limitations :export:
+* Current Limitations                                                :export:
 
 ** Imbalances
 #+ATTR_html: :height 620
@@ -132,7 +132,7 @@ $$rate_{local}=\frac{rate_{global}}{\text{# active qdiscs}}$$
 #+CAPTION: Lower synctimes lead to higher CPU overhead
 [[file:sync_overhead.svg]]
 
-* Outlook :export:
+* Outlook                                                            :export:
 
 ** Future Work
 #+ATTR_REVEAL: :frag (appear)
