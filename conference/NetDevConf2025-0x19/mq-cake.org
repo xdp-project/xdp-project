@@ -7,7 +7,7 @@
 #+REVEAL_MARGIN: 0
 #+REVEAL_ROOT: ../reveal.js
 #+OPTIONS: reveal_center:t reveal_control:t reveal_history:nil
-#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: reveal_width:1600 reveal_height:900 reveal_pdfseparatefragments:nil
 #+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
 
 * For conference: NetDevconf 0x19 2025                             :noexport:
