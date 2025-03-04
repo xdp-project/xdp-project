@@ -1,0 +1,38 @@
+\section{Upstreaming the code}\label{sec:upstreaming}
+The results presented above are based on an implementation that localises all
+changes to the sch\_cake qdisc itself. This involves the \textit{mq-cake}
+initialisation code walking the qdisc tree to find its own siblings to
+initialise the cross-qdisc synchronisation data structure.
+
+While this works well to evaluate the concept, this approach is not appropriate
+for inclusion into the mainline Linux kernel (\textit{upstreaming}). So when
+proposing these changes for inclusion into the kernel, we aim to include a
+proposal for a better API for this shared state.
+
+Specifically, we propose introducing a generalised notion of shared qdisc state
+that will be managed by the parent qdisc (in this case the \textit{mq} qdisc).
+This shared state will be allocated and freed by the parent \textit{mq}
+instance, and is passed to the sub-qdisc when it is attached to the parent. The
+shared state is keyed to a qdisc module owner, which means there will be one
+instance of shared state across all identical qdiscs attached to each
+\textit{mq} instance.
+
+To use this state, a qdisc module only needs define how much memory is needed by
+its shared data structure (by setting a \textit{shared\_size} parameter in its
+qdisc operations parameters), and define a function to receive the assignment
+from the parent, and (optionally) an initialisation function that is called the
+first time the shared state is allocated for a given parent instance.
+
+The assignment function will be called whenever the qdisc is attached to a
+parent that manages shared state, and will contain a pointer to an object of the
+size defined by the qdisc module. The child qdisc can assign this pointer to its
+internal state and use it while running for any cross-qdisc operations. When the
+sub-qdisc is detached, it will be notified of removal of the shared state, so it
+can detach itself.
+
+It is up to the qdisc module itself to manage concurrency across multiple
+instances accessing the shared state while running, which is no different from
+the implementation we have used for the evaluations in this paper. This also
+means that using this shared state API does not change the functioning of the
+multiqueue synchronisation algorithm itself, only the initialisation code used
+to setup the data structures it uses to do its work.
