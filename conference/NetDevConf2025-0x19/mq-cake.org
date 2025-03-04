@@ -103,34 +103,30 @@ $$rate_{local}=\frac{rate_{global}}{\text{# active qdiscs}}$$
 [[file:ping-edtbpf-mqcake-2s-horizon-20000-log.svg]]
 
 
-* Impact of Synctime                                                 :export:
+* Current Limitations                                                :export:
 
-** Synctime 10us
-#+ATTR_html: :height 620
-#+CAPTION: Switching from 4 to 40 active qdiscs
-[[file:mq-cake-paper/images/switching_10us.svg]]
+** Impact of synchronisation time
 
-** Synctime 100us
-#+ATTR_html: :height 620
-#+CAPTION: Switching from 4 to 40 active qdiscs
+#+HTML: <div class="two-column"><div class="figure">
+
 [[file:mq-cake-paper/images/switching_100us.svg]]
 
-** Synctime 100ms
-#+ATTR_html: :height 620
-#+CAPTION: Switching from 4 to 40 active qdiscs
+#+CAPTION: Sync time of 100 us (top) and 100 ms
+#+ATTR_html: :style margin-top: 0px;
 [[file:mq-cake-paper/images/switching_100ms.svg]]
+#+HTML: </div>
 
-* Current Limitations                                                :export:
+#+CAPTION: Overhead of different sync times
+#+ATTR_html: :style margin-top: 25%;
+[[file:sync_overhead.svg]]
+
+#+HTML: </div>
 
 ** Imbalances
 #+ATTR_html: :height 620
 #+CAPTION: Imbalance in traffic load between qdiscs
 [[file:imbalances.svg]]
 
-** Synchronization overhead
-#+ATTR_html: :height 620
-#+CAPTION: Lower synctimes lead to higher CPU overhead
-[[file:sync_overhead.svg]]
 
 * Outlook                                                            :export:
 
