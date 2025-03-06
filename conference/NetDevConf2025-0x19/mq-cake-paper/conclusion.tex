@@ -4,3 +4,4 @@ We integrated this synchronization mechanism into the CAKE queueing discipline, 
 We showed that \textit{mq-cake} overcomes the scaling limitations of HTB and CAKE, while achieving an accuracy deviation of less than 0.25\% across a variety of rate limits up to 25 Gbps.
 Further, \textit{mq-cake} reduces tail latencies up to 2500x as compared to EDT-BPF.
 We believe that the proposed synchronization mechanism is a promising approach to effectively share state across queueing disciplines.
+As our next steps, we plan to investigate mitigation strategies to address imbalances and minimize overshoot above the rate limit during switching events, enhancing overall accuracy. Additionally, we aim to evaluate our approach using even faster network cards, assess its performance under real-world traffic conditions, and deepen our understanding of parameter configurations.

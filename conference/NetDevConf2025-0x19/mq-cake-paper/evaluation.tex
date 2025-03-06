@@ -11,7 +11,7 @@ Next, we evaluate \textit{mq-cake}'s rate limiting capabilities and the correspo
 %
 In the third subsection we test and evaluate \textit{mq-cake} and EDT-BPF under TCP traffic as well as the corresponding latencies using the Flent~\cite{flent} network testing tool.
 %
-The fourth subsection considers the dynamic properties of \textit{mq-cake}, especially its behavior when the number of UDP flows and \textit{synctime} change.
+The fourth subsection considers the dynamic properties of \textit{mq-cake}, especially its behavior when the number of active queues and \textit{synctime} change.
 %
 The fifth subsection discusses the limitations of the current approach, especially focusing on imbalances in load between queues.
 %
@@ -29,17 +29,17 @@ The generated traffic using MoonGen consists only of UDP flows, with a transmiss
 %
 In case of the Flent tests, 1024 TCP streams are used to saturate the link.
 %
-If not mentioned otherwise, hyperthreading is enabled on the SuT.
+If not mentioned otherwise, hyperthreading is enabled on the DuT.
 
-The receiving interface of the SuT distributes the incoming flows in a round-robin fashion across its receive queues.
+The receiving interface of the DuT distributes the incoming flows in a round-robin fashion across its receive queues.
 %
 The interrupts of each receive queue are mapped to exactly one CPU core and irqbalance daemon~\cite{irqbalance} is disabled.
 %
-To avoid any side effects from existing firewall and routing rules, the ingress and egress interface of the SuT are attached to a separate network namespace~\cite{network-namespace}.
+To avoid any side effects from existing firewall and routing rules, the ingress and egress interface of the DuT are attached to a separate network namespace~\cite{network-namespace}.
 %
 The intel\_iommu~\cite{iommu} feature is also explicitly disabled, since it is enabled by default in the 6.5 Linux kernel version and massively degrades the performance of network IO operations.
 %
-Further, NIC offloading capabilities like GRO, GSO and TSO~\cite{offloads} are disabled on each interface on the SuT.
+Further, NIC offloading capabilities like GRO, GSO and TSO~\cite{offloads} are disabled on each interface on the DuT.
 %
 The TIPSY framework~\cite{tipsy} is used to orchestrate tests.
 %
@@ -53,14 +53,14 @@ The overhead compensation is configured so that the rate calculation of MoonGen 
 %
 In order to enforce a global rate limit using HTB, we install a single class at the root-qdisc, which rate limits all network traffic.
 %
-As mentioned above, the EDT-BPF as presented in prior work is not suitable to enforce a global rate limit.
+As mentioned above, the EDT-BPF approach as presented in prior work is not suitable to enforce a global rate limit.
 To enable a comparison with \textit{mq-cake}, we modify the BPF program implementation to enforce such a global rate limit and incorporate the aforementioned overhead compensation.
 %
 The drop-horizon is set to $2s$, following the value proposed by the authors~\cite{edt-ebpf}. The adjusted BPF program is detailed in Algorithm~\ref{alg:edt-ebpf}.
 
 To align with the expected buffer occupation, the \lstinline{limit} and \lstinline{flow_limit} parameters of the FQ instances are configured based on the following formula:
 \begin{align*}
-    \text{Limit} = \frac{\text{Rate Limit}\cdot \text{Drop Horizon}}{\text{\# FQ instances}\cdot \text{Packet size} \cdot 8}
+    \text{Limit} = \frac{\text{Rate Limit}\cdot \text{Drop Horizon}}{\text{\# FQ instances}\cdot \text{MTU size} \cdot 8}
 \end{align*}
 
 If the FQ buffer sizes are not properly adjusted, FQ may drop packets unnoticed by the BPF program, ultimately impacting performance.
@@ -152,7 +152,7 @@ Thus, their performance is not completely independent from one another.
 However, even with hyperthreading enabled, \textit{mq-cake} is still able to increase the throughput.
 
 \subsection{Impact of Synctime}\label{sec:synchronization-time}
-Up to this point, the traffic in the previous evaluations has been held static, meaning that the number of flows did not change.
+Up to this point, the traffic in the previous evaluations has been held static, meaning that the number of flows, and thus the number of active queues did not change.
 %
 With our next experiment, we show and evaluate the impact of the synctime on the rate limiter's accuracy, particularly when the number of active queues changes.
 %
@@ -188,7 +188,7 @@ To gain insights in \textit{mq-cake}'s accuracy and responsiveness, we induce a 
     \caption{Induced queue lengths and delays at varying \textit{synctimes} and at a configured global rate limit of 2, 8, and 15 Gbps}\label{fig:qlen_qdel}
 \end{figure*}
 
-Figure~\ref{fig:switching_200us} shows such a switching event between 4.94s and 4.95s.
+Figure~\ref{fig:switching_200us} shows such a switching event at around 4.94s.
 %
 During the switch, the throughput spikes due to \textit{mq-cake}'s inaccurate estimation of the number of active queues.
 %
@@ -211,7 +211,7 @@ When evaluating accuracy, it is important to consider the induced queue length a
 %
 The width of the spike can be controlled by manipulating the \textit{synctime}.
 %
-Exceeding the global rate limit leads to buffering excess packets on the next bottleneck link.
+Exceeding the global rate limit leads to buffering packets in the next device that is in control of a bottleneck link.
 %
 This buffering increases latencies and may lead to packet drops.
 %
@@ -306,7 +306,7 @@ For example, consider a case where the global rate limit is set to 10 Gbps and t
 In this example, 80\% of the incoming traffic is enqueued in Qdisc A and the remaining 20\% of the traffic is steered to Qdisc B. In this case, both Qdiscs will estimate two active queues and lower their rate limit to 5 Gbps each.
 However, since Qdisc B can only forward 2 Gbps and Qdisc A is capped at 5 Gbps, the resulting throughput is only 7 Gbps.
 %
-\begin{figure}[H]
+\begin{figure}[t]
     \centering
     \includesvg[scale=0.5]{images/txq_imbalance_1514}
     \caption{Achieved throughput in relation to the number of available hardware transmission queues with different \textit{synctimes} for flows with full MTU-sized packets, where the rate limit is set to 20 Gbps and the number of receive queues is held at 40}\label{fig:txq_imbalance_1514}

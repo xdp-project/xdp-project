@@ -1,5 +1,5 @@
 \section{Approach and Implementation}
-This work builds upon the CAKE (sch\_cake) queuing discipline, with a particular focus on its bandwidth shaper. CAKE implements Active Queue Management (AQM) and rate limiting during packet dequeue, effectively eliminating the need for a backpressure mechanism. Through its bandwidth shaper, CAKE enforces a global rate limit on egress network traffic, preventing excessive packet buffering in the lower layers of the network stack. However, CAKE suffers from the aforementioned contention of the root qdisc lock, which prevents it from exploiting the potential of multiple transmission queues.
+This work builds upon the CAKE (sch\_cake) qdisc, with a particular focus on its bandwidth shaper. CAKE implements Active Queue Management (AQM) and rate limiting during packet dequeue, effectively eliminating the need for a backpressure mechanism. Through its bandwidth shaper, CAKE enforces a global rate limit on egress network traffic, preventing excessive packet buffering in the lower layers of the network stack. However, CAKE suffers from the aforementioned contention of the root qdisc lock, which prevents it from exploiting the potential of multiple transmission queues.
 
 \subsection{Approach}
 Our approach overcomes the aforementioned shortcomings by enabling a scalable version of \textit{sch\_cake}~\cite{cake} to run in combination with the MQ qdisc~\cite{mq}.
@@ -107,4 +107,4 @@ This approach has the benefit of not building contention points while still achi
 %
 Algorithm~\ref{alg:algo} shows this synchronization algorithm.
 %
-The source code of \textit{mq-cake} is published here: \url{https://github.com/mq-cake/linux-mq-cake}.
+% The source code of \textit{mq-cake} is published here: \url{https://github.com/mq-cake/linux-mq-cake}.
