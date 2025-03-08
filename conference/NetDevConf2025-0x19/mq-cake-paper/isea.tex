@@ -1,0 +1,43 @@
+% This file is isea.tex.  It contains the formatting instructions for and acts as a template for submissions to ISEA 2015.  It is based on the ICCC  formats and instructions.  It uses the files isea.sty, isea.bst and isea.bib, the first two of which also borrow from AAAI IJCAI formats and instructions.
+% Modified from ICCC.tex by B. Bogart
+\documentclass[letterpaper]{article}
+\usepackage{isea}
+\usepackage{balance}
+\usepackage[pdftex]{graphicx}
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{courier}
+\usepackage[numbers,sort]{natbib}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{svg}
+\usepackage{subcaption}
+\usepackage{listings}
+\usepackage{url}
+\pdfinfo{
+/Title (mq-cake: Scaling software rate limiting across CPU cores)  
+/Author (Jonas Köppeler, Toke H\o{}iland-J\o{}rgensen, Stefan Schmid)}
+\title{mq-cake: Scaling software rate limiting across CPU cores}
+\author{Jonas Köppeler\\TU Berlin \\j.koeppeler@tu-berlin.de \And Toke H\o{}iland-J\o{}rgensen\\Red Hat\\toke@redhat.com \And Stefan Schmid \\ TU Berlin\\stefan.schmid@tu-berlin.de
+}
+\setcounter{secnumdepth}{0}
+
+\begin{document}
+\maketitle
+\input{abstract.tex}
+\section{Keywords}
+rate limiting, qdisc, cake
+
+\input{introduction.tex}
+\input{implementation.tex}
+\input{evaluation.tex}
+\input{upstreaming.tex}
+\input{conclusion.tex}
+\input{ack.tex}
+
+\bibliographystyle{isea}
+\balance
+\bibliography{isea}
+
+\end{document}

@@ -1,5 +1,5 @@
 # -*- fill-column: 79; -*-
-#+TITLE: mq-cake
+#+TITLE: Scaling Software Rate Limiting across CPU cores
 #+AUTHOR: Jonas Köppeler <j.koeppeler@tu-berlin.de> and Toke Høiland-Jørgensen <toke@redhat.com>
 #+EMAIL: j.koeppeler@tu-berlin.de, toke@redhat.com
 #+REVEAL_THEME: white
@@ -7,7 +7,7 @@
 #+REVEAL_MARGIN: 0
 #+REVEAL_ROOT: ../reveal.js
 #+OPTIONS: reveal_center:t reveal_control:t reveal_history:nil
-#+OPTIONS: reveal_width:1600 reveal_height:900
+#+OPTIONS: reveal_width:1600 reveal_height:900 reveal_pdfseparatefragments:nil
 #+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
 
 * For conference: NetDevconf 0x19 2025                             :noexport:
@@ -16,17 +16,239 @@ This presentation is for Netdevconf 0x19 in Zagreb, Croatia
 
 * Outline / ideas                                                  :noexport:
 
+* Motivation                                                         :export:
+#+ATTR_REVEAL: :frag (appear)
+- Network speeds >> CPU speeds
+- Scaling software rate limiting is challenging
+    #+ATTR_REVEAL: :frag (appear)
+    - ... especially enforcing a global rate limit on a network interface
 
-* MQ-CAKE                                                            :export:
+#+ATTR_REVEAL: :frag (appear)
+- Existing qdiscs in the kernel cannot keep up with network speeds
+    #+ATTR_REVEAL: :frag (appear)
+    - ... and do not scale
 
-Slide contents go here
+** CAKE and HTB                                                     :export:
 
+#+ATTR_html: :height 620
+#+CAPTION: 20 Gbps rate limit, UDP flood with full MTU-sized packets
+[[file:htb_cake_scaling.svg]]
+
+** Motivation (cont.)                                               :export:
+#+ATTR_REVEAL: :frag (appear)
+- A solution like EDT-BPF is great for rate limiting flow aggregates on end hosts
+    #+ATTR_REVEAL: :frag (appear)
+    - ... but falls short in enforcing a global rate limit
+    - builds a virtual FIFO across queues
+    - negative effects on latencies
+
+** EDT-BPF                                                          :export:
+
+#+ATTR_html: :height 620
+#+CAPTION: 20 Gbps rate limit, 1024 TCP streams
+[[file:edt-global-rate-limit.svg]]
+
+* We present: mq-cake                                                :export:
+
+#+ATTR_REVEAL: :frag (appear)
+- Multi-queue compatible variant of sch_cake
+- Enforce high rate limits while keeping queues smart
+
+* Outline                                                            :export:
+- Design
+- Evaluation
+- Outlook
+
+* Design                                                             :export:
+
+** Architecture
+#+ATTR_html: :height 620
+#+CAPTION: Four hardware queues, mq-cake instances connected via linked list
+[[file:mq-cake-paper/images/mq_cake_architecture.svg]]
+
+** Algorithm                                                        :export:
+#+ATTR_REVEAL: :frag (appear)
+- Every instance loops over linked list in certain intervals
+  - Interval called synctime
+- Determine if other mq-cake instances are active
+- Calculate new local rate:
+#+ATTR_REVEAL: :frag (appear)
+$$rate_{local}=\frac{rate_{global}}{\text{# active qdiscs}}$$
+
+** Active qdisc
+- A qdisc is considered active if:
+    #+ATTR_REVEAL: :frag (appear)
+    - packets are backlogged, or
+    - packets were sent since last scan
+
+* Evaluation                                                         :export:
+** Rate Conformance
+#+ATTR_html: :height 620
+#+CAPTION: 40 queues, UDP flood with full MTU-sized packets
+[[file:rate_conformance_slides.svg]]
+
+** Deviation
+#+ATTR_html: :height 620
+#+CAPTION: 40 queues, UDP flood with full MTU-sized packets
+[[file:deviation_slides.svg]]
+
+** Scaling
+#+ATTR_html: :height 620
+#+CAPTION: 20 Gbps rate limit, UDP flood with 64 byte packets
+[[file:txq_slides.svg]]
+
+** Latencies
+#+ATTR_html: :height 620
+#+CAPTION: 1024 TCP streams, 2s drop horizon for EDT-BPF
+[[file:ping-edtbpf-mqcake-2s-horizon-20000-log.svg]]
+
+
+* Current Limitations                                                :export:
+
+** Impact of synchronisation time
+
+#+HTML: <div class="two-column"><div class="figure">
+
+[[file:mq-cake-paper/images/switching_100us.svg]]
+
+#+CAPTION: Sync time of 100 us (top) and 100 ms
+#+ATTR_html: :style margin-top: 0px;
+[[file:mq-cake-paper/images/switching_100ms.svg]]
+#+HTML: </div>
+
+#+CAPTION: Overhead of different sync times
+#+ATTR_html: :style margin-top: 25%;
+[[file:sync_overhead.svg]]
+
+#+HTML: </div>
+
+** Imbalances
+#+ATTR_html: :height 620
+#+CAPTION: Imbalance in traffic load between qdiscs
+[[file:imbalances.svg]]
+
+
+* Outlook                                                            :export:
+
+** Future Work
+#+ATTR_REVEAL: :frag (appear)
+- Tackle imbalance issue
+- Mitigate overshoot during switching events
+- Test under real-world conditions
+- Automatically determine best synctime value
+
+** Upstreaming Plans
+
+Current implementation:
+
+- sch_cake walks qdisc tree
+- build data structure across sibling qdiscs
+
+For upstreaming, we propose a "shared qdisc state API"
+
+
+
+** Shared qdisc state API
+
+#+HTML: <small>
+#+ATTR_HTML: :style background-color: #002b36; color: #93a1a1; width: 700px; padding: 1em;
+#+begin_src diff
+
+--- a/include/net/sch_generic.h
++++ b/include/net/sch_generic.h
+@@ -70,6 +70,14 @@ struct qdisc_skb_head {
+        spinlock_t      lock;
+ };
+ 
++struct qdisc_shared_data {
++       struct list_head         head;
++       const struct Qdisc_ops  *owner;
++       struct rcu_head  rcu;
++       refcount_t               refs;
++       u8                       data[];
++};
++
+ struct Qdisc {
+        int                     (*enqueue)(struct sk_buff *skb,
+                                           struct Qdisc *sch,
+@@ -109,7 +117,7 @@ struct Qdisc {
+        struct gnet_stats_queue __percpu *cpu_qstats;
+        int                     pad;
+        refcount_t              refcnt;
+-
++       struct list_head        shared_state;
+        /*
+         * For performance sake on SMP, we put highly modified fields at the end
+         */
+@@ -289,6 +297,7 @@ struct Qdisc_ops {
+        const struct Qdisc_class_ops    *cl_ops;
+        char                    id[IFNAMSIZ];
+        int                     priv_size;
++       int                     shared_size;
+        unsigned int            static_flags;
+ 
+        int                     (*enqueue)(struct sk_buff *skb,
+@@ -319,6 +328,9 @@ struct Qdisc_ops {
+        u32                     (*ingress_block_get)(struct Qdisc *sch);
+        u32                     (*egress_block_get)(struct Qdisc *sch);
+ 
++       void                    (*shared_init)(void *shared);
++       void                    (*shared_assign)(struct Qdisc *, void *shared);
++
+        struct module           *owner;
+ };
+
+#+end_src
+#+HTML: </small>
+
+** Shared qdisc state API (cont.)
+
+#+HTML: <small>
+#+ATTR_HTML: :style background-color: #002b36; color: #93a1a1; width: 800px; padding: 1em;
+#+begin_src diff
+--- a/net/sched/sch_mq.c
++++ b/net/sched/sch_mq.c
+@@ -178,6 +189,15 @@ static int mq_graft(struct Qdisc *sch, unsigned long cl, struct Qdisc *new,
+        struct netdev_queue *dev_queue = mq_queue_get(sch, cl);
+        struct tc_mq_qopt_offload graft_offload;
+        struct net_device *dev = qdisc_dev(sch);
++       struct qdisc_shared_data *shared;
++
++       if (new && new->ops->shared_size) {
++               shared = qdisc_shared_get(sch, new->ops);
++               if (!shared)
++                       return -ENOMEM;
++
++               new->ops->shared_assign(new, &shared->data);
++       }
+@@ -185,6 +205,12 @@ static int mq_graft(struct Qdisc *sch, unsigned long cl, struct Qdisc *new,
+        *old = dev_graft_qdisc(dev_queue, new);
+        if (new)
+                new->flags |= TCQ_F_ONETXQUEUE | TCQ_F_NOPARENT;
++
++       if (*old && (*old)->ops->shared_size) {
++               (*old)->ops->shared_assign(*old, NULL);
++               qdisc_shared_put(sch, (*old)->ops);
++       }
++
+        if (dev->flags & IFF_UP)
+                dev_activate(dev);
+
+#+end_src
+#+HTML: </small>
+
+Full patch:
+
+https://git.kernel.org/toke/l/mq-cake-api-experiments
+
+
+* Questions?                                                         :export:
 * Emacs end-tricks                                                 :noexport:
 
 This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
 in the compiled version.
 
 # Local Variables:
-# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1> Jonas Köppeler - TU Berlin <br /> Toke Høiland-Jørgensen - Red Hat"
+# org-re-reveal-title-slide: "<h1 class=\"title\">mq-cake</h1><h2 class=\"title\">%t</h2> Jonas Köppeler - TU Berlin <br /> Toke Høiland-Jørgensen - Red Hat"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
 # End:
