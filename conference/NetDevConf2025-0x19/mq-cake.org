@@ -144,7 +144,7 @@ Current implementation:
 - sch_cake walks qdisc tree
 - build data structure across sibling qdiscs
 
-For upstreaming, we proposed a "shared qdisc state API"
+For upstreaming, we propose a "shared qdisc state API"
 
 
 
@@ -248,6 +248,6 @@ This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
 in the compiled version.
 
 # Local Variables:
-# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1> Jonas Köppeler - TU Berlin <br /> Toke Høiland-Jørgensen - Red Hat"
+# org-re-reveal-title-slide: "<h1 class=\"title\">mq-cake</h1><h2 class=\"title\">%t</h2> Jonas Köppeler - TU Berlin <br /> Toke Høiland-Jørgensen - Red Hat"
 # org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
 # End:
