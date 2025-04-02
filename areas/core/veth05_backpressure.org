@@ -1,0 +1,24 @@
+#+Title: veth lacking back-pressure leading to drops
+
+The target audience of this document is other upstream kernel developers.
+
+These are my notes when developing a patch to =veth= that adds back-pressure
+into the qdisc layer.
+
+We observed a production problem, and we have constructed a reproducer, and are
+now working on a patch for veth.
+
+* What is veth
+
+The Linux kernels virtual ethernet driver (called =veth=) is primary used for
+providing networking between network namespaces (netns), which is a fundamental
+building block for containers.
+
+* Issue
+
+We are observing packet drops between veth pairs in production. This issue is
+occurring within the veth driver function =veth_xmit()=, specifically when
+operating in NAPI mode (enabled via GRO or XDP mode) and using threaded-NAPI.
+The drops occur due to the internal =ptr_ring= buffer (=xdp_ring=) becoming
+full, leading to packet loss.
+
