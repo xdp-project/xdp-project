@@ -60,6 +60,9 @@ Reproducer script available here: [[file:veth_setup01_NAPI_TX_drops.sh]]
 
 ** Patch-1: veth qdisc backpressure
 
+Posted upstream:
+ - RFC: https://lore.kernel.org/all/174377814192.3376479.16481605648460889310.stgit@firesoul/
+
 #+begin_quote
 veth: apply qdisc backpressure on full ptr_ring to reduce TX drops
 
@@ -107,5 +110,4 @@ like veth.
 Reported-by: Yan Zhai <yan@cloudflare.com>
 Signed-off-by: Jesper Dangaard Brouer <hawk@kernel.org>
 #+end_quote
-
 
