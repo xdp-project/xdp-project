@@ -26,3 +26,56 @@ full, leading to packet loss.
 
 Reproducer script available here: [[file:veth_setup01_NAPI_TX_drops.sh]]
 
+* Patch descriptions
+
+** Patch-1: veth qdisc backpressure
+
+#+begin_quote
+veth: apply qdisc backpressure on full ptr_ring to reduce TX drops
+
+In production, we're seeing TX drops on veth devices when the ptr_ring
+fills up. This can occur when NAPI mode is enabled, though it's
+relatively rare. However, with threaded NAPI - which we use in
+production - the drops become significantly more frequent.
+
+The underlying issue is that with threaded NAPI, the consumer often runs
+on a different CPU than the producer. This increases the likelihood of
+the ring filling up before the consumer gets scheduled, especially under
+load, leading to drops in veth_xmit() (ndo_start_xmit()).
+
+This patch introduces backpressure by returning NETDEV_TX_BUSY when the
+ring is full, signaling the qdisc layer to requeue the packet. The txq
+(netdev queue) is stopped in this condition and restarted once
+veth_poll() drains entries from the ring, ensuring coordination between
+NAPI and qdisc.
+
+Backpressure is only enabled when a qdisc is attached. Without a qdisc,
+the driver retains its original behavior - dropping packets immediately
+when the ring is full. This avoids unexpected behavior changes in setups
+without a configured qdisc.
+
+With a qdisc in place (e.g. fq, sfq) this allows Active Queue Management
+(AQM) to fairly schedule packets across flows and reduce collateral
+damage from elephant flows.
+
+A known limitation of this approach is that the full ring sits in front
+of the qdisc layer, effectively forming a FIFO buffer that introduces
+base latency. While AQM still improves fairness and mitigates flow
+dominance, the latency impact is measurable.
+
+In hardware drivers, this issue is typically addressed using BQL (Byte
+Queue Limits), which tracks in-flight bytes needed based on physical link
+rate. However, for virtual drivers like veth, there is no fixed bandwidth
+constraint - the bottleneck is CPU availability and the scheduler's ability
+to run the NAPI thread. It is unclear how effective BQL would be in this
+context.
+
+This patch serves as a first step toward addressing TX drops. Future work
+may explore adapting a BQL-like mechanism to better suit virtual devices
+like veth.
+
+Reported-by: Yan Zhai <yan@cloudflare.com>
+Signed-off-by: Jesper Dangaard Brouer <hawk@kernel.org>
+#+end_quote
+
+
