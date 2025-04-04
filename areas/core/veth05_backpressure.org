@@ -22,3 +22,7 @@ operating in NAPI mode (enabled via GRO or XDP mode) and using threaded-NAPI.
 The drops occur due to the internal =ptr_ring= buffer (=xdp_ring=) becoming
 full, leading to packet loss.
 
+* Reproducer
+
+Reproducer script available here: [[file:veth_setup01_NAPI_TX_drops.sh]]
+
