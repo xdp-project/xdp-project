@@ -8,6 +8,14 @@ into the qdisc layer.
 We observed a production problem, and we have constructed a reproducer, and are
 now working on a patch for veth.
 
+* Table of Contents                                                     :toc:
+- [[#what-is-veth][What is veth]]
+- [[#issue][Issue]]
+  - [[#packet-flow-leading-to-tx-drops][Packet flow leading to TX drops]]
+- [[#reproducer][Reproducer]]
+- [[#patch-descriptions][Patch descriptions]]
+  - [[#patch-1-veth-qdisc-backpressure][Patch-1: veth qdisc backpressure]]
+
 * What is veth
 
 The Linux kernels virtual ethernet driver (called =veth=) is primary used for
@@ -16,11 +24,33 @@ building block for containers.
 
 * Issue
 
-We are observing packet drops between veth pairs in production. This issue is
+We are observing packet TX drops between veth pairs in production. This issue is
 occurring within the veth driver function =veth_xmit()=, specifically when
 operating in NAPI mode (enabled via GRO or XDP mode) and using threaded-NAPI.
 The drops occur due to the internal =ptr_ring= buffer (=xdp_ring=) becoming
 full, leading to packet loss.
+
+** Packet flow leading to TX drops
+
+Packets are routed by netstack with a destination "into" a veth device, which
+gets processed by the veth driver via =ndo_start_xmit=, which calls
+veth_xmit().
+
+Then veth_xmit() invokes veth_forward_skb(), which, due to GRO/XDP mode, results
+in calling veth_xdp_rx().
+
+Inside veth_xdp_rx() SKB packets are enqueued into a ptr_ring FIFO queue (called
+xdp_ring) using ptr_ring_produce().
+
+The drop observation is that ptr_ring gets full and packets are dropped.
+
+The veth peer is responsible for consuming packets via ptr_ring_consume() in
+veth_xdp_rcv(), which runs as part of the veth_poll() NAPI callback.
+
+The consumer function runs in softirq context but appears to be delayed or
+disturbed, leading to bursts of packet drops. The consumer is often slower than
+the producer, due to many nftables rules (that can vary based on customer
+configuration).
 
 * Reproducer
 
