@@ -1,0 +1,113 @@
+#+Title: veth lacking back-pressure leading to drops
+
+The target audience of this document is other upstream kernel developers.
+
+These are my notes when developing a patch to =veth= that adds back-pressure
+into the qdisc layer.
+
+We observed a production problem, and we have constructed a reproducer, and are
+now working on a patch for veth.
+
+* Table of Contents                                                     :toc:
+- [[#what-is-veth][What is veth]]
+- [[#issue][Issue]]
+  - [[#packet-flow-leading-to-tx-drops][Packet flow leading to TX drops]]
+- [[#reproducer][Reproducer]]
+- [[#patch-descriptions][Patch descriptions]]
+  - [[#patch-1-veth-qdisc-backpressure][Patch-1: veth qdisc backpressure]]
+
+* What is veth
+
+The Linux kernels virtual ethernet driver (called =veth=) is primary used for
+providing networking between network namespaces (netns), which is a fundamental
+building block for containers.
+
+* Issue
+
+We are observing packet TX drops between veth pairs in production. This issue is
+occurring within the veth driver function =veth_xmit()=, specifically when
+operating in NAPI mode (enabled via GRO or XDP mode) and using threaded-NAPI.
+The drops occur due to the internal =ptr_ring= buffer (=xdp_ring=) becoming
+full, leading to packet loss.
+
+** Packet flow leading to TX drops
+
+Packets are routed by netstack with a destination "into" a veth device, which
+gets processed by the veth driver via =ndo_start_xmit=, which calls
+veth_xmit().
+
+Then veth_xmit() invokes veth_forward_skb(), which, due to GRO/XDP mode, results
+in calling veth_xdp_rx().
+
+Inside veth_xdp_rx() SKB packets are enqueued into a ptr_ring FIFO queue (called
+xdp_ring) using ptr_ring_produce().
+
+The drop observation is that ptr_ring gets full and packets are dropped.
+
+The veth peer is responsible for consuming packets via ptr_ring_consume() in
+veth_xdp_rcv(), which runs as part of the veth_poll() NAPI callback.
+
+The consumer function runs in softirq context but appears to be delayed or
+disturbed, leading to bursts of packet drops. The consumer is often slower than
+the producer, due to many nftables rules (that can vary based on customer
+configuration).
+
+* Reproducer
+
+Reproducer script available here: [[file:veth_setup01_NAPI_TX_drops.sh]]
+
+* Patch descriptions
+
+** Patch-1: veth qdisc backpressure
+
+Posted upstream:
+ - RFC: https://lore.kernel.org/all/174377814192.3376479.16481605648460889310.stgit@firesoul/
+
+#+begin_quote
+veth: apply qdisc backpressure on full ptr_ring to reduce TX drops
+
+In production, we're seeing TX drops on veth devices when the ptr_ring
+fills up. This can occur when NAPI mode is enabled, though it's
+relatively rare. However, with threaded NAPI - which we use in
+production - the drops become significantly more frequent.
+
+The underlying issue is that with threaded NAPI, the consumer often runs
+on a different CPU than the producer. This increases the likelihood of
+the ring filling up before the consumer gets scheduled, especially under
+load, leading to drops in veth_xmit() (ndo_start_xmit()).
+
+This patch introduces backpressure by returning NETDEV_TX_BUSY when the
+ring is full, signaling the qdisc layer to requeue the packet. The txq
+(netdev queue) is stopped in this condition and restarted once
+veth_poll() drains entries from the ring, ensuring coordination between
+NAPI and qdisc.
+
+Backpressure is only enabled when a qdisc is attached. Without a qdisc,
+the driver retains its original behavior - dropping packets immediately
+when the ring is full. This avoids unexpected behavior changes in setups
+without a configured qdisc.
+
+With a qdisc in place (e.g. fq, sfq) this allows Active Queue Management
+(AQM) to fairly schedule packets across flows and reduce collateral
+damage from elephant flows.
+
+A known limitation of this approach is that the full ring sits in front
+of the qdisc layer, effectively forming a FIFO buffer that introduces
+base latency. While AQM still improves fairness and mitigates flow
+dominance, the latency impact is measurable.
+
+In hardware drivers, this issue is typically addressed using BQL (Byte
+Queue Limits), which tracks in-flight bytes needed based on physical link
+rate. However, for virtual drivers like veth, there is no fixed bandwidth
+constraint - the bottleneck is CPU availability and the scheduler's ability
+to run the NAPI thread. It is unclear how effective BQL would be in this
+context.
+
+This patch serves as a first step toward addressing TX drops. Future work
+may explore adapting a BQL-like mechanism to better suit virtual devices
+like veth.
+
+Reported-by: Yan Zhai <yan@cloudflare.com>
+Signed-off-by: Jesper Dangaard Brouer <hawk@kernel.org>
+#+end_quote
+
