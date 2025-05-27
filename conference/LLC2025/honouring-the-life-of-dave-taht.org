@@ -1,0 +1,180 @@
+# -*- fill-column: 79; -*-
+#+TITLE: Honouring the life of Dave Täht
+#+AUTHOR: Toke Høiland-Jørgensen <toke@redhat.com>
+#+EMAIL: toke@redhat.com
+#+REVEAL_THEME: white
+#+REVEAL_TRANS: linear
+#+REVEAL_MARGIN: 0
+#+REVEAL_ROOT: ../reveal.js
+#+OPTIONS: reveal_center:t reveal_control:t reveal_history:nil
+#+OPTIONS: reveal_width:1600 reveal_height:900 reveal_pdfseparatefragments:nil
+#+OPTIONS: ^:nil tags:nil toc:nil num:nil ':t
+
+* For conference: Lund Linux Conf 2025              :noexport:
+
+This presentation is for the Lund Linux Conference 2025 in Lund, Sweden.
+
+* Outline / ideas                                                  :noexport:
+
+* Who was Dave Täht?                                                 :export:
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+#+ATTR_html: :style height: 800px; float: right;
+[[file:WISPAPALOOZA-2024_6.webp]]
+
+#+HTML: <div style="height: 300px;"></div>
+
+- Bufferbloat project co-founder and "nagger in chief"
+- Space nerd and all-round dreamer
+- Musician and songwriter
+
+Dave passed away on April 1st, 2025, aged 59.
+
+** How I met Dave
+:PROPERTIES:
+:reveal_extra_attr: class="img-slide"
+:END:
+
+[[file:bella-sky.jpg]]
+
+#+begin_quote
+So sure, come on down. The only thing I have on my plate is defining a
+spec for a bufferbloat test - and raising awareness of fq_codel and
+BQL while I'm here. So our interests are congruent.
+
+The food at the reception was good... and free.
+#+end_quote
+
+** Collaborating with Dave
+
+[[file:testbed-selfie.jpg]]
+
+* A brief history of Bufferbloat                                     :export:
+
+#+ATTR_html: :style height: 700px;
+[[file:bloat-graph.png]]
+
+** Dark buffers in the Internet (2011)
+
+#+ATTR_html: :style height: 650px;
+[[file:dark-buffers.png]]
+
+https://dl.acm.org/doi/10.1145/2063166.2071893
+
+** The CeroWrt project
+#+ATTR_html: :style height: 700px;
+[[file:cerowrt.png]]
+
+** Make-wifi-fast
+
+[[file:make-wifi-fast.png]]
+
+** IETF AQM working group
+#+ATTR_html: :style height: 700px;
+[[file:aqm-wg.png]]
+
+** LibreQoS
+#+ATTR_html: :style height: 700px;
+[[file:libreqos.png]]
+
+
+* Bufferbloat mitigation innovations in Linux                        :export:
+
+** Codel and PIE and their FQ variants
+
+#+ATTR_html: :style height: 680px;
+[[file:codel-queue.png]]
+
+#+ATTR_html: :class small
+https://queue.acm.org/detail.cfm?id=2209336
+
+** RFC 8289 and 8290
+#+ATTR_html: :style height: 700px;
+[[file:rfc8290.jpg]]
+
+** BQL
+#+ATTR_html: :style width: 600px;
+[[file:BQL.webp]]
+
+#+ATTR_html: :style width: 600px;
+[[file:BQL2.webp]]
+
+#+ATTR_html: :class small
+https://medium.com/@tom_84912/byte-queue-limits-the-unauthorized-biography-61adc5730b83
+
+** WiFi queueing and AQL
+#+ATTR_html: :style height: 680px;
+[[file:wifi-queueing-softq.svg]]
+
+#+ATTR_html: :class small
+https://www.usenix.org/conference/atc17/technical-sessions/presentation/hoilan-jorgesen
+** TCP small queues and pacing
+#+ATTR_html: :style width: 1400px;
+[[file:tcp-small-queues.png]]
+
+#+ATTR_html: :class small
+https://doi.org/10.1109/ACCESS.2021.3113891
+
+** BBR and other congestion controls
+#+ATTR_html: :style height: 700px;
+[[file:bbr.png]]
+
+** CAKE
+#+ATTR_html: :style height: 700px;
+[[file:cake.png]]
+
+* Honouring Dave's memory                                            :export:
+
+#+begin_quote
+"A man is not dead while his name is still spoken."
+
+ -Going Postal, Chapter 4 prologue
+#+end_quote
+
+** Open and /repeatable/ research
+** 
+#+ATTR_html: :style height: 750px;
+[[file:repeatable.png]]
+
+** Experiments on real networks                                   :noexport:
+
+** Relentless focus on latency
+** 
+
+#+begin_quote
+Every moment of our lives is precious, and every moment spent waiting on a
+computer, wasted. We optimize our lives, almost subconsciously, in a quest for
+lower latency between what we want and how fast we get it.
+
+[...]
+
+In improving mankind's interpersonal latency, I'd like us to always aim at the
+speed of light, and ever closer to the speed of thought.
+#+end_quote
+
+https://www.internetsociety.org/wp-content/uploads/2013/09/28_towards_imperceptible_latency.pdf
+
+* Further reading                                                    :export:
+- Dave's Wikipedia entry: https://en.wikipedia.org/wiki/Dave_Taht
+- Bufferbloat web site: https://bufferbloat.net
+- My own PhD: https://bufferbloat-and-beyond.net/
+
+*                                                                    :export:
+#+begin_quote
+ "You know they'll never really die while the Trunk is alive[...]
+It lives while the code is shifted, and they live with it, always Going Home."
+
+-Moist von Lipwig, Going Postal, Chapter 13
+#+end_quote
+
+* Emacs end-tricks                                                 :noexport:
+
+This section contains some emacs tricks, that e.g. remove the "Slide:" prefix
+in the compiled version.
+
+# Local Variables:
+# org-re-reveal-title-slide: "<h1 class=\"title\">%t</h1> Toke Høiland-Jørgensen - Red Hat"
+# org-export-filter-headline-functions: ((lambda (contents backend info) (replace-regexp-in-string "Slide: " "" contents)))
+# End:
