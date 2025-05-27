@@ -308,6 +308,16 @@ body {
   float: left;
 }
 
+.reveal .two-column > .column {
+  width: 45%;
+  margin-left: 1em;
+  float: left;
+}
+
 .figure-number {
   display: none;
+}
+
+.small {
+  font-size: 85% !important;
 }
