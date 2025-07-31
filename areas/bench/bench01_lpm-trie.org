@@ -9,6 +9,7 @@ Matt Fleming is developing a new selftests bench for the LPM-trie BPF-map.
 - [[#code-references][Code references]]
   - [[#git-tree][Git tree]]
   - [[#upstream-patches][Upstream patches]]
+  - [[#patch-used][Patch used]]
 - [[#micro-benchmark][Micro benchmark]]
 - [[#results-10000-entries][Results: 10,000 entries]]
   - [[#cpu-amd-epyc-9684x][CPU: AMD EPYC 9684X]]
@@ -28,6 +29,14 @@ Patch version: "selftests/bpf: Add LPM trie microbenchmarks"
  - [[https://lore.kernel.org/all/20250721142753.263135-1-matt@readmodwrite.com/][V2]]
  - [[https://lore.kernel.org/all/20250722150152.1158205-1-matt@readmodwrite.com/][V3]]
 
+** Patch used
+
+The patch that was used to produce these results is a modified version of
+patch V3, that tries to measure the =delete= operation more accurately,
+without intermixing the time it takes to populate the map again after
+deleting all elements.
+
+[[file:patches/bench-lpm-trie-V3-adjusted.patch]]
 
 * Micro benchmark
 
