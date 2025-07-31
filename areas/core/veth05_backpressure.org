@@ -8,7 +8,14 @@ into the qdisc layer.
 We observed a production problem, and we have constructed a reproducer, and are
 now working on a patch for veth.
 
+* Upstream status
+
+Patches have been accepted upstream and merged into kernel release v6.16
+ - [[https://git.kernel.org/torvalds/c/dc82a33297fc][dc82a33297fc]] ("veth: apply qdisc backpressure on full ptr_ring to reduce TX drops")
+ - [[https://git.kernel.org/torvalds/c/9337c54401a5][9337c54401a5]] ("veth: prevent NULL pointer dereference in veth_xdp_rcv")
+
 * Table of Contents                                                     :toc:
+- [[#upstream-status][Upstream status]]
 - [[#what-is-veth][What is veth]]
 - [[#issue][Issue]]
   - [[#packet-flow-leading-to-tx-drops][Packet flow leading to TX drops]]
