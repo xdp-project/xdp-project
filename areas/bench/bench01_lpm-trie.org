@@ -1,0 +1,21 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Bench lpm-trie
+#+CATEGORY: CPUMAP
+#+OPTIONS: ^:nil
+
+Matt Fleming is developing a new selftests bench for the LPM-trie BPF-map.
+
+* Code references
+
+** Git tree
+
+Warning branch 'bench/lpm-trie' is getting rebased
+ - https://github.com/mfleming/linux/tree/bench/lpm-trie
+
+** Upstream patches
+
+Patch version: "selftests/bpf: Add LPM trie microbenchmarks"
+ - [[https://lore.kernel.org/all/20250718150554.48210-1-matt@readmodwrite.com/][V1]]
+ - [[https://lore.kernel.org/all/20250721142753.263135-1-matt@readmodwrite.com/][V2]]
+ - [[https://lore.kernel.org/all/20250722150152.1158205-1-matt@readmodwrite.com/][V3]]
+
