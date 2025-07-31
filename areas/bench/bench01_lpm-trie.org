@@ -56,50 +56,6 @@ done
 | delete    | 1.747 ± 0.053 M ops/s | 572.519 ns/op         |
 | free      | 0.294 ± 0.055 K ops/s | 3.521 ms/op           |
 
-Raw data:
-#+begin_example
-Setting up benchmark 'lpm-trie-lookup'...
-Benchmark 'lpm-trie-lookup' started.
-Iter   0 ( 53.928us): hits    7.490M/s (  7.490M/prod)
-Iter   1 ( -3.686us): hits    7.600M/s (  7.600M/prod)
-Iter   2 ( -2.775us): hits    7.600M/s (  7.600M/prod)
-Iter   3 (  1.582us): hits    7.600M/s (  7.600M/prod)
-Iter   4 (  1.611us): hits    7.590M/s (  7.590M/prod)
-Iter   5 ( 30.125us): hits    7.600M/s (  7.600M/prod)
-Iter   6 (-29.866us): hits    7.600M/s (  7.600M/prod)
-Summary: throughput    7.598 ± 0.004 M ops/s (  7.598M ops/prod), latency  131.608 ns/op
-Setting up benchmark 'lpm-trie-update'...
-Benchmark 'lpm-trie-update' started.
-Iter   0 ( 45.819us): hits    3.270M/s (  3.270M/prod)
-Iter   1 ( -4.308us): hits    3.200M/s (  3.200M/prod)
-Iter   2 (  3.224us): hits    3.280M/s (  3.280M/prod)
-Iter   3 ( -1.944us): hits    3.240M/s (  3.240M/prod)
-Iter   4 ( 40.479us): hits    3.270M/s (  3.270M/prod)
-Iter   5 (-22.415us): hits    3.260M/s (  3.260M/prod)
-Iter   6 (-12.540us): hits    3.230M/s (  3.230M/prod)
-Summary: throughput    3.247 ± 0.029 M ops/s (  3.247M ops/prod), latency  308.008 ns/op
-Setting up benchmark 'lpm-trie-delete'...
-Benchmark 'lpm-trie-delete' started.
-Iter   0 ( 80.999us): hits    1.690M/s (  1.690M/prod)
-Iter   1 (-23.827us): hits    1.820M/s (  1.820M/prod)
-Iter   2 ( -5.139us): hits    1.720M/s (  1.720M/prod)
-Iter   3 (  5.156us): hits    1.740M/s (  1.740M/prod)
-Iter   4 ( 17.284us): hits    1.790M/s (  1.790M/prod)
-Iter   5 (-18.450us): hits    1.740M/s (  1.740M/prod)
-Iter   6 ( 27.009us): hits    1.670M/s (  1.670M/prod)
-Summary: throughput    1.747 ± 0.053 M ops/s (  1.747M ops/prod), latency  572.519 ns/op
-Setting up benchmark 'lpm-trie-free'...
-Benchmark 'lpm-trie-free' started.
-Iter   0 ( 67.620us): hits    0.176K/s (  0.176K/prod)
-Iter   1 ( 50.173us): hits    0.253K/s (  0.253K/prod)
-Iter   2 (-60.874us): hits    0.299K/s (  0.299K/prod)
-Iter   3 (  5.877us): hits    0.351K/s (  0.351K/prod)
-Iter   4 ( 29.121us): hits    0.300K/s (  0.300K/prod)
-Iter   5 (-13.012us): hits    0.349K/s (  0.349K/prod)
-Iter   6 (-14.434us): hits    0.209K/s (  0.209K/prod)
-Summary: throughput    0.294 ± 0.055 K ops/s (  0.294K ops/prod), latency    3.521 ms/op
-#+end_example
-
 ** CPU: Intel E5-1650 v4 @ 3.60GHz
 
 | operation | throughput            | latency per operation |
