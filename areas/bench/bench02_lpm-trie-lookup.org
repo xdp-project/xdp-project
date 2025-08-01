@@ -85,3 +85,78 @@ done | tee ~/bpf-benchs/lookup/results02/total03-entries-${N}
 |     900000 |                1.475 |               677.966 |
 |    1000000 |                1.503 |               665.188 |
 
+* Tracking cache-misses
+
+The theory is that performance degrades due to cache-misses, because the BPF LPM
+trie data-structure doesn't do level-compression.  E.g. it only have two
+children in each node.
+
+Use =perf stat= tool to monitor cache-misses.
+
+#+begin_example
+for N in 1000 2000 3000 4000 5000 6000 7000 8000 9000 10000 \
+         15000 20000 25000 30000 40000 50000 60000 \
+         70000 80000 90000 100000 150000 \
+         200000 250000 300000 350000 400000 450000 \
+         500000 600000 700000 800000 900000 1000000 ; do
+   echo "Entries: $N"
+   sudo perf stat -e cache-misses,cache-references -e dTLB-load-misses,dTLB-loads \
+      ./bench-V3-adj lpm-trie-lookup \
+      --nr_entries=${N} --prefix_len=32 --producers=1 --affinity | \
+      tee -a ~/bpf-benchs/lookup/results02/lookup03-perf-stat-entries-${N} ;
+done 2>&1 | tee ~/bpf-benchs/lookup/results02/total04-perf-stat
+#+end_example
+
+** CPU: AMD EPYC 9684X
+
+On this AMD CPU the perf event counter for =cache-misses= and =cache-references=
+is measuring the L2 cache.  We excluded the 100 entries test, because its
+results are misleading given it mostly uses L1 cache.
+
+We also capture the data TLB miss counters. This is because after a certain
+size, this is starting to be a new limiting factor. Note, that at small number
+of entries the dTLB percents is misleading, because there are so few TLB-loads.
+The TLB stats become interesting around 150000 entries.
+
+| Nr entries | ops/sec (M/s) | per op (ns/op) | cache-misses | miss % | dTLB-load-misses | dTLB % |
+|------------+---------------+----------------+--------------+--------+------------------+--------|
+|       1000 |        11.908 |         83.975 | 809,152      |  0.149 | 71,982           | 15.17% |
+|       2000 |        10.648 |         93.911 | 953,042      |  0.208 | 70,262           |  6.61% |
+|       3000 |         9.553 |        104.676 | 1,537,066    |  0.392 | 73,367           |  0.67% |
+|       4000 |         9.713 |        102.951 | 1,610,091    |  0.384 | 72,692           |  0.29% |
+|       5000 |         8.722 |        114.657 | 13,889,016   |  3.276 | 77,113           |  0.13% |
+|       6000 |         8.485 |        117.855 | 11,447,072   |  2.731 | 75,254           |  0.07% |
+|       7000 |         8.477 |        117.971 | 25,691,827   |  5.734 | 70,720           |  0.09% |
+|       8000 |         8.130 |        123.001 | 32,025,871   |  7.251 | 69,895           |  0.05% |
+|       9000 |         7.748 |        129.060 | 39,154,687   |  8.284 | 70,516           |  0.08% |
+|      10000 |         7.717 |        129.590 | 52,429,303   | 11.004 | 73,058           |  0.45% |
+|      15000 |         6.923 |        144.439 | 86,308,648   | 17.497 | 72,742           |  0.06% |
+|      20000 |         6.270 |        159.490 | 104,722,108  | 20.788 | 74,298           |  0.08% |
+|      25000 |         6.280 |        159.236 | 122,319,599  | 22.871 | 70,690           |  1.00% |
+|      30000 |         5.755 |        173.762 | 127,185,362  | 25.381 | 74,551           |  0.06% |
+|      40000 |         5.363 |        186.451 | 138,005,620  | 26.688 | 73,565           |  0.24% |
+|      50000 |         4.875 |        205.128 | 140,356,854  | 28.144 | 82,420           |  0.05% |
+|      60000 |         4.818 |        207.541 | 150,005,593  | 30.187 | 79,350           |  0.07% |
+|      70000 |         4.455 |        224.467 | 147,333,368  | 30.842 | 187,453          |  0.11% |
+|      80000 |         4.193 |        238.474 | 147,107,594  | 30.876 | 117,346          |  0.08% |
+|      90000 |         4.092 |        244.399 | 148,368,786  | 31.753 | 89,718           |  0.09% |
+|     100000 |         3.797 |        263.389 | 144,746,551  | 32.140 | 316,991          |  0.20% |
+|     150000 |         3.447 |        290.135 | 148,590,689  | 33.233 | 3,272,879        |  2.56% |
+|     200000 |         3.053 |        327.511 | 147,273,434  | 34.933 | 999,579          |  0.76% |
+|     250000 |         2.747 |        364.078 | 140,862,716  | 34.531 | 10,983,096       |  8.04% |
+|     300000 |         2.198 |        454.890 | 129,700,104  | 36.599 | 10,650,939       |  9.18% |
+|     350000 |         2.202 |        454.201 | 131,096,518  | 35.911 | 14,481,128       |  9.77% |
+|     400000 |         2.102 |        475.813 | 126,576,075  | 35.824 | 14,075,103       |  9.56% |
+|     450000 |         2.048 |        488.202 | 124,851,733  | 35.672 | 11,567,915       | 11.52% |
+|     500000 |         1.940 |        515.464 | 123,424,318  | 36.099 | 13,299,232       | 11.86% |
+|     600000 |         1.592 |        628.272 | 115,461,516  | 37.495 | 13,730,205       | 14.66% |
+|     700000 |         1.628 |        614.125 | 115,394,518  | 36.609 | 13,349,927       | 13.47% |
+|     800000 |         1.593 |        627.615 | 114,775,679  | 37.209 | 6,587,173        |  8.33% |
+|     900000 |         1.552 |        644.468 | 112,910,293  | 36.903 | 3,016,369        |  4.04% |
+|    1000000 |         1.500 |        666.667 | 113,440,223  | 36.687 | 5,906,167        |  9.14% |
+
+Results: Above table shows a strong correlation with percentage of cache-misses
+and lookup performance, for the range 1,000 to 100,000. After 150,000 entries
+there is again a huge performance drop, which seems correlated with data TLB
+misses, but after 800,000 a new hardware bottleneck seems to occur, which we
+have not correlated to a hardware perf counter.
