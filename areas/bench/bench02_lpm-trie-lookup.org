@@ -125,6 +125,7 @@ size, this is starting to be a new limiting factor. Note, that at small number
 of entries the dTLB percents is misleading, because there are so few TLB-loads.
 The TLB stats become interesting around 150000 entries.
 
+#+tblname: data_amd_cache_misses
 | Nr entries | ops/sec (M/s) | per op (ns/op) | cache-misses | miss % | dTLB-load-misses | dTLB % |
 |------------+---------------+----------------+--------------+--------+------------------+--------|
 |       1000 |        11.908 |         83.975 | 809,152      |  0.149 | 71,982           | 15.17% |
@@ -167,3 +168,36 @@ and lookup performance, for the range 1,000 to 100,000. After 150,000 entries
 there is again a huge performance drop, which seems correlated with data TLB
 misses, but after 800,000 a new hardware bottleneck seems to occur, which we
 have not correlated to a hardware perf counter.
+
+*** Plotting
+
+Plot result: [[file:images/lookup01.svg]]
+
+#+BEGIN_SRC python :var fname="images/lookup01.svg" :var data=data_amd_cache_misses :results file
+from matplotlib.legend_handler import HandlerLine2D
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.rcParams['figure.figsize'] = [8.0+4.9, 6.5]
+
+nr, d_ops, d_ns, d_miss, d_miss_pct, d_TLB, d_TLB_pct = zip(*data)
+
+#plt.xkcd()
+fig = plt.figure()
+
+axes1 = fig.add_subplot(1,1, 1)
+axes1.plot(nr, d_ns, marker='o', label='lookup nanosec/op')
+
+#axes2 = fig.add_subplot(1,1, 1)
+#axes2.plot(nr, d_miss_pct, marker='x', label='cache-misses %')
+
+legend = plt.legend(loc='upper left')
+
+plt.title('LPM trie lookup speed (in nanosec)')
+fig.savefig(fname)
+return fname
+#+END_SRC
+
+#+RESULTS:
+[[file:images/lookup01.svg]]
+
+
