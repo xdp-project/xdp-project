@@ -7,7 +7,14 @@ Background see: [[file:bench01_lpm-trie.org]]
 
 * Focus
 
-This document focus on the lookup speed for the LPM trie BPF map.
+This document focus on the *lookup speed* for the LPM trie BPF map.
+
+* Table of Contents                                                     :toc:
+- [[#focus][Focus]]
+- [[#initial-run01][Initial run01]]
+  - [[#cpu-amd-epyc-9684x][CPU: AMD EPYC 9684X]]
+- [[#tracking-cache-misses][Tracking cache-misses]]
+  - [[#cpu-amd-epyc-9684x-1][CPU: AMD EPYC 9684X]]
 
 * Initial run01
 
