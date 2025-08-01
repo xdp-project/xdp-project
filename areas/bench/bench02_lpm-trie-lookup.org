@@ -1,0 +1,87 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Bench lpm-trie - lookup performance
+#+CATEGORY: CPUMAP
+#+OPTIONS: ^:nil
+
+Background see: [[file:bench01_lpm-trie.org]]
+
+* Focus
+
+This document focus on the lookup speed for the LPM trie BPF map.
+
+* Initial run01
+
+We want to vary the number of entries in the map.
+
+#+begin_example
+for N in 100 1000 2000 3000 4000 5000 6000 7000 8000 9000 10000 \
+         15000 20000 25000 30000 40000 50000 60000 ; do
+   echo "Entries: $N"
+   sudo ./bench-V3-adj lpm-trie-lookup \
+      --nr_entries=${N} --prefix_len=32 --producers=1 --affinity | \
+      tee -a ~/bpf-benchs/lookup/results02/lookup02-entries-${N} ;
+done | tee ~/bpf-benchs/lookup/results02/total02
+#+end_example
+
+** CPU: AMD EPYC 9684X
+
+Cache:
+ - Cache L1: 64 KB (per core)
+ - Cache L2: 1 MB (per core)
+ - Cache L3: 1152 MB (shared)
+
+LPM map lookup speed:
+
+| Nr entries | Lookup ops/sec (M/s) | per operation (ns/op) |
+|------------+----------------------+-----------------------|
+|        100 |               16.208 |                61.697 |
+|       1000 |               11.702 |                85.458 |
+|       2000 |               10.750 |                93.023 |
+|       3000 |                9.610 |               104.058 |
+|       4000 |                9.690 |               103.199 |
+|       5000 |                9.078 |               110.152 |
+|       6000 |                8.407 |               118.953 |
+|       7000 |                8.555 |               116.891 |
+|       8000 |                8.482 |               117.901 |
+|       9000 |                8.042 |               124.352 |
+|      10000 |                7.510 |               133.156 |
+|      15000 |                6.970 |               143.472 |
+|      20000 |                6.383 |               156.658 |
+|      25000 |                6.128 |               163.177 |
+|      30000 |                5.842 |               171.184 |
+|      40000 |                5.328 |               187.676 |
+|      50000 |                5.183 |               192.926 |
+|      60000 |                4.983 |               200.669 |
+
+
+#+begin_example
+for N in 70000 80000 90000 100000 150000 \
+         200000 250000 300000 350000 400000 450000 \
+         500000 600000 700000 800000 900000 1000000 ; do
+   echo "Entries: $N"
+   sudo ./bench-V3-adj lpm-trie-lookup \
+      --nr_entries=${N} --prefix_len=32 --producers=1 --affinity | \
+      tee -a ~/bpf-benchs/lookup/results02/lookup03-entries-${N} ;
+done | tee ~/bpf-benchs/lookup/results02/total03-entries-${N}
+#+end_example
+
+| Nr entries | Lookup ops/sec (M/s) | per operation (ns/op) |
+|------------+----------------------+-----------------------|
+|      70000 |                4.595 |               217.628 |
+|      80000 |                4.275 |               233.918 |
+|      90000 |                4.115 |               243.013 |
+|     100000 |                3.798 |               263.273 |
+|     150000 |                3.262 |               306.592 |
+|     200000 |                3.023 |               330.761 |
+|     250000 |                2.735 |               365.631 |
+|     300000 |                2.157 |               463.679 |
+|     350000 |                2.235 |               447.427 |
+|     400000 |                2.195 |               455.581 |
+|     450000 |                2.058 |               485.830 |
+|     500000 |                1.893 |               528.169 |
+|     600000 |                1.750 |               571.429 |
+|     700000 |                1.697 |               589.391 |
+|     800000 |                1.545 |               647.249 |
+|     900000 |                1.475 |               677.966 |
+|    1000000 |                1.503 |               665.188 |
+
