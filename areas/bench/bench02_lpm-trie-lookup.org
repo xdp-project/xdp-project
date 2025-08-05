@@ -15,6 +15,9 @@ This document focus on the *lookup speed* for the LPM trie BPF map.
   - [[#cpu-amd-epyc-9684x][CPU: AMD EPYC 9684X]]
 - [[#tracking-cache-misses][Tracking cache-misses]]
   - [[#cpu-amd-epyc-9684x-1][CPU: AMD EPYC 9684X]]
+- [[#plotting-results][Plotting results]]
+  - [[#lpm-large-sizes][LPM large sizes:]]
+  - [[#lpm-medium-sizes][LPM medium sizes]]
 
 * Initial run01
 
@@ -39,6 +42,7 @@ Cache:
 
 LPM map lookup speed:
 
+#+tblname: data_LPM_medium_sizes
 | Nr entries | Lookup ops/sec (M/s) | per operation (ns/op) |
 |------------+----------------------+-----------------------|
 |        100 |               16.208 |                61.697 |
@@ -169,9 +173,19 @@ there is again a huge performance drop, which seems correlated with data TLB
 misses, but after 800,000 a new hardware bottleneck seems to occur, which we
 have not correlated to a hardware perf counter.
 
-*** Plotting
 
-Plot result: [[file:images/lookup01.svg]]
+* Plotting results
+
+Large sizes for LPM maps:
+[[file:images/lookup01.svg]]
+
+Medium sizes for LPM map:
+[[file:images/lookup02-medium-sizes.svg]]
+
+
+** LPM large sizes:
+
+Plotting data from table: data_amd_cache_misses
 
 #+BEGIN_SRC python :var fname="images/lookup01.svg" :var data=data_amd_cache_misses :results file
 from matplotlib.legend_handler import HandlerLine2D
@@ -200,4 +214,35 @@ return fname
 #+RESULTS:
 [[file:images/lookup01.svg]]
 
+** LPM medium sizes
+
+Plotting data from table: data_LPM_medium_sizes
+
+Medium sizes:
+#+BEGIN_SRC python :var fname="images/lookup02-medium-sizes.svg" :var data=data_LPM_medium_sizes :results file
+from matplotlib.legend_handler import HandlerLine2D
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.rcParams['figure.figsize'] = [8.0+4.9, 6.5]
+
+nr, d_ops, d_ns = zip(*data)
+
+#plt.xkcd()
+fig = plt.figure()
+
+axes1 = fig.add_subplot(1,1, 1)
+axes1.plot(nr, d_ns, marker='o', label='lookup nanosec/op')
+
+#axes2 = fig.add_subplot(1,1, 1)
+#axes2.plot(nr, d_miss_pct, marker='x', label='cache-misses %')
+
+legend = plt.legend(loc='upper left')
+
+plt.title('LPM trie lookup speed (in nanosec)')
+fig.savefig(fname)
+return fname
+#+END_SRC
+
+#+RESULTS:
+[[file:images/lookup02-medium-sizes.svg]]
 
