@@ -15,9 +15,11 @@ This document focus on the *lookup speed* for the LPM trie BPF map.
   - [[#cpu-amd-epyc-9684x][CPU: AMD EPYC 9684X]]
 - [[#tracking-cache-misses][Tracking cache-misses]]
   - [[#cpu-amd-epyc-9684x-1][CPU: AMD EPYC 9684X]]
+- [[#lpm-small-sizes][LPM small sizes]]
 - [[#plotting-results][Plotting results]]
   - [[#lpm-large-sizes][LPM large sizes:]]
   - [[#lpm-medium-sizes][LPM medium sizes]]
+  - [[#lpm-small-sizes-1][LPM small sizes]]
 
 * Initial run01
 
@@ -173,15 +175,76 @@ there is again a huge performance drop, which seems correlated with data TLB
 misses, but after 800,000 a new hardware bottleneck seems to occur, which we
 have not correlated to a hardware perf counter.
 
+* LPM small sizes
+
+Smaller sizes to investigate case:
+
+Try to track L1 cache-misses
+ - Unfortunately the L1 perf counters doesn't seem correct on this AMD CPU
+
+#+begin_example
+for N in 1 2 4 8 10 14 16 18 20 32 40 50 60 70 80 100 125 150 200 ; do
+   echo "Entries: $N"
+   sudo perf stat -e cache-misses,cache-references \
+                  -e L1-dcache-load-misses,L1-dcache-loads \
+      ./bench-V3-adj lpm-trie-lookup \
+      --nr_entries=${N} --prefix_len=32 --producers=1 --affinity | \
+      tee -a ~/bpf-benchs/lookup/results03/lookup06-perf-stat-entries-${N} ;
+done 2>&1 | tee ~/bpf-benchs/lookup/results03/total06-perf-stat
+#+end_example
+
+#+begin_example
+for N in 300 400 500 ; do
+   echo "Entries: $N"
+   sudo perf stat -e cache-misses,cache-references \
+                  -e L1-dcache-load-misses,L1-dcache-loads \
+      ./bench-V3-adj lpm-trie-lookup \
+      --nr_entries=${N} --prefix_len=32 --producers=1 --affinity | \
+      tee -a ~/bpf-benchs/lookup/results03/lookup07-perf-stat-entries-${N} ;
+done 2>&1 | tee ~/bpf-benchs/lookup/results03/total07-perf-stat
+#+end_example
+
+CPU: AMD EPYC 9684X
+ - kernel 6.16.0-rc5-next-next3-pfmem-reason+
+
+#+tblname: data_LPM_small_sizes
+| Nr entries | ops/sec (M/s) | per op (ns/op) |
+|------------+---------------+----------------|
+|          1 |        27.195 |         36.771 |
+|          2 |        25.670 |         38.956 |
+|          4 |        24.768 |         40.374 |
+|          8 |        23.275 |         42.965 |
+|         10 |        20.687 |         48.340 |
+|         14 |        20.453 |         48.892 |
+|         16 |        21.055 |         47.495 |
+|         18 |        19.017 |         52.585 |
+|         20 |        19.140 |         52.247 |
+|         32 |        19.038 |         52.526 |
+|         40 |        17.780 |         56.243 |
+|         50 |        17.320 |         57.737 |
+|         60 |        17.123 |         58.400 |
+|         70 |        16.637 |         60.108 |
+|         80 |        16.243 |         61.564 |
+|        100 |        16.213 |         61.678 |
+|        125 |        16.203 |         61.716 |
+|        150 |        15.108 |         66.189 |
+|        200 |        14.930 |         66.979 |
+|        300 |        13.263 |         75.396 |
+
+|        400 |        12.752 |         78.421 |
+|        500 |        12.805 |         78.094 |
+
 
 * Plotting results
 
 Large sizes for LPM maps:
 [[file:images/lookup01.svg]]
 
-Medium sizes for LPM map:
+Medium sizes for LPM maps:
 [[file:images/lookup02-medium-sizes.svg]]
 
+Small size for LPM maps:
+[[file:images/lookup03-small-sizes.svg]]
 
 ** LPM large sizes:
 
@@ -206,7 +269,7 @@ axes1.plot(nr, d_ns, marker='o', label='lookup nanosec/op')
 
 legend = plt.legend(loc='upper left')
 
-plt.title('LPM trie lookup speed (in nanosec)')
+plt.title('LPM trie lookup speed (in nanosec) - (large sizes)')
 fig.savefig(fname)
 return fname
 #+END_SRC
@@ -238,11 +301,42 @@ axes1.plot(nr, d_ns, marker='o', label='lookup nanosec/op')
 
 legend = plt.legend(loc='upper left')
 
-plt.title('LPM trie lookup speed (in nanosec)')
+plt.title('LPM trie lookup speed (in nanosec) - (medium sizes)')
 fig.savefig(fname)
 return fname
 #+END_SRC
 
 #+RESULTS:
 [[file:images/lookup02-medium-sizes.svg]]
+
+** LPM small sizes
+Plotting data from table: data_LPM_small_sizes
+
+Small sizes:
+#+BEGIN_SRC python :var fname="images/lookup03-small-sizes.svg" :var data=data_LPM_small_sizes :results file
+from matplotlib.legend_handler import HandlerLine2D
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.rcParams['figure.figsize'] = [8.0+4.9, 6.5]
+
+nr, d_ops, d_ns = zip(*data)
+
+#plt.xkcd()
+fig = plt.figure()
+
+axes1 = fig.add_subplot(1,1, 1)
+axes1.plot(nr, d_ns, marker='o', label='lookup nanosec/op')
+
+#axes2 = fig.add_subplot(1,1, 1)
+#axes2.plot(nr, d_miss_pct, marker='x', label='cache-misses %')
+
+legend = plt.legend(loc='upper left')
+
+plt.title('LPM trie lookup speed (in nanosec) - (small sizes)')
+fig.savefig(fname)
+return fname
+#+END_SRC
+
+#+RESULTS:
+[[file:images/lookup03-small-sizes.svg]]
 
