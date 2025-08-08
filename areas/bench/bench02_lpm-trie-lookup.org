@@ -263,6 +263,7 @@ fig = plt.figure()
 
 axes1 = fig.add_subplot(1,1, 1)
 axes1.plot(nr, d_ns, marker='o', label='lookup nanosec/op')
+axes1.ticklabel_format(style="plain") # turns off scientific notation
 
 #axes2 = fig.add_subplot(1,1, 1)
 #axes2.plot(nr, d_miss_pct, marker='x', label='cache-misses %')
