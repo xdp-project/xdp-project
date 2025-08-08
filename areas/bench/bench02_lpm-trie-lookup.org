@@ -1,0 +1,354 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Bench lpm-trie - lookup performance
+#+CATEGORY: CPUMAP
+#+OPTIONS: ^:nil
+
+Background see: [[file:bench01_lpm-trie.org]]
+
+* Focus
+
+This document focus on the *lookup speed* for the LPM trie BPF map.
+
+* Table of Contents                                                     :toc:
+- [[#focus][Focus]]
+- [[#initial-run01][Initial run01]]
+  - [[#cpu-amd-epyc-9684x][CPU: AMD EPYC 9684X]]
+- [[#tracking-cache-misses][Tracking cache-misses]]
+  - [[#cpu-amd-epyc-9684x-1][CPU: AMD EPYC 9684X]]
+- [[#lpm-small-sizes][LPM small sizes]]
+- [[#plotting-results][Plotting results]]
+  - [[#lpm-large-sizes][LPM large sizes:]]
+  - [[#lpm-medium-sizes][LPM medium sizes]]
+  - [[#lpm-small-sizes-1][LPM small sizes]]
+
+* Initial run01
+
+We want to vary the number of entries in the map.
+
+#+begin_example
+for N in 100 1000 2000 3000 4000 5000 6000 7000 8000 9000 10000 \
+         15000 20000 25000 30000 40000 50000 60000 ; do
+   echo "Entries: $N"
+   sudo ./bench-V3-adj lpm-trie-lookup \
+      --nr_entries=${N} --prefix_len=32 --producers=1 --affinity | \
+      tee -a ~/bpf-benchs/lookup/results02/lookup02-entries-${N} ;
+done | tee ~/bpf-benchs/lookup/results02/total02
+#+end_example
+
+** CPU: AMD EPYC 9684X
+
+Cache:
+ - Cache L1: 64 KB (per core)
+ - Cache L2: 1 MB (per core)
+ - Cache L3: 1152 MB (shared)
+
+LPM map lookup speed:
+
+#+tblname: data_LPM_medium_sizes
+| Nr entries | Lookup ops/sec (M/s) | per operation (ns/op) |
+|------------+----------------------+-----------------------|
+|        100 |               16.208 |                61.697 |
+|       1000 |               11.702 |                85.458 |
+|       2000 |               10.750 |                93.023 |
+|       3000 |                9.610 |               104.058 |
+|       4000 |                9.690 |               103.199 |
+|       5000 |                9.078 |               110.152 |
+|       6000 |                8.407 |               118.953 |
+|       7000 |                8.555 |               116.891 |
+|       8000 |                8.482 |               117.901 |
+|       9000 |                8.042 |               124.352 |
+|      10000 |                7.510 |               133.156 |
+|      15000 |                6.970 |               143.472 |
+|      20000 |                6.383 |               156.658 |
+|      25000 |                6.128 |               163.177 |
+|      30000 |                5.842 |               171.184 |
+|      40000 |                5.328 |               187.676 |
+|      50000 |                5.183 |               192.926 |
+|      60000 |                4.983 |               200.669 |
+
+
+#+begin_example
+for N in 70000 80000 90000 100000 150000 \
+         200000 250000 300000 350000 400000 450000 \
+         500000 600000 700000 800000 900000 1000000 ; do
+   echo "Entries: $N"
+   sudo ./bench-V3-adj lpm-trie-lookup \
+      --nr_entries=${N} --prefix_len=32 --producers=1 --affinity | \
+      tee -a ~/bpf-benchs/lookup/results02/lookup03-entries-${N} ;
+done | tee ~/bpf-benchs/lookup/results02/total03-entries-${N}
+#+end_example
+
+| Nr entries | Lookup ops/sec (M/s) | per operation (ns/op) |
+|------------+----------------------+-----------------------|
+|      70000 |                4.595 |               217.628 |
+|      80000 |                4.275 |               233.918 |
+|      90000 |                4.115 |               243.013 |
+|     100000 |                3.798 |               263.273 |
+|     150000 |                3.262 |               306.592 |
+|     200000 |                3.023 |               330.761 |
+|     250000 |                2.735 |               365.631 |
+|     300000 |                2.157 |               463.679 |
+|     350000 |                2.235 |               447.427 |
+|     400000 |                2.195 |               455.581 |
+|     450000 |                2.058 |               485.830 |
+|     500000 |                1.893 |               528.169 |
+|     600000 |                1.750 |               571.429 |
+|     700000 |                1.697 |               589.391 |
+|     800000 |                1.545 |               647.249 |
+|     900000 |                1.475 |               677.966 |
+|    1000000 |                1.503 |               665.188 |
+
+* Tracking cache-misses
+
+The theory is that performance degrades due to cache-misses, because the BPF LPM
+trie data-structure doesn't do level-compression.  E.g. it only have two
+children in each node.
+
+Use =perf stat= tool to monitor cache-misses.
+
+#+begin_example
+for N in 1000 2000 3000 4000 5000 6000 7000 8000 9000 10000 \
+         15000 20000 25000 30000 40000 50000 60000 \
+         70000 80000 90000 100000 150000 \
+         200000 250000 300000 350000 400000 450000 \
+         500000 600000 700000 800000 900000 1000000 ; do
+   echo "Entries: $N"
+   sudo perf stat -e cache-misses,cache-references -e dTLB-load-misses,dTLB-loads \
+      ./bench-V3-adj lpm-trie-lookup \
+      --nr_entries=${N} --prefix_len=32 --producers=1 --affinity | \
+      tee -a ~/bpf-benchs/lookup/results02/lookup03-perf-stat-entries-${N} ;
+done 2>&1 | tee ~/bpf-benchs/lookup/results02/total04-perf-stat
+#+end_example
+
+** CPU: AMD EPYC 9684X
+
+On this AMD CPU the perf event counter for =cache-misses= and =cache-references=
+is measuring the L2 cache.  We excluded the 100 entries test, because its
+results are misleading given it mostly uses L1 cache.
+
+We also capture the data TLB miss counters. This is because after a certain
+size, this is starting to be a new limiting factor. Note, that at small number
+of entries the dTLB percents is misleading, because there are so few TLB-loads.
+The TLB stats become interesting around 150000 entries.
+
+#+tblname: data_amd_cache_misses
+| Nr entries | ops/sec (M/s) | per op (ns/op) | cache-misses | miss % | dTLB-load-misses | dTLB % |
+|------------+---------------+----------------+--------------+--------+------------------+--------|
+|       1000 |        11.908 |         83.975 | 809,152      |  0.149 | 71,982           | 15.17% |
+|       2000 |        10.648 |         93.911 | 953,042      |  0.208 | 70,262           |  6.61% |
+|       3000 |         9.553 |        104.676 | 1,537,066    |  0.392 | 73,367           |  0.67% |
+|       4000 |         9.713 |        102.951 | 1,610,091    |  0.384 | 72,692           |  0.29% |
+|       5000 |         8.722 |        114.657 | 13,889,016   |  3.276 | 77,113           |  0.13% |
+|       6000 |         8.485 |        117.855 | 11,447,072   |  2.731 | 75,254           |  0.07% |
+|       7000 |         8.477 |        117.971 | 25,691,827   |  5.734 | 70,720           |  0.09% |
+|       8000 |         8.130 |        123.001 | 32,025,871   |  7.251 | 69,895           |  0.05% |
+|       9000 |         7.748 |        129.060 | 39,154,687   |  8.284 | 70,516           |  0.08% |
+|      10000 |         7.717 |        129.590 | 52,429,303   | 11.004 | 73,058           |  0.45% |
+|      15000 |         6.923 |        144.439 | 86,308,648   | 17.497 | 72,742           |  0.06% |
+|      20000 |         6.270 |        159.490 | 104,722,108  | 20.788 | 74,298           |  0.08% |
+|      25000 |         6.280 |        159.236 | 122,319,599  | 22.871 | 70,690           |  1.00% |
+|      30000 |         5.755 |        173.762 | 127,185,362  | 25.381 | 74,551           |  0.06% |
+|      40000 |         5.363 |        186.451 | 138,005,620  | 26.688 | 73,565           |  0.24% |
+|      50000 |         4.875 |        205.128 | 140,356,854  | 28.144 | 82,420           |  0.05% |
+|      60000 |         4.818 |        207.541 | 150,005,593  | 30.187 | 79,350           |  0.07% |
+|      70000 |         4.455 |        224.467 | 147,333,368  | 30.842 | 187,453          |  0.11% |
+|      80000 |         4.193 |        238.474 | 147,107,594  | 30.876 | 117,346          |  0.08% |
+|      90000 |         4.092 |        244.399 | 148,368,786  | 31.753 | 89,718           |  0.09% |
+|     100000 |         3.797 |        263.389 | 144,746,551  | 32.140 | 316,991          |  0.20% |
+|     150000 |         3.447 |        290.135 | 148,590,689  | 33.233 | 3,272,879        |  2.56% |
+|     200000 |         3.053 |        327.511 | 147,273,434  | 34.933 | 999,579          |  0.76% |
+|     250000 |         2.747 |        364.078 | 140,862,716  | 34.531 | 10,983,096       |  8.04% |
+|     300000 |         2.198 |        454.890 | 129,700,104  | 36.599 | 10,650,939       |  9.18% |
+|     350000 |         2.202 |        454.201 | 131,096,518  | 35.911 | 14,481,128       |  9.77% |
+|     400000 |         2.102 |        475.813 | 126,576,075  | 35.824 | 14,075,103       |  9.56% |
+|     450000 |         2.048 |        488.202 | 124,851,733  | 35.672 | 11,567,915       | 11.52% |
+|     500000 |         1.940 |        515.464 | 123,424,318  | 36.099 | 13,299,232       | 11.86% |
+|     600000 |         1.592 |        628.272 | 115,461,516  | 37.495 | 13,730,205       | 14.66% |
+|     700000 |         1.628 |        614.125 | 115,394,518  | 36.609 | 13,349,927       | 13.47% |
+|     800000 |         1.593 |        627.615 | 114,775,679  | 37.209 | 6,587,173        |  8.33% |
+|     900000 |         1.552 |        644.468 | 112,910,293  | 36.903 | 3,016,369        |  4.04% |
+|    1000000 |         1.500 |        666.667 | 113,440,223  | 36.687 | 5,906,167        |  9.14% |
+
+Results: Above table shows a strong correlation with percentage of cache-misses
+and lookup performance, for the range 1,000 to 100,000. After 150,000 entries
+there is again a huge performance drop, which seems correlated with data TLB
+misses, but after 800,000 a new hardware bottleneck seems to occur, which we
+have not correlated to a hardware perf counter.
+
+* LPM small sizes
+
+Smaller sizes to investigate case:
+
+Try to track L1 cache-misses
+ - Unfortunately the L1 perf counters doesn't seem correct on this AMD CPU
+
+#+begin_example
+for N in 1 2 4 8 10 14 16 18 20 32 40 50 60 70 80 100 125 150 200 ; do
+   echo "Entries: $N"
+   sudo perf stat -e cache-misses,cache-references \
+                  -e L1-dcache-load-misses,L1-dcache-loads \
+      ./bench-V3-adj lpm-trie-lookup \
+      --nr_entries=${N} --prefix_len=32 --producers=1 --affinity | \
+      tee -a ~/bpf-benchs/lookup/results03/lookup06-perf-stat-entries-${N} ;
+done 2>&1 | tee ~/bpf-benchs/lookup/results03/total06-perf-stat
+#+end_example
+
+#+begin_example
+for N in 300 400 500 ; do
+   echo "Entries: $N"
+   sudo perf stat -e cache-misses,cache-references \
+                  -e L1-dcache-load-misses,L1-dcache-loads \
+      ./bench-V3-adj lpm-trie-lookup \
+      --nr_entries=${N} --prefix_len=32 --producers=1 --affinity | \
+      tee -a ~/bpf-benchs/lookup/results03/lookup07-perf-stat-entries-${N} ;
+done 2>&1 | tee ~/bpf-benchs/lookup/results03/total07-perf-stat
+#+end_example
+
+CPU: AMD EPYC 9684X
+ - kernel 6.16.0-rc5-next-next3-pfmem-reason+
+
+#+tblname: data_LPM_small_sizes
+| Nr entries | ops/sec (M/s) | per op (ns/op) |
+|------------+---------------+----------------|
+|          1 |        27.195 |         36.771 |
+|          2 |        25.670 |         38.956 |
+|          4 |        24.768 |         40.374 |
+|          8 |        23.275 |         42.965 |
+|         10 |        20.687 |         48.340 |
+|         14 |        20.453 |         48.892 |
+|         16 |        21.055 |         47.495 |
+|         18 |        19.017 |         52.585 |
+|         20 |        19.140 |         52.247 |
+|         32 |        19.038 |         52.526 |
+|         40 |        17.780 |         56.243 |
+|         50 |        17.320 |         57.737 |
+|         60 |        17.123 |         58.400 |
+|         70 |        16.637 |         60.108 |
+|         80 |        16.243 |         61.564 |
+|        100 |        16.213 |         61.678 |
+|        125 |        16.203 |         61.716 |
+|        150 |        15.108 |         66.189 |
+|        200 |        14.930 |         66.979 |
+|        300 |        13.263 |         75.396 |
+
+|        400 |        12.752 |         78.421 |
+|        500 |        12.805 |         78.094 |
+
+
+* Plotting results
+
+Large sizes for LPM maps:
+[[file:images/lookup01.svg]]
+
+Medium sizes for LPM maps:
+[[file:images/lookup02-medium-sizes.svg]]
+
+Small size for LPM maps:
+[[file:images/lookup03-small-sizes.svg]]
+
+** LPM large sizes:
+
+Plotting data from table: data_amd_cache_misses
+
+#+BEGIN_SRC python :var fname="images/lookup01.svg" :var data=data_amd_cache_misses :results file
+from matplotlib.legend_handler import HandlerLine2D
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.rcParams['figure.figsize'] = [8.0+4.9, 6.5]
+
+nr, d_ops, d_ns, d_miss, d_miss_pct, d_TLB, d_TLB_pct = zip(*data)
+
+#plt.xkcd()
+fig = plt.figure()
+
+axes1 = fig.add_subplot(1,1, 1)
+axes1.plot(nr, d_ns, marker='o', label='lookup nanosec/op')
+axes1.ticklabel_format(style="plain") # turns off scientific notation
+axes1.grid(True)
+
+#axes2 = fig.add_subplot(1,1, 1)
+#axes2.plot(nr, d_miss_pct, marker='x', label='cache-misses %')
+
+legend = plt.legend(loc='upper left')
+
+plt.title('LPM trie lookup speed (in nanosec) - (large sizes)')
+plt.ylabel('Time spend in nanosec per operation')
+plt.xlabel('Number of elements in LPM map')
+fig.savefig(fname)
+return fname
+#+END_SRC
+
+#+RESULTS:
+[[file:images/lookup01.svg]]
+
+** LPM medium sizes
+
+Plotting data from table: data_LPM_medium_sizes
+
+Medium sizes:
+#+BEGIN_SRC python :var fname="images/lookup02-medium-sizes.svg" :var data=data_LPM_medium_sizes :results file
+from matplotlib.legend_handler import HandlerLine2D
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.rcParams['figure.figsize'] = [8.0+4.9, 6.5]
+
+nr, d_ops, d_ns = zip(*data)
+
+#plt.xkcd()
+fig = plt.figure()
+
+axes1 = fig.add_subplot(1,1, 1)
+axes1.plot(nr, d_ns, marker='o', label='lookup nanosec/op')
+axes1.ticklabel_format(style="plain") # turns off scientific notation
+axes1.grid(True)
+
+#axes2 = fig.add_subplot(1,1, 1)
+#axes2.plot(nr, d_miss_pct, marker='x', label='cache-misses %')
+
+legend = plt.legend(loc='upper left')
+
+plt.title('LPM trie lookup speed (in nanosec) - (medium sizes)')
+plt.ylabel('Time spend in nanosec per operation')
+plt.xlabel('Number of elements in LPM map')
+fig.savefig(fname)
+return fname
+#+END_SRC
+
+#+RESULTS:
+[[file:images/lookup02-medium-sizes.svg]]
+
+** LPM small sizes
+Plotting data from table: data_LPM_small_sizes
+
+Small sizes:
+#+BEGIN_SRC python :var fname="images/lookup03-small-sizes.svg" :var data=data_LPM_small_sizes :results file
+from matplotlib.legend_handler import HandlerLine2D
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.rcParams['figure.figsize'] = [8.0+4.9, 6.5]
+
+nr, d_ops, d_ns = zip(*data)
+
+#plt.xkcd()
+fig = plt.figure()
+
+axes1 = fig.add_subplot(1,1, 1)
+axes1.plot(nr, d_ns, marker='o', label='lookup nanosec/op')
+axes1.ticklabel_format(style="plain") # turns off scientific notation
+axes1.grid(True)
+
+#axes2 = fig.add_subplot(1,1, 1)
+#axes2.plot(nr, d_miss_pct, marker='x', label='cache-misses %')
+
+legend = plt.legend(loc='upper left')
+
+plt.title('LPM trie lookup speed (in nanosec) - (small sizes)')
+plt.ylabel('Time spend in nanosec per operation')
+plt.xlabel('Number of elements in LPM map')
+fig.savefig(fname)
+return fname
+#+END_SRC
+
+#+RESULTS:
+[[file:images/lookup03-small-sizes.svg]]
+

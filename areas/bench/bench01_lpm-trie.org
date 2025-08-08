@@ -1,0 +1,121 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Bench lpm-trie
+#+CATEGORY: CPUMAP
+#+OPTIONS: ^:nil
+
+Matt Fleming is developing a new selftests bench for the LPM-trie BPF-map.
+
+* Table of Contents (auto-generated)                                    :toc:
+- [[#code-references][Code references]]
+  - [[#git-tree][Git tree]]
+  - [[#upstream-patches][Upstream patches]]
+  - [[#patch-used][Patch used]]
+- [[#micro-benchmark][Micro benchmark]]
+- [[#results-10000-entries][Results: 10,000 entries]]
+  - [[#cpu-amd-epyc-9684x][CPU: AMD EPYC 9684X]]
+  - [[#cpu-intel-e5-1650-v4--360ghz][CPU: Intel E5-1650 v4 @ 3.60GHz]]
+
+* Code references
+
+** Git tree
+
+Warning branch 'bench/lpm-trie' is getting rebased
+ - https://github.com/mfleming/linux/tree/bench/lpm-trie
+
+** Upstream patches
+
+Patch version: "selftests/bpf: Add LPM trie microbenchmarks"
+ - [[https://lore.kernel.org/all/20250718150554.48210-1-matt@readmodwrite.com/][V1]]
+ - [[https://lore.kernel.org/all/20250721142753.263135-1-matt@readmodwrite.com/][V2]]
+ - [[https://lore.kernel.org/all/20250722150152.1158205-1-matt@readmodwrite.com/][V3]]
+
+** Patch used
+
+The patch that was used to produce these results is a modified version of
+patch V3, that tries to measure the =delete= operation more accurately,
+without intermixing the time it takes to populate the map again after
+deleting all elements.
+
+[[file:patches/bench-lpm-trie-V3-adjusted.patch]]
+
+* Micro benchmark
+
+Benchmarks operate on tries without gaps in the key range, i.e. each test
+begins with a trie with valid keys in the range =[0, nr_entries)=. This is
+intended to cause maximum branching when traversing the trie.
+
+* Results: 10,000 entries
+
+The default bench run uses 10,000 entries in the map.
+
+#+begin_src bash
+for operation in lookup update delete free ; do
+   sudo ./bench lpm-trie-${operation} \
+      --nr_entries=10000 --prefix_len=32 --producers=1 | \
+      tee ~/bpf-benchs/results01-10k-${operation} ;
+done
+#+end_src
+
+** CPU: AMD EPYC 9684X
+
+| operation | throughput            | latency per operation |
+|-----------+-----------------------+-----------------------|
+| lookup    | 7.598 ± 0.004 M ops/s | 131.608 ns/op         |
+| update    | 3.247 ± 0.029 M ops/s | 308.008 ns/op         |
+| delete    | 1.747 ± 0.053 M ops/s | 572.519 ns/op         |
+| free      | 0.294 ± 0.055 K ops/s | 3.521 ms/op           |
+
+** CPU: Intel E5-1650 v4 @ 3.60GHz
+
+| operation | throughput            | latency per operation |
+|-----------+-----------------------+-----------------------|
+| lookup    | 6.407 ± 0.005 M ops/s | 156.087 ns/op         |
+| update    | 3.973 ± 0.149 M ops/s | 251.678 ns/op         |
+| delete    | 2.612 ± 0.048 M ops/s | 382.897 ns/op         |
+| free      | 0.425 ± 0.004 K ops/s | 2.352 ms/op           |
+
+Raw data:
+#+begin_example
+for operation in lookup update delete free ; do    sudo ./bench lpm-trie-${operation} \
+ --nr_entries=10000 --prefix_len=32 --producers=1  | tee ~/bpf-benchs/results01c-10k-${operation} ; done
+Setting up benchmark 'lpm-trie-lookup'...
+Benchmark 'lpm-trie-lookup' started.
+Iter   0 ( 74.362us): hits    6.220M/s (  6.220M/prod)
+Iter   1 (-11.178us): hits    6.410M/s (  6.410M/prod)
+Iter   2 ( 16.717us): hits    6.400M/s (  6.400M/prod)
+Iter   3 (-13.082us): hits    6.400M/s (  6.400M/prod)
+Iter   4 ( -3.117us): hits    6.410M/s (  6.410M/prod)
+Iter   5 (-31.884us): hits    6.410M/s (  6.410M/prod)
+Iter   6 ( 32.686us): hits    6.410M/s (  6.410M/prod)
+Summary: throughput    6.407 ± 0.005 M ops/s (  6.407M ops/prod), latency  156.087 ns/op
+Setting up benchmark 'lpm-trie-update'...
+Benchmark 'lpm-trie-update' started.
+Iter   0 ( 70.527us): hits    4.030M/s (  4.030M/prod)
+Iter   1 (-36.184us): hits    4.130M/s (  4.130M/prod)
+Iter   2 ( -4.904us): hits    4.110M/s (  4.110M/prod)
+Iter   3 ( 39.103us): hits    3.960M/s (  3.960M/prod)
+Iter   4 ( -0.624us): hits    4.040M/s (  4.040M/prod)
+Iter   5 ( -2.408us): hits    3.840M/s (  3.840M/prod)
+Iter   6 (-27.573us): hits    3.760M/s (  3.760M/prod)
+Summary: throughput    3.973 ± 0.149 M ops/s (  3.973M ops/prod), latency  251.678 ns/op
+Setting up benchmark 'lpm-trie-delete'...
+Benchmark 'lpm-trie-delete' started.
+Iter   0 ( 66.196us): hits    2.780M/s (  2.780M/prod)
+Iter   1 (-31.104us): hits    2.690M/s (  2.690M/prod)
+Iter   2 ( 30.382us): hits    2.640M/s (  2.640M/prod)
+Iter   3 (  0.586us): hits    2.620M/s (  2.620M/prod)
+Iter   4 ( -3.747us): hits    2.580M/s (  2.580M/prod)
+Iter   5 (  0.796us): hits    2.570M/s (  2.570M/prod)
+Iter   6 ( -1.491us): hits    2.570M/s (  2.570M/prod)
+Summary: throughput    2.612 ± 0.048 M ops/s (  2.612M ops/prod), latency  382.897 ns/op
+Setting up benchmark 'lpm-trie-free'...
+Benchmark 'lpm-trie-free' started.
+Iter   0 ( 27.219us): hits    0.197K/s (  0.197K/prod)
+Iter   1 ( 20.550us): hits    0.417K/s (  0.417K/prod)
+Iter   2 (-16.685us): hits    0.424K/s (  0.424K/prod)
+Iter   3 (  5.596us): hits    0.427K/s (  0.427K/prod)
+Iter   4 ( -0.620us): hits    0.428K/s (  0.428K/prod)
+Iter   5 ( -6.417us): hits    0.427K/s (  0.427K/prod)
+Iter   6 ( -0.434us): hits    0.427K/s (  0.427K/prod)
+Summary: throughput    0.425 ± 0.004 K ops/s (  0.425K ops/prod), latency    2.352 ms/op
+#+end_example

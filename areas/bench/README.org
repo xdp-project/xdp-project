@@ -1,0 +1,16 @@
+# -*- fill-column: 76; -*-
+#+TITLE: Benchmarks (primarily) based on BPF selftests harness "bench"
+#+CATEGORY: BENCH
+#+OPTIONS: ^:nil
+
+The kernel BPF selftests contains a benchmark harness named "bench".
+This directory is expected to contain result and developer notes, for
+developing new "bench" benchmarks.
+
+The kernel BPF selftests are located:
+ - in directory [[https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/tools/testing/selftests/bpf][tools/testing/selftests/bpf/]] ([[https://github.com/torvalds/linux/tree/master/tools/testing/selftests/bpf][github]])
+ - Main userspace "bench" program is [[https://github.com/torvalds/linux/blob/master/tools/testing/selftests/bpf/bench.c][bench.c]]
+ - Harness extensions are under directory [[https://github.com/torvalds/linux/tree/master/tools/testing/selftests/bpf/benchs/][benchs/]]
+ - Benchmark BPF-progs are located in [[https://github.com/torvalds/linux/tree/master/tools/testing/selftests/bpf/progs/][progs/]]
+   - mixed together with selftests (which is highly confusing).
+
