@@ -270,6 +270,8 @@ axes1.plot(nr, d_ns, marker='o', label='lookup nanosec/op')
 legend = plt.legend(loc='upper left')
 
 plt.title('LPM trie lookup speed (in nanosec) - (large sizes)')
+plt.ylabel('Time spend in nanosec per operation')
+plt.xlabel('Number of elements in LPM map')
 fig.savefig(fname)
 return fname
 #+END_SRC
@@ -302,6 +304,8 @@ axes1.plot(nr, d_ns, marker='o', label='lookup nanosec/op')
 legend = plt.legend(loc='upper left')
 
 plt.title('LPM trie lookup speed (in nanosec) - (medium sizes)')
+plt.ylabel('Time spend in nanosec per operation')
+plt.xlabel('Number of elements in LPM map')
 fig.savefig(fname)
 return fname
 #+END_SRC
@@ -333,6 +337,8 @@ axes1.plot(nr, d_ns, marker='o', label='lookup nanosec/op')
 legend = plt.legend(loc='upper left')
 
 plt.title('LPM trie lookup speed (in nanosec) - (small sizes)')
+plt.ylabel('Time spend in nanosec per operation')
+plt.xlabel('Number of elements in LPM map')
 fig.savefig(fname)
 return fname
 #+END_SRC
