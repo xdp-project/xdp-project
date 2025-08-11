@@ -1,0 +1,86 @@
+#!/usr/bin/bpftrace
+/* SPDX-License-Identifier: GPL-2.0+
+ *
+ * 11-Aug-2025	Jesper Dangaard Brouer	Created this
+ *
+ * Debugging latency of nftables sets that uses nft_set_rbtree
+ *  - https://elixir.bootlin.com/linux/latest/source/net/netfilter/nft_set_rbtree.c
+ *
+ * Latency of nft_rbtree_insert
+ *
+ * The insert operation need to take the write-lock. Thus, this is an
+ * approximation for detecting lock contention during insert.
+ */
+
+// sudo nohup  bpftrace -e '
+BEGIN
+{
+	/* Cmdline arg#1: latency threshold input in usec */
+	@threshold1_usecs = (uint64) ($1 ? $1: 200);
+	@threshold1_ns = @threshold1_usecs * 1000;
+	time("%H:%M:%S start\n");
+	@attached=0;
+	@recs=0; // number of parallel start time records needed
+	@recs_max=0;
+}
+fentry:nft_rbtree_insert,
+{
+	$now=nsecs;
+	@cnt=count();
+	$id = args->set;
+	@start[tid, $id]=$now;
+	@recs++; // not-atomic - can get out-of-sync
+	if (@attached == 0) {
+		@attached=1;
+	}
+	@nest[tid, $id]++;
+}
+fexit:nft_rbtree_insert,
+{
+	if (@attached == 0) {
+		return;
+	}
+	$id=args->set;
+	$entry_ts=@start[tid, $id];
+	@nest[tid, $id]--;
+	$now=nsecs;
+	$delta=(int64)($now-$entry_ts);
+	if ($entry_ts > 0 && $delta > 0) {
+		$name = args->set->name;
+		@stats[str($name)]=stats($delta);
+		@hist=hist($delta);
+		@hist_total=hist($delta);
+		if ($delta > @threshold1_ns) {
+			time("%H:%M:%S ");
+			printf("High insert latency: %lld usec (%lld ms) set name:%s id:%llx nest:%d tid:%lld pid:%lld\n",
+			       $delta / 1000, $delta / 1000000, str($name), $id, @nest[tid, $id], tid, pid);
+		}
+	}
+	if ($delta < 0) {
+		$name = args->set->name;
+		time("%H:%M:%S ");
+		printf("WARN: Negative delta %d set name:%s id:%x\n",
+			$delta,  str($name), $id);
+	}
+	$nest=@nest[tid, $id];
+	if ($nest != 0) {
+		time("%H:%M:%S ");
+		printf("WARN: concurrency issues - set name:%s id:%llx nest:%d tid:%lld pid:%lld\n",
+		       str($name), $id, @nest[tid, $id], tid, pid);
+	}
+	delete(@nest[tid, $id]);
+	delete(@start[tid, $id]);
+	if (@recs > @recs_max) {
+		@recs_max=@recs;
+	}
+	@recs--; // not-atomic - can get out-of-sync
+}
+interval:s:10
+{
+	time("\n%H:%M:%S "); printf("- %d sec\n", elapsed/1000000000);
+	printf("calls per interval "); print(@cnt); clear(@cnt);
+	//print(@stats);
+	print(@hist); clear(@hist);
+	print(@recs); print(@recs_max);
+}
+//' > out09.bpftrace_nft_rbtree_insert &
