@@ -1,12 +1,6 @@
-#+Title: Netdevconf 0x19
+#+Title: TCP basics
 
 
-* Description from Netdevconf 0x19
-
-Netdev 0x19, like all the previous netdev conferences, is a conference of the
-netdev community, by the netdev community, for the netdev community. Linux
-kernel networking and user space utilization of the interfaces to the Linux
-kernel networking subsystem are the focus. If you are using Linux as a boot
-system for proprietary networking, then this conference _may not be for you_.
-
-https://netdevconf.info/0x19/
+This presentation goes through the basics of how TCP works, including connection
+setup, loss recovery and congestion control, as well as how it interacts with
+the network and some pointers for running experimental tests.
