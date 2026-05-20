@@ -1,0 +1,6 @@
+#+Title: TCP basics
+
+
+This presentation goes through the basics of how TCP works, including connection
+setup, loss recovery and congestion control, as well as how it interacts with
+the network and some pointers for running experimental tests.
