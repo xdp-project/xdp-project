@@ -321,3 +321,9 @@ body {
 .small {
   font-size: 85% !important;
 }
+
+.reveal .no-bullets ul {
+    list-style-type: none;
+    margin: 0px;
+    text-align: inherit;
+}
