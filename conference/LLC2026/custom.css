@@ -1,0 +1,10 @@
+.reveal .figure {
+    font-size: 40%;
+    color: grey;
+}
+.reveal .figure a {
+    color: grey;
+}
+.reveal pre {
+    font-size: 0.45em;
+}
